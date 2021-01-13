@@ -1,0 +1,67 @@
+import time
+import socket
+import threading
+
+from recipe import thread
+
+_IS_READY = threading.Event()
+_WAS_CONNECTED = False
+_CONNECTED_FUNCTIONS = []
+_DISCONNECTED_FUNCTIONS = []
+
+
+def connected():
+    if _IS_READY.is_set():
+        return _WAS_CONNECTED
+    else:
+        raise RuntimeError("인터넷 상태가 모니터링되고 있지 않습니다.")
+
+
+def start_monitoring():
+    def job():
+        global _WAS_CONNECTED
+        while True:
+            # DNS 서버에 연결 시도
+            attempt_ips = (
+                "1.0.0.1",  # Cloudflare
+                "1.1.1.1",  # Cloudflare
+                "8.8.4.4",  # Google
+                "8.8.8.8",  # Google
+                "9.9.9.9",  # Quad9
+                "149.112.112.112",  # Quad9
+                "208.67.222.222",  # OpenDNS
+                "208.67.220.220",  # OpenDNS
+            )
+            is_connected = False
+            for attempt_ip in attempt_ips:
+                try:
+                    socket.create_connection((attempt_ip, 53))
+                    is_connected = True
+                    break
+                except OSError:
+                    pass
+            # 변화 감지
+            if _WAS_CONNECTED and not is_connected:
+                for job in _DISCONNECTED_FUNCTIONS:
+                    thread.apply_async(job)
+            elif not _WAS_CONNECTED and is_connected:
+                for job in _CONNECTED_FUNCTIONS:
+                    thread.apply_async(job)
+            # 최신 상태 기록
+            _WAS_CONNECTED = is_connected
+            _IS_READY.set()
+            # 시간 두기
+            time.sleep(0.1)
+
+    thread.apply_async(job)
+    _IS_READY.wait()
+
+
+def add_connected_functions(job_list):
+    global _CONNECTED_FUNCTIONS
+    _CONNECTED_FUNCTIONS += job_list
+
+
+def add_disconnected_functions(job_list):
+    global _DISCONNECTED_FUNCTIONS
+    _DISCONNECTED_FUNCTIONS += job_list

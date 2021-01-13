@@ -1,0 +1,69 @@
+from datetime import datetime, timezone, timedelta
+
+
+def do(
+    symbol,
+    recent_candle_data,
+    aggtrades,
+    moment_to_fill_from,
+    last_fetched_time,
+):
+
+    fill_moment = moment_to_fill_from
+
+    while fill_moment < last_fetched_time - timedelta(seconds=10):
+
+        block_start = fill_moment
+        block_end = fill_moment + timedelta(seconds=10)
+
+        aggtrade_prices = []
+        aggtrade_volumes = []
+        for _, aggtrade in sorted(aggtrades.items()):
+            # 과거에서 최근 순으로 정렬됨
+            aggtrade_time = datetime.fromtimestamp(
+                aggtrade["T"] / 1000, tz=timezone.utc
+            )
+            if block_start <= aggtrade_time < block_end:
+                aggtrade_prices.append(float(aggtrade["p"]))
+                aggtrade_volumes.append(float(aggtrade["q"]))
+
+        can_write = True
+
+        if len(aggtrade_prices) == 0:
+            # 거래 자체가 없는 경우
+            inspect_sr = recent_candle_data[(symbol, "Close")]
+            inspect_sr = inspect_sr.sort_index()
+            last_prices = inspect_sr[:fill_moment].dropna()
+            if len(last_prices) == 0:
+                # 처음 실행해서 유의미한 앞 데이터가 아예 없는 경우
+                can_write = False
+                last_price = 0
+            else:
+                last_price = last_prices.iloc[-1]
+            open_price = last_price
+            high_price = last_price
+            low_price = last_price
+            close_price = last_price
+            sum_volume = 0
+        else:
+            open_price = aggtrade_prices[0]
+            high_price = max(aggtrade_prices)
+            low_price = min(aggtrade_prices)
+            close_price = aggtrade_prices[-1]
+            sum_volume = sum(aggtrade_volumes)
+
+        if can_write:
+            column = (symbol, "Open")
+            recent_candle_data.loc[fill_moment, column] = open_price
+            column = (symbol, "High")
+            recent_candle_data.loc[fill_moment, column] = high_price
+            column = (symbol, "Low")
+            recent_candle_data.loc[fill_moment, column] = low_price
+            column = (symbol, "Close")
+            recent_candle_data.loc[fill_moment, column] = close_price
+            column = (symbol, "Volume")
+            recent_candle_data.loc[fill_moment, column] = sum_volume
+
+        fill_moment += timedelta(seconds=10)
+
+    return recent_candle_data

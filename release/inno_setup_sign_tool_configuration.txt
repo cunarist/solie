@@ -1,0 +1,8 @@
+solsol_signtool
+
+absolute_project_folder\release\signtool.exe sign /f "absolute_project_folder\release\certificate.cer" /t http://timestamp.comodoca.com/authenticode /p x2P64ETS3xKdFULJxYR38kCs8dW3jp6P $f
+
+CHANGE above "absolute_project_folder" to match your PC
+related links:
+https://m.blog.naver.com/PostView.naver?isHttpsRedirect=true&blogId=asemansa&logNo=221517825930
+https://blog.naver.com/asemansa/221519585610

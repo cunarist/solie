@@ -1,0 +1,4 @@
+ta-lib
+numpy
+pandas
+scipy
