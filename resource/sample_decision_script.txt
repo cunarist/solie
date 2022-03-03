@@ -1,6 +1,5 @@
 from recipe import standardize
 
-target_symbols = standardize.get_basics()["target_symbols"]
 acquire_ratio = 0.8 / len(target_symbols)  # 선택한 코인 개수에 맞게 배분
 
 current_price = current_observed_data[str((symbol, "Close"))]
