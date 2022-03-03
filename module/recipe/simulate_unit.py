@@ -480,13 +480,14 @@ def do(dataset):
             symbol_open_orders = {}
             for command_name, placement in symbol_placements.items():
                 order_id = placement["order_id"]
+                boundary = float(placement["boundary"])
                 if "margin" in placement.keys():
-                    left_margin = placement["margin"]
+                    left_margin = float(placement["margin"])
                 else:
                     left_margin = None
                 symbol_open_orders[order_id] = {
                     "command_name": command_name,
-                    "boundary": placement["boundary"],
+                    "boundary": boundary,
                     "left_margin": left_margin,
                 }
             unit_account_state["open_orders"][symbol] = symbol_open_orders
