@@ -1423,7 +1423,7 @@ class Transactor:
         text = ""
         text += f"총 자산 ＄{round(self.account_state['wallet_balance'],4)}"
         text += "  ⦁  "
-        text += f"마진 ＄{round(position['margin'], 4)}/{round(margin_sum,4)}"
+        text += f"투입 자산 ＄{round(position['margin'], 4)}/{round(margin_sum,4)}"
         text += "  ⦁  "
         text += f"방향 {direction_text}"
         text += "  ⦁  "
