@@ -749,11 +749,11 @@ class Collector:
 
         with self.datalocks[1]:
             self.realtime_data_chunks[-1].sort(order="index")
-            if len(self.realtime_data_chunks[-1]) > 10**4:
+            if len(self.realtime_data_chunks[-1]) > 2**16:
                 new_chunk = self.realtime_data_chunks[-1][0:0].copy()
                 self.realtime_data_chunks.append(new_chunk)
                 del new_chunk
-            if len(self.realtime_data_chunks) > 512:
+            if len(self.realtime_data_chunks) > 64:
                 self.realtime_data_chunks.pop(0)
 
         with self.datalocks[2]:
