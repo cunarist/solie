@@ -1235,7 +1235,6 @@ class Simulator:
                     "decision_script": decision_script,
                 }
                 input_data.append(dataset)
-                prepare_step += 1
 
         prepare_step = 6
 
