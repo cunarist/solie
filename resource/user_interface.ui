@@ -1057,7 +1057,7 @@ QSplitter::handle {
             <item>
              <widget class="QLabel" name="label_30">
               <property name="text">
-               <string>indicators 스크립트</string>
+               <string>지표 스크립트</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignCenter</set>
