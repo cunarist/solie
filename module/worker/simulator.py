@@ -667,7 +667,7 @@ class Simulator:
         if (only_light_lines and is_light_line) or not only_light_lines:
             if len(asset_trace) >= 2:
                 sr = asset_trace.resample("10S").ffill()
-            unrealized_changes_sr = unrealized_changes.reindex_like(sr)
+            unrealized_changes_sr = unrealized_changes.reindex(sr.index)
             sr = sr * (1 + unrealized_changes_sr)
             data_x = sr.index.to_numpy(dtype=np.int64) / 10**9 + 5
             data_y = sr.to_numpy(dtype=np.float32)
@@ -845,7 +845,7 @@ class Simulator:
             asset_trace = self.asset_trace[range_start:range_end].copy()
 
         asset_changes = asset_trace[range_start:range_end].pct_change() + 1
-        asset_changes = asset_changes.reindex_like(trade_record).fillna(value=1)
+        asset_changes = asset_changes.reindex(trade_record.index).fillna(value=1)
         symbol_mask = trade_record["Symbol"] == symbol
 
         # 거래 횟수
