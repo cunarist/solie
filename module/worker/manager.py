@@ -291,7 +291,7 @@ class Manager:
             self.root.undertake(lambda t=text: self.root.label_36.setText(t), False)
 
             thread_names = [thread.name for thread in threading.enumerate()]
-            row_size = 4
+            row_size = 2
             chunked = [
                 thread_names[i : i + row_size]
                 for i in range(0, len(thread_names), row_size)
