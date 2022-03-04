@@ -162,24 +162,11 @@ class Manager:
                 )
 
     def deselect_log_output(self, *args, **kwargs):
-
-        self.root.undertake(lambda: self.root.listWidget.clearSelection(), False)
-
         def job():
-            index_count = self.root.listWidget.count()
-            return index_count
+            self.root.listWidget.setCurrentRow(0)
+            self.root.listWidget.clearSelection()
 
-        index_count = self.root.undertake(job, True)
-
-        for index in range(index_count):
-            widget = self.root.listWidget.item(index)
-            current_text = self.root.undertake(lambda w=widget: w.text(), True)
-            if "\n" in current_text:
-                text = self.log_outputs[index].split("\n")[0]
-                self.root.undertake(
-                    lambda w=widget, t=text: w.setText(t),
-                    False,
-                )
+        self.root.undertake(job, False)
 
     def add_log_output(self, *args, **kwargs):
         # 꺼내기
@@ -387,7 +374,7 @@ class Manager:
         ]
         answer = self.root.ask(question)
 
-        text = f"질문이 종료되었습니다. {answer}번 항목이 선택되었습니다."
+        text = f"You chose answer {answer} from the test popup"
         logger = logging.getLogger("solsol")
         logger.info(text)
 

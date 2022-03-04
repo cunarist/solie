@@ -681,7 +681,7 @@ class Collector:
 
         # ■■■■■ 알림 ■■■■■
 
-        text = "바이낸스 과거 데이터를 다운로드해서 캔들 데이터를 채웠습니다."
+        text = "Filled the candle data with the history data downloaded from Binance"
         logger = logging.getLogger("solsol")
         logger.info(text)
 

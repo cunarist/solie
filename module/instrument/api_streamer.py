@@ -33,7 +33,7 @@ class ApiStreamer:
             self._create_websocket_app()
         elif did_change:
             self._websocket_app.close()
-            text = f"웹소켓 주소가 {before_url}에서 {url}로 바뀌었습니다."
+            text = f"Websocket address replaced from {before_url} to {url}"
             logger = logging.getLogger("solsol")
             logger.info(text)
 

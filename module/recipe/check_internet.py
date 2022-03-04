@@ -1,6 +1,7 @@
 import time
 import socket
 import threading
+import logging
 
 from recipe import thread
 
@@ -14,7 +15,7 @@ def connected():
     if _IS_READY.is_set():
         return _WAS_CONNECTED
     else:
-        raise RuntimeError("인터넷 상태가 모니터링되고 있지 않습니다.")
+        raise RuntimeError("Internet connection is not being monitored")
 
 
 def start_monitoring():
@@ -44,9 +45,11 @@ def start_monitoring():
             if _WAS_CONNECTED and not is_connected:
                 for job in _DISCONNECTED_FUNCTIONS:
                     thread.apply_async(job)
+                logging.getLogger("solsol").warning("Internet disconnected")
             elif not _WAS_CONNECTED and is_connected:
                 for job in _CONNECTED_FUNCTIONS:
                     thread.apply_async(job)
+                logging.getLogger("solsol").info("Internet connected")
             # 최신 상태 기록
             _WAS_CONNECTED = is_connected
             _IS_READY.set()

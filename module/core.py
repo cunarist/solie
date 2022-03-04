@@ -1013,8 +1013,11 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
         log_formatter = logging.Formatter(log_format, datefmt=date_format)
         log_formatter.converter = time.gmtime
         log_handler.setFormatter(log_formatter)
+        logging.addLevelName(1, "START")
         logging.getLogger().addHandler(log_handler)
-        logging.getLogger("solsol").setLevel("DEBUG")
+        logger = logging.getLogger("solsol")
+        logger.setLevel(1)
+        logger.log(1, "")
 
         # ■■■■■ 이벤트에 함수 연결 ■■■■■
 

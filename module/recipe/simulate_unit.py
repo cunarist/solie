@@ -307,15 +307,13 @@ def do(dataset):
 
                 if is_margin_negative:
                     text = ""
-                    text += f"{current_moment} 시점의"
-                    text += f" {symbol} 시장 계산 도중"
-                    text += " 분량이 음수인 주문을 받았습니다."
+                    text += "Got an order with a negative margin"
+                    text += f" while calculating {symbol} market at {current_moment}"
                     raise SimulationError(text)
                 elif is_margin_nan:
                     text = ""
-                    text += f"{current_moment} 시점의"
-                    text += f" {symbol} 시장 계산 도중"
-                    text += " 분량이 수가 아닌 주문을 받았습니다."
+                    text += "Got an order with a non-numeric margin"
+                    text += f" while calculating {symbol} market at {current_moment}"
                     raise SimulationError(text)
 
                 # 체결 내역이 생겼다면 현실에서의 변화 흉내
@@ -395,9 +393,9 @@ def do(dataset):
 
                     if unit_behind_state["available_balance"] < 0:
                         text = ""
-                        text += f"{current_moment} 시점의"
-                        text += f" {symbol} 시장 계산 도중"
-                        text += " 기본 자산이 음수로 바뀌었습니다."
+                        text += "Available balance went below zero"
+                        text += f" while calculating {symbol} market"
+                        text += f" at {current_moment}"
                         raise SimulationError(text)
 
                     did_found_new_trade = True

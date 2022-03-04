@@ -77,7 +77,8 @@ class ApiRequester:
             response = raw_response.json()
         except json.decoder.JSONDecodeError:
             status_code = raw_response.status_code
-            text = f"바이낸스 API 요청에 문제가 있음 (HTTP {status_code})"
+            text = "There was a problem with Binance API request"
+            text += f" (HTTP {status_code})"
             raise ApiRequestError(text)
 
         # API 사용량 기록
@@ -91,7 +92,7 @@ class ApiRequester:
         if "code" in response and response["code"] != 200:
             error_code = response["code"]
             error_message = response["msg"]
-            text = "바이낸스 API 요청에 문제가 있음"
+            text = "There was a problem with Binance API request"
             text += f" (Error {error_code}: {error_message})"
             raise ApiRequestError(text)
 
@@ -137,7 +138,7 @@ class ApiRequester:
 
         status_code = raw_response.status_code
         if status_code != 200:
-            text = f"Cunarist API 요청에 문제가 있음 (HTTP {status_code})"
+            text = f"There was a problem with Cunarist API request (HTTP {status_code})"
             text += "\n"
             text += response["message"]
             raise ApiRequestError(text)

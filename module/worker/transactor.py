@@ -344,7 +344,7 @@ class Transactor:
 
         if event_type == "listenKeyExpired":
 
-            text = "바이낸스의 개인 스트리밍 키가 만료되었습니다."
+            text = "Binance user data stream listen key got expired"
             logger = logging.getLogger("solsol")
             logger.warning(text)
             self.update_user_data_stream()
@@ -2132,7 +2132,7 @@ class Transactor:
                 elif self.account_state["positions"][symbol]["direction"] == "short":
                     side = "BUY"
                 else:
-                    raise ValueError("닫을 포지션이 없습니다.")
+                    raise ValueError("There is no position to close")
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
@@ -2178,7 +2178,7 @@ class Transactor:
                     new_order_side = "BUY"
                     new_order_type = "STOP_MARKET"
                 else:
-                    raise ValueError("닫을 포지션이 없습니다.")
+                    raise ValueError("There is no position to close")
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
@@ -2198,7 +2198,7 @@ class Transactor:
                     new_order_side = "BUY"
                     new_order_type = "TAKE_PROFIT_MARKET"
                 else:
-                    raise ValueError("닫을 포지션이 없습니다.")
+                    raise ValueError("There is no position to close")
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
