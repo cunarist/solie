@@ -16,13 +16,13 @@ def choose(
     compiled_custom_script,
 ):
 
-    # ■■■■■ 명령들을 모아놓은 결정 ■■■■■
+    # ■■■■■ decision template ■■■■■
 
     decision = {}
     for symbol in standardize.get_basics()["target_symbols"]:
         decision[symbol] = {}
 
-    # ■■■■■ 전략별 셈법 ■■■■■
+    # ■■■■■ write decisions ■■■■■
 
     for symbol in standardize.get_basics()["target_symbols"]:
 
@@ -51,7 +51,7 @@ def choose(
             direction = account_state["positions"][symbol]["direction"]
 
             target_symbols = standardize.get_basics()["target_symbols"]
-            # 테스트넷 시장에서 이 코인들 이외에는 유동성이 너무 적음
+            # too little volatility on testnet markets except these symbols
             prefer_symbols = ("BTCUSDT", "ETHUSDT")
             intersection = [
                 target_symbol
@@ -108,7 +108,7 @@ def choose(
             direction = account_state["positions"][symbol]["direction"]
 
             if symbol in ("BTCUSDT", "ETHUSDT"):
-                # 테스트넷 시장에서 이 코인들 이외에는 유동성이 너무 적음
+                # too little volatility on testnet markets except these symbols
                 if direction == "none":
                     if random.random() < 0.5:
                         decision[symbol]["now_buy"] = {
@@ -125,13 +125,13 @@ def choose(
 
             current_price = current_observed_data[str((symbol, "Close"))]
 
-            interval = 1  # 분 단위
-            wait = 12  # 분 단위
+            interval = 1  # minutes
+            wait = 12  # minutes
             margin_ratio = 0.01
-            endure_time = 3  # 시간 단위
+            endure_time = 3  # hours
             escape_delta = 0.01
             initial_profit_delta = 0.01
-            continue_time = 600  # 초 단위
+            continue_time = 600  # seconds
 
             base_scribbles = {
                 "mode": "waiting",
@@ -225,7 +225,7 @@ def choose(
 
             elif mode == "buying":
 
-                # 청산할 때 노리기
+                # close position
                 if has_waited_enough:
                     decision[symbol]["later_up_close"] = {
                         "boundary": entry_price + needed_sigma * initial_profit,
@@ -237,7 +237,7 @@ def choose(
                         "boundary": current_price * 1.1,
                     }
 
-                # 추가 공매매하기
+                # acquire more
                 if is_time and is_low and is_wallet_balance_left:
                     decision[symbol]["now_buy"] = {
                         "margin": margin_ratio * wallet_balance,
@@ -245,7 +245,7 @@ def choose(
 
             elif mode == "selling":
 
-                # 청산할 때 노리기
+                # close position
                 if has_waited_enough:
                     decision[symbol]["later_down_close"] = {
                         "boundary": entry_price - needed_sigma * initial_profit,
@@ -257,7 +257,7 @@ def choose(
                         "boundary": current_price * 0.9,
                     }
 
-                # 추가 공매매하기
+                # acquire more
                 if is_time and is_high and is_wallet_balance_left:
                     decision[symbol]["now_sell"] = {
                         "margin": margin_ratio * wallet_balance,
@@ -267,10 +267,10 @@ def choose(
 
             current_price = current_observed_data[str((symbol, "Close"))]
 
-            interval = 10  # 분 단위
-            wait = 15  # 분 단위
+            interval = 10  # minutes
+            wait = 15  # minutes
             margin_ratio = 0.01
-            endure_time = 1  # 시간 단위
+            endure_time = 1  # hours
             escape_delta = 0.015
             allowed_delta = 0.04
 
@@ -295,7 +295,6 @@ def choose(
             entry_price = account_state["positions"][symbol]["entry_price"]
 
             weight = max(1, abs((entry_price / current_middle) - 1) * 100 * 0.5)
-            # 평균 단가에서 1% 벗어날 때마다 0.5 증가. 최소 1.
 
             if direction == "none":
                 scribbles["mode"] = "waiting"
@@ -364,7 +363,7 @@ def choose(
 
             elif mode == "buying":
 
-                # 청산할 때 노리기
+                # close position
                 if not is_wallet_balance_left:
                     decision[symbol]["later_up_close"] = {
                         "boundary": current_middle + i_escape_unit,
@@ -381,7 +380,7 @@ def choose(
                         "boundary": current_price * 1.1,
                     }
 
-                # 추가 공매매하기
+                # acquire more
                 if is_time and is_wallet_balance_left:
                     decision[symbol]["now_buy"] = {
                         "margin": margin_ratio * wallet_balance * weight,
@@ -389,7 +388,7 @@ def choose(
 
             elif mode == "selling":
 
-                # 청산할 때 노리기
+                # close position
                 if not is_wallet_balance_left:
                     decision[symbol]["later_down_close"] = {
                         "boundary": current_middle - i_escape_unit,
@@ -406,7 +405,7 @@ def choose(
                         "boundary": current_price * 0.9,
                     }
 
-                # 추가 공매매하기
+                # acquire more
                 if is_time and is_wallet_balance_left:
                     decision[symbol]["now_sell"] = {
                         "margin": margin_ratio * wallet_balance * weight,
@@ -416,12 +415,8 @@ def choose(
 
             current_price = current_observed_data[str((symbol, "Close"))]
 
-            # 설정값
-
             escape_delta = 0.001
-            endure_time = 3  # 시간 단위
-
-            # 메모 초기값 준비
+            endure_time = 3  # hours
 
             base_scribbles = {
                 "start_time": current_moment,
@@ -432,8 +427,6 @@ def choose(
                 if scribble_key not in scribbles:
                     scribbles[scribble_key] = scribble_value
 
-            # 기본 변수
-
             has_dived = {}
             has_leaped = {}
 
@@ -442,15 +435,11 @@ def choose(
             start_time = scribbles["start_time"]
             was_zero = scribbles["was_zero"]
 
-            # 자산 상태
-
             margin = account_state["positions"][symbol]["margin"]
             wallet_balance = account_state["wallet_balance"]
             direction = account_state["positions"][symbol]["direction"]
 
             entry_price = account_state["positions"][symbol]["entry_price"]
-
-            # 포지션 레벨
 
             if direction == "none":
                 position_level = 0
@@ -459,8 +448,6 @@ def choose(
 
             is_balance_left = margin / wallet_balance < 0.9
 
-            # 시그마와 표준편차
-
             time_passed = current_moment - start_time
             needed_sigma = (timedelta(hours=endure_time) - time_passed) / timedelta(
                 hours=endure_time
@@ -468,9 +455,7 @@ def choose(
             if len(current_observed_data[start_time:].index) > 1:
                 standard_deviation = current_observed_data[symbol][start_time:].std()
             else:
-                standard_deviation = 1000  # 절대 한번에는 못 변할 가격
-
-            # 실제 단계는 어디인가
+                standard_deviation = 1000  # impossible value to occur in a short time
 
             for turn in range(20):
 
@@ -495,8 +480,6 @@ def choose(
                 else:
                     has_dived["level_" + str(level)] = False
                     has_leaped["level_" + str(level)] = False
-
-            # 최종 결정
 
             if direction == "none":
                 scribbles["was_zero"] = True
@@ -525,7 +508,7 @@ def choose(
                         * (1 + escape_delta * level_constant.do(-next_level, 4 / 3)),
                     }
 
-                # 청산 노리기
+                # close position
                 decision[symbol]["later_down_close"] = {
                     "boundary": max(
                         entry_price - standard_deviation * needed_sigma, current_middle
@@ -547,7 +530,7 @@ def choose(
                         * (1 - escape_delta * level_constant.do(next_level, 4 / 3)),
                     }
 
-                # 청산 노리기
+                # close position
                 decision[symbol]["later_up_close"] = {
                     "boundary": min(
                         entry_price + standard_deviation * needed_sigma, current_middle
@@ -579,14 +562,14 @@ def choose(
 
             elif direction == "short":
 
-                # 청산 노리기
+                # close position
                 decision[symbol]["later_down_close"] = {
                     "boundary": current_middle,
                 }
 
             elif direction == "long":
 
-                # 청산 노리기
+                # close position
                 decision[symbol]["later_up_close"] = {
                     "boundary": current_middle,
                 }
@@ -624,14 +607,14 @@ def choose(
 
             elif direction == "long":
 
-                # 청산할 때 노리기
+                # close position
                 decision[symbol]["later_down_close"] = {
                     "boundary": current_middle,
                 }
 
             elif direction == "short":
 
-                # 청산할 때 노리기
+                # close position
                 decision[symbol]["later_down_close"] = {
                     "boundary": current_middle,
                 }
@@ -781,7 +764,7 @@ def choose(
             before_sma = current_indicators[-2][str((symbol, "Price", "SMA 11520"))]
             sma_delta = current_sma - before_sma
             i_speed = (sma_delta / current_price * 100) / (10 / (3600 * 24))
-            # 일속 몇 퍼센트인지
+            # percent per day
 
             margin = account_state["positions"][symbol]["margin"]
             wallet_balance = account_state["wallet_balance"]
@@ -800,7 +783,7 @@ def choose(
                 expected_sided_ratio = -i_speed / 50
                 expected_sided_ratio = min(0.15, expected_sided_ratio)
                 expected_sided_ratio = max(-0.15, expected_sided_ratio)
-                # 속도가 일속 1%일 때 전 재산의 2%를 넣는 비율로
+                # 2% of wallet balance when speed is 1%/day
 
                 expected_sided_margin = expected_sided_ratio * wallet_balance
 
@@ -820,7 +803,7 @@ def choose(
 
             current_price = current_observed_data[str((symbol, "Close"))]
 
-            base_loss = 1  # 퍼센트
+            base_loss = 1  # percent
 
             base_scribbles = {}
 
@@ -880,8 +863,8 @@ def choose(
         elif strategy == 107:
 
             acquire_ratio = 0.8
-            hold_duration = 1  # 분 단위
-            wait_duration = 10  # 분 단위
+            hold_duration = 1  # minutes
+            wait_duration = 10  # minutes
 
             wallet_balance = account_state["wallet_balance"]
             positions = account_state["positions"].values()
@@ -952,12 +935,12 @@ def choose(
 
         elif strategy == 110:
             symbols_count = len(standardize.get_basics()["target_symbols"])
-            acquire_ratio = 0.8 / symbols_count / (80 * 60 / 10)  # 비율
-            release_ratio = 0.8 / symbols_count / (20 * 60 / 10)  # 비율
-            max_scoops = 12  # 개수
-            next_condition = 2  # 퍼센트
-            release_condition = 0.5  # 퍼센트
-            max_hold_time = 80  # 분
+            acquire_ratio = 0.8 / symbols_count / (80 * 60 / 10)  # ratio
+            release_ratio = 0.8 / symbols_count / (20 * 60 / 10)  # ratio
+            max_scoops = 12  # count
+            next_condition = 2  # percent
+            release_condition = 0.5  # percent
+            max_hold_time = 80  # minutes
 
             current_price = current_observed_data[str((symbol, "Close"))]
 
@@ -1089,7 +1072,7 @@ def choose(
                             "margin": ratio_shift * wallet_balance,
                         }
 
-    # ■■■■■ 결과 보고 ■■■■■
+    # ■■■■■ return decision ■■■■■
 
     blank_symbols = []
     for symbol, symbol_decision in decision.items():

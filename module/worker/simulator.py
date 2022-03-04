@@ -26,17 +26,17 @@ from recipe import standardize
 class Simulator:
     def __init__(self, root):
 
-        # ■■■■■ 클래스 기초 ■■■■■
+        # ■■■■■ the basic ■■■■■
 
         self.root = root
 
-        # ■■■■■ 데이터 관리 ■■■■■
+        # ■■■■■ for data management ■■■■■
 
         self.workerpath = standardize.get_datapath() + "/simulator"
         os.makedirs(self.workerpath, exist_ok=True)
         self.datalocks = [threading.Lock() for _ in range(8)]
 
-        # ■■■■■ 기억하고 표시 ■■■■■
+        # ■■■■■ remember and display ■■■■■
 
         self.viewing_symbol = standardize.get_basics()["target_symbols"][0]
 
@@ -120,7 +120,7 @@ class Simulator:
         text = "아무 전략도 그려져 있지 않음"
         self.root.undertake(lambda t=text: self.root.label_19.setText(t), False)
 
-        # ■■■■■ 기본 실행 ■■■■■
+        # ■■■■■ default executions ■■■■■
 
         self.root.initialize_functions.append(
             lambda: self.display_lines(),
@@ -129,7 +129,7 @@ class Simulator:
             lambda: self.display_year_range(),
         )
 
-        # ■■■■■ 반복 타이머 ■■■■■
+        # ■■■■■ repetitive schedules ■■■■■
 
         self.root.scheduler.add_job(
             self.display_lines,
@@ -152,11 +152,11 @@ class Simulator:
             kwargs={"periodic": True},
         )
 
-        # ■■■■■ 웹소켓 스트리밍 ■■■■■
+        # ■■■■■ websocket streamings ■■■■■
 
         self.api_streamers = []
 
-        # ■■■■■ 인터넷 연결 상태에 따라 ■■■■■
+        # ■■■■■ invoked by the internet connection  ■■■■■
 
         connected_functrions = []
         check_internet.add_connected_functions(connected_functrions)
@@ -216,20 +216,19 @@ class Simulator:
         if not only_light_lines:
             task_id = stop_flag.make("display_simulation_lines")
 
-        # ■■■■■ 데이터가 있는지 확인 ■■■■■
+        # ■■■■■ check if the data exists ■■■■■
 
         with self.root.collector.datalocks[0]:
             if len(self.root.collector.candle_data) == 0:
                 return
 
-        # ■■■■■ 단위에 맞춘 현재 시각 ■■■■■
+        # ■■■■■ moment ■■■■■
 
-        # 10초 단위로 내림하기
         current_moment = datetime.now(timezone.utc).replace(microsecond=0)
         current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
         before_moment = current_moment - timedelta(seconds=10)
 
-        # ■■■■■ 최신 기록이 추가되길 기다리기 ■■■■■
+        # ■■■■■ wait for the latest data to be added ■■■■■
 
         if periodic:
             for _ in range(50):
@@ -242,7 +241,7 @@ class Simulator:
                         break
                 time.sleep(0.1)
 
-        # ■■■■■ 전략 확인 ■■■■■
+        # ■■■■■ check strategy ■■■■■
 
         strategy = self.calculation_settings["strategy"]
 
@@ -254,7 +253,7 @@ class Simulator:
                     strategy_details = strategy_tuple[2]
         is_fast_strategy = strategy_details[3]
 
-        # ■■■■■ 데이터 가져오기 ■■■■■
+        # ■■■■■ get the data ■■■■■
 
         symbol = self.viewing_symbol
         year = self.calculation_settings["year"]
@@ -295,7 +294,7 @@ class Simulator:
         with self.datalocks[2]:
             asset_trace = self.asset_trace.copy()
 
-        # ■■■■■ 지표 만들기 ■■■■■
+        # ■■■■■ make indicators ■■■■■
 
         indicators_script = self.root.strategist.indicators_script
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
@@ -318,7 +317,7 @@ class Simulator:
                     compiled_custom_script=compiled_indicators_script,
                 )
 
-        # ■■■■■ 오른쪽 끝 추가하기 ■■■■■
+        # ■■■■■ add the right end ■■■■■
 
         if not only_light_lines:
             if len(candle_data) > 0:
@@ -331,9 +330,9 @@ class Simulator:
         if len(asset_trace) > 0:
             asset_trace[observed_until] = asset_trace.iloc[-1]
 
-        # ■■■■■ 그리기 ■■■■■
+        # ■■■■■ draw ■■■■■
 
-        # 시장 평균 가격
+        # mark price
         is_light_line = True
         if (only_light_lines and is_light_line) or not only_light_lines:
             data_x = realtime_data["index"].astype(np.int64) / 10**9
@@ -351,7 +350,7 @@ class Simulator:
                     return
             self.root.undertake(job, False)
 
-        # 마지막 가격
+        # last price
         is_light_line = True
         if (only_light_lines and is_light_line) or not only_light_lines:
             data_x = aggregate_trades["index"].astype(np.int64) / 10**9
@@ -369,7 +368,7 @@ class Simulator:
                     return
             self.root.undertake(job, False)
 
-        # 마지막 거래량
+        # last trade volume
         is_light_line = True
         if (only_light_lines and is_light_line) or not only_light_lines:
             index_ar = aggregate_trades["index"].astype(np.int64) / 10**9
@@ -393,7 +392,7 @@ class Simulator:
                     return
             self.root.undertake(job, False)
 
-        # 주문록
+        # book tickers
         is_light_line = True
         if (only_light_lines and is_light_line) or not only_light_lines:
             data_x = realtime_data["index"].astype(np.int64) / 10**9
@@ -426,7 +425,7 @@ class Simulator:
                     return
             self.root.undertake(job, False)
 
-        # 가격 지표
+        # price indicators
         is_light_line = True if is_fast_strategy else False
         if (only_light_lines and is_light_line) or not only_light_lines:
             df = indicators[symbol]["Price"]
@@ -459,7 +458,7 @@ class Simulator:
                             return
                     self.root.undertake(lambda w=widget: w.clear(), False)
 
-        # 가격 움직임
+        # price movement
         is_light_line = False
         if (only_light_lines and is_light_line) or not only_light_lines:
             index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
@@ -481,7 +480,7 @@ class Simulator:
                     return
             self.root.undertake(job, False)
 
-        # 종가
+        # close price
         is_light_line = False
         if (only_light_lines and is_light_line) or not only_light_lines:
             close_ar = candle_data[(symbol, "Close")].to_numpy()
@@ -503,7 +502,7 @@ class Simulator:
                     return
             self.root.undertake(job, False)
 
-        # 흔들림
+        # wobbles
         is_light_line = False
         if (only_light_lines and is_light_line) or not only_light_lines:
             sr = candle_data[(symbol, "High")]
@@ -532,7 +531,7 @@ class Simulator:
                     return
             self.root.undertake(job, False)
 
-        # 열린 주문
+        # open orders
         is_light_line = True
         if (only_light_lines and is_light_line) or not only_light_lines:
             boundaries = [
@@ -564,7 +563,7 @@ class Simulator:
                             return
                     self.root.undertake(lambda w=widget: w.clear(), False)
 
-        # 거래량 지표
+        # trade volume indicators
         is_light_line = True if is_fast_strategy else False
         if (only_light_lines and is_light_line) or not only_light_lines:
             df = indicators[symbol]["Volume"]
@@ -597,7 +596,7 @@ class Simulator:
                             return
                     self.root.undertake(lambda w=widget: w.clear(), False)
 
-        # 거래량
+        # trade volume
         is_light_line = False
         if (only_light_lines and is_light_line) or not only_light_lines:
             sr = candle_data[(symbol, "Volume")]
@@ -614,7 +613,7 @@ class Simulator:
                     return
             self.root.undertake(job, False)
 
-        # 추상 지표
+        # abstract indicators indicators
         is_light_line = True if is_fast_strategy else False
         if (only_light_lines and is_light_line) or not only_light_lines:
             df = indicators[symbol]["Abstract"]
@@ -647,7 +646,7 @@ class Simulator:
                             return
                     self.root.undertake(lambda w=widget: w.clear(), False)
 
-        # 자산
+        # asset
         is_light_line = True
         if (only_light_lines and is_light_line) or not only_light_lines:
             data_x = asset_trace.index.to_numpy(dtype=np.int64) / 10**9
@@ -662,7 +661,7 @@ class Simulator:
                     return
             self.root.undertake(job, False)
 
-        # 미실현 수익 포함 자산
+        # asset with unrealized profit
         is_light_line = False
         if (only_light_lines and is_light_line) or not only_light_lines:
             if len(asset_trace) >= 2:
@@ -681,7 +680,7 @@ class Simulator:
                     return
             self.root.undertake(job, False)
 
-        # 매매 시점
+        # buy and sell
         is_light_line = True
         if (only_light_lines and is_light_line) or not only_light_lines:
             df = trade_record.loc[trade_record["Symbol"] == symbol]
@@ -714,7 +713,7 @@ class Simulator:
                     return
             self.root.undertake(job, False)
 
-        # 평균 단가
+        # entry price
         is_light_line = True
         if (only_light_lines and is_light_line) or not only_light_lines:
             entry_price = self.account_state["positions"][symbol]["entry_price"]
@@ -793,7 +792,7 @@ class Simulator:
         choices = [str(choice) for choice in choices]
 
         if years != choices:
-            # 가능한 연도가 선택지랑 다르면
+            # if it's changed
             widget = self.root.comboBox_5
             self.root.undertake(lambda w=widget: w.clear(), False)
             self.root.undertake(lambda w=widget, y=years: w.addItems(y), False)
@@ -820,9 +819,11 @@ class Simulator:
             lambda: self.root.plot_widget_2.getAxis("bottom").range[1], True
         )
         if range_end < 0:
-            range_end = 9223339636  # 너무 커서 pyqtgraph가 음수로 대답한 경우
+            # case when pyqtgraph passed negative value because it's too big
+            range_end = 9223339636
         else:
-            range_end = min(range_end, 9223339636)  # Pandas 최댓값으로 제한
+            # maximum value available in pandas
+            range_end = min(range_end, 9223339636)
         range_end = datetime.fromtimestamp(range_end, tz=timezone.utc)
 
         if stop_flag.find("display_simulation_range_information", task_id):
@@ -848,10 +849,10 @@ class Simulator:
         asset_changes = asset_changes.reindex(trade_record.index).fillna(value=1)
         symbol_mask = trade_record["Symbol"] == symbol
 
-        # 거래 횟수
+        # trade count
         total_change_count = len(asset_changes)
         symbol_change_count = len(asset_changes[symbol_mask])
-        # 거래량
+        # trade volume
         if len(trade_record) > 0:
             total_margin_ratio = trade_record["Margin Ratio"].sum()
         else:
@@ -860,7 +861,7 @@ class Simulator:
             symbol_margin_ratio = trade_record[symbol_mask]["Margin Ratio"].sum()
         else:
             symbol_margin_ratio = 0
-        # 자산 변화
+        # asset changes
         if len(asset_changes) > 0:
             total_asset_change = asset_changes.cumprod().iloc[-1]
             total_asset_change = (total_asset_change - 1) * 100
@@ -871,7 +872,7 @@ class Simulator:
             symbol_asset_change = (symbol_asset_change - 1) * 100
         else:
             symbol_asset_change = 0
-        # 최저 미실현 수익률
+        # least unrealized changes
         if len(unrealized_changes) > 0:
             min_unrealized_change = unrealized_changes.min()
         else:
@@ -961,7 +962,7 @@ class Simulator:
 
         prepare_step = 1
 
-        # ■■■■■ 변수를 정리하고 전략 확인 ■■■■■
+        # ■■■■■ default values and the strategy ■■■■■
 
         year = self.calculation_settings["year"]
         strategy = self.calculation_settings["strategy"]
@@ -1004,31 +1005,31 @@ class Simulator:
 
         prepare_step = 2
 
-        # ■■■■■ 그 연도의 관측 데이터 ■■■■■
+        # ■■■■■ observed data of the year ■■■■■
 
         if is_fast_strategy:
-            # 실시간 데이터는 온전히 가져오기
+            # get all
             with self.root.collector.datalocks[1]:
                 original_chunks = self.root.collector.realtime_data_chunks
                 realtime_data_chunks = copy.deepcopy(original_chunks)
             ar = np.concatenate(realtime_data_chunks)
             year_observed_data = process.apply(digitize.do, ar)
         else:
-            # 캔들 데이터는 해당 연도로 제한
+            # get only year range
             with self.root.collector.datalocks[0]:
                 df = self.root.collector.candle_data
                 year_observed_data = df[df.index.year == year].copy()
-            # 1시간 단위로 제한
+            # slice until last hour
             slice_until = year_observed_data.index[-1] + timedelta(seconds=10)
             slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
             slice_until -= timedelta(seconds=1)
             year_observed_data = year_observed_data[:slice_until]
-            # 선형 보간
+            # interpolate
             year_observed_data = year_observed_data.interpolate()
 
         prepare_step = 3
 
-        # ■■■■■ 사전 데이터와 계산 영역 준비 ■■■■■
+        # ■■■■■ prepare data and calculation range ■■■■■
 
         blank_trade_record = pd.DataFrame(
             columns=[
@@ -1076,8 +1077,8 @@ class Simulator:
 
         prepare_step = 4
 
-        # 보이는 범위만 임시로 계산할 경우
         if only_visible:
+            # when calculating only visible range
 
             previous_trade_record = blank_trade_record.copy()
             previous_asset_trace = blank_asset_trace.copy()
@@ -1104,8 +1105,8 @@ class Simulator:
             calculate_from = max(range_start, year_observed_data.index[0])
             calculate_until = min(range_end, year_observed_data.index[-1])
 
-        # 정식으로 계산할 경우
         else:
+            # when calculating properly
             try:
                 previous_trade_record = pd.read_pickle(trade_record_filepath)
                 previous_asset_trace = pd.read_pickle(asset_trace_filepath)
@@ -1137,7 +1138,7 @@ class Simulator:
 
         prepare_step = 5
 
-        # ■■■■■ 각 유닛 계산에 넣을 데이터 준비하기 ■■■■■
+        # ■■■■■ prepare per unit data ■■■■■
 
         if should_calculate:
 
@@ -1145,7 +1146,8 @@ class Simulator:
             indicators_script = self.root.strategist.indicators_script
             compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
-            slice_from = calculate_from - timedelta(days=7)  # 지표 생성을 위한 여유
+            slice_from = calculate_from - timedelta(days=7)
+            # a little more data for generation
             slice_to = calculate_until
             year_indicators = process.apply(
                 make_indicators.do,
@@ -1238,14 +1240,12 @@ class Simulator:
 
         prepare_step = 6
 
-        # ■■■■■ 월별 시뮬레이션 계산 ■■■■■
+        # ■■■■■ calculate ■■■■■
 
         if should_calculate:
 
-            # 프로세스 풀에 던져 넣기
             map_result = process.map_async(simulate_unit.do, input_data)
 
-            # 진행 경과 표시
             total_seconds = (calculate_until - calculate_from).total_seconds()
             while True:
                 if map_result.ready():
@@ -1261,7 +1261,7 @@ class Simulator:
 
         calculate_step = 1000
 
-        # ■■■■■ 시뮬레이션 결과 꺼내기 ■■■■■
+        # ■■■■■ get calculation result ■■■■■
 
         if should_calculate:
 
@@ -1304,7 +1304,7 @@ class Simulator:
             scribbles = previous_scribbles
             account_state = previous_account_state
 
-        # ■■■■■ 기억하고 표시 요청 ■■■■■
+        # ■■■■■ remember and present ■■■■■
 
         self.raw_trade_record = trade_record
         self.raw_unrealized_changes = unrealized_changes
@@ -1314,7 +1314,7 @@ class Simulator:
         self.about_viewing = {"year": year, "strategy": strategy}
         self.present()
 
-        # ■■■■■ 임시 계산이 아니었고 무언가 계산했다면 파일로 저장 ■■■■■
+        # ■■■■■ save if properly calculated ■■■■■
 
         if not only_visible and should_calculate:
 
@@ -1340,12 +1340,11 @@ class Simulator:
             scribbles = self.raw_scribbles.copy()
             account_state = self.raw_account_state.copy()
 
-        # trade_record 인덱스는 asset_trace 인덱스의 부분집합
-        # 인덱스 통일
+        # trade record index is the subset of asset trace index
         base_index = asset_trace.index
         trade_record = trade_record.reindex(base_index)
 
-        # ■■■■■ 전략에 대한 정보 구하기 ■■■■
+        # ■■■■■ get strategy details ■■■■
 
         if self.about_viewing is None:
             should_parallalize = False
@@ -1362,9 +1361,7 @@ class Simulator:
             unit_length = strategy_details[2]
             is_fast_strategy = strategy_details[3]
 
-        # ■■■■■ 자산 변화에 다른 변인들 후반영하기 ■■■■
-
-        # asset_trace에 레버리지와 수수료 후반영
+        # ■■■■■ apply other factors to the asset trace ■■■■
 
         if should_parallalize:
             if is_fast_strategy:
@@ -1396,7 +1393,7 @@ class Simulator:
             unit_asset_trace = unit_asset_trace_list[turn]
             unit_trade_record = unit_trade_record_list[turn]
 
-            # 레버리지
+            # leverage
             unit_asset_shifts = unit_asset_trace.diff()
             if len(unit_asset_shifts) > 0:
                 unit_asset_shifts.iloc[0] = 0
@@ -1407,7 +1404,7 @@ class Simulator:
                 1 + unit_asset_shifts / lazy_unit_asset_trace * leverage
             )
 
-            # 수수료
+            # fee
             month_fees = unit_trade_record["Role"].copy()
             month_fees[month_fees == "maker"] = 0
             month_fees[month_fees == "taker"] = taker_fee
@@ -1417,7 +1414,7 @@ class Simulator:
                 1 - (month_fees / 100) * month_margin_ratios * leverage
             )
 
-            # 종합
+            # altogether
             month_asset_changes = (
                 unit_asset_changes_by_leverage * month_asset_changes_by_fee
             )
@@ -1436,7 +1433,7 @@ class Simulator:
         presentation_scribbles = scribbles.copy()
         presentation_account_state = account_state.copy()
 
-        # ■■■■■ 기억하기 ■■■■■
+        # ■■■■■ remember ■■■■■
 
         self.scribbles = presentation_scribbles
         self.account_state = presentation_account_state
@@ -1447,7 +1444,7 @@ class Simulator:
         with self.datalocks[2]:
             self.asset_trace = presentation_asset_trace
 
-        # ■■■■■ 표시하기 ■■■■■
+        # ■■■■■ display ■■■■■
 
         self.display_lines()
         self.display_range_information()
@@ -1650,7 +1647,7 @@ class Simulator:
         if len(peak_sr) < 12:
             question = [
                 "계산 데이터가 너무 짧거나 없습니다.",
-                "유의미한 최저 미실현 수익률 목록을 알아낼 수 없습니다.",
+                "유의미한 least unrealized changes 목록을 알아낼 수 없습니다.",
                 ["확인"],
             ]
             self.root.ask(question)
@@ -1660,7 +1657,7 @@ class Simulator:
                 for index, peak_value in peak_sr.iteritems()
             ]
             question = [
-                "최저 미실현 수익률을 기록한 지점들입니다.",
+                "least unrealized changes을 기록한 지점들입니다.",
                 "\n".join(text_lines),
                 ["확인"],
             ]

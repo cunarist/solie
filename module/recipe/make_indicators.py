@@ -11,11 +11,11 @@ from recipe import standardize
 
 def do(observed_data, strategy, compiled_custom_script):
 
-    # ■■■■■ 형식 변환 ■■■■■
+    # ■■■■■ interpolate nans ■■■■■
 
     observed_data = observed_data.interpolate()
 
-    # ■■■■■ 기본값 준비 ■■■■■
+    # ■■■■■ basic values ■■■■■
 
     observed_data_lock = threading.Lock()
     blank_columns = itertools.product(
@@ -32,7 +32,7 @@ def do(observed_data, strategy, compiled_custom_script):
             dtype=np.float32,
         )
 
-    # ■■■■■ 내용이 없으면 그냥 빈 값 반환 ■■■■■
+    # ■■■■■ return empty indicators if the observed data is empty ■■■■■
 
     if len(observed_data.dropna()) < 3:
         for column_name, new_indicator in new_indicators.items():
@@ -40,7 +40,7 @@ def do(observed_data, strategy, compiled_custom_script):
         indicators = pd.concat(new_indicators.values(), axis="columns")
         return indicators
 
-    # ■■■■■ 전략별 지표 생성 ■■■■■
+    # ■■■■■ make individual indicators ■■■■■
 
     def job(symbol):
 
@@ -187,7 +187,7 @@ def do(observed_data, strategy, compiled_custom_script):
 
         elif strategy == 110:
 
-            border = 0.5  # 퍼센트 단위
+            border = 0.5  # percent
 
             with observed_data_lock:
                 close = observed_data[(symbol, "Close")].copy()
@@ -207,7 +207,7 @@ def do(observed_data, strategy, compiled_custom_script):
             diff[diff < -border] = diff + border
             new_indicators[(symbol, "Abstract", "Diff")] = diff
 
-            diff_sum = diff.rolling(int(600 / 10)).sum() / 6  # 분*퍼센트 단위
+            diff_sum = diff.rolling(int(600 / 10)).sum() / 6  # percent*minute
             new_indicators[(symbol, "Abstract", "Diff Sum (#BB00FF)")] = diff_sum
 
             with observed_data_lock:
@@ -223,7 +223,7 @@ def do(observed_data, strategy, compiled_custom_script):
 
     thread.map(job, standardize.get_basics()["target_symbols"])
 
-    # ■■■■■ 생성된 지표들 하나로 합치기 ■■■■■
+    # ■■■■■ concatenate individual indicators into one ■■■■■
 
     for column_name, new_indicator in new_indicators.items():
         new_indicator.name = column_name

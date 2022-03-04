@@ -16,7 +16,7 @@ def fixed_float(number, width=4, positive_sign=False):
         width = 4
 
     if number < 0 or (positive_sign and number >= 0):
-        # 부호가 붙는 경우
+        # when sign should be included
         absolute_limit = 10 ** (width - 1)
     else:
         absolute_limit = 10**width

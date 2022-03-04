@@ -25,17 +25,17 @@ from recipe import find_goodies
 class Manager:
     def __init__(self, root):
 
-        # ■■■■■ 클래스 기초 ■■■■■
+        # ■■■■■ the basic ■■■■■
 
         self.root = root
 
-        # ■■■■■ 데이터 관리 ■■■■■
+        # ■■■■■ for data management ■■■■■
 
         self.workerpath = standardize.get_datapath() + "/manager"
         os.makedirs(self.workerpath, exist_ok=True)
         self.datalocks = [threading.Lock() for _ in range(8)]
 
-        # ■■■■■ 기억하고 표시 ■■■■■
+        # ■■■■■ remember and display ■■■■■
 
         self.api_requester = ApiRequester()
 
@@ -59,7 +59,7 @@ class Manager:
             lambda s=script: self.root.plainTextEdit.setPlainText(s), False
         )
 
-        # ■■■■■ 기본 실행 ■■■■■
+        # ■■■■■ default executions ■■■■■
 
         self.root.initialize_functions.append(
             lambda: self.check_binance_limits(),
@@ -68,7 +68,7 @@ class Manager:
             lambda: self.occupy_license_key(),
         )
 
-        # ■■■■■ 반복 타이머 ■■■■■
+        # ■■■■■ repetitive schedules ■■■■■
 
         self.root.scheduler.add_job(
             self.check_online_status,
@@ -119,11 +119,11 @@ class Manager:
             executor="thread_pool_executor",
         )
 
-        # ■■■■■ 웹소켓 스트리밍 ■■■■■
+        # ■■■■■ websocket streamings ■■■■■
 
         self.api_streamers = []
 
-        # ■■■■■ 인터넷 연결 상태에 따라 ■■■■■
+        # ■■■■■ invoked by the internet connection  ■■■■■
 
         connected_functrions = []
         check_internet.add_connected_functions(connected_functrions)
@@ -169,14 +169,14 @@ class Manager:
         self.root.undertake(job, False)
 
     def add_log_output(self, *args, **kwargs):
-        # 꺼내기
+        # get the data
         log_message = args[0]
 
-        # 가공
+        # organize
         message_lines = log_message.split("\n")
         output_lines = []
         for original_line in message_lines:
-            # 너무 긴 줄은 분할하기
+            # split long lines
             if original_line == "":
                 continue
             leading_spaces = len(original_line) - len(original_line.lstrip())
@@ -187,21 +187,21 @@ class Manager:
                 indented_line = textwrap.indent(divided_line, " " * leading_spaces)
                 output_lines.append(indented_line)
         if len(output_lines) > 160:
-            # 줄이 너무 많은 경우에는 앞뒤 합쳐 160줄만 남기기
+            # only preserve top and bottom if the text has too many lines
             front_lines = output_lines[:80]
             middle_lines = ["", "...", ""]
             back_lines = output_lines[-80:]
             output_lines = front_lines + middle_lines + back_lines
         log_output = "\n".join(output_lines)
 
-        # 추가
+        # add to log list
         self.log_outputs.append(log_output)
         preview_text = log_output.split("\n")[0]
         self.root.undertake(
             lambda p=preview_text: self.root.listWidget.addItem(p), False
         )
 
-        # 저장
+        # save to file
         filepath = str(self.executed_time)
         filepath = filepath.replace(":", "_")
         filepath = filepath.replace(" ", "_")

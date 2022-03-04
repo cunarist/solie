@@ -13,7 +13,7 @@ import time
 userpath = str(pathlib.Path.home())
 condapath = f"{userpath}/miniconda3/condabin/conda.bat"
 
-# ■■■■■ 스플래시 창 표시 ■■■■■
+# ■■■■■ show splash screen ■■■■■
 
 display_event = threading.Event()
 
@@ -34,7 +34,7 @@ def job():
 threading.Thread(target=job, daemon=True).start()
 display_event.wait()
 
-# ■■■■■ 콘다가 설치되어 있는지 ■■■■■
+# ■■■■■ detect if conda is intalled ■■■■■
 
 if not os.path.isdir(f"{userpath}/miniconda3"):
 
@@ -67,7 +67,7 @@ if not os.path.isdir(f"{userpath}/miniconda3"):
 
         sys.exit()
 
-# ■■■■■ 가상 환경이 존재하는지 ■■■■■
+# ■■■■■ detect if python virtual environment exists ■■■■■
 
 commands = [
     f"{condapath} activate base",
@@ -101,9 +101,9 @@ if "solsol" not in environments:
         creationflags=subprocess.CREATE_NO_WINDOW,
     )
 
-# ■■■■■ 패키지는 다 설치되어 있는지 ■■■■■
+# ■■■■■ detect installed packages ■■■■■
 
-# pip list는 시스템 파이썬과 혼동하는 경우도 있어 사용하지 않음
+# "pip list" is not used because it sometimes looks up at system python
 
 commands = [
     f"{condapath} activate solsol",
@@ -161,7 +161,7 @@ for pip_requirement in pip_requirements:
             creationflags=subprocess.CREATE_NO_WINDOW,
         )
 
-# ■■■■■ 코드 편집기 설정 파일 마련 ■■■■■
+# ■■■■■ code editor settings file ■■■■■
 
 if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
     # running in a PyInstaller bundle
@@ -173,9 +173,9 @@ else:
         shutil.copy("./resource/vscode_settings.json", "./.vscode")
         os.rename("./.vscode/vscode_settings.json", "./.vscode/settings.json")
 
-# ■■■■■ 실행 ■■■■■
+# ■■■■■ run the real app ■■■■■
 
-# 새 프로세스에서 관리자 권한으로
+# with administrator priviliges on other process
 
 balloon_image = tk.PhotoImage(file="./resource/balloon_5.png")
 balloon.configure(image=balloon_image)
@@ -202,6 +202,6 @@ elif platform.system() == "Darwin":  # macOS
 
     sys.exit()
 
-# ■■■■■ 스플래시 창 조금만 더 보이기 ■■■■■
+# ■■■■■ show splash screen a bit more ■■■■■
 
 time.sleep(3)

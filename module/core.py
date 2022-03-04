@@ -142,7 +142,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
         super().__init__()
         self.setupUi(self)
 
-        # ■■■■■ 패키지 전역 설정 ■■■■■
+        # ■■■■■ package global settings ■■■■■
 
         os.get_terminal_size = lambda *args: os.terminal_size((72, 80))
         pd.set_option("display.precision", 3)
@@ -150,7 +150,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
         pd.set_option("display.max_rows", 20)
         pyqtgraph.setConfigOptions(antialias=True)
 
-        # ■■■■■ 패키지 덮어쓰기 ■■■■■
+        # ■■■■■ monkey-patching packages ■■■■■
 
         original_key_press_event = QtWidgets.QPlainTextEdit.keyPressEvent
 
@@ -203,7 +203,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
         original_focus_out_event = QtWidgets.QPlainTextEdit.focusOutEvent
 
         def job(self, event):
-            # 블랙 스타일 적용
+            # apply black formatter style
             scroll_position = self.verticalScrollBar().value()
             text = self.toPlainText()
             try:
@@ -212,7 +212,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             except black.InvalidInput:
                 pass
             self.verticalScrollBar().setValue(scroll_position)
-            # 원래 함수도 실행하기
+            # run original function as well
             return original_focus_out_event(self, event)
 
         QtWidgets.QPlainTextEdit.focusOutEvent = job
@@ -226,7 +226,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
         QtWebEngineCore.QWebEnginePage.acceptNavigationRequest = job
 
-        # ■■■■■ 화면 표시 기본 ■■■■■
+        # ■■■■■ basic display ■■■■■
 
         self.scale_factor = self.logicalDpiX() / 96
 
@@ -255,12 +255,12 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
         self.splitter.setSizes([3, 1, 1, 2])
         self.splitter_2.setSizes([3, 1, 1, 2])
 
-        # ■■■■■ 닫을 때의 절차에 대한 것들 ■■■■■
+        # ■■■■■ app closing settings ■■■■■
 
         self.should_finalize = False
         self.should_confirm_closing = True
 
-        # ■■■■■ 정식 위젯을 숨기고 가동 절차 시작하기 ■■■■■
+        # ■■■■■ hide the main widgets and go on to boot phase ■■■■■
 
         self.gauge.hide()
         self.board.hide()
@@ -268,11 +268,11 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
     def boot(self):
 
-        # ■■■■■ 인터넷 상태 확인 시작 ■■■■■
+        # ■■■■■ start monitoring the internet ■■■■■
 
         check_internet.start_monitoring()
 
-        # ■■■■■ 시스템 상태 확인 ■■■■■
+        # ■■■■■ check system status ■■■■■
 
         while not check_internet.connected():
             question = [
@@ -283,13 +283,13 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             self.ask(question)
             time.sleep(1)
 
-        # ■■■■■ 라이센스 키 확인 ■■■■■
+        # ■■■■■ check license key ■■■■■
 
         if standardize.get_license_key() is None:
 
             license_area = None
 
-            # 임시 위젯 그리기
+            # add temporary widget
             def job():
                 nonlocal license_area
                 license_area = LicenseArea(self)
@@ -299,13 +299,13 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
             license_area.done_event.wait()
 
-            # 임시 위젯 지우기
+            # remove temporary widget
             def job():
                 license_area.setParent(None)
 
             self.undertake(job, True)
 
-        # ■■■■■ 데이터 폴더 확인 ■■■■■
+        # ■■■■■ check data folder ■■■■■
 
         if standardize.get_datapath() is None:
 
@@ -336,13 +336,13 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             standardize.set_datapath(datapath)
             standardize.load()
 
-        # ■■■■■ 기본값 설정 확인 ■■■■■
+        # ■■■■■ check basics ■■■■■
 
         if standardize.get_basics() is None:
 
             setup_area = None
 
-            # 임시 위젯 그리기
+            # add temporary widget
             def job():
                 nonlocal setup_area
                 setup_area = SetupArea(self)
@@ -352,13 +352,13 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
             setup_area.done_event.wait()
 
-            # 임시 위젯 지우기
+            # remove temporary widget
             def job():
                 setup_area.setParent(None)
 
             self.undertake(job, True)
 
-        # ■■■■■ 안내 프레임 ■■■■■
+        # ■■■■■ guide frame ■■■■■
 
         guide_frame = None
 
@@ -369,21 +369,14 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
         self.undertake(job, True)
 
-        # ■■■■■ 멀티프로세싱 시작 ■■■■■
+        # ■■■■■ multiprocessing ■■■■■
 
         process.start_pool()
 
-        # ■■■■■ 데이터 요청 준비 ■■■■■
-
-        api_requester = ApiRequester()
-
-        # ■■■■■ 대상 심볼 마련 ■■■■■
+        # ■■■■■ get information about target symbols ■■■■■
 
         target_symbols = standardize.get_basics()["target_symbols"]
-
-        # ■■■■■ 심볼에 대한 정보들 마련 ■■■■■
-
-        response = api_requester.coinstats("GET", "/public/v1/coins")
+        response = ApiRequester().coinstats("GET", "/public/v1/coins")
         about_coins = response["coins"]
 
         coin_names = {}
@@ -409,7 +402,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             self.alias_to_symbol[alias] = symbol
             self.symbol_to_alias[symbol] = alias
 
-        # ■■■■■ 심볼과 관련된 틀 마련 ■■■■■
+        # ■■■■■ make widgets according to the target symbols list ■■■■■
 
         box_size = 12
         name_text_size = 13
@@ -559,7 +552,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
         self.undertake(job, True)
 
-        # ■■■■■ 그래프 위젯 ■■■■■
+        # ■■■■■ graph widgets ■■■■■
 
         def job():
             self.plot_widget = pyqtgraph.PlotWidget()
@@ -678,14 +671,14 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
                 "price_movement": plot_item.plot(pen="#3C7800", connect="finite"),
                 "close_price": plot_item.plot(pen="#3C7800", connect="finite"),
                 "sell": plot_item.plot(
-                    pen=pyqtgraph.mkPen(None),  # 안 보이게
+                    pen=pyqtgraph.mkPen(None),  # invisible line
                     symbol="o",
                     symbolBrush="#0055FF",
                     symbolPen=pyqtgraph.mkPen("#BBBBBB"),
                     symbolSize=int(self.scale_factor * 8),
                 ),
                 "buy": plot_item.plot(
-                    pen=pyqtgraph.mkPen(None),  # 안 보이게
+                    pen=pyqtgraph.mkPen(None),  # invisible line
                     symbol="o",
                     symbolBrush="#FF3300",
                     symbolPen=pyqtgraph.mkPen("#BBBBBB"),
@@ -839,14 +832,14 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
                 "price_movement": plot_item_2.plot(pen="#3C7800", connect="finite"),
                 "close_price": plot_item_2.plot(pen="#3C7800", connect="finite"),
                 "sell": plot_item_2.plot(
-                    pen=pyqtgraph.mkPen(None),  # 안 보이게
+                    pen=pyqtgraph.mkPen(None),  # invisible line
                     symbol="o",
                     symbolBrush="#0055FF",
                     symbolPen=pyqtgraph.mkPen("#BBBBBB"),
                     symbolSize=int(self.scale_factor * 8),
                 ),
                 "buy": plot_item_2.plot(
-                    pen=pyqtgraph.mkPen(None),  # 안 보이게
+                    pen=pyqtgraph.mkPen(None),  # invisible line
                     symbol="o",
                     symbolBrush="#FF3300",
                     symbolPen=pyqtgraph.mkPen("#BBBBBB"),
@@ -882,9 +875,9 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
         self.undertake(job, True)
 
-        # ■■■■■ 시뮬레이션 전략들 준비 ■■■■■
+        # ■■■■■ intergrated strategies ■■■■■
 
-        # 사용 가능 / 병렬 계산 여부 / 분할 주기 / 고속 결정 여부
+        # usability / is parallel calculation / divided unit length / is fast strategy
         self.strategy_tuples = [
             (0, "직접 짜는 나만의 전략"),
             (1, "10초마다 느리게 랜덤으로 주문 넣기", [True, True, 7, False]),
@@ -927,7 +920,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
             self.undertake(job, True)
 
-        # ■■■■■ 관리 메뉴 ■■■■■
+        # ■■■■■ submenus ■■■■■
 
         def job():
             action_menu = QtWidgets.QMenu(self)
@@ -990,14 +983,14 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
         self.undertake(job, True)
 
-        # ■■■■■ 자동으로 실행할 준비 ■■■■■
+        # ■■■■■ prepare auto executions ■■■■■
 
         self.initialize_functions = []
         self.finalize_functions = []
         self.scheduler = BlockingScheduler(timezone="UTC")
         self.scheduler.add_executor(ThreadPoolExecutor(), "thread_pool_executor")
 
-        # ■■■■■ 일꾼들 ■■■■■
+        # ■■■■■ workers ■■■■■
 
         self.collector = Collector(self)
         self.transactor = Transactor(self)
@@ -1005,7 +998,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
         self.strategist = Strategiest(self)
         self.manager = Manager(self)
 
-        # ■■■■■ 로그는 리스트 위젯으로 보이기 ■■■■■
+        # ■■■■■ prepare logging ■■■■■
 
         log_handler = LogHandler(self.manager.add_log_output)
         log_format = "■ %(asctime)s.%(msecs)03d %(levelname)s\n\n%(message)s"
@@ -1019,7 +1012,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
         logger.setLevel(1)
         logger.log(1, "")
 
-        # ■■■■■ 이벤트에 함수 연결 ■■■■■
+        # ■■■■■ connect events to functions ■■■■■
 
         def job():
 
@@ -1137,7 +1130,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
         self.undertake(job, True)
 
-        # ■■■■■ 초기 실행 함수들 ■■■■■
+        # ■■■■■ initialize functions ■■■■■
 
         def job():
             guide_frame.change_text("초기 실행 중입니다.")
@@ -1160,25 +1153,25 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
                 break
             time.sleep(0.1)
 
-        # ■■■■■ 반복 타이머 시작 ■■■■■
+        # ■■■■■ start repetitive timer ■■■■■
 
         thread.apply_async(lambda: self.scheduler.start())
 
-        # ■■■■■ 마무리 절차 활성화 ■■■■■
+        # ■■■■■ activate finalization ■■■■■
 
         self.should_finalize = True
 
-        # ■■■■■ 화면이 채워질 때까지 잠시 대기 ■■■■■
+        # ■■■■■ wait until the contents are filled ■■■■■
 
         time.sleep(1)
 
-        # ■■■■■ 내용 위젯 보이기 ■■■■■
+        # ■■■■■ show main widgets ■■■■■
 
         self.undertake(lambda: guide_frame.setParent(None), True)
         self.undertake(lambda: self.board.show(), True)
         self.undertake(lambda: self.gauge.show(), True)
 
-    # 메인 쓰레드 속에서 함수를 실행하켜 줌
+    # takes function and run it on the main thread
     def undertake(self, job, wait_return, called_remotely=False, holder=None):
 
         if not called_remotely:
@@ -1195,7 +1188,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             holder[1] = returned
             holder[0].set()
 
-    # 질문을 띄우고 응답할 때까지 해당 스택을 대기시켜 줌
+    # show an ask popup and blocks the stack
     def ask(self, question):
 
         ask_popup = None
@@ -1217,13 +1210,13 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
         return ask_popup.answer
 
 
-# ■■■■■ 앱 ■■■■■
+# ■■■■■ app ■■■■■
 
 app = QtWidgets.QApplication(sys.argv)
 
-# ■■■■■ 테마 ■■■■■
+# ■■■■■ theme ■■■■■
 
-# 이 부분은 앱이 만들어진 이후 창이 만들어지기 이전에 완수해야 함
+# this part should be done after creating the app and before creating the window
 QtGui.QFontDatabase.addApplicationFont("./resource/consolas.ttf")
 QtGui.QFontDatabase.addApplicationFont("./resource/noto_sans_kr.otf")
 default_font = QtGui.QFont("Noto Sans KR", 9)
@@ -1231,11 +1224,11 @@ default_font = QtGui.QFont("Noto Sans KR", 9)
 app.setStyle("Fusion")
 app.setFont(default_font)
 
-# ■■■■■ 창 ■■■■■
+# ■■■■■ window ■■■■■
 
 window = Window()
 
-# ■■■■■ 보이기 ■■■■■
+# ■■■■■ show ■■■■■
 
 window.show()
 sys.exit(getattr(app, "exec")())

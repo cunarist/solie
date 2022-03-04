@@ -15,15 +15,15 @@ class LicenseArea(QtWidgets.QScrollArea):
 
     def __init__(self, root):
 
-        # ■■■■■ 기본 ■■■■■
+        # ■■■■■ the basic ■■■■■
 
         super().__init__()
 
-        # ■■■■■ 데이터 요청 준비 ■■■■■
+        # ■■■■■ prepare the api requester ■■■■■
 
         api_requester = ApiRequester()
 
-        # ■■■■■ 전체 형태 ■■■■■
+        # ■■■■■ full structure ■■■■■
 
         self.setWidgetResizable(True)
         self.setStyleSheet(
@@ -36,7 +36,7 @@ class LicenseArea(QtWidgets.QScrollArea):
             """
         )
 
-        # ■■■■■ 큰 틀 ■■■■■
+        # ■■■■■ full layout ■■■■■
 
         full_widget = QtWidgets.QWidget()
         self.setWidget(full_widget)
@@ -44,9 +44,9 @@ class LicenseArea(QtWidgets.QScrollArea):
         cards_layout = QtWidgets.QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
-        # ■■■■■ 상단 여백 ■■■■■
+        # ■■■■■ top spacing ■■■■■
 
-        # 확장기
+        # spacing
         spacer = QtWidgets.QSpacerItem(
             0,
             0,
@@ -55,9 +55,9 @@ class LicenseArea(QtWidgets.QScrollArea):
         )
         cards_layout.addItem(spacer)
 
-        # ■■■■■ 카드 ■■■■■
+        # ■■■■■ a card ■■■■■
 
-        # 카드 구조
+        # card structure
         card = QtWidgets.QGroupBox(objectName="card")
         card.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
@@ -66,7 +66,7 @@ class LicenseArea(QtWidgets.QScrollArea):
         card_layout = QtWidgets.QVBoxLayout(card)
         cards_layout.addWidget(card)
 
-        # 확장기
+        # spacing
         spacer = QtWidgets.QSpacerItem(
             0,
             0,
@@ -75,7 +75,7 @@ class LicenseArea(QtWidgets.QScrollArea):
         )
         card_layout.addItem(spacer)
 
-        # 제목
+        # title
         main_text = QtWidgets.QLabel(
             "쏠쏠 라이센스 키를 입력하세요.",
             alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
@@ -86,14 +86,14 @@ class LicenseArea(QtWidgets.QScrollArea):
         main_text.setWordWrap(True)
         card_layout.addWidget(main_text)
 
-        # 여백
+        # spacing
         spacing_text = QtWidgets.QLabel("")
         spacing_text_font = QtGui.QFont()
         spacing_text_font.setPointSize(3)
         spacing_text.setFont(spacing_text_font)
         card_layout.addWidget(spacing_text)
 
-        # 설명
+        # explanation
         detail_text = QtWidgets.QLabel(
             "정확히 입력해야 합니다.",
             alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
@@ -101,14 +101,14 @@ class LicenseArea(QtWidgets.QScrollArea):
         detail_text.setWordWrap(True)
         card_layout.addWidget(detail_text)
 
-        # 여백
+        # spacing
         spacing_text = QtWidgets.QLabel("")
         spacing_text_font = QtGui.QFont()
         spacing_text_font.setPointSize(3)
         spacing_text.setFont(spacing_text_font)
         card_layout.addWidget(spacing_text)
 
-        # 입력
+        # input
         this_layout = QtWidgets.QHBoxLayout()
         card_layout.addLayout(this_layout)
         spacer = QtWidgets.QSpacerItem(
@@ -134,7 +134,7 @@ class LicenseArea(QtWidgets.QScrollArea):
         )
         this_layout.addItem(spacer)
 
-        # 확장기
+        # spacing
         spacer = QtWidgets.QSpacerItem(
             0,
             0,
@@ -143,9 +143,9 @@ class LicenseArea(QtWidgets.QScrollArea):
         )
         card_layout.addItem(spacer)
 
-        # ■■■■■ 카드 ■■■■■
+        # ■■■■■ a card ■■■■■
 
-        # 라이센스 키 확인 함수
+        # function for checking license key
         def job(*args):
             widget = key_input
             license_key = root.undertake(lambda w=widget: w.text(), True)
@@ -165,7 +165,7 @@ class LicenseArea(QtWidgets.QScrollArea):
                 ]
                 root.ask(question)
 
-        # 카드 구조
+        # card structure
         card = QtWidgets.QGroupBox(objectName="card")
         card.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
@@ -174,7 +174,7 @@ class LicenseArea(QtWidgets.QScrollArea):
         card_layout = QtWidgets.QHBoxLayout(card)
         cards_layout.addWidget(card)
 
-        # 확인 버튼
+        # confirm button
         confirm_button = QtWidgets.QPushButton("확인", card)
         outsource.do(confirm_button.clicked, job)
         confirm_button.setSizePolicy(
@@ -183,9 +183,9 @@ class LicenseArea(QtWidgets.QScrollArea):
         )
         card_layout.addWidget(confirm_button)
 
-        # ■■■■■ 하단 여백 ■■■■■
+        # ■■■■■ bottom spacing ■■■■■
 
-        # 확장기
+        # spacing
         spacer = QtWidgets.QSpacerItem(
             0,
             0,

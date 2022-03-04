@@ -19,7 +19,7 @@ def do(
         aggtrade_prices = []
         aggtrade_volumes = []
         for _, aggtrade in sorted(aggtrades.items()):
-            # 과거에서 최근 순으로 정렬됨
+            # sorted by time
             aggtrade_time = datetime.fromtimestamp(
                 aggtrade["T"] / 1000, tz=timezone.utc
             )
@@ -30,12 +30,13 @@ def do(
         can_write = True
 
         if len(aggtrade_prices) == 0:
-            # 거래 자체가 없는 경우
+            # when there are no trades
             inspect_sr = recent_candle_data[(symbol, "Close")]
             inspect_sr = inspect_sr.sort_index()
             last_prices = inspect_sr[:fill_moment].dropna()
             if len(last_prices) == 0:
-                # 처음 실행해서 유의미한 앞 데이터가 아예 없는 경우
+                # when there are no previous data
+                # because new data folder was created
                 can_write = False
                 last_price = 0
             else:

@@ -72,7 +72,7 @@ class ApiRequester:
         parameters = {"url": url, "headers": headers}
         raw_response = self._request(http_method, parameters)
 
-        # 내용이 유효하다고 믿고 가공 시도
+        # decode to json
         try:
             response = raw_response.json()
         except json.decoder.JSONDecodeError:
@@ -81,14 +81,14 @@ class ApiRequester:
             text += f" (HTTP {status_code})"
             raise ApiRequestError(text)
 
-        # API 사용량 기록
+        # record api usage
         for header_key in raw_response.headers.keys():
             if "X-MBX" in header_key:
                 write_value = raw_response.headers[header_key]
                 current_time = datetime.now(timezone.utc)
                 self.used_rates[server][header_key] = (write_value, current_time)
 
-        # 응답 내용에 오류는 없는지 파악
+        # check if the response contains error message
         if "code" in response and response["code"] != 200:
             error_code = response["code"]
             error_message = response["msg"]

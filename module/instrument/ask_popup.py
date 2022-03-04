@@ -10,37 +10,37 @@ class AskPopup(QtWidgets.QWidget):
     done_event = threading.Event()
 
     def showEvent(self, event):  # noqa:N802
-        # 크기를 창에 꽉 맞추는 꼭 필요한 코드
+        # needed for filling the window when resized
         self.setGeometry(self.parent().rect())
 
     def eventFilter(self, source, event):  # noqa:N802
-        # 크기를 창에 꽉 맞추는 꼭 필요한 코드
+        # needed for filling the window when resized
         if event.type() == event.Type.Resize:
             self.setGeometry(source.rect())
         return super().eventFilter(source, event)
 
     def __init__(self, root, question):
 
-        # ■■■■■ 기본 ■■■■■
+        # ■■■■■ the basic ■■■■■
 
         super().__init__(root)
 
-        # ■■■■■ 특성 설정 ■■■■■
+        # ■■■■■ set properties ■■■■■
 
-        # 창 크기 변경 시 꽉 채우기 위해 꼭 필요
+        # needed for filling the window when resized
         root.installEventFilter(self)
         self.setObjectName("sheet")
 
-        # ■■■■■ 이미 있다면 완료 처리하고 다시 미완 처리하기 ■■■■■
+        # ■■■■■ in case other ask popup exists ■■■■■
 
         self.done_event.set()
         self.done_event.clear()
 
-        # ■■■■■ 응답 준비 ■■■■■
+        # ■■■■■ prepare answer ■■■■■
 
         self.answer = 0
 
-        # ■■■■■ 전체 형태 ■■■■■
+        # ■■■■■ full structure ■■■■■
 
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_StyledBackground)
@@ -64,13 +64,13 @@ class AskPopup(QtWidgets.QWidget):
             """
         )
 
-        # ■■■■■ 큰 틀 ■■■■■
+        # ■■■■■ full layout ■■■■■
 
         full_layout = QtWidgets.QHBoxLayout(self)
 
-        # ■■■■■ 실제 팝업 상자 ■■■■■
+        # ■■■■■ visaul box ■■■■■
 
-        # 상자
+        # box
         content_box = QtWidgets.QGroupBox(
             autoFillBackground=True, objectName="content_box"
         )
@@ -80,7 +80,7 @@ class AskPopup(QtWidgets.QWidget):
         content_box_layout = QtWidgets.QVBoxLayout(content_box)
         full_layout.addWidget(content_box)
 
-        # 닫기 버튼을 포함하는 줄
+        # line containing the close button
         this_layout = QtWidgets.QHBoxLayout()
         widget = QtWidgets.QSpacerItem(
             0,
@@ -104,7 +104,7 @@ class AskPopup(QtWidgets.QWidget):
         this_layout.addWidget(close_button)
         content_box_layout.addLayout(this_layout)
 
-        # 확장기
+        # spacing
         widget = QtWidgets.QSpacerItem(
             0,
             0,
@@ -113,7 +113,7 @@ class AskPopup(QtWidgets.QWidget):
         )
         content_box_layout.addItem(widget)
 
-        # 제목
+        # title
         main_text = QtWidgets.QLabel(
             question[0],
             alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
@@ -124,14 +124,14 @@ class AskPopup(QtWidgets.QWidget):
         main_text.setWordWrap(True)
         content_box_layout.addWidget(main_text)
 
-        # 여백
+        # spacing
         spacing_text = QtWidgets.QLabel("")
         spacing_text_font = QtGui.QFont()
         spacing_text_font.setPointSize(3)
         spacing_text.setFont(spacing_text_font)
         content_box_layout.addWidget(spacing_text)
 
-        # 설명
+        # explanation
         detail_text = QtWidgets.QLabel(
             question[1],
             alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
@@ -139,7 +139,7 @@ class AskPopup(QtWidgets.QWidget):
         detail_text.setWordWrap(True)
         content_box_layout.addWidget(detail_text)
 
-        # 확장기
+        # spacing
         widget = QtWidgets.QSpacerItem(
             0,
             0,
@@ -148,7 +148,7 @@ class AskPopup(QtWidgets.QWidget):
         )
         content_box_layout.addItem(widget)
 
-        # 선택 버튼들을 포함하는 줄
+        # line including selection buttons
         this_layout = QtWidgets.QHBoxLayout()
         widget = QtWidgets.QSpacerItem(
             0,

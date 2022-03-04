@@ -1,37 +1,3 @@
-#!/usr/bin/env python
-
-#############################################################################
-#
-# This file was adapted from Taurus TEP17, but all taurus dependencies were
-# removed so that it works with just pyqtgraph
-#
-# Just run it and play with the zoom to see how the labels and tick positions
-# automatically adapt to the shown range
-#
-#############################################################################
-# http://taurus-scada.org
-#
-# Copyright 2011 CELLS / ALBA Synchrotron, Bellaterra, Spain
-#
-# Taurus is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Taurus is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with Taurus.  If not, see <http://www.gnu.org/licenses/>.
-#
-#############################################################################
-
-"""
-This module provides date-time aware axis
-"""
-
 import math
 from datetime import datetime, timedelta, timezone
 
@@ -39,26 +5,11 @@ from pyqtgraph import AxisItem
 
 
 class DateAxisItem(AxisItem):
-    """
-    A tool that provides a date-time aware axis. It is implemented as an
-    AxisItem that interpretes positions as unix timestamps (i.e. seconds
-    since 1970).
-    The labels and the tick positions are dynamically adjusted depending
-    on the range.
-    It provides a  :meth:`attach_to_plot_item` method to add it to a given
-    PlotItem
-    """
-
     def __init__(self, *args, **kwargs):
         AxisItem.__init__(self, *args, **kwargs)
         self._oldAxis = None
 
     def tickValues(self, min_value, max_value, size):  # noqa:N802
-        """
-        Reimplemented from PlotItem to adjust to the range and to force
-        the ticks at "round" positions in the context of time units instead of
-        rounding in a decimal base
-        """
 
         if min_value <= 0:  # use standard implementation from parent
             return AxisItem.tickValues(self, min_value, max_value, size)

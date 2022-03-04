@@ -32,17 +32,17 @@ from recipe import standardize
 class Transactor:
     def __init__(self, root):
 
-        # ■■■■■ 클래스 기초 ■■■■■
+        # ■■■■■ the basic ■■■■■
 
         self.root = root
 
-        # ■■■■■ 데이터 관리 ■■■■■
+        # ■■■■■ for data management ■■■■■
 
         self.workerpath = standardize.get_datapath() + "/transactor"
         os.makedirs(self.workerpath, exist_ok=True)
         self.datalocks = [threading.Lock() for _ in range(8)]
 
-        # ■■■■■ 기억하고 표시 ■■■■■
+        # ■■■■■ remember and display ■■■■■
 
         self.api_requester = ApiRequester()
 
@@ -185,7 +185,7 @@ class Transactor:
                 index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32
             )
 
-        # ■■■■■ 기본 실행 ■■■■■
+        # ■■■■■ default executions ■■■■■
 
         self.root.initialize_functions.append(
             lambda: self.watch_binance(),
@@ -206,7 +206,7 @@ class Transactor:
             lambda: self.save_scribbles(),
         )
 
-        # ■■■■■ 반복 타이머 ■■■■■
+        # ■■■■■ repetitive schedules ■■■■■
 
         self.root.scheduler.add_job(
             self.display_lines,
@@ -277,7 +277,7 @@ class Transactor:
             executor="thread_pool_executor",
         )
 
-        # ■■■■■ 웹소켓 스트리밍 ■■■■■
+        # ■■■■■ websocket streamings ■■■■■
 
         self.api_streamers = [
             ApiStreamer(
@@ -286,7 +286,7 @@ class Transactor:
             ),
         ]
 
-        # ■■■■■ 인터넷 연결 상태에 따라 ■■■■■
+        # ■■■■■ invoked by the internet connection  ■■■■■
 
         connected_functrions = [
             lambda: self.update_user_data_stream(),
@@ -332,7 +332,7 @@ class Transactor:
 
         received = kwargs["received"]
 
-        # ■■■■■ 받은 자료 정리 ■■■■■
+        # ■■■■■ default values ■■■■■
 
         event_type = received["e"]
         event_timestamp = received["E"] / 1000
@@ -340,7 +340,7 @@ class Transactor:
 
         self.account_state["observed_until"] = event_time
 
-        # ■■■■■ 이벤트별 대응 ■■■■■
+        # ■■■■■ do the task according to event type ■■■■■
 
         if event_type == "listenKeyExpired":
 
@@ -402,7 +402,7 @@ class Transactor:
             if about_update["s"] not in target_symbols:
                 return
 
-            # 해석하기
+            # from received
             symbol = about_update.get("s")
             order_id = about_update.get("i")
             order_type = about_update.get("o")
@@ -422,17 +422,17 @@ class Transactor:
             commission = float(about_update.get("n", 0))
             realized_profit = float(about_update.get("rp", 0))
 
-            # 다른 데이터 가져오기
+            # from remembered
             leverage = self.hidden_state["leverages"][symbol]
             wallet_balance = self.account_state["wallet_balance"]
 
-            # 주문이 제거된 경우
+            # when the order is removed
             if order_status not in ("NEW", "PARTIALLY_FILLED"):
 
                 if order_id in self.account_state["open_orders"][symbol].keys():
                     self.account_state["open_orders"][symbol].pop(order_id)
 
-            # 주문이 남아있는 경우
+            # when the order is left or created
             if order_status in ("NEW", "PARTIALLY_FILLED"):
 
                 if order_type == "STOP_MARKET":
@@ -487,7 +487,7 @@ class Transactor:
                     "left_margin": left_margin,
                 }
 
-            # 체결된 경우
+            # when the order is filled
             if execution_type == "TRADE":
 
                 asset_change = realized_profit - commission
@@ -535,7 +535,7 @@ class Transactor:
                 asset_trace_copy.to_pickle(self.workerpath + "/asset_trace.pickle")
                 trade_record_copy.to_pickle(self.workerpath + "/trade_record.pickle")
 
-        # ■■■■■ 종류가 겹치는 주문이 있으면 제거 ■■■■■
+        # ■■■■■ cancel conflicting orders ■■■■■
 
         self.cancel_conflicting_orders()
 
@@ -634,7 +634,7 @@ class Transactor:
 
     def update_automation_settings(self, *args, **kwargs):
 
-        # ■■■■■ 전략 ■■■■■
+        # ■■■■■ get information about strategy ■■■■■
 
         index = self.root.undertake(lambda: self.root.comboBox_2.currentIndex(), True)
         strategy = self.root.strategy_tuples[index][0]
@@ -658,7 +658,7 @@ class Transactor:
 
         self.display_lines()
 
-        # ■■■■■ 자동 주문 여부 ■■■■■
+        # ■■■■■ is automation turned on ■■■■■
 
         is_checked = self.root.undertake(lambda: self.root.checkBox.isChecked(), True)
 
@@ -676,7 +676,7 @@ class Transactor:
             elif strategy in (1, 2):
                 question = [
                     "랜덤 주문 전략이 선택되어 있습니다.",
-                    "랜덤 주문 전략이 켜진 상태로 자동 주문을 켜 놓으면 아무 시장에서 총 자산의 1/10000만큼씩 의미 없는"
+                    "랜덤 주문 전략이 켜진 상태로 자동 주문을 켜 놓으면 아무 시장에서 총 asset의 1/10000만큼씩 의미 없는"
                     " 거래를 반복하게 됩니다. 이 전략은 자동 주문 코드가 잘 작동하는지 확인하기 위한 용도로 만들어졌습니다. 오랫동안 켜"
                     " 놓으면 수수료가 많이 발생하니 조심하세요.",
                     ["확인"],
@@ -722,7 +722,7 @@ class Transactor:
 
             self.automation_settings["should_transact"] = False
 
-        # ■■■■■ 저장 ■■■■■
+        # ■■■■■ save ■■■■■
 
         with open(
             self.workerpath + "/automation_settings.json", "w", encoding="utf8"
@@ -748,9 +748,11 @@ class Transactor:
             lambda: self.root.plot_widget.getAxis("bottom").range[1], True
         )
         if range_end < 0:
-            range_end = 9223339636  # 너무 커서 pyqtgraph가 음수로 대답한 경우
+            # case when pyqtgraph passed negative value because it's too big
+            range_end = 9223339636
         else:
-            range_end = min(range_end, 9223339636)  # Pandas 최댓값으로 제한
+            # maximum value available in pandas
+            range_end = min(range_end, 9223339636)
         range_end = datetime.fromtimestamp(range_end, tz=timezone.utc)
 
         if stop_flag.find("display_transaction_range_information", task_id):
@@ -776,10 +778,10 @@ class Transactor:
         asset_changes = asset_changes.reindex(trade_record.index).fillna(value=1)
         symbol_mask = trade_record["Symbol"] == symbol
 
-        # 거래 횟수
+        # trade count
         total_change_count = len(asset_changes)
         symbol_change_count = len(asset_changes[symbol_mask])
-        # 거래량
+        # trade volume
         if len(trade_record) > 0:
             total_margin_ratio = trade_record["Margin Ratio"].sum()
         else:
@@ -788,7 +790,7 @@ class Transactor:
             symbol_margin_ratio = trade_record[symbol_mask]["Margin Ratio"].sum()
         else:
             symbol_margin_ratio = 0
-        # 자산 변화
+        # asset changes
         if len(asset_changes) > 0:
             total_asset_change = asset_changes.cumprod().iloc[-1]
             total_asset_change = (total_asset_change - 1) * 100
@@ -799,7 +801,7 @@ class Transactor:
             symbol_asset_change = (symbol_asset_change - 1) * 100
         else:
             symbol_asset_change = 0
-        # 최저 미실현 수익률
+        # least unrealized changes
         if len(unrealized_changes) > 0:
             min_unrealized_change = unrealized_changes.min()
         else:
@@ -841,20 +843,19 @@ class Transactor:
         if not only_light_lines:
             task_id = stop_flag.make("display_transaction_lines")
 
-        # ■■■■■ 데이터가 있는지 확인 ■■■■■
+        # ■■■■■ check if the data exists ■■■■■
 
         with self.root.collector.datalocks[0]:
             if len(self.root.collector.candle_data) == 0:
                 return
 
-        # ■■■■■ 단위에 맞춘 현재 시각 ■■■■■
+        # ■■■■■ moment ■■■■■
 
-        # 10초 단위로 내림하기
         current_moment = datetime.now(timezone.utc).replace(microsecond=0)
         current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
         before_moment = current_moment - timedelta(seconds=10)
 
-        # ■■■■■ 최신 기록이 추가되길 기다리기 ■■■■■
+        # ■■■■■ wait for the latest data to be added ■■■■■
 
         if periodic:
             for _ in range(50):
@@ -867,7 +868,7 @@ class Transactor:
                         break
                 time.sleep(0.1)
 
-        # ■■■■■ 전략 확인 ■■■■■
+        # ■■■■■ check strategy ■■■■■
 
         strategy = self.automation_settings["strategy"]
 
@@ -879,7 +880,7 @@ class Transactor:
                     strategy_details = strategy_tuple[2]
         is_fast_strategy = strategy_details[3]
 
-        # ■■■■■ 데이터 가져오기 ■■■■■
+        # ■■■■■ get the data ■■■■■
 
         symbol = self.viewing_symbol
 
@@ -915,14 +916,14 @@ class Transactor:
         with self.datalocks[2]:
             asset_trace = self.asset_trace.copy()
 
-        # ■■■■■ 지표 만들기 ■■■■■
+        # ■■■■■ make indicators ■■■■■
 
         indicators_script = self.root.strategist.indicators_script
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
         if is_fast_strategy:
             observed_data = process.apply(digitize.do, realtime_data)
-            observed_data = observed_data.iloc[-3600 * 10 :]  # 최근 1시간만
+            observed_data = observed_data.iloc[-3600 * 10 :]  # recent one hour
             indicators = process.apply(
                 make_indicators.do,
                 observed_data=observed_data,
@@ -938,7 +939,7 @@ class Transactor:
                     compiled_custom_script=compiled_indicators_script,
                 )
 
-        # ■■■■■ 오른쪽 끝 추가하기 ■■■■■
+        # ■■■■■ add the right end ■■■■■
 
         if not only_light_lines:
             if len(candle_data) > 0:
@@ -951,9 +952,9 @@ class Transactor:
         if len(asset_trace) > 0:
             asset_trace[observed_until] = asset_trace.iloc[-1]
 
-        # ■■■■■ 그리기 ■■■■■
+        # ■■■■■ draw ■■■■■
 
-        # 시장 평균 가격
+        # mark price
         is_light_line = True
         if (only_light_lines and is_light_line) or not only_light_lines:
             data_x = realtime_data["index"].astype(np.int64) / 10**9
@@ -971,7 +972,7 @@ class Transactor:
                     return
             self.root.undertake(job, False)
 
-        # 마지막 가격
+        # last price
         is_light_line = True
         if (only_light_lines and is_light_line) or not only_light_lines:
             data_x = aggregate_trades["index"].astype(np.int64) / 10**9
@@ -989,7 +990,7 @@ class Transactor:
                     return
             self.root.undertake(job, False)
 
-        # 마지막 거래량
+        # last trade volume
         is_light_line = True
         if (only_light_lines and is_light_line) or not only_light_lines:
             index_ar = aggregate_trades["index"].astype(np.int64) / 10**9
@@ -1013,7 +1014,7 @@ class Transactor:
                     return
             self.root.undertake(job, False)
 
-        # 주문록
+        # book tickers
         is_light_line = True
         if (only_light_lines and is_light_line) or not only_light_lines:
             data_x = realtime_data["index"].astype(np.int64) / 10**9
@@ -1046,7 +1047,7 @@ class Transactor:
                     return
             self.root.undertake(job, False)
 
-        # 가격 지표
+        # price indicators
         is_light_line = True if is_fast_strategy else False
         if (only_light_lines and is_light_line) or not only_light_lines:
             df = indicators[symbol]["Price"]
@@ -1079,7 +1080,7 @@ class Transactor:
                             return
                     self.root.undertake(lambda w=widget: w.clear(), False)
 
-        # 가격 움직임
+        # price movement
         is_light_line = False
         if (only_light_lines and is_light_line) or not only_light_lines:
             index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
@@ -1101,7 +1102,7 @@ class Transactor:
                     return
             self.root.undertake(job, False)
 
-        # 종가
+        # close price
         is_light_line = False
         if (only_light_lines and is_light_line) or not only_light_lines:
             close_ar = candle_data[(symbol, "Close")].to_numpy()
@@ -1123,7 +1124,7 @@ class Transactor:
                     return
             self.root.undertake(job, False)
 
-        # 흔들림
+        # wobbles
         is_light_line = False
         if (only_light_lines and is_light_line) or not only_light_lines:
             sr = candle_data[(symbol, "High")]
@@ -1152,7 +1153,7 @@ class Transactor:
                     return
             self.root.undertake(job, False)
 
-        # 열린 주문
+        # open orders
         is_light_line = True
         if (only_light_lines and is_light_line) or not only_light_lines:
             boundaries = [
@@ -1184,7 +1185,7 @@ class Transactor:
                             return
                     self.root.undertake(lambda w=widget: w.clear(), False)
 
-        # 거래량 지표
+        # trade volume indicators
         is_light_line = True if is_fast_strategy else False
         if (only_light_lines and is_light_line) or not only_light_lines:
             df = indicators[symbol]["Volume"]
@@ -1217,7 +1218,7 @@ class Transactor:
                             return
                     self.root.undertake(lambda w=widget: w.clear(), False)
 
-        # 거래량
+        # trade volume
         is_light_line = False
         if (only_light_lines and is_light_line) or not only_light_lines:
             sr = candle_data[(symbol, "Volume")]
@@ -1234,7 +1235,7 @@ class Transactor:
                     return
             self.root.undertake(job, False)
 
-        # 추상 지표
+        # abstract indicators indicators
         is_light_line = True if is_fast_strategy else False
         if (only_light_lines and is_light_line) or not only_light_lines:
             df = indicators[symbol]["Abstract"]
@@ -1267,7 +1268,7 @@ class Transactor:
                             return
                     self.root.undertake(lambda w=widget: w.clear(), False)
 
-        # 자산
+        # asset
         is_light_line = True
         if (only_light_lines and is_light_line) or not only_light_lines:
             data_x = asset_trace.index.to_numpy(dtype=np.int64) / 10**9
@@ -1282,7 +1283,7 @@ class Transactor:
                     return
             self.root.undertake(job, False)
 
-        # 미실현 수익 포함 자산
+        # asset with unrealized profit
         is_light_line = False
         if (only_light_lines and is_light_line) or not only_light_lines:
             if len(asset_trace) >= 2:
@@ -1301,7 +1302,7 @@ class Transactor:
                     return
             self.root.undertake(job, False)
 
-        # 매매 시점
+        # buy and sell
         is_light_line = True
         if (only_light_lines and is_light_line) or not only_light_lines:
             df = trade_record.loc[trade_record["Symbol"] == symbol]
@@ -1334,7 +1335,7 @@ class Transactor:
                     return
             self.root.undertake(job, False)
 
-        # 평균 단가
+        # entry price
         is_light_line = True
         if (only_light_lines and is_light_line) or not only_light_lines:
             entry_price = self.account_state["positions"][symbol]["entry_price"]
@@ -1358,7 +1359,7 @@ class Transactor:
                     return
             self.root.undertake(job, False)
 
-        # ■■■■■ 걸린 시간 기록 ■■■■■
+        # ■■■■■ record task duration ■■■■■
 
         if only_light_lines:
             duartion = (datetime.now(timezone.utc) - task_start_time).total_seconds()
@@ -1399,7 +1400,7 @@ class Transactor:
 
     def display_asset_information(self, *args, **kwargs):
 
-        # ■■■■■ 최신 자산 정보인지 여부 표시 ■■■■■
+        # ■■■■■ is it the recent information? ■■■■■
 
         time_passed = datetime.now(timezone.utc) - self.account_state["observed_until"]
         if time_passed > timedelta(seconds=30):
@@ -1407,7 +1408,7 @@ class Transactor:
             self.root.undertake(lambda t=text: self.root.label_16.setText(t), False)
             return
 
-        # ■■■■■ 최신 자산 표시 ■■■■■
+        # ■■■■■ display the information ■■■■■
 
         price_precision = self.exchange_state["price_precisions"][self.viewing_symbol]
         position = self.account_state["positions"][self.viewing_symbol]
@@ -1432,15 +1433,15 @@ class Transactor:
 
     def transact_fast(self, *args, **kwargs):
 
-        # 인터넷에 연결되지 않았으면 중지
+        # stop if it's not connected to the internet
         if not check_internet.connected():
             return
 
-        # 자동주문이 꺼져 있다면 중지
+        # stop if the automation is turned off
         if not self.automation_settings["should_transact"]:
             return
 
-        # 전략 속성 알아내기
+        # get strategy details
         strategy = self.automation_settings["strategy"]
 
         if strategy == 0:
@@ -1450,7 +1451,7 @@ class Transactor:
                 if strategy_tuple[0] == strategy:
                     strategy_details = strategy_tuple[2]
 
-        # 계속해야 할지 판단
+        # determine if should keep on going
         is_fast_strategy = strategy_details[3]
         if not is_fast_strategy:
             return
@@ -1459,7 +1460,7 @@ class Transactor:
         if not is_working_strategy:
             return
 
-        # 진행 막대 움직이기
+        # play the progress bar
         def job():
             start_time = datetime.now(timezone.utc)
             self.root.undertake(lambda: self.root.progressBar_2.setValue(1000), False)
@@ -1473,18 +1474,17 @@ class Transactor:
 
         def job():
 
-            # ■■■■■ 시작 시간 준비 ■■■■■
+            # ■■■■■ task start time ■■■■■
 
             task_start_time = datetime.now(timezone.utc)
 
-            # ■■■■■ 단위에 맞춘 현재 시각 ■■■■■
+            # ■■■■■ moment ■■■■■
 
-            # 0.1초 단위로 내림하기
             current_time = datetime.now(timezone.utc)
             moment_timestamp = ball.floor(current_time.timestamp(), 1)
             current_moment = datetime.fromtimestamp(moment_timestamp, tz=timezone.utc)
 
-            # ■■■■■ 실시간 데이터 잘라내기 ■■■■■
+            # ■■■■■ get the realtime data ■■■■■
 
             with self.root.collector.datalocks[1]:
                 before_chunk = self.root.collector.realtime_data_chunks[-2].copy()
@@ -1492,13 +1492,13 @@ class Transactor:
             realtime_data = np.concatenate((before_chunk, current_chunk))
             realtime_data = realtime_data[-10000:]
 
-            # ■■■■■ 지표 만들기 ■■■■■
+            # ■■■■■ make indicators ■■■■■
 
             indicators_script = self.root.strategist.indicators_script
             compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
             observed_data = process.apply(digitize.do, realtime_data)
-            observed_data = observed_data.iloc[-3600 * 10 :]  # 최근 1시간만
+            observed_data = observed_data.iloc[-3600 * 10 :]  # recent one hour
             indicators = process.apply(
                 make_indicators.do,
                 observed_data=observed_data,
@@ -1506,7 +1506,7 @@ class Transactor:
                 compiled_custom_script=compiled_indicators_script,
             )
 
-            # ■■■■■ 결정하기 ■■■■■
+            # ■■■■■ make decision ■■■■■
 
             current_observed_data = observed_data.to_records()[-1]
             current_indicators = indicators.to_records()[-1]
@@ -1523,13 +1523,13 @@ class Transactor:
                 compiled_custom_script=compiled_decision_script,
             )
 
-            # ■■■■■ 결정까지 걸린 시간 기록 ■■■■■
+            # ■■■■■ record task duration ■■■■■
 
             duration = datetime.now(timezone.utc) - task_start_time
             duration = duration.total_seconds()
             self.task_durations["decide_transacting_fast"].append(duration)
 
-            # ■■■■■ 주문 넣기 ■■■■■
+            # ■■■■■ place order ■■■■■
 
             self.place_order(decision)
 
@@ -1539,17 +1539,17 @@ class Transactor:
 
     def transact_slow(self, *args, **kwargs):
 
-        # ■■■■■ 인터넷에 연결되지 않았다면 중지 ■■■■
+        # ■■■■■ stop if internet connection is not present ■■■■
 
         if not check_internet.connected():
             return
 
-        # ■■■■■ 자동주문이 꺼져 있다면 중지 ■■■■■
+        # ■■■■■ stop if the automation is turned off ■■■■■
 
         if not self.automation_settings["should_transact"]:
             return
 
-        # ■■■■■ 전략 속성 알아내기 ■■■■■
+        # ■■■■■ get strategy details ■■■■■
 
         strategy = self.automation_settings["strategy"]
 
@@ -1560,7 +1560,7 @@ class Transactor:
                 if strategy_tuple[0] == strategy:
                     strategy_details = strategy_tuple[2]
 
-        # ■■■■■ 계속해야 할지 판단 ■■■■■
+        # ■■■■■ determine if should keep on going ■■■■■
 
         is_fast_strategy = strategy_details[3]
         if is_fast_strategy:
@@ -1570,7 +1570,7 @@ class Transactor:
         if not is_working_strategy:
             return
 
-        # ■■■■■ 진행 막대 움직이기 ■■■■■
+        # ■■■■■ play the progress bar ■■■■■
 
         is_cycle_done = False
 
@@ -1598,21 +1598,20 @@ class Transactor:
 
         thread.apply_async(job)
 
-        # ■■■■■ 단위에 맞춘 현재 시각 ■■■■■
+        # ■■■■■ moment ■■■■■
 
-        # 10초 단위로 내림하기
         current_moment = datetime.now(timezone.utc).replace(microsecond=0)
         current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
         before_moment = current_moment - timedelta(seconds=10)
 
-        # ■■■■■ 데이터는 존재하는지 확인 ■■■■■
+        # ■■■■■ check if the data exists ■■■■■
 
         with self.root.collector.datalocks[0]:
             if len(self.root.collector.candle_data) == 0:
-                # 처음 실행한 경우
+                # case when the app is executed for the first time
                 return
 
-        # ■■■■■ 최신 기록이 추가되길 기다리기 ■■■■■
+        # ■■■■■ wait for the latest data to be added ■■■■■
 
         for _ in range(50):
             with self.root.collector.datalocks[0]:
@@ -1621,7 +1620,7 @@ class Transactor:
                     break
             time.sleep(0.1)
 
-        # ■■■■■ 누적률이 100%가 아니면 중지 ■■■■■
+        # ■■■■■ stop if the accumulation rate is not 100% ■■■■■
 
         count_start_time = current_moment - timedelta(hours=24)
 
@@ -1634,14 +1633,14 @@ class Transactor:
             is_cycle_done = True
             return
 
-        # ■■■■■ 캔들 데이터 잘라내기 ■■■■■
+        # ■■■■■ get the candle data ■■■■■
 
         slice_from = datetime.now(timezone.utc) - timedelta(days=7)
         with self.root.collector.datalocks[0]:
             df = self.root.collector.candle_data
             partial_candle_data = df[slice_from:].copy()
 
-        # ■■■■■ 결정 내리기 ■■■■■
+        # ■■■■■ make decision ■■■■■
 
         indicators_script = self.root.strategist.indicators_script
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
@@ -1668,13 +1667,13 @@ class Transactor:
             compiled_custom_script=compiled_decision_script,
         )
 
-        # ■■■■■ 결정에 걸린 시간 기록 ■■■■■
+        # ■■■■■ record task duration ■■■■■
 
         is_cycle_done = True
         duration = (datetime.now(timezone.utc) - current_moment).total_seconds()
         self.task_durations["decide_transacting_slow"].append(duration)
 
-        # ■■■■■ 주문 넣기 ■■■■■
+        # ■■■■■ place order ■■■■■
 
         self.place_order(decision)
 
@@ -1719,7 +1718,7 @@ class Transactor:
         else:
             self.leverage_settings["should_watch"] = False
 
-        # ■■■■■ 저장 ■■■■■
+        # ■■■■■ save ■■■■■
 
         with open(
             self.workerpath + "/leverage_settings.json", "w", encoding="utf8"
@@ -1728,19 +1727,18 @@ class Transactor:
 
     def watch_binance(self, *args, **kwargs):
 
-        # ■■■■■ 인터넷 연결 확인 ■■■■■
+        # ■■■■■ check internet connection ■■■■■
 
         if not check_internet.connected():
             return
 
-        # ■■■■■ 단위에 맞춘 현재 시각 ■■■■■
+        # ■■■■■ moment ■■■■■
 
-        # 10초 단위로 내림하기
         current_moment = datetime.now(timezone.utc).replace(microsecond=0)
         current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
         before_moment = current_moment - timedelta(seconds=10)
 
-        # ■■■■■ 거래소 정보 요청내기 ■■■■■
+        # ■■■■■ request exchange information ■■■■■
 
         payload = {}
         response = self.api_requester.binance(
@@ -1750,7 +1748,7 @@ class Transactor:
         )
         about_exchange = response
 
-        # ■■■■■ 거래소 정보 기억 ■■■■■
+        # ■■■■■ remember exchange information ■■■■■
 
         for about_symbol in about_exchange["symbols"]:
             symbol = about_symbol["symbol"]
@@ -1775,7 +1773,7 @@ class Transactor:
             quantity_precision = int(math.log10(1 / stepsize))
             self.exchange_state["quantity_precisions"][symbol] = quantity_precision
 
-        # ■■■■■ 계정 정보 요청하기 ■■■■■
+        # ■■■■■ request account information ■■■■■
 
         try:
             payload = {
@@ -1788,7 +1786,7 @@ class Transactor:
             )
             about_account = response
         except ApiRequestError:
-            # 키가 준비되지 않은 경우
+            # when the key is not ready
             return
 
         about_open_orders = {}
@@ -1807,22 +1805,19 @@ class Transactor:
 
         thread.map(job, standardize.get_basics()["target_symbols"])
 
-        # ■■■■■ 관찰 시각 기록 ■■■■■
+        # ■■■■■ update account state ■■■■■
 
+        # observed until
         self.account_state["observed_until"] = current_moment
 
-        # ■■■■■ 총 자산 상태 기억 ■■■■■
-
+        # wallet_balance
         for about_asset in about_account["assets"]:
             if about_asset["asset"] == "USDT":
                 break
-
-        # walletBalance에 미실현 수익은 포함되지 않음
         wallet_balance = float(about_asset["walletBalance"])
         self.account_state["wallet_balance"] = wallet_balance
 
-        # ■■■■■ 포지션 상태 기억 ■■■■■
-
+        # positions
         for symbol in standardize.get_basics()["target_symbols"]:
             for about_position in about_account["positions"]:
                 if about_position["symbol"] == symbol:
@@ -1847,8 +1842,7 @@ class Transactor:
             self.account_state["positions"][symbol]["entry_price"] = entry_price
             self.account_state["positions"][symbol]["update_time"] = update_time
 
-        # ■■■■■ 열린 주문 상태 기억 ■■■■■
-
+        # open orders
         open_orders = {}
         for symbol in standardize.get_basics()["target_symbols"]:
             open_orders[symbol] = {}
@@ -1928,7 +1922,7 @@ class Transactor:
 
         self.account_state["open_orders"] = open_orders
 
-        # ■■■■■ 레버리지 상태 기억 ■■■■■
+        # ■■■■■ update hidden state ■■■■■
 
         for symbol in standardize.get_basics()["target_symbols"]:
 
@@ -1938,7 +1932,7 @@ class Transactor:
             leverage = int(about_position["leverage"])
             self.hidden_state["leverages"][symbol] = leverage
 
-        # ■■■■■ 미실현변화 기록하기 ■■■■■
+        # ■■■■■ record unrealized change ■■■■■
 
         for about_asset in about_account["assets"]:
             if about_asset["asset"] == "USDT":
@@ -1951,7 +1945,7 @@ class Transactor:
         with self.datalocks[0]:
             self.unrealized_changes[before_moment] = unrealized_change
 
-        # ■■■■■ 만약 기존 자산 기록이 없다면 첫 기록 만들기 ■■■■■
+        # ■■■■■ make an asset trace if it's blank ■■■■■
 
         if len(self.asset_trace) == 0:
             for about_asset in about_account["assets"]:
@@ -1963,25 +1957,25 @@ class Transactor:
                 self.asset_trace[current_time] = wallet_balance
                 self.asset_trace.to_pickle(self.workerpath + "/asset_trace.pickle")
 
-        # ■■■■■ 총 자산의 입금/출금이나 오차에 대응 ■■■■■
+        # ■■■■■ when the wallet balance changed for no good reason ■■■■■
 
         for about_asset in about_account["assets"]:
             if about_asset["asset"] == "USDT":
                 break
         wallet_balance = float(about_asset["walletBalance"])
         if abs(wallet_balance - self.asset_trace.iloc[-1]) / wallet_balance > 10**-9:
-            # 10억 분의 1보다도 차이가 큰 경우
-            # 초대 수수료나 펀딩 수수료 등으로 바이낸스에서 그냥 주거나 가져간 경우
+            # when the difference is bigger than one billionth
+            # referal fee, funding fee, wallet transfer, ect..
             with self.datalocks[2]:
                 current_time = datetime.now(timezone.utc)
                 self.asset_trace[current_time] = wallet_balance
                 self.asset_trace.to_pickle(self.workerpath + "/asset_trace.pickle")
         else:
-            # 오차가 없거나 변화를 누적시키며 미세한 오차가 생긴 경우
+            # when the difference is small enough to consider as an numeric error
             with self.datalocks[2]:
                 self.asset_trace.iloc[-1] = wallet_balance
 
-        # ■■■■■ 레버리지 감시 ■■■■■
+        # ■■■■■ keep on eye on leverage ■■■■■
 
         if self.leverage_settings["should_watch"]:
 
@@ -1991,7 +1985,6 @@ class Transactor:
                         break
                 leverage = int(about_position["leverage"])
 
-                # 레버리지가 요구 값과 다르다면 다시 설정하기
                 if leverage != self.leverage_settings["desired_leverage"]:
 
                     timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
@@ -2008,7 +2001,7 @@ class Transactor:
 
             thread.map(job, standardize.get_basics()["target_symbols"])
 
-        # ■■■■■ 자동 주문이 켜져 있다면 계정 모드를 감시하고 강제 설정 ■■■■■
+        # ■■■■■ correct mode of the account if automation is turned on ■■■■■
 
         if self.automation_settings["should_transact"]:
 
@@ -2023,7 +2016,7 @@ class Transactor:
 
                 if isolated:
 
-                    # 포지션이 있다면 닫기
+                    # close position if exists
                     if notional != 0:
                         decision = {
                             symbol: {
@@ -2032,7 +2025,7 @@ class Transactor:
                         }
                         self.place_order(decision)
 
-                    # 교차 마진 모드로 바꾸기
+                    # change to crossed margin mode
                     timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
                     payload = {
                         "symbol": symbol,
@@ -2080,9 +2073,6 @@ class Transactor:
 
         decision = args[0]
 
-        # 각 결정에는 알아서 바이낸스 식으로 잘 대처하기
-        # 자동으로 변환해 주는 레이어인 셈
-
         # now_close
         # now_buy
         # now_sell
@@ -2093,7 +2083,7 @@ class Transactor:
         # later_up_sell
         # later_down_sell
 
-        # ■■■■■ 심볼별로 주문 준비하기 ■■■■■
+        # ■■■■■ prepare orders ■■■■■
 
         cancel_orders = []
         new_orders = []
@@ -2269,7 +2259,7 @@ class Transactor:
                 }
                 new_orders.append(new_order)
 
-        # ■■■■■ 준비된 주문 넣기 ■■■■■
+        # ■■■■■ actually place orders ■■■■■
 
         for new_order in new_orders:
 
@@ -2297,7 +2287,7 @@ class Transactor:
 
             thread.apply_async(job)
 
-        # ■■■■■ 걸린 시간 기록 ■■■■■
+        # ■■■■■ record task duration ■■■■■
 
         duration = datetime.now(timezone.utc) - task_start_time
         duration = duration.total_seconds()

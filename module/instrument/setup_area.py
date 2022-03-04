@@ -16,19 +16,19 @@ class SetupArea(QtWidgets.QScrollArea):
 
     def __init__(self, root):
 
-        # ■■■■■ 기본 ■■■■■
+        # ■■■■■ the basic ■■■■■
 
         super().__init__()
 
-        # ■■■■■ 기억 ■■■■■
+        # ■■■■■ for remembering ■■■■■
 
         symbol_checkboxes = {}
 
-        # ■■■■■ 데이터 요청 준비 ■■■■■
+        # ■■■■■ prepare the api requester ■■■■■
 
         api_requester = ApiRequester()
 
-        # ■■■■■ 가능한 심볼들 알아내기 ■■■■■
+        # ■■■■■ get available symbols ■■■■■
 
         response = api_requester.binance(
             http_method="GET",
@@ -42,7 +42,7 @@ class SetupArea(QtWidgets.QScrollArea):
             if symbol.endswith("USDT"):
                 available_symbols.append(symbol)
 
-        # ■■■■■ 코인 정보들 알아내기 ■■■■■
+        # ■■■■■ get coin informations ■■■■■
 
         response = api_requester.coinstats("GET", "/public/v1/coins")
         about_coins = response["coins"]
@@ -55,7 +55,7 @@ class SetupArea(QtWidgets.QScrollArea):
             coin_icon_urls[coin_symbol] = about_coin["icon"]
             coin_ranks[coin_symbol] = about_coin["rank"]
 
-        # ■■■■■ 가능한 심볼들을 랭크 순으로 정렬 ■■■■■
+        # ■■■■■ sort symbols by rank ■■■■■
 
         for rank in range(250, 0, -1):
             if rank not in coin_ranks.values():
@@ -68,7 +68,7 @@ class SetupArea(QtWidgets.QScrollArea):
             original_index = available_symbols.index(symbol)
             available_symbols.insert(0, available_symbols.pop(original_index))
 
-        # ■■■■■ 결정 절차 준비 ■■■■■
+        # ■■■■■ prepare confirm function ■■■■■
 
         def job(*args):
             basics = {}
@@ -101,7 +101,7 @@ class SetupArea(QtWidgets.QScrollArea):
                 standardize.set_basics(basics)
                 self.done_event.set()
 
-        # ■■■■■ 전체 형태 ■■■■■
+        # ■■■■■ full structure ■■■■■
 
         self.setWidgetResizable(True)
         self.setStyleSheet(
@@ -114,7 +114,7 @@ class SetupArea(QtWidgets.QScrollArea):
             """
         )
 
-        # ■■■■■ 큰 틀 ■■■■■
+        # ■■■■■ full layout ■■■■■
 
         full_widget = QtWidgets.QWidget()
         self.setWidget(full_widget)
@@ -122,9 +122,9 @@ class SetupArea(QtWidgets.QScrollArea):
         cards_layout = QtWidgets.QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
-        # ■■■■■ 카드 ■■■■■
+        # ■■■■■ a card ■■■■■
 
-        # 카드 구조
+        # card structure
         card = QtWidgets.QGroupBox(objectName="card")
         card.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
@@ -133,7 +133,7 @@ class SetupArea(QtWidgets.QScrollArea):
         card_layout = QtWidgets.QVBoxLayout(card)
         cards_layout.addWidget(card)
 
-        # 확장기
+        # spacing
         spacer = QtWidgets.QSpacerItem(
             0,
             0,
@@ -142,7 +142,7 @@ class SetupArea(QtWidgets.QScrollArea):
         )
         card_layout.addItem(spacer)
 
-        # 제목
+        # title
         main_text = QtWidgets.QLabel(
             "사용할 코인을 선택하세요.",
             alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
@@ -153,14 +153,14 @@ class SetupArea(QtWidgets.QScrollArea):
         main_text.setWordWrap(True)
         card_layout.addWidget(main_text)
 
-        # 여백
+        # spacing
         spacing_text = QtWidgets.QLabel("")
         spacing_text_font = QtGui.QFont()
         spacing_text_font.setPointSize(3)
         spacing_text.setFont(spacing_text_font)
         card_layout.addWidget(spacing_text)
 
-        # 설명
+        # explanation
         detail_text = QtWidgets.QLabel(
             "바이낸스에서 사용 가능한 모든 코인입니다.\n최소 1개, 최대 10개를 선택할 수 있습니다.",
             alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
@@ -168,14 +168,14 @@ class SetupArea(QtWidgets.QScrollArea):
         detail_text.setWordWrap(True)
         card_layout.addWidget(detail_text)
 
-        # 여백
+        # spacing
         spacing_text = QtWidgets.QLabel("")
         spacing_text_font = QtGui.QFont()
         spacing_text_font.setPointSize(3)
         spacing_text.setFont(spacing_text_font)
         card_layout.addWidget(spacing_text)
 
-        # 입력
+        # input
         symbol_icon_labels = {}
         input_layout = QtWidgets.QGridLayout()
         blank_coing_pixmap = QtGui.QPixmap()
@@ -220,7 +220,7 @@ class SetupArea(QtWidgets.QScrollArea):
             this_layout.addItem(spacer)
         card_layout.addItem(input_layout)
 
-        # 확장기
+        # spacing
         spacer = QtWidgets.QSpacerItem(
             0,
             0,
@@ -229,9 +229,9 @@ class SetupArea(QtWidgets.QScrollArea):
         )
         card_layout.addItem(spacer)
 
-        # ■■■■■ 카드 ■■■■■
+        # ■■■■■ a card ■■■■■
 
-        # 카드 구조
+        # card structure
         card = QtWidgets.QGroupBox(objectName="card")
         card.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
@@ -240,7 +240,7 @@ class SetupArea(QtWidgets.QScrollArea):
         card_layout = QtWidgets.QHBoxLayout(card)
         cards_layout.addWidget(card)
 
-        # 결정 버튼
+        # confirm button
         confirm_button = QtWidgets.QPushButton("결정", card)
         outsource.do(confirm_button.clicked, job)
         confirm_button.setSizePolicy(
@@ -249,7 +249,7 @@ class SetupArea(QtWidgets.QScrollArea):
         )
         card_layout.addWidget(confirm_button)
 
-        # ■■■■■ 다른 쓰레드에서 아이콘을 다운로드해서 교체 ■■■■■
+        # ■■■■■ draw crypto icons from another thread ■■■■■
 
         def job():
             for symbol, icon_label in symbol_icon_labels.items():

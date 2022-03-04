@@ -31,17 +31,17 @@ from recipe import fill_holes_with_aggtrades
 class Collector:
     def __init__(self, root):
 
-        # ■■■■■ 클래스 기초 ■■■■■
+        # ■■■■■ the basic ■■■■■
 
         self.root = root
 
-        # ■■■■■ 데이터 관리 ■■■■■
+        # ■■■■■ for data management ■■■■■
 
         self.workerpath = standardize.get_datapath() + "/collector"
         os.makedirs(self.workerpath, exist_ok=True)
         self.datalocks = [threading.Lock() for _ in range(8)]
 
-        # ■■■■■ 기억하고 표시 ■■■■■
+        # ■■■■■ remember and display ■■■■■
 
         self.api_requester = ApiRequester()
 
@@ -62,7 +62,7 @@ class Collector:
         for symbol in standardize.get_basics()["target_symbols"]:
             self.aggtrade_candle_sizes[symbol] = 0
 
-        # 캔들 데이터
+        # candle data
         self.candle_data = pd.DataFrame(
             columns=pd.MultiIndex.from_product(
                 [
@@ -90,7 +90,7 @@ class Collector:
         self.candle_data = self.candle_data.asfreq("10S")
         self.candle_data = self.candle_data.astype(np.float32)
 
-        # 실시간 데이터 뭉치들
+        # realtime data chunks
         try:
             filepath = self.workerpath + "/realtime_data_chunks.pickle"
             with open(filepath, "rb") as file:
@@ -107,7 +107,7 @@ class Collector:
                 np.recarray(shape=(0,), dtype=dtpye) for _ in range(2)
             ]
 
-        # 묶음 거래 (끊김 없는 정확한 파악이 중요하기 때문에 저장하고 읽는 대상이 아님)
+        # aggregate trades
         field_names = itertools.product(
             standardize.get_basics()["target_symbols"],
             ("Price", "Volume"),
@@ -117,7 +117,7 @@ class Collector:
         dtpye = [("index", "datetime64[ns]")] + dtype
         self.aggregate_trades = np.recarray(shape=(0,), dtype=dtpye)
 
-        # ■■■■■ 기본 실행 ■■■■■
+        # ■■■■■ default executions ■■■■■
 
         self.root.initialize_functions.append(
             lambda: self.get_exchange_information(),
@@ -129,7 +129,7 @@ class Collector:
             lambda: self.save_realtime_data_chunks(),
         )
 
-        # ■■■■■ 반복 타이머 ■■■■■
+        # ■■■■■ repetitive schedules ■■■■■
 
         self.root.scheduler.add_job(
             self.display_information,
@@ -174,7 +174,7 @@ class Collector:
             executor="thread_pool_executor",
         )
 
-        # ■■■■■ 웹소켓 스트리밍 ■■■■■
+        # ■■■■■ websocket streamings ■■■■■
 
         self.api_streamers = [
             ApiStreamer(
@@ -194,7 +194,7 @@ class Collector:
             )
             self.api_streamers.append(api_streamer)
 
-        # ■■■■■ 인터넷 연결 상태에 따라 ■■■■■
+        # ■■■■■ invoked by the internet connection  ■■■■■
 
         connected_functrions = []
         check_internet.add_connected_functions(connected_functrions)
@@ -242,24 +242,23 @@ class Collector:
 
     def fill_candle_data_holes(self, *args, **kwargs):
 
-        # ■■■■■ 인터넷 연결 확인 ■■■■■
+        # ■■■■■ check internet connection ■■■■■
 
         if not check_internet.connected():
             return
 
-        # ■■■■■ 단위에 맞춘 현재 시각 ■■■■■
+        # ■■■■■ moments ■■■■■
 
-        # 10초 단위로 내림하기
         current_moment = datetime.now(timezone.utc).replace(microsecond=0)
         current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
         split_moment = current_moment - timedelta(days=2)
 
-        # ■■■■■ 지난 24시간 구멍 채우기 (앞쪽부터 순차적으로 10초마다) ■■■■■
+        # ■■■■■ fill holes ■■■■■
 
         full_symbols = []
         request_count = 0
 
-        # 최근 부분만 잘라내기
+        # only the recent part
         with self.datalocks[0]:
             df = self.candle_data
             recent_candle_data = df[df.index >= split_moment].copy()
@@ -285,7 +284,7 @@ class Collector:
                 written_moments = len(temp_sr)
 
                 if written_moments == (86400 - 60) / 10 + 1:
-                    # 구멍이 없는 경우 다음 심볼로
+                    # case when there are no holes
                     full_symbols.append(symbol)
                     continue
 
@@ -298,11 +297,11 @@ class Collector:
                 nan_index = isnan_sr[isnan_sr == 1].index
                 moment_to_fill_from = nan_index[0]
 
-                # 데이터 요청
+                # request historical aggtrade data
                 aggtrades = {}
                 last_fetched_time = moment_to_fill_from
                 while last_fetched_time < moment_to_fill_from + timedelta(seconds=10):
-                    # 최소한 10초 블럭 하나는 완전히 채운다는 마인드
+                    # intend to fill at least one 10 second candle bar
                     payload = {
                         "symbol": symbol,
                         "startTime": int(last_fetched_time.timestamp() * 1000),
@@ -331,11 +330,12 @@ class Collector:
                     last_fetched_time,
                 )
 
-        # 다시 합치기
+        # combine
         with self.datalocks[0]:
             df = self.candle_data
             original_candle_data = df[df.index < split_moment]
-            # 그 사이 다른 데이터가 추가됐을 수도 있으니..
+            # in case the other data is added during the task
+            # read the data again
             temp_df = df[df.index >= split_moment]
             recent_candle_data = recent_candle_data.combine_first(temp_df)
             recent_candle_data = recent_candle_data.sort_index(axis="index")
@@ -347,14 +347,14 @@ class Collector:
 
         with self.datalocks[0]:
             if len(self.candle_data) == 0:
-                # 처음 실행한 경우
+                # when the app is executed for the first time
                 return
 
         if len(self.exchange_state["price_precisions"]) == 0:
-            # 실행 직후
+            # right after the app execution
             return
 
-        # 가격
+        # price
         with self.datalocks[2]:
             ar = self.aggregate_trades.copy()
         price_precisions = self.exchange_state["price_precisions"]
@@ -370,7 +370,7 @@ class Collector:
                 widget = self.root.price_labels[symbol]
                 self.root.undertake(lambda w=widget, t=text: w.setText(t), False)
 
-        # 하단 정보
+        # bottom information
         current_moment = datetime.now(timezone.utc).replace(microsecond=0)
         current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
         count_start_moment = current_moment - timedelta(hours=24)
@@ -423,7 +423,7 @@ class Collector:
 
     def save_candle_data(self, *args, **kwargs):
 
-        # ■■■■■ 변수 마련 ■■■■■
+        # ■■■■■ default values ■■■■■
 
         current_year = datetime.now(timezone.utc).year
         filepath = f"{self.workerpath}/candle_data_{current_year}.pickle"
@@ -432,11 +432,11 @@ class Collector:
             df = self.candle_data
             year_df = df[df.index.year == current_year].copy()
 
-        # ■■■■■ 새 파일 만들기 ■■■■■
+        # ■■■■■ make a new file ■■■■■
 
         year_df.to_pickle(filepath + ".new")
 
-        # ■■■■■ 용량 확인 후 원래 파일 백업하고 대체 ■■■■■
+        # ■■■■■ safely replace the existing file ■■■■■
 
         try:
             new_size = os.path.getsize(filepath + ".new")
@@ -485,7 +485,6 @@ class Collector:
 
     def save_all_years_history(self, *args, **kwargs):
 
-        # 가격 데이터
         with self.datalocks[0]:
             years_sr = self.candle_data.index.year.drop_duplicates()
         years = years_sr.tolist()
@@ -499,7 +498,7 @@ class Collector:
 
     def download_fill_history(self, *args, **kwargs):
 
-        # ■■■■■ 의사 확인 ■■■■■
+        # ■■■■■ confirm ■■■■■
 
         target = args[0]
 
@@ -529,7 +528,7 @@ class Collector:
         if answer in (0, 1):
             return
 
-        # ■■■■■ 목록 준비 ■■■■■
+        # ■■■■■ prepare target tuples for downloading ■■■■■
 
         task_id = stop_flag.make("download_fill_history")
 
@@ -597,7 +596,7 @@ class Collector:
         total_steps = len(target_tuples)
         done_steps = 0
 
-        # ■■■■■ 진행 막대 재생 ■■■■■
+        # ■■■■■ play the progress bar ■■■■■
 
         def job():
             while True:
@@ -629,7 +628,7 @@ class Collector:
 
         thread.apply_async(job)
 
-        # ■■■■■ 병렬 처리 ■■■■■
+        # ■■■■■ calculate in parellel ■■■■■
 
         random.shuffle(target_tuples)
         lanes = process.get_pool_process_count()
@@ -668,24 +667,24 @@ class Collector:
         if stop_flag.find("download_fill_history", task_id):
             return
 
-        # ■■■■■ 원래 있던 것과 합치고 정리하기 ■■■■■
+        # ■■■■■ combine ■■■■■
 
         with self.datalocks[0]:
 
             df = process.apply(combine_candle_datas.do, combined_df, self.candle_data)
             self.candle_data = df
 
-        # ■■■■■ 저장 ■■■■■
+        # ■■■■■ save ■■■■■
 
         self.save_all_years_history()
 
-        # ■■■■■ 알림 ■■■■■
+        # ■■■■■ add to log ■■■■■
 
         text = "Filled the candle data with the history data downloaded from Binance"
         logger = logging.getLogger("solsol")
         logger.info(text)
 
-        # ■■■■■ 표시 ■■■■■
+        # ■■■■■ display to graphs ■■■■■
 
         self.root.transactor.display_lines()
         self.root.simulator.display_lines()

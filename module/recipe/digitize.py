@@ -4,7 +4,7 @@ import numpy as np
 
 
 def do(realtime_data):
-    # 실시간 데이터를 0.1초 단위 데이터프레임으로 가공해 주는 함수
+    # function that converts recarray to 0.1s interval dataframe
     df = pd.DataFrame(realtime_data)
 
     df = df.set_index("index")

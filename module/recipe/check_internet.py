@@ -22,7 +22,7 @@ def start_monitoring():
     def job():
         global _WAS_CONNECTED
         while True:
-            # DNS 서버에 연결 시도
+            # try to connect to DNS servers
             attempt_ips = (
                 "1.0.0.1",  # Cloudflare
                 "1.1.1.1",  # Cloudflare
@@ -41,7 +41,7 @@ def start_monitoring():
                     break
                 except OSError:
                     pass
-            # 변화 감지
+            # detect changes
             if _WAS_CONNECTED and not is_connected:
                 for job in _DISCONNECTED_FUNCTIONS:
                     thread.apply_async(job)
@@ -50,10 +50,10 @@ def start_monitoring():
                 for job in _CONNECTED_FUNCTIONS:
                     thread.apply_async(job)
                 logging.getLogger("solsol").info("Internet connected")
-            # 최신 상태 기록
+            # remember connection state
             _WAS_CONNECTED = is_connected
             _IS_READY.set()
-            # 시간 두기
+            # wait for a while
             time.sleep(0.1)
 
     thread.apply_async(job)
