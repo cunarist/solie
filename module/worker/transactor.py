@@ -2073,6 +2073,7 @@ class Transactor:
 
         decision = args[0]
 
+        # cancel_all
         # now_close
         # now_buy
         # now_sell
