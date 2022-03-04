@@ -62,6 +62,9 @@ class ApiStreamer:
             if self._is_active:
                 time.sleep(10)
                 self._create_websocket_app()
+                text = f"Websocket with URL {self._url} was recreated after closing"
+                logger = logging.getLogger("solsol")
+                logger.info(text)
 
         websocket_app = websocket.WebSocketApp(
             url=self._url,
