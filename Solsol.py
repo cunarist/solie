@@ -9,6 +9,7 @@ import shutil
 import tkinter as tk
 import threading
 import time
+import re
 
 userpath = str(pathlib.Path.home())
 condapath = f"{userpath}/miniconda3/condabin/conda.bat"
@@ -67,7 +68,9 @@ if not os.path.isdir(f"{userpath}/miniconda3"):
 
         sys.exit()
 
-# ■■■■■ detect if python virtual environment exists ■■■■■
+# ■■■■■ detect virtual environment and Python version ■■■■■
+
+desired_python_version = "3.10"
 
 commands = [
     f"{condapath} activate base",
@@ -86,13 +89,34 @@ environment_lines = [line for line in environment_lines if "#" not in line]
 environment_lines = [line for line in environment_lines if len(line) > 0]
 environments = [line.split()[0] for line in environment_lines]
 
-if "solsol" not in environments:
+should_update_python = False
+if "solsol" in environments:
+    commands = [
+        f"{condapath} activate solsol",
+        "python --version",
+    ]
+    run_output = subprocess.run(
+        "&&".join(commands),
+        shell=True,
+        stdout=subprocess.PIPE,
+        text=True,
+        creationflags=subprocess.CREATE_NO_WINDOW,
+    )
+    current_python_version = "".join(re.findall(r"[\d,\.]", run_output.stdout))
+    current_splitted_version = [int(v) for v in current_python_version.split(".")]
+    desired_splitted_version = [int(v) for v in desired_python_version.split(".")]
+    if current_splitted_version[0] < desired_splitted_version[0]:
+        should_update_python = True
+    elif current_splitted_version[1] < desired_splitted_version[1]:
+        should_update_python = True
+
+if "solsol" not in environments or should_update_python:
 
     balloon_image = tk.PhotoImage(file="./resource/balloon_3.png")
     balloon.configure(image=balloon_image)
 
     commands = [
-        f"{condapath} create -y -n solsol python=3.9 --force",
+        f"{condapath} create -y -n solsol python={desired_python_version} --force",
         f"{condapath} config --add channels conda-forge",
         f"{condapath} config --set channel_priority strict",
     ]

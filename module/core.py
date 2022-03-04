@@ -6,9 +6,8 @@ import logging
 import pathlib
 import urllib
 import math
-import webbrowser
 
-from PyQt6 import uic, QtGui, QtWidgets, QtCore, QtWebEngineCore
+from PyQt6 import uic, QtGui, QtWidgets, QtCore
 import pandas as pd
 import pyqtgraph
 from apscheduler.schedulers.background import BlockingScheduler
@@ -216,15 +215,6 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             return original_focus_out_event(self, event)
 
         QtWidgets.QPlainTextEdit.focusOutEvent = job
-
-        def job(self, url, event_type, is_main_frame):
-            navigation_type = QtWebEngineCore.QWebEnginePage.NavigationType
-            if event_type == navigation_type.NavigationTypeLinkClicked:
-                webbrowser.open(url.url())
-                return False
-            return True
-
-        QtWebEngineCore.QWebEnginePage.acceptNavigationRequest = job
 
         # ■■■■■ basic display ■■■■■
 
