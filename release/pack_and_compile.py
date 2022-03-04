@@ -10,7 +10,7 @@ userpath = pathlib.Path.home()
 condapath = f"{userpath}/miniconda3/condabin/conda.bat"
 commands = [
     f"{condapath} activate solsol",
-    "pyinstaller pack.spec",
+    "pyinstaller --noconfirm pack.spec",
 ]
 subprocess.run("&&".join(commands))
 
