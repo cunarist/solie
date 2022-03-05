@@ -9,10 +9,18 @@ import shutil
 import tkinter as tk
 import threading
 import time
-import re
 
 userpath = str(pathlib.Path.home())
 condapath = f"{userpath}/miniconda3/condabin/conda.bat"
+
+# ■■■■■ check runtime environment ■■■■■
+
+if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+    # running in a PyInstaller bundle
+    is_development_mode = False
+else:
+    # running in the project folder
+    is_development_mode = True
 
 # ■■■■■ show splash screen ■■■■■
 
@@ -68,130 +76,43 @@ if not os.path.isdir(f"{userpath}/miniconda3"):
 
         sys.exit()
 
-# ■■■■■ detect virtual environment and Python version ■■■■■
+# ■■■■■ prepare python environment ■■■■■
 
-desired_python_version = "3.10"
+balloon_image = tk.PhotoImage(file="./resource/balloon_3.png")
+balloon.configure(image=balloon_image)
 
-commands = [
-    f"{condapath} activate base",
-    "conda env list",
-]
-run_output = subprocess.run(
+if is_development_mode:
+    # install execution packages and development packages
+    commands = [
+        f"{condapath} activate base",
+        "conda env update --file ./resource/environment.yaml",
+        "conda activate solsol",
+        "pip install pyinstaller",
+        "pip install cython",
+        "pip install pyside6",
+        "pip install flake8",
+        "pip install pep8-naming",
+        "pip install flake8-variables-names",
+        "pip install flake8-print",
+        "pip install flake8-blind-except",
+        "pip install flake8-comprehensions",
+        "pip install flake8-use-fstring",
+        "pip install pygount",
+    ]
+else:
+    # install only execution packages and prune up
+    commands = [
+        f"{condapath} activate base",
+        "conda env update --file ./resource/environment.yaml --prune",
+    ]
+subprocess.run(
     "&&".join(commands),
-    shell=True,
-    stdout=subprocess.PIPE,
-    text=True,
     creationflags=subprocess.CREATE_NO_WINDOW,
 )
-
-environment_lines = run_output.stdout.split("\n")
-environment_lines = [line for line in environment_lines if "#" not in line]
-environment_lines = [line for line in environment_lines if len(line) > 0]
-environments = [line.split()[0] for line in environment_lines]
-
-should_update_python = False
-if "solsol" in environments:
-    commands = [
-        f"{condapath} activate solsol",
-        "python --version",
-    ]
-    run_output = subprocess.run(
-        "&&".join(commands),
-        shell=True,
-        stdout=subprocess.PIPE,
-        text=True,
-        creationflags=subprocess.CREATE_NO_WINDOW,
-    )
-    current_python_version = "".join(re.findall(r"[\d,\.]", run_output.stdout))
-    current_splitted_version = [int(v) for v in current_python_version.split(".")]
-    desired_splitted_version = [int(v) for v in desired_python_version.split(".")]
-    if current_splitted_version[0] < desired_splitted_version[0]:
-        should_update_python = True
-    elif current_splitted_version[1] < desired_splitted_version[1]:
-        should_update_python = True
-
-if "solsol" not in environments or should_update_python:
-
-    balloon_image = tk.PhotoImage(file="./resource/balloon_3.png")
-    balloon.configure(image=balloon_image)
-
-    commands = [
-        f"{condapath} create -y -n solsol python={desired_python_version} --force",
-        f"{condapath} config --add channels conda-forge",
-        f"{condapath} config --set channel_priority strict",
-    ]
-    subprocess.run(
-        "&&".join(commands),
-        creationflags=subprocess.CREATE_NO_WINDOW,
-    )
-
-# ■■■■■ detect installed packages ■■■■■
-
-# "pip list" is not used because it sometimes looks up at system python
-
-commands = [
-    f"{condapath} activate solsol",
-    "conda list",
-]
-run_output = subprocess.run(
-    "&&".join(commands),
-    shell=True,
-    stdout=subprocess.PIPE,
-    text=True,
-    creationflags=subprocess.CREATE_NO_WINDOW,
-)
-
-package_lines = run_output.stdout.split("\n")
-package_lines = [line for line in package_lines if "#" not in line]
-package_lines = [line for line in package_lines if len(line) > 0]
-installed_packages = [line.split()[0] for line in package_lines]
-lowered_packages = [name.lower() for name in installed_packages]
-
-with open("./resource/conda_requirements.txt", mode="r", encoding="utf8") as file:
-    conda_requirements = file.read().split("\n")
-
-with open("./resource/pip_requirements.txt", mode="r", encoding="utf8") as file:
-    pip_requirements = file.read().split("\n")
-
-for conda_requirement in conda_requirements:
-
-    if conda_requirement.lower() not in lowered_packages:
-
-        balloon_image = tk.PhotoImage(file="./resource/balloon_4.png")
-        balloon.configure(image=balloon_image)
-
-        commands = [
-            f"{condapath} activate solsol",
-            f"conda install -y {conda_requirement}",
-        ]
-        subprocess.run(
-            "&&".join(commands),
-            creationflags=subprocess.CREATE_NO_WINDOW,
-        )
-
-for pip_requirement in pip_requirements:
-
-    if pip_requirement.lower() not in lowered_packages:
-
-        balloon_image = tk.PhotoImage(file="./resource/balloon_4.png")
-        balloon.configure(image=balloon_image)
-
-        commands = [
-            f"{condapath} activate solsol",
-            f"pip install {pip_requirement}",
-        ]
-        subprocess.run(
-            "&&".join(commands),
-            creationflags=subprocess.CREATE_NO_WINDOW,
-        )
 
 # ■■■■■ code editor settings file ■■■■■
 
-if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
-    # running in a PyInstaller bundle
-    pass
-else:
-    # coding in project folder
+if is_development_mode:
     if not os.path.isfile("./.vscode/settings.json"):
         os.makedirs("./.vscode", exist_ok=True)
         shutil.copy("./resource/vscode_settings.json", "./.vscode")
@@ -201,7 +122,7 @@ else:
 
 # with administrator priviliges on other process
 
-balloon_image = tk.PhotoImage(file="./resource/balloon_5.png")
+balloon_image = tk.PhotoImage(file="./resource/balloon_4.png")
 balloon.configure(image=balloon_image)
 
 if platform.system() == "Windows":
