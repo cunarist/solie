@@ -218,7 +218,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
         self.scale_factor = self.logicalDpiX() / 96
 
-        self.setMinimumSize(int(1280 * self.scale_factor), int(720 * self.scale_factor))
+        self.setMinimumSize(1280, 720)
         self.resize(0, 0)
 
         fixed_width_font = QtGui.QFont("Consolas", 9)
@@ -629,14 +629,14 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             plot_item_6.getAxis("bottom").setTickFont(tick_font)
             plot_item_6.getAxis("left").setTickFont(tick_font)
             plot_item_6.getAxis("right").setTickFont(tick_font)
-            plot_item.getAxis("left").setWidth(40 * self.scale_factor)
-            plot_item.getAxis("right").setWidth(40 * self.scale_factor)
-            plot_item_1.getAxis("left").setWidth(40 * self.scale_factor)
-            plot_item_1.getAxis("right").setWidth(40 * self.scale_factor)
-            plot_item_4.getAxis("left").setWidth(40 * self.scale_factor)
-            plot_item_4.getAxis("right").setWidth(40 * self.scale_factor)
-            plot_item_6.getAxis("left").setWidth(40 * self.scale_factor)
-            plot_item_6.getAxis("right").setWidth(40 * self.scale_factor)
+            plot_item.getAxis("left").setWidth(40)
+            plot_item.getAxis("right").setWidth(40)
+            plot_item_1.getAxis("left").setWidth(40)
+            plot_item_1.getAxis("right").setWidth(40)
+            plot_item_4.getAxis("left").setWidth(40)
+            plot_item_4.getAxis("right").setWidth(40)
+            plot_item_6.getAxis("left").setWidth(40)
+            plot_item_6.getAxis("right").setWidth(40)
             plot_item.getAxis("bottom").setHeight(0)
             plot_item_1.getAxis("top").setHeight(0)
             plot_item_4.getAxis("top").setHeight(0)
@@ -701,14 +701,14 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
                     symbol="o",
                     symbolBrush="#0055FF",
                     symbolPen=pyqtgraph.mkPen("#BBBBBB"),
-                    symbolSize=int(self.scale_factor * 8),
+                    symbolSize=8,
                 ),
                 "buy": plot_item.plot(
                     pen=pyqtgraph.mkPen(None),  # invisible line
                     symbol="o",
                     symbolBrush="#FF3300",
                     symbolPen=pyqtgraph.mkPen("#BBBBBB"),
-                    symbolSize=int(self.scale_factor * 8),
+                    symbolSize=8,
                 ),
                 "volume": plot_item_4.plot(
                     pen=pyqtgraph.mkPen("#111111", width=self.scale_factor * 1.5),
@@ -832,14 +832,14 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             plot_item_7.getAxis("bottom").setTickFont(tick_font)
             plot_item_7.getAxis("left").setTickFont(tick_font)
             plot_item_7.getAxis("right").setTickFont(tick_font)
-            plot_item_2.getAxis("left").setWidth(40 * self.scale_factor)
-            plot_item_2.getAxis("right").setWidth(40 * self.scale_factor)
-            plot_item_3.getAxis("left").setWidth(40 * self.scale_factor)
-            plot_item_3.getAxis("right").setWidth(40 * self.scale_factor)
-            plot_item_5.getAxis("left").setWidth(40 * self.scale_factor)
-            plot_item_5.getAxis("right").setWidth(40 * self.scale_factor)
-            plot_item_7.getAxis("left").setWidth(40 * self.scale_factor)
-            plot_item_7.getAxis("right").setWidth(40 * self.scale_factor)
+            plot_item_2.getAxis("left").setWidth(40)
+            plot_item_2.getAxis("right").setWidth(40)
+            plot_item_3.getAxis("left").setWidth(40)
+            plot_item_3.getAxis("right").setWidth(40)
+            plot_item_5.getAxis("left").setWidth(40)
+            plot_item_5.getAxis("right").setWidth(40)
+            plot_item_7.getAxis("left").setWidth(40)
+            plot_item_7.getAxis("right").setWidth(40)
             plot_item_2.getAxis("bottom").setHeight(0)
             plot_item_3.getAxis("top").setHeight(0)
             plot_item_5.getAxis("top").setHeight(0)
@@ -904,14 +904,14 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
                     symbol="o",
                     symbolBrush="#0055FF",
                     symbolPen=pyqtgraph.mkPen("#BBBBBB"),
-                    symbolSize=int(self.scale_factor * 8),
+                    symbolSize=8,
                 ),
                 "buy": plot_item_2.plot(
                     pen=pyqtgraph.mkPen(None),  # invisible line
                     symbol="o",
                     symbolBrush="#FF3300",
                     symbolPen=pyqtgraph.mkPen("#BBBBBB"),
-                    symbolSize=int(self.scale_factor * 8),
+                    symbolSize=8,
                 ),
                 "volume": plot_item_5.plot(
                     pen=pyqtgraph.mkPen("#111111", width=self.scale_factor * 1.5),
