@@ -445,7 +445,7 @@ class Simulator:
                         color = inside_strings[0]
 
                     def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
-                        widget.setPen(color, width=self.root.scale_factor * 1.5)
+                        widget.setPen(color)
                         widget.setData(data_x, data_y)
 
                     if not only_light_lines:
@@ -583,7 +583,7 @@ class Simulator:
                         color = inside_strings[0]
 
                     def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
-                        widget.setPen(color, width=self.root.scale_factor * 1.5)
+                        widget.setPen(color)
                         widget.setData(data_x, data_y)
 
                     if not only_light_lines:
@@ -633,7 +633,7 @@ class Simulator:
                         color = inside_strings[0]
 
                     def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
-                        widget.setPen(color, width=self.root.scale_factor * 1.5)
+                        widget.setPen(color)
                         widget.setData(data_x, data_y)
 
                     if not only_light_lines:

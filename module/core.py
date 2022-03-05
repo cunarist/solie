@@ -216,8 +216,6 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
         # ■■■■■ basic display ■■■■■
 
-        self.scale_factor = self.logicalDpiX() / 96
-
         self.setMinimumSize(1280, 720)
         self.resize(0, 0)
 
@@ -651,49 +649,49 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             self.transaction_lines = {
                 "book_tickers": [
                     plot_item.plot(
-                        pen=pyqtgraph.mkPen("#CFCFCF", width=self.scale_factor * 1.5),
+                        pen=pyqtgraph.mkPen("#CFCFCF"),
                         connect="finite",
                         stepMode="right",
                     )
                     for _ in range(2)
                 ],
                 "last_price": plot_item.plot(
-                    pen=pyqtgraph.mkPen("#D8E461", width=self.scale_factor * 1.5),
+                    pen=pyqtgraph.mkPen("#D8E461"),
                     connect="finite",
                     stepMode="right",
                 ),
                 "mark_price": plot_item.plot(
-                    pen=pyqtgraph.mkPen("#E2F200", width=self.scale_factor * 1.5),
+                    pen=pyqtgraph.mkPen("#E2F200"),
                     connect="finite",
                 ),
                 "price_indicators": [
                     plot_item.plot(connect="finite") for _ in range(20)
                 ],
                 "entry_price": plot_item.plot(
-                    pen=pyqtgraph.mkPen("#FFBB00", width=self.scale_factor * 1.5),
+                    pen=pyqtgraph.mkPen("#FFBB00"),
                     connect="finite",
                 ),
                 "boundaries": [
                     plot_item.plot(
-                        pen=pyqtgraph.mkPen("#D0E200", width=self.scale_factor * 1.5),
+                        pen=pyqtgraph.mkPen("#D0E200"),
                         connect="finite",
                     )
                     for _ in range(20)
                 ],
                 "wobbles": [
                     plot_item.plot(
-                        pen=pyqtgraph.mkPen("#8AAE31", width=self.scale_factor * 1.5),
+                        pen=pyqtgraph.mkPen("#8AAE31"),
                         connect="finite",
                         stepMode="right",
                     )
                     for _ in range(2)
                 ],
                 "price_movement": plot_item.plot(
-                    pen=pyqtgraph.mkPen("#3C7800", width=self.scale_factor * 1.5),
+                    pen=pyqtgraph.mkPen("#3C7800"),
                     connect="finite",
                 ),
                 "close_price": plot_item.plot(
-                    pen=pyqtgraph.mkPen("#3C7800", width=self.scale_factor * 1.5),
+                    pen=pyqtgraph.mkPen("#3C7800"),
                     connect="finite",
                 ),
                 "sell": plot_item.plot(
@@ -711,14 +709,14 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
                     symbolSize=8,
                 ),
                 "volume": plot_item_4.plot(
-                    pen=pyqtgraph.mkPen("#111111", width=self.scale_factor * 1.5),
+                    pen=pyqtgraph.mkPen("#111111"),
                     connect="all",
                     stepMode="right",
                     fillLevel=0,
                     brush=pyqtgraph.mkBrush(0, 0, 0, 15),
                 ),
                 "last_volume": plot_item_4.plot(
-                    pen=pyqtgraph.mkPen("#111111", width=self.scale_factor * 1.5),
+                    pen=pyqtgraph.mkPen("#111111"),
                     connect="finite",
                 ),
                 "volume_indicators": [
@@ -728,11 +726,11 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
                     plot_item_6.plot(connect="finite") for _ in range(20)
                 ],
                 "asset_with_unrealized_profit": plot_item_1.plot(
-                    pen=pyqtgraph.mkPen("#AAAAAA", width=self.scale_factor * 1.5),
+                    pen=pyqtgraph.mkPen("#AAAAAA"),
                     connect="finite",
                 ),
                 "asset": plot_item_1.plot(
-                    pen=pyqtgraph.mkPen("#FF8700", width=self.scale_factor * 1.5),
+                    pen=pyqtgraph.mkPen("#FF8700"),
                     connect="finite",
                     stepMode="right",
                 ),
@@ -854,49 +852,49 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             self.simulation_lines = {
                 "book_tickers": [
                     plot_item_2.plot(
-                        pen=pyqtgraph.mkPen("#CFCFCF", width=self.scale_factor * 1.5),
+                        pen=pyqtgraph.mkPen("#CFCFCF"),
                         connect="finite",
                         stepMode="right",
                     )
                     for _ in range(2)
                 ],
                 "last_price": plot_item_2.plot(
-                    pen=pyqtgraph.mkPen("#D8E461", width=self.scale_factor * 1.5),
+                    pen=pyqtgraph.mkPen("#D8E461"),
                     connect="finite",
                     stepMode="right",
                 ),
                 "mark_price": plot_item_2.plot(
-                    pen=pyqtgraph.mkPen("#E2F200", width=self.scale_factor * 1.5),
+                    pen=pyqtgraph.mkPen("#E2F200"),
                     connect="finite",
                 ),
                 "price_indicators": [
                     plot_item_2.plot(connect="finite") for _ in range(20)
                 ],
                 "entry_price": plot_item_2.plot(
-                    pen=pyqtgraph.mkPen("#FFBB00", width=self.scale_factor * 1.5),
+                    pen=pyqtgraph.mkPen("#FFBB00"),
                     connect="finite",
                 ),
                 "boundaries": [
                     plot_item_2.plot(
-                        pen=pyqtgraph.mkPen("#D0E200", width=self.scale_factor * 1.5),
+                        pen=pyqtgraph.mkPen("#D0E200"),
                         connect="finite",
                     )
                     for _ in range(20)
                 ],
                 "wobbles": [
                     plot_item_2.plot(
-                        pen=pyqtgraph.mkPen("#8AAE31", width=self.scale_factor * 1.5),
+                        pen=pyqtgraph.mkPen("#8AAE31"),
                         connect="finite",
                         stepMode="right",
                     )
                     for _ in range(2)
                 ],
                 "price_movement": plot_item_2.plot(
-                    pen=pyqtgraph.mkPen("#3C7800", width=self.scale_factor * 1.5),
+                    pen=pyqtgraph.mkPen("#3C7800"),
                     connect="finite",
                 ),
                 "close_price": plot_item_2.plot(
-                    pen=pyqtgraph.mkPen("#3C7800", width=self.scale_factor * 1.5),
+                    pen=pyqtgraph.mkPen("#3C7800"),
                     connect="finite",
                 ),
                 "sell": plot_item_2.plot(
@@ -914,14 +912,14 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
                     symbolSize=8,
                 ),
                 "volume": plot_item_5.plot(
-                    pen=pyqtgraph.mkPen("#111111", width=self.scale_factor * 1.5),
+                    pen=pyqtgraph.mkPen("#111111"),
                     connect="all",
                     stepMode="right",
                     fillLevel=0,
                     brush=pyqtgraph.mkBrush(0, 0, 0, 15),
                 ),
                 "last_volume": plot_item_5.plot(
-                    pen=pyqtgraph.mkPen("#111111", width=self.scale_factor * 1.5),
+                    pen=pyqtgraph.mkPen("#111111"),
                     connect="finite",
                 ),
                 "volume_indicators": [
@@ -931,11 +929,11 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
                     plot_item_7.plot(connect="finite") for _ in range(20)
                 ],
                 "asset_with_unrealized_profit": plot_item_3.plot(
-                    pen=pyqtgraph.mkPen("#AAAAAA", width=self.scale_factor * 1.5),
+                    pen=pyqtgraph.mkPen("#AAAAAA"),
                     connect="finite",
                 ),
                 "asset": plot_item_3.plot(
-                    pen=pyqtgraph.mkPen("#FF8700", width=self.scale_factor * 1.5),
+                    pen=pyqtgraph.mkPen("#FF8700"),
                     connect="finite",
                     stepMode="right",
                 ),
