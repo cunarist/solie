@@ -25,7 +25,7 @@ for location, foldernames, filenames in os.walk(finalpath + "/module"):
     for filename in filenames:
         if filename.lower().endswith(".py") and filename not in excludes:
             setup(
-                ext_modules=cythonize(location + "/" + filename),
+                ext_modules=cythonize(location + "/" + filename, language_level=3),
                 script_args=["build_ext"],
                 options={"build_ext": {"inplace": True}},
             )
