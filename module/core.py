@@ -19,9 +19,7 @@ from worker.transactor import Transactor
 from worker.simulator import Simulator
 from worker.strategist import Strategiest
 from instrument.thread_pool_executor import ThreadPoolExecutor
-from instrument.pyqtgraph_time_axis import DateAxisItem
-from instrument.pyqtgraph_percent_axis import PercentAxisItem
-from instrument.pyqtgraph_simple_axis import SimpleAxisItem
+from instrument.percent_axis_item import PercentAxisItem
 from instrument.ask_popup import AskPopup
 from instrument.setup_area import SetupArea
 from instrument.telephone import Telephone
@@ -586,22 +584,34 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             plot_item_6.setDownsampling(auto=True, mode="subsample")
             plot_item_6.setClipToView(True)
             plot_item_6.setAutoVisible(y=True)
-            DateAxisItem(orientation="top").attach_to_plot_item(plot_item)
-            DateAxisItem(orientation="bottom").attach_to_plot_item(plot_item)
-            PercentAxisItem(orientation="left").attach_to_plot_item(plot_item)
-            PercentAxisItem(orientation="right").attach_to_plot_item(plot_item)
-            DateAxisItem(orientation="top").attach_to_plot_item(plot_item_1)
-            DateAxisItem(orientation="bottom").attach_to_plot_item(plot_item_1)
-            PercentAxisItem(orientation="left").attach_to_plot_item(plot_item_1)
-            PercentAxisItem(orientation="right").attach_to_plot_item(plot_item_1)
-            DateAxisItem(orientation="top").attach_to_plot_item(plot_item_4)
-            DateAxisItem(orientation="bottom").attach_to_plot_item(plot_item_4)
-            SimpleAxisItem(orientation="left").attach_to_plot_item(plot_item_4)
-            SimpleAxisItem(orientation="right").attach_to_plot_item(plot_item_4)
-            DateAxisItem(orientation="top").attach_to_plot_item(plot_item_6)
-            DateAxisItem(orientation="bottom").attach_to_plot_item(plot_item_6)
-            SimpleAxisItem(orientation="left").attach_to_plot_item(plot_item_6)
-            SimpleAxisItem(orientation="right").attach_to_plot_item(plot_item_6)
+            axis_items = {
+                "top": pyqtgraph.DateAxisItem(orientation="top"),
+                "bottom": pyqtgraph.DateAxisItem(orientation="bottom"),
+                "left": PercentAxisItem(orientation="left"),
+                "right": PercentAxisItem(orientation="right"),
+            }
+            plot_item.setAxisItems(axis_items)
+            axis_items = {
+                "top": pyqtgraph.DateAxisItem(orientation="top"),
+                "bottom": pyqtgraph.DateAxisItem(orientation="bottom"),
+                "left": PercentAxisItem(orientation="left"),
+                "right": PercentAxisItem(orientation="right"),
+            }
+            plot_item_1.setAxisItems(axis_items)
+            axis_items = {
+                "top": pyqtgraph.DateAxisItem(orientation="top"),
+                "bottom": pyqtgraph.DateAxisItem(orientation="bottom"),
+                "left": pyqtgraph.AxisItem(orientation="left"),
+                "right": pyqtgraph.AxisItem(orientation="right"),
+            }
+            plot_item_4.setAxisItems(axis_items)
+            axis_items = {
+                "top": pyqtgraph.DateAxisItem(orientation="top"),
+                "bottom": pyqtgraph.DateAxisItem(orientation="bottom"),
+                "left": pyqtgraph.AxisItem(orientation="left"),
+                "right": pyqtgraph.AxisItem(orientation="right"),
+            }
+            plot_item_6.setAxisItems(axis_items)
             tick_font = QtGui.QFont("Consolas", 7)
             plot_item.getAxis("top").setTickFont(tick_font)
             plot_item.getAxis("bottom").setTickFont(tick_font)
@@ -777,22 +787,34 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             plot_item_7.setDownsampling(auto=True, mode="subsample")
             plot_item_7.setClipToView(True)
             plot_item_7.setAutoVisible(y=True)
-            DateAxisItem(orientation="top").attach_to_plot_item(plot_item_2)
-            DateAxisItem(orientation="bottom").attach_to_plot_item(plot_item_2)
-            PercentAxisItem(orientation="left").attach_to_plot_item(plot_item_2)
-            PercentAxisItem(orientation="right").attach_to_plot_item(plot_item_2)
-            DateAxisItem(orientation="top").attach_to_plot_item(plot_item_3)
-            DateAxisItem(orientation="bottom").attach_to_plot_item(plot_item_3)
-            PercentAxisItem(orientation="left").attach_to_plot_item(plot_item_3)
-            PercentAxisItem(orientation="right").attach_to_plot_item(plot_item_3)
-            DateAxisItem(orientation="top").attach_to_plot_item(plot_item_5)
-            DateAxisItem(orientation="bottom").attach_to_plot_item(plot_item_5)
-            SimpleAxisItem(orientation="left").attach_to_plot_item(plot_item_5)
-            SimpleAxisItem(orientation="right").attach_to_plot_item(plot_item_5)
-            DateAxisItem(orientation="top").attach_to_plot_item(plot_item_7)
-            DateAxisItem(orientation="bottom").attach_to_plot_item(plot_item_7)
-            SimpleAxisItem(orientation="left").attach_to_plot_item(plot_item_7)
-            SimpleAxisItem(orientation="right").attach_to_plot_item(plot_item_7)
+            axis_items = {
+                "top": pyqtgraph.DateAxisItem(orientation="top"),
+                "bottom": pyqtgraph.DateAxisItem(orientation="bottom"),
+                "left": PercentAxisItem(orientation="left"),
+                "right": PercentAxisItem(orientation="right"),
+            }
+            plot_item_2.setAxisItems(axis_items)
+            axis_items = {
+                "top": pyqtgraph.DateAxisItem(orientation="top"),
+                "bottom": pyqtgraph.DateAxisItem(orientation="bottom"),
+                "left": PercentAxisItem(orientation="left"),
+                "right": PercentAxisItem(orientation="right"),
+            }
+            plot_item_3.setAxisItems(axis_items)
+            axis_items = {
+                "top": pyqtgraph.DateAxisItem(orientation="top"),
+                "bottom": pyqtgraph.DateAxisItem(orientation="bottom"),
+                "left": pyqtgraph.AxisItem(orientation="left"),
+                "right": pyqtgraph.AxisItem(orientation="right"),
+            }
+            plot_item_5.setAxisItems(axis_items)
+            axis_items = {
+                "top": pyqtgraph.DateAxisItem(orientation="top"),
+                "bottom": pyqtgraph.DateAxisItem(orientation="bottom"),
+                "left": pyqtgraph.AxisItem(orientation="left"),
+                "right": pyqtgraph.AxisItem(orientation="right"),
+            }
+            plot_item_7.setAxisItems(axis_items)
             tick_font = QtGui.QFont("Consolas", 7)
             plot_item_2.getAxis("top").setTickFont(tick_font)
             plot_item_2.getAxis("bottom").setTickFont(tick_font)
