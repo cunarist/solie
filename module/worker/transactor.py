@@ -24,8 +24,8 @@ from recipe import ball
 from recipe import stop_flag
 from recipe import check_internet
 from recipe import digitize
-from recipe import process
-from recipe import thread
+from recipe import process_toss
+from recipe import thread_toss
 from recipe import standardize
 
 
@@ -922,9 +922,9 @@ class Transactor:
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
         if is_fast_strategy:
-            observed_data = process.apply(digitize.do, realtime_data)
+            observed_data = process_toss.apply(digitize.do, realtime_data)
             observed_data = observed_data.iloc[-3600 * 10 :]  # recent one hour
-            indicators = process.apply(
+            indicators = process_toss.apply(
                 make_indicators.do,
                 observed_data=observed_data,
                 strategy=strategy,
@@ -932,7 +932,7 @@ class Transactor:
             )
         else:
             if not only_light_lines:
-                indicators = process.apply(
+                indicators = process_toss.apply(
                     make_indicators.do,
                     observed_data=candle_data,
                     strategy=strategy,
@@ -1470,7 +1470,7 @@ class Transactor:
                 time.sleep(0.01)
             self.root.undertake(lambda: self.root.progressBar_2.setValue(0), False)
 
-        thread.apply_async(job)
+        thread_toss.apply_async(job)
 
         def job():
 
@@ -1497,9 +1497,9 @@ class Transactor:
             indicators_script = self.root.strategist.indicators_script
             compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
-            observed_data = process.apply(digitize.do, realtime_data)
+            observed_data = process_toss.apply(digitize.do, realtime_data)
             observed_data = observed_data.iloc[-3600 * 10 :]  # recent one hour
-            indicators = process.apply(
+            indicators = process_toss.apply(
                 make_indicators.do,
                 observed_data=observed_data,
                 strategy=strategy,
@@ -1534,7 +1534,7 @@ class Transactor:
             self.place_order(decision)
 
         for _ in range(10):
-            thread.apply_async(job)
+            thread_toss.apply_async(job)
             time.sleep(0.1)
 
     def transact_slow(self, *args, **kwargs):
@@ -1596,7 +1596,7 @@ class Transactor:
 
             self.root.undertake(lambda: self.root.progressBar_2.setValue(0), False)
 
-        thread.apply_async(job)
+        thread_toss.apply_async(job)
 
         # ■■■■■ moment ■■■■■
 
@@ -1645,7 +1645,7 @@ class Transactor:
         indicators_script = self.root.strategist.indicators_script
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
-        indicators = process.apply(
+        indicators = process_toss.apply(
             make_indicators.do,
             observed_data=partial_candle_data,
             strategy=strategy,
@@ -1803,7 +1803,7 @@ class Transactor:
             )
             about_open_orders[symbol] = response
 
-        thread.map(job, standardize.get_basics()["target_symbols"])
+        thread_toss.map(job, standardize.get_basics()["target_symbols"])
 
         # ■■■■■ update account state ■■■■■
 
@@ -1999,7 +1999,7 @@ class Transactor:
                         payload=payload,
                     )
 
-            thread.map(job, standardize.get_basics()["target_symbols"])
+            thread_toss.map(job, standardize.get_basics()["target_symbols"])
 
         # ■■■■■ correct mode of the account if automation is turned on ■■■■■
 
@@ -2038,7 +2038,7 @@ class Transactor:
                         payload=payload,
                     )
 
-            thread.map(job, standardize.get_basics()["target_symbols"])
+            thread_toss.map(job, standardize.get_basics()["target_symbols"])
 
             try:
                 timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
@@ -2273,7 +2273,7 @@ class Transactor:
                     payload=payload,
                 )
 
-            thread.apply_async(job)
+            thread_toss.apply_async(job)
 
         for cancelorder in cancel_orders:
 
@@ -2286,7 +2286,7 @@ class Transactor:
                     payload=payload,
                 )
 
-            thread.apply_async(job)
+            thread_toss.apply_async(job)
 
         # ■■■■■ record task duration ■■■■■
 
@@ -2346,4 +2346,4 @@ class Transactor:
                 except ApiRequestError:
                     pass
 
-            thread.apply_async(job)
+            thread_toss.apply_async(job)

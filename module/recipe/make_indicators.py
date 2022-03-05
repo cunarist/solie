@@ -5,7 +5,7 @@ import itertools
 import threading
 
 from recipe import level_constant
-from recipe import thread
+from recipe import thread_toss
 from recipe import standardize
 
 
@@ -221,7 +221,7 @@ def do(observed_data, strategy, compiled_custom_script):
             calmness[calmness > 4] = 4
             new_indicators[(symbol, "Abstract", "Calmness (#FF8888)")] = calmness
 
-    thread.map(job, standardize.get_basics()["target_symbols"])
+    thread_toss.map(job, standardize.get_basics()["target_symbols"])
 
     # ■■■■■ concatenate individual indicators into one ■■■■■
 

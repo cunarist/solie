@@ -5,7 +5,7 @@ import time
 
 import dill
 
-from recipe import thread
+from recipe import thread_toss
 
 _COMMUNICATION_MANAGER = None
 _THREAD_COUNTS = None
@@ -29,7 +29,7 @@ def _start_sharing_thread_count(shared_dictionary):
             shared_dictionary[process_id] = thread_count
             time.sleep(0.1)
 
-    thread.apply_async(job)
+    thread_toss.apply_async(job)
 
 
 def _process_arguments(payload):

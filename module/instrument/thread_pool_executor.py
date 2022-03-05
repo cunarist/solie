@@ -1,6 +1,6 @@
 from apscheduler.executors.base import BaseExecutor, run_job
 
-from recipe import thread
+from recipe import thread_toss
 
 # referred to apscheduler.executors.pool.BasePoolExecutor
 
@@ -13,6 +13,6 @@ class ThreadPoolExecutor(BaseExecutor):
         def threaded_job():
             run_job(job, job._jobstore_alias, run_times, self._logger.name)
 
-        thread.apply_async(threaded_job)
+        thread_toss.apply_async(threaded_job)
 
         self._run_job_success(job.id, [])

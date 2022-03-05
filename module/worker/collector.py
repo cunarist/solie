@@ -19,8 +19,8 @@ from instrument.api_streamer import ApiStreamer
 from recipe import simply_format
 from recipe import stop_flag
 from recipe import check_internet
-from recipe import process
-from recipe import thread
+from recipe import process_toss
+from recipe import thread_toss
 from recipe import standardize
 from recipe import download_aggtrade_data
 from recipe import combine_candle_datas
@@ -271,7 +271,7 @@ class Collector:
                 if symbol in full_symbols:
                     continue
 
-                recent_candle_data = process.apply(
+                recent_candle_data = process_toss.apply(
                     sort_dataframe.do, recent_candle_data
                 )
 
@@ -321,7 +321,7 @@ class Collector:
                         aggtrades[last_fetched_id]["T"] / 1000, tz=timezone.utc
                     )
 
-                recent_candle_data = process.apply(
+                recent_candle_data = process_toss.apply(
                     fill_holes_with_aggtrades.do,
                     symbol,
                     recent_candle_data,
@@ -626,12 +626,12 @@ class Collector:
                         )
                     time.sleep(0.01)
 
-        thread.apply_async(job)
+        thread_toss.apply_async(job)
 
         # ■■■■■ calculate in parellel ■■■■■
 
         random.shuffle(target_tuples)
-        lanes = process.get_pool_process_count()
+        lanes = process_toss.get_pool_process_count()
         chunk_size = math.ceil(len(target_tuples) / lanes)
         target_tuple_chunks = []
         for turn in range(lanes):
@@ -651,18 +651,18 @@ class Collector:
             for target_tuple in target_tuple_chunk:
                 if stop_flag.find("download_fill_history", task_id):
                     return
-                returned = process.apply(download_aggtrade_data.do, target_tuple)
+                returned = process_toss.apply(download_aggtrade_data.do, target_tuple)
                 if returned is not None:
                     new_df = returned
                     with combined_df_lock:
-                        combined_df = process.apply(
+                        combined_df = process_toss.apply(
                             combine_candle_datas.do,
                             new_df,
                             combined_df,
                         )
                 done_steps += 1
 
-        thread.map(job, target_tuple_chunks)
+        thread_toss.map(job, target_tuple_chunks)
 
         if stop_flag.find("download_fill_history", task_id):
             return
@@ -671,7 +671,9 @@ class Collector:
 
         with self.datalocks[0]:
 
-            df = process.apply(combine_candle_datas.do, combined_df, self.candle_data)
+            df = process_toss.apply(
+                combine_candle_datas.do, combined_df, self.candle_data
+            )
             self.candle_data = df
 
         # ■■■■■ save ■■■■■

@@ -31,8 +31,8 @@ from instrument.syntax_highlighter import SyntaxHighlighter
 from instrument.license_area import LicenseArea
 from recipe import outsource
 from recipe import check_internet
-from recipe import process
-from recipe import thread
+from recipe import process_toss
+from recipe import thread_toss
 from recipe import standardize
 from recipe import find_goodies
 
@@ -112,13 +112,13 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
                                 lambda t=text: guide_frame.change_text(t), True
                             )
                             time.sleep(1)
-                        process.terminate_pool()
+                        process_toss.terminate_pool()
                         self.closeEvent = lambda e: e.accept()
                         self.undertake(self.close, True)
                     else:
                         time.sleep(0.1)
 
-            thread.apply_async(job)
+            thread_toss.apply_async(job)
 
             self.scheduler.remove_all_jobs()
             self.scheduler.shutdown()
@@ -130,9 +130,9 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
                 done_steps += 1
                 self.undertake(lambda d=done_steps: guide_frame.progress(d), True)
 
-            thread.map(job, self.finalize_functions)
+            thread_toss.map(job, self.finalize_functions)
 
-        thread.apply_async(job)
+        thread_toss.apply_async(job)
 
     def __init__(self):
 
@@ -250,7 +250,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
         self.gauge.hide()
         self.board.hide()
-        thread.apply_async(self.boot)
+        thread_toss.apply_async(self.boot)
 
     def boot(self):
 
@@ -357,7 +357,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
         # ■■■■■ multiprocessing ■■■■■
 
-        process.start_pool()
+        process_toss.start_pool()
 
         # ■■■■■ get information about target symbols ■■■■■
 
@@ -1216,7 +1216,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             done_steps += 1
             self.undertake(lambda d=done_steps: guide_frame.progress(d), True)
 
-        map_result = thread.map_async(job, self.initialize_functions)
+        map_result = thread_toss.map_async(job, self.initialize_functions)
 
         for _ in range(200):
             if map_result.ready() and map_result.successful():
@@ -1225,7 +1225,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
         # ■■■■■ start repetitive timer ■■■■■
 
-        thread.apply_async(lambda: self.scheduler.start())
+        thread_toss.apply_async(lambda: self.scheduler.start())
 
         # ■■■■■ activate finalization ■■■■■
 

@@ -7,7 +7,7 @@ from PyQt6 import QtWidgets, QtCore, QtGui
 from instrument.api_requester import ApiRequester
 from recipe import standardize
 from recipe import outsource
-from recipe import thread
+from recipe import thread_toss
 
 
 class SetupArea(QtWidgets.QScrollArea):
@@ -266,4 +266,4 @@ class SetupArea(QtWidgets.QScrollArea):
 
                 root.undertake(job, False)
 
-        thread.apply_async(job)
+        thread_toss.apply_async(job)

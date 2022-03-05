@@ -16,9 +16,9 @@ from instrument.api_requester import ApiRequester
 from instrument.api_request_error import ApiRequestError
 from recipe import simply_format
 from recipe import check_internet
-from recipe import process
+from recipe import process_toss
 from recipe import standardize
-from recipe import thread
+from recipe import thread_toss
 from recipe import find_goodies
 
 
@@ -215,7 +215,7 @@ class Manager:
         def job():
             parent_process_id = multiprocessing.current_process().pid
             texts = []
-            for process_id, thread_count in process.get_thread_counts().items():
+            for process_id, thread_count in process_toss.get_thread_counts().items():
                 is_parent_process = process_id == parent_process_id
                 process_name = "부모 프로세스" if is_parent_process else "자식 프로세스"
                 text = f"{process_name} (PID {process_id}): {thread_count}"
@@ -503,7 +503,7 @@ class Manager:
             self.root.should_confirm_closing = False
             self.root.undertake(self.root.close, False)
 
-        thread.apply_async(job)
+        thread_toss.apply_async(job)
         self.root.ask(question)
 
     def check_update(self, *args, **kwargs):

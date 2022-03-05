@@ -4,7 +4,7 @@ import logging
 
 import websocket
 
-from recipe import thread
+from recipe import thread_toss
 
 
 class ApiStreamer:
@@ -78,4 +78,4 @@ class ApiStreamer:
         def job():
             websocket_app.run_forever(skip_utf8_validation=True)
 
-        thread.apply_async(job)
+        thread_toss.apply_async(job)

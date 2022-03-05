@@ -18,8 +18,8 @@ from recipe import make_indicators
 from recipe import stop_flag
 from recipe import check_internet
 from recipe import digitize
-from recipe import process
-from recipe import thread
+from recipe import process_toss
+from recipe import thread_toss
 from recipe import standardize
 
 
@@ -300,8 +300,8 @@ class Simulator:
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
         if is_fast_strategy:
-            observed_data = process.apply(digitize.do, realtime_data)
-            indicators = process.apply(
+            observed_data = process_toss.apply(digitize.do, realtime_data)
+            indicators = process_toss.apply(
                 make_indicators.do,
                 observed_data=observed_data,
                 strategy=strategy,
@@ -310,7 +310,7 @@ class Simulator:
 
         else:
             if not only_light_lines:
-                indicators = process.apply(
+                indicators = process_toss.apply(
                     make_indicators.do,
                     observed_data=candle_data,
                     strategy=strategy,
@@ -958,7 +958,7 @@ class Simulator:
                         )
                     time.sleep(0.01)
 
-        thread.apply_async(job)
+        thread_toss.apply_async(job)
 
         prepare_step = 1
 
@@ -1013,7 +1013,7 @@ class Simulator:
                 original_chunks = self.root.collector.realtime_data_chunks
                 realtime_data_chunks = copy.deepcopy(original_chunks)
             ar = np.concatenate(realtime_data_chunks)
-            year_observed_data = process.apply(digitize.do, ar)
+            year_observed_data = process_toss.apply(digitize.do, ar)
         else:
             # get only year range
             with self.root.collector.datalocks[0]:
@@ -1149,7 +1149,7 @@ class Simulator:
             slice_from = calculate_from - timedelta(days=7)
             # a little more data for generation
             slice_to = calculate_until
-            year_indicators = process.apply(
+            year_indicators = process_toss.apply(
                 make_indicators.do,
                 observed_data=year_observed_data[slice_from:slice_to],
                 strategy=strategy,
@@ -1244,7 +1244,7 @@ class Simulator:
 
         if should_calculate:
 
-            map_result = process.map_async(simulate_unit.do, input_data)
+            map_result = process_toss.map_async(simulate_unit.do, input_data)
 
             total_seconds = (calculate_until - calculate_from).total_seconds()
             while True:

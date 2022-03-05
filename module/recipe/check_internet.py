@@ -3,7 +3,7 @@ import socket
 import threading
 import logging
 
-from recipe import thread
+from recipe import thread_toss
 
 _IS_READY = threading.Event()
 _WAS_CONNECTED = False
@@ -44,11 +44,11 @@ def start_monitoring():
             # detect changes
             if _WAS_CONNECTED and not is_connected:
                 for job in _DISCONNECTED_FUNCTIONS:
-                    thread.apply_async(job)
+                    thread_toss.apply_async(job)
                 logging.getLogger("solsol").warning("Internet disconnected")
             elif not _WAS_CONNECTED and is_connected:
                 for job in _CONNECTED_FUNCTIONS:
-                    thread.apply_async(job)
+                    thread_toss.apply_async(job)
                 logging.getLogger("solsol").info("Internet connected")
             # remember connection state
             _WAS_CONNECTED = is_connected
@@ -56,7 +56,7 @@ def start_monitoring():
             # wait for a while
             time.sleep(0.1)
 
-    thread.apply_async(job)
+    thread_toss.apply_async(job)
     _IS_READY.wait()
 
 
