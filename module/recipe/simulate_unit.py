@@ -85,7 +85,7 @@ def do(dataset):
 
         for symbol in target_symbols:
 
-            # ■■■■■ necessary variables ■■■■■
+            # ■■■■■ basic variables ■■■■■
 
             if is_fast_strategy:
                 column_key = str((symbol, "Best Bid Price"))
@@ -101,10 +101,10 @@ def do(dataset):
                 if math.isnan(open_price) or math.isnan(close_price):
                     continue
 
-            # ■■■■■ check if the trade is filled ■■■■■
-
             would_trade_happen = False
             did_found_new_trade = False
+
+            # ■■■■■ check if any order would be filled ■■■■■
 
             if not is_fast_strategy:
                 price_speed = (close_price - open_price) / 10
@@ -299,37 +299,38 @@ def do(dataset):
                     amount_shift = -fill_margin / fill_price
                     unit_behind_state["placements"][symbol].pop("later_down_sell")
 
+            # check if situation is okay
             if is_margin_negative:
                 text = ""
                 text += "Got an order with a negative margin"
                 text += f" while calculating {symbol} market at {current_moment}"
                 raise SimulationError(text)
+
             elif is_margin_nan:
                 text = ""
                 text += "Got an order with a non-numeric margin"
                 text += f" while calculating {symbol} market at {current_moment}"
                 raise SimulationError(text)
 
-            # ■■■■■ mimic the real world phenomenon if the placement is filled ■■■■■
+            # ■■■■■ mimic the real world phenomenon ■■■■■
 
             if would_trade_happen:
 
-                before_entry_price = unit_behind_state["locations"][symbol][
-                    "entry_price"
-                ]
-                before_amount = unit_behind_state["locations"][symbol]["amount"]
+                symbol_location = unit_behind_state["locations"][symbol]
+                before_entry_price = symbol_location["entry_price"]
+                before_amount = symbol_location["amount"]
 
-                unit_behind_state["locations"][symbol]["amount"] += amount_shift
-                current_amount = unit_behind_state["locations"][symbol]["amount"]
+                symbol_location["amount"] += amount_shift
+                current_amount = symbol_location["amount"]
 
                 # case when the position is created from 0
                 if before_amount == 0 and current_amount != 0:
-                    unit_behind_state["locations"][symbol]["entry_price"] = fill_price
+                    symbol_location["entry_price"] = fill_price
                     invested_margin = abs(current_amount) * fill_price
                     unit_behind_state["available_balance"] -= invested_margin
                 # case when the position is closed from something
                 elif before_amount != 0 and current_amount == 0:
-                    unit_behind_state["locations"][symbol]["entry_price"] = 0
+                    symbol_location["entry_price"] = 0
                     price_difference = fill_price - before_entry_price
                     realized_profit = price_difference * before_amount
                     returned_margin = abs(before_amount) * before_entry_price
@@ -337,7 +338,7 @@ def do(dataset):
                     unit_behind_state["available_balance"] += realized_profit
                 # case when the position direction is flipped
                 elif before_amount * current_amount < 0:
-                    unit_behind_state["locations"][symbol]["entry_price"] = fill_price
+                    symbol_location["entry_price"] = fill_price
                     price_difference = fill_price - before_entry_price
                     realized_profit = price_difference * before_amount
                     returned_margin = abs(before_amount) * before_entry_price
@@ -350,21 +351,22 @@ def do(dataset):
                     before_numerator = before_entry_price * before_amount
                     new_numerator = fill_price * amount_shift
                     current_numerator = before_numerator + new_numerator
-                    new_entry = current_numerator / current_amount
-                    unit_behind_state["locations"][symbol]["entry_price"] = new_entry
+                    new_entry_price = current_numerator / current_amount
+                    symbol_location["entry_price"] = new_entry_price
                     realized_profit = 0
                     invested_margin = abs(amount_shift) * fill_price
                     unit_behind_state["available_balance"] -= invested_margin
                     unit_behind_state["available_balance"] += realized_profit
                 # case when the position size is decreased one the same direction
                 else:
-                    before_entry = before_entry_price
-                    unit_behind_state["locations"][symbol]["entry_price"] = before_entry
+                    symbol_location["entry_price"] = before_entry_price
                     price_difference = fill_price - before_entry_price
                     realized_profit = price_difference * (-amount_shift)
                     returned_margin = abs(amount_shift) * before_entry_price
                     unit_behind_state["available_balance"] += returned_margin
                     unit_behind_state["available_balance"] += realized_profit
+
+                did_found_new_trade = True
 
                 if unit_behind_state["available_balance"] < 0:
                     text = ""
@@ -373,7 +375,39 @@ def do(dataset):
                     text += f" at {current_moment}"
                     raise SimulationError(text)
 
-                did_found_new_trade = True
+            # ■■■■■ update the account state (symbol dependent) ■■■■■
+
+            # locations
+            current_entry_price = unit_behind_state["locations"][symbol]["entry_price"]
+            current_entry_price = float(current_entry_price)
+            current_amount = unit_behind_state["locations"][symbol]["amount"]
+            current_margin = abs(current_amount) * current_entry_price
+            current_margin = float(current_margin)
+            unit_account_state["positions"][symbol]["entry_price"] = current_entry_price
+            unit_account_state["positions"][symbol]["margin"] = current_margin
+            if unit_behind_state["locations"][symbol]["amount"] > 0:
+                unit_account_state["positions"][symbol]["direction"] = "long"
+            if unit_behind_state["locations"][symbol]["amount"] < 0:
+                unit_account_state["positions"][symbol]["direction"] = "short"
+            if unit_behind_state["locations"][symbol]["amount"] == 0:
+                unit_account_state["positions"][symbol]["direction"] = "none"
+
+            # placements
+            symbol_placements = unit_behind_state["placements"][symbol]
+            symbol_open_orders = {}
+            for command_name, placement in symbol_placements.items():
+                order_id = placement["order_id"]
+                boundary = float(placement["boundary"])
+                if "margin" in placement.keys():
+                    left_margin = float(placement["margin"])
+                else:
+                    left_margin = None
+                symbol_open_orders[order_id] = {
+                    "command_name": command_name,
+                    "boundary": boundary,
+                    "left_margin": left_margin,
+                }
+            unit_account_state["open_orders"][symbol] = symbol_open_orders
 
             # ■■■■■ record (symbol dependent) ■■■■■
 
@@ -432,42 +466,8 @@ def do(dataset):
                 update_time = fill_time.astype(datetime).replace(tzinfo=timezone.utc)
                 unit_account_state["positions"][symbol]["update_time"] = update_time
 
-            # ■■■■■ update the account state (symbol dependent) ■■■■■
+        # ■■■■■ understand the situation ■■■■■
 
-            # locations
-            current_entry_price = unit_behind_state["locations"][symbol]["entry_price"]
-            current_entry_price = float(current_entry_price)
-            current_amount = unit_behind_state["locations"][symbol]["amount"]
-            current_margin = abs(current_amount) * current_entry_price
-            current_margin = float(current_margin)
-            unit_account_state["positions"][symbol]["entry_price"] = current_entry_price
-            unit_account_state["positions"][symbol]["margin"] = current_margin
-            if unit_behind_state["locations"][symbol]["amount"] > 0:
-                unit_account_state["positions"][symbol]["direction"] = "long"
-            if unit_behind_state["locations"][symbol]["amount"] < 0:
-                unit_account_state["positions"][symbol]["direction"] = "short"
-            if unit_behind_state["locations"][symbol]["amount"] == 0:
-                unit_account_state["positions"][symbol]["direction"] = "none"
-            # placements
-            symbol_placements = unit_behind_state["placements"][symbol]
-            symbol_open_orders = {}
-            for command_name, placement in symbol_placements.items():
-                order_id = placement["order_id"]
-                boundary = float(placement["boundary"])
-                if "margin" in placement.keys():
-                    left_margin = float(placement["margin"])
-                else:
-                    left_margin = None
-                symbol_open_orders[order_id] = {
-                    "command_name": command_name,
-                    "boundary": boundary,
-                    "left_margin": left_margin,
-                }
-            unit_account_state["open_orders"][symbol] = symbol_open_orders
-
-        # ■■■■■ record (symbol independent) ■■■■■
-
-        # record things that's unrelated to each symbol
         wallet_balance = unit_behind_state["available_balance"]
         unrealized_profit = 0
         for symbol_key, position in unit_behind_state["locations"].items():
@@ -507,17 +507,19 @@ def do(dataset):
             unrealized_profit += price_difference * position["amount"]
         unrealized_change = unrealized_profit / wallet_balance
 
-        original_size = unit_unrealized_changes_ar.shape[0]
-        unit_unrealized_changes_ar.resize(original_size + 1)
-        unit_unrealized_changes_ar[-1]["index"] = before_moment
-        unit_unrealized_changes_ar[-1]["0"] = unrealized_change
-
         # ■■■■■ update the account state (symbol independent) ■■■■■
 
         unit_account_state["observed_until"] = current_moment
         unit_account_state["wallet_balance"] = wallet_balance
 
-        # ■■■■■ make decision and remember ■■■■■
+        # ■■■■■ record (symbol independent) ■■■■■
+
+        original_size = unit_unrealized_changes_ar.shape[0]
+        unit_unrealized_changes_ar.resize(original_size + 1)
+        unit_unrealized_changes_ar[-1]["index"] = before_moment
+        unit_unrealized_changes_ar[-1]["0"] = unrealized_change
+
+        # ■■■■■ make decision and place order ■■■■■
 
         current_observed_data = observed_data_ar[cycle]
         current_indicators = indicators_ar[cycle]
