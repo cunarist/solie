@@ -470,8 +470,8 @@ def do(dataset):
 
         wallet_balance = unit_behind_state["available_balance"]
         unrealized_profit = 0
-        for symbol_key, position in unit_behind_state["locations"].items():
-            if position["amount"] == 0:
+        for symbol_key, location in unit_behind_state["locations"].items():
+            if location["amount"] == 0:
                 continue
             if is_fast_strategy:
                 column_key = str((symbol_key, "Best Bid Price"))
@@ -483,7 +483,7 @@ def do(dataset):
                 symbol_price = observed_data_ar[cycle][str((symbol_key, "Close"))]
             if math.isnan(symbol_price):
                 continue
-            current_margin = abs(position["amount"]) * position["entry_price"]
+            current_margin = abs(location["amount"]) * location["entry_price"]
             wallet_balance += current_margin
             if is_fast_strategy:
                 column_key = str((symbol_key, "Best Bid Price"))
@@ -495,7 +495,7 @@ def do(dataset):
                 # assume that mark price doesn't wobble more than 5%
                 key_open_price = observed_data_ar[cycle][str((symbol_key, "Open"))]
                 key_close_price = observed_data_ar[cycle][str((symbol_key, "Close"))]
-                if position["amount"] < 0:
+                if location["amount"] < 0:
                     basic_price = max(key_open_price, key_close_price) * 1.05
                     key_high_price = observed_data_ar[cycle][str((symbol_key, "High"))]
                     extreme_price = min(basic_price, key_high_price)
@@ -503,14 +503,14 @@ def do(dataset):
                     basic_price = min(key_open_price, key_close_price) * 0.95
                     key_low_price = observed_data_ar[cycle][str((symbol_key, "Low"))]
                     extreme_price = max(basic_price, key_low_price)
-            price_difference = extreme_price - position["entry_price"]
-            unrealized_profit += price_difference * position["amount"]
+            price_difference = extreme_price - location["entry_price"]
+            unrealized_profit += price_difference * location["amount"]
         unrealized_change = unrealized_profit / wallet_balance
 
         # ■■■■■ update the account state (symbol independent) ■■■■■
 
         unit_account_state["observed_until"] = current_moment
-        unit_account_state["wallet_balance"] = wallet_balance
+        unit_account_state["wallet_balance"] = float(wallet_balance)
 
         # ■■■■■ record (symbol independent) ■■■■■
 
