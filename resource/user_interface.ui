@@ -59,6 +59,8 @@ QSplitter::handle {
 
 QPlainTextEdit, QListWidget {
     background-color: #F5F2F0;
+	border-radius: 0.2em;
+	border: 1px solid rgba(0,0,0,0.2);
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
