@@ -10,7 +10,7 @@
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
-SignTool=solsol_signtool $f
+SignTool=sign_cunarist $f
 AppId={{5D2B1E49-1FA9-4C3A-BFC3-16C844239DC7}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
