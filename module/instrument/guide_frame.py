@@ -133,7 +133,7 @@ class GuideFrame(QtWidgets.QFrame):
             progressbar = QtWidgets.QProgressBar()
             progressbar.setMaximum(1)
             progressbar.setTextVisible(False)
-            progressbar.setFixedWidth(30)
+            progressbar.setFixedWidth(40)
             progressbar_font = QtGui.QFont()
             progressbar_font.setPointSize(1)
             progressbar.setFont(progressbar_font)
