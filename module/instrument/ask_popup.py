@@ -29,7 +29,7 @@ class AskPopup(QtWidgets.QWidget):
 
         # needed for filling the window when resized
         root.installEventFilter(self)
-        self.setObjectName("sheet")
+        self.setObjectName("dark_sheet")
 
         # ■■■■■ in case other ask popup exists ■■■■■
 
@@ -45,24 +45,6 @@ class AskPopup(QtWidgets.QWidget):
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_StyledBackground)
         self.setAutoFillBackground(True)
-        self.setStyleSheet(
-            """
-            #sheet{
-                background: rgba(0, 0, 0, 127);
-            }
-            #content_box{
-                border: 1px solid #555555;
-                border-radius: 0.4em;
-                background: #F9F9F9;
-                min-width: 24em;
-                max-width: 24em;
-                min-height: 24em;
-                max-height: 24em;
-                margin: 0em;
-                padding: 2em;
-            }
-            """
-        )
 
         # ■■■■■ full layout ■■■■■
 
@@ -72,7 +54,7 @@ class AskPopup(QtWidgets.QWidget):
 
         # box
         content_box = QtWidgets.QGroupBox(
-            autoFillBackground=True, objectName="content_box"
+            autoFillBackground=True, objectName="ask_popup_box"
         )
         content_box_layout = QtWidgets.QVBoxLayout(content_box)
         full_layout.addWidget(content_box)

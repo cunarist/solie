@@ -61,6 +61,31 @@ QPlainTextEdit, QListWidget {
     background-color: #F5F2F0;
 	border-radius: 0.2em;
 	border: 1px solid rgba(0,0,0,0.2);
+}
+
+#symbol_box{
+    min-width: 12em;
+    max-width: 12em;
+    min-height: 12em;
+    max-height: 12em;
+    background-color: #F2F2F2;
+    border-radius: 6em;
+}
+
+#dark_sheet{
+    background: rgba(0, 0, 0, 127);
+}
+
+#ask_popup_box{
+    border: 1px solid #555555;
+    border-radius: 0.4em;
+    background: #F9F9F9;
+    min-width: 24em;
+    max-width: 24em;
+    min-height: 24em;
+    max-height: 24em;
+    margin: 0em;
+    padding: 2em;
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">

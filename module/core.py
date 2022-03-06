@@ -379,7 +379,6 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
         # ■■■■■ make widgets according to the target symbols list ■■■■■
 
-        box_size = 12
         name_text_size = 13
         price_text_size = 10
         detail_text_size = 7
@@ -427,18 +426,6 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
                 coin_symbol = symbol.removesuffix("USDT")
                 coin_rank = coin_ranks.get(coin_symbol, 0)
                 symbol_box = QtWidgets.QGroupBox(objectName="symbol_box")
-                symbol_box.setStyleSheet(
-                    f"""
-                    #symbol_box{{
-                        min-width: {box_size}em;
-                        max-width: {box_size}em;
-                        min-height: {box_size}em;
-                        max-height: {box_size}em;
-                        background-color: #F2F2F2;
-                        border-radius: {box_size/2}em;
-                    }}
-                    """
-                )
                 if is_long and turn + 1 > math.floor(len(target_symbols) / 2):
                     self.horizontalLayout_17.addWidget(symbol_box)
                 else:
