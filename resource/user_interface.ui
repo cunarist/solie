@@ -68,7 +68,8 @@ QPlainTextEdit, QListWidget {
     max-width: 12em;
     min-height: 12em;
     max-height: 12em;
-    background-color: #F2F2F2;
+    background-color: #F7F7F7;
+	border: 1px solid rgba(0,0,0,0.2);
     border-radius: 6em;
 }
 
