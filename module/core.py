@@ -458,7 +458,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
                 inside_layout.addLayout(this_layout)
                 icon_label.setPixmap(symbol_pixmaps[symbol])
                 icon_label.setScaledContents(True)
-                icon_label.setFixedSize(80, 80)
+                icon_label.setFixedSize(70, 70)
                 icon_label.setMargin(5)
                 this_layout.addWidget(icon_label)
                 name_label = QtWidgets.QLabel(
