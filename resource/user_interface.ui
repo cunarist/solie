@@ -6,9 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1401</width>
-    <height>847</height>
+    <width>1280</width>
+    <height>720</height>
    </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1280</width>
+    <height>720</height>
+   </size>
   </property>
   <property name="font">
    <font/>
@@ -52,18 +58,9 @@ QSplitter::handle {
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <property name="styleSheet">
-    <string notr="true"/>
-   </property>
    <layout class="QGridLayout" name="gridLayout_3">
     <item row="5" column="0">
      <widget class="QLabel" name="gauge">
-      <property name="styleSheet">
-       <string notr="true"/>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
       </property>
@@ -71,12 +68,6 @@ QSplitter::handle {
     </item>
     <item row="0" column="0">
      <widget class="QTabWidget" name="board">
-      <property name="layoutDirection">
-       <enum>Qt::LeftToRight</enum>
-      </property>
-      <property name="styleSheet">
-       <string notr="true"/>
-      </property>
       <property name="tabPosition">
        <enum>QTabWidget::North</enum>
       </property>
@@ -125,12 +116,6 @@ QSplitter::handle {
           <layout class="QVBoxLayout" name="verticalLayout_12">
            <item>
             <widget class="QLabel" name="label_6">
-             <property name="styleSheet">
-              <string notr="true"/>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
              <property name="alignment">
               <set>Qt::AlignCenter</set>
              </property>
@@ -141,9 +126,6 @@ QSplitter::handle {
         </item>
         <item>
          <widget class="QGroupBox" name="groupBox_6">
-          <property name="title">
-           <string/>
-          </property>
           <layout class="QVBoxLayout" name="verticalLayout_17">
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_24">
@@ -226,9 +208,6 @@ QSplitter::handle {
              <property name="maximum">
               <number>1000</number>
              </property>
-             <property name="value">
-              <number>0</number>
-             </property>
              <property name="textVisible">
               <bool>false</bool>
              </property>
@@ -246,27 +225,9 @@ QSplitter::handle {
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
          <widget class="QGroupBox" name="groupBox_2">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
           <layout class="QHBoxLayout" name="horizontalLayout_4">
            <item>
             <widget class="QLabel" name="label_8">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="styleSheet">
-              <string notr="true"/>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
              <property name="alignment">
               <set>Qt::AlignCenter</set>
              </property>
@@ -296,15 +257,6 @@ QSplitter::handle {
         </item>
         <item>
          <widget class="QGroupBox" name="groupBox">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="title">
-           <string/>
-          </property>
           <layout class="QHBoxLayout" name="horizontalLayout_3">
            <item>
             <widget class="QLabel" name="label_16">
@@ -317,12 +269,6 @@ QSplitter::handle {
              <property name="font">
               <font/>
              </property>
-             <property name="styleSheet">
-              <string notr="true"/>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
              <property name="alignment">
               <set>Qt::AlignCenter</set>
              </property>
@@ -333,15 +279,6 @@ QSplitter::handle {
         </item>
         <item>
          <widget class="QGroupBox" name="groupBox_9">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="title">
-           <string/>
-          </property>
           <layout class="QVBoxLayout" name="verticalLayout_5">
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_15">
@@ -381,8 +318,17 @@ QSplitter::handle {
              </item>
              <item>
               <widget class="QComboBox" name="comboBox_4">
-               <property name="styleSheet">
-                <string notr="true">width:6em;</string>
+               <property name="minimumSize">
+                <size>
+                 <width>150</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>150</width>
+                 <height>16777215</height>
+                </size>
                </property>
               </widget>
              </item>
@@ -402,8 +348,17 @@ QSplitter::handle {
              </item>
              <item>
               <widget class="QComboBox" name="comboBox_2">
-               <property name="styleSheet">
-                <string notr="true">width:20em;</string>
+               <property name="minimumSize">
+                <size>
+                 <width>340</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>340</width>
+                 <height>16777215</height>
+                </size>
                </property>
               </widget>
              </item>
@@ -459,8 +414,17 @@ QSplitter::handle {
              </item>
              <item>
               <widget class="QComboBox" name="comboBox_3">
-               <property name="styleSheet">
-                <string notr="true">width: 4em;</string>
+               <property name="minimumSize">
+                <size>
+                 <width>100</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>100</width>
+                 <height>16777215</height>
+                </size>
                </property>
                <item>
                 <property name="text">
@@ -483,19 +447,22 @@ QSplitter::handle {
              </item>
              <item>
               <widget class="QLineEdit" name="lineEdit_4">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
+               <property name="minimumSize">
+                <size>
+                 <width>280</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>280</width>
+                 <height>16777215</height>
+                </size>
                </property>
                <property name="font">
                 <font>
                  <pointsize>5</pointsize>
                 </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">width: 16em;</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
@@ -511,19 +478,22 @@ QSplitter::handle {
              </item>
              <item>
               <widget class="QLineEdit" name="lineEdit_6">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
+               <property name="minimumSize">
+                <size>
+                 <width>280</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>280</width>
+                 <height>16777215</height>
+                </size>
                </property>
                <property name="font">
                 <font>
                  <pointsize>5</pointsize>
                 </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">width: 16em;</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
@@ -546,14 +516,17 @@ QSplitter::handle {
              </item>
              <item>
               <widget class="QLineEdit" name="lineEdit_3">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
+               <property name="minimumSize">
+                <size>
+                 <width>60</width>
+                 <height>0</height>
+                </size>
                </property>
-               <property name="styleSheet">
-                <string notr="true">width: 2em;</string>
+               <property name="maximumSize">
+                <size>
+                 <width>60</width>
+                 <height>16777215</height>
+                </size>
                </property>
                <property name="text">
                 <string>1</string>
@@ -612,14 +585,8 @@ QSplitter::handle {
                <pointsize>1</pointsize>
               </font>
              </property>
-             <property name="styleSheet">
-              <string notr="true"/>
-             </property>
              <property name="maximum">
               <number>1000</number>
-             </property>
-             <property name="value">
-              <number>0</number>
              </property>
              <property name="textVisible">
               <bool>false</bool>
@@ -638,36 +605,9 @@ QSplitter::handle {
        <layout class="QVBoxLayout" name="verticalLayout_10">
         <item>
          <widget class="QGroupBox" name="groupBox_4">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="styleSheet">
-           <string notr="true"/>
-          </property>
-          <property name="title">
-           <string/>
-          </property>
           <layout class="QHBoxLayout" name="horizontalLayout_10">
            <item>
             <widget class="QLabel" name="label_13">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="font">
-              <font/>
-             </property>
-             <property name="styleSheet">
-              <string notr="true"/>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
              <property name="alignment">
               <set>Qt::AlignCenter</set>
              </property>
@@ -697,24 +637,9 @@ QSplitter::handle {
         </item>
         <item>
          <widget class="QGroupBox" name="groupBox_5">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="title">
-           <string/>
-          </property>
           <layout class="QHBoxLayout" name="horizontalLayout_11">
            <item>
             <widget class="QLabel" name="label_19">
-             <property name="styleSheet">
-              <string notr="true"/>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
              <property name="alignment">
               <set>Qt::AlignCenter</set>
              </property>
@@ -727,18 +652,6 @@ QSplitter::handle {
          <widget class="QGroupBox" name="groupBox_3">
           <property name="enabled">
            <bool>true</bool>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="styleSheet">
-           <string notr="true"/>
-          </property>
-          <property name="title">
-           <string/>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_6">
            <item>
@@ -779,8 +692,17 @@ QSplitter::handle {
              </item>
              <item>
               <widget class="QComboBox" name="comboBox_6">
-               <property name="styleSheet">
-                <string notr="true">width:6em;</string>
+               <property name="minimumSize">
+                <size>
+                 <width>150</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>150</width>
+                 <height>16777215</height>
+                </size>
                </property>
               </widget>
              </item>
@@ -806,8 +728,17 @@ QSplitter::handle {
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
-               <property name="styleSheet">
-                <string notr="true">width: 2em;</string>
+               <property name="minimumSize">
+                <size>
+                 <width>60</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>60</width>
+                 <height>16777215</height>
+                </size>
                </property>
                <property name="text">
                 <string>0.04</string>
@@ -832,8 +763,17 @@ QSplitter::handle {
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
-               <property name="styleSheet">
-                <string notr="true">width: 2em;</string>
+               <property name="minimumSize">
+                <size>
+                 <width>60</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>60</width>
+                 <height>16777215</height>
+                </size>
                </property>
                <property name="text">
                 <string>1</string>
@@ -882,8 +822,17 @@ QSplitter::handle {
              </item>
              <item>
               <widget class="QComboBox" name="comboBox_5">
-               <property name="styleSheet">
-                <string notr="true">width: 4em;</string>
+               <property name="minimumSize">
+                <size>
+                 <width>100</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>100</width>
+                 <height>16777215</height>
+                </size>
                </property>
               </widget>
              </item>
@@ -896,11 +845,17 @@ QSplitter::handle {
              </item>
              <item>
               <widget class="QComboBox" name="comboBox">
-               <property name="styleSheet">
-                <string notr="true">width: 20em;</string>
+               <property name="minimumSize">
+                <size>
+                 <width>340</width>
+                 <height>0</height>
+                </size>
                </property>
-               <property name="currentText">
-                <string/>
+               <property name="maximumSize">
+                <size>
+                 <width>340</width>
+                 <height>16777215</height>
+                </size>
                </property>
                <property name="currentIndex">
                 <number>-1</number>
@@ -986,25 +941,25 @@ QSplitter::handle {
             <layout class="QHBoxLayout" name="horizontalLayout_8">
              <item>
               <widget class="QProgressBar" name="progressBar_4">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
+               <property name="minimumSize">
+                <size>
+                 <width>160</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>160</width>
+                 <height>16777215</height>
+                </size>
                </property>
                <property name="font">
                 <font>
                  <pointsize>1</pointsize>
                 </font>
                </property>
-               <property name="styleSheet">
-                <string notr="true">width:8em;</string>
-               </property>
                <property name="maximum">
                 <number>1000</number>
-               </property>
-               <property name="value">
-                <number>0</number>
                </property>
                <property name="textVisible">
                 <bool>false</bool>
@@ -1018,22 +973,10 @@ QSplitter::handle {
                  <pointsize>1</pointsize>
                 </font>
                </property>
-               <property name="styleSheet">
-                <string notr="true"/>
-               </property>
                <property name="maximum">
                 <number>1000</number>
                </property>
-               <property name="value">
-                <number>0</number>
-               </property>
                <property name="textVisible">
-                <bool>false</bool>
-               </property>
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="invertedAppearance">
                 <bool>false</bool>
                </property>
               </widget>
@@ -1066,6 +1009,43 @@ QSplitter::handle {
             </item>
             <item>
              <widget class="QPlainTextEdit" name="plainTextEdit_3">
+              <property name="palette">
+               <palette>
+                <active>
+                 <colorrole role="Base">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>245</red>
+                    <green>242</green>
+                    <blue>240</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                </active>
+                <inactive>
+                 <colorrole role="Base">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>255</red>
+                    <green>255</green>
+                    <blue>255</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                </inactive>
+                <disabled>
+                 <colorrole role="Base">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>240</red>
+                    <green>240</green>
+                    <blue>240</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                </disabled>
+               </palette>
+              </property>
               <property name="lineWrapMode">
                <enum>QPlainTextEdit::NoWrap</enum>
               </property>
@@ -1087,6 +1067,43 @@ QSplitter::handle {
             </item>
             <item>
              <widget class="QPlainTextEdit" name="plainTextEdit_2">
+              <property name="palette">
+               <palette>
+                <active>
+                 <colorrole role="Base">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>245</red>
+                    <green>242</green>
+                    <blue>240</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                </active>
+                <inactive>
+                 <colorrole role="Base">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>255</red>
+                    <green>255</green>
+                    <blue>255</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                </inactive>
+                <disabled>
+                 <colorrole role="Base">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>240</red>
+                    <green>240</green>
+                    <blue>240</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                </disabled>
+               </palette>
+              </property>
               <property name="lineWrapMode">
                <enum>QPlainTextEdit::NoWrap</enum>
               </property>
@@ -1098,9 +1115,6 @@ QSplitter::handle {
         </item>
         <item>
          <widget class="QGroupBox" name="groupBox_17">
-          <property name="title">
-           <string/>
-          </property>
           <layout class="QVBoxLayout" name="verticalLayout_23">
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_26">
@@ -1149,8 +1163,17 @@ QSplitter::handle {
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
-               <property name="styleSheet">
-                <string notr="true">width: 2em;</string>
+               <property name="minimumSize">
+                <size>
+                 <width>60</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>60</width>
+                 <height>16777215</height>
+                </size>
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
@@ -1295,9 +1318,17 @@ QSplitter::handle {
                  <layout class="QHBoxLayout" name="horizontalLayout_13">
                   <item>
                    <widget class="QLabel" name="label_5">
-                    <property name="styleSheet">
-                     <string notr="true">max-width: 6em;
-max-height: 6em;</string>
+                    <property name="minimumSize">
+                     <size>
+                      <width>120</width>
+                      <height>120</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>120</width>
+                      <height>120</height>
+                     </size>
                     </property>
                     <property name="pixmap">
                      <pixmap>image_logo.png</pixmap>
@@ -1309,9 +1340,17 @@ max-height: 6em;</string>
                   </item>
                   <item>
                    <widget class="QLabel" name="label_9">
-                    <property name="styleSheet">
-                     <string notr="true">max-width: 24em;
-max-height: 6em;</string>
+                    <property name="minimumSize">
+                     <size>
+                      <width>480</width>
+                      <height>120</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>480</width>
+                      <height>120</height>
+                     </size>
                     </property>
                     <property name="pixmap">
                      <pixmap>text_logo.png</pixmap>
@@ -1397,12 +1436,6 @@ max-height: 6em;</string>
             </item>
             <item>
              <widget class="QGroupBox" name="groupBox_7">
-              <property name="title">
-               <string/>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
               <layout class="QHBoxLayout" name="horizontalLayout_6">
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_21">
@@ -1434,8 +1467,17 @@ max-height: 6em;</string>
                      <verstretch>0</verstretch>
                     </sizepolicy>
                    </property>
-                   <property name="styleSheet">
-                    <string notr="true">width: 36em;</string>
+                   <property name="minimumSize">
+                    <size>
+                     <width>620</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>620</width>
+                     <height>16777215</height>
+                    </size>
                    </property>
                    <property name="alignment">
                     <set>Qt::AlignCenter</set>
@@ -1447,9 +1489,6 @@ max-height: 6em;</string>
                  </item>
                  <item>
                   <widget class="QPushButton" name="pushButton_8">
-                   <property name="styleSheet">
-                    <string notr="true"/>
-                   </property>
                    <property name="text">
                     <string>탐색기로 열기</string>
                    </property>
@@ -1519,8 +1558,8 @@ max-height: 6em;</string>
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>265</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_6">
@@ -1548,8 +1587,8 @@ max-height: 6em;</string>
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>265</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_7">
@@ -1577,8 +1616,8 @@ max-height: 6em;</string>
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>265</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_4">
@@ -1606,8 +1645,8 @@ max-height: 6em;</string>
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>265</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_8">
@@ -1635,8 +1674,8 @@ max-height: 6em;</string>
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>265</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_5">
@@ -1664,8 +1703,8 @@ max-height: 6em;</string>
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>265</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_9">
@@ -1768,6 +1807,43 @@ max-height: 6em;</string>
                 </item>
                 <item>
                  <widget class="QPlainTextEdit" name="plainTextEdit">
+                  <property name="palette">
+                   <palette>
+                    <active>
+                     <colorrole role="Base">
+                      <brush brushstyle="SolidPattern">
+                       <color alpha="255">
+                        <red>245</red>
+                        <green>242</green>
+                        <blue>240</blue>
+                       </color>
+                      </brush>
+                     </colorrole>
+                    </active>
+                    <inactive>
+                     <colorrole role="Base">
+                      <brush brushstyle="SolidPattern">
+                       <color alpha="255">
+                        <red>255</red>
+                        <green>255</green>
+                        <blue>255</blue>
+                       </color>
+                      </brush>
+                     </colorrole>
+                    </inactive>
+                    <disabled>
+                     <colorrole role="Base">
+                      <brush brushstyle="SolidPattern">
+                       <color alpha="255">
+                        <red>240</red>
+                        <green>240</green>
+                        <blue>240</blue>
+                       </color>
+                      </brush>
+                     </colorrole>
+                    </disabled>
+                   </palette>
+                  </property>
                   <property name="lineWrapMode">
                    <enum>QPlainTextEdit::NoWrap</enum>
                   </property>
@@ -1789,14 +1865,42 @@ max-height: 6em;</string>
                 </item>
                 <item>
                  <widget class="QListWidget" name="listWidget">
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="styleSheet">
-                   <string notr="true"/>
+                  <property name="palette">
+                   <palette>
+                    <active>
+                     <colorrole role="Base">
+                      <brush brushstyle="SolidPattern">
+                       <color alpha="255">
+                        <red>245</red>
+                        <green>242</green>
+                        <blue>240</blue>
+                       </color>
+                      </brush>
+                     </colorrole>
+                    </active>
+                    <inactive>
+                     <colorrole role="Base">
+                      <brush brushstyle="SolidPattern">
+                       <color alpha="255">
+                        <red>255</red>
+                        <green>255</green>
+                        <blue>255</blue>
+                       </color>
+                      </brush>
+                     </colorrole>
+                    </inactive>
+                    <disabled>
+                     <colorrole role="Base">
+                      <brush brushstyle="SolidPattern">
+                       <color alpha="255">
+                        <red>240</red>
+                        <green>240</green>
+                        <blue>240</blue>
+                       </color>
+                      </brush>
+                     </colorrole>
+                    </disabled>
+                   </palette>
                   </property>
                   <property name="verticalScrollMode">
                    <enum>QAbstractItemView::ScrollPerPixel</enum>
@@ -1812,9 +1916,6 @@ max-height: 6em;</string>
             </item>
             <item>
              <widget class="QGroupBox" name="groupBox_18">
-              <property name="title">
-               <string/>
-              </property>
               <layout class="QVBoxLayout" name="verticalLayout_24">
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_2">

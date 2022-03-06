@@ -42,28 +42,14 @@ class GuideFrame(QtWidgets.QFrame):
         image_logo_label = QtWidgets.QLabel("", self)
         image_logo_label.setPixmap(image_logo_pixmap)
         image_logo_label.setScaledContents(True)
-        image_logo_label.setStyleSheet(
-            """
-            height:6em;
-            max-height:6em;
-            width:6em;
-            max-width:6em;
-            """
-        )
+        image_logo_label.setFixedSize(120, 120)
         this_layout.addWidget(image_logo_label)
         text_logo_pixmap = QtGui.QPixmap()
         text_logo_pixmap.loadFromData(self.text_logo_data)
         text_logo_label = QtWidgets.QLabel("", self)
         text_logo_label.setPixmap(text_logo_pixmap)
         text_logo_label.setScaledContents(True)
-        text_logo_label.setStyleSheet(
-            """
-            height:6em;
-            max-height:6em;
-            width:24em;
-            max-width:24em;
-            """
-        )
+        text_logo_label.setFixedSize(480, 120)
         this_layout.addWidget(text_logo_label)
 
         spacing_text = QtWidgets.QLabel("")
@@ -145,13 +131,9 @@ class GuideFrame(QtWidgets.QFrame):
             progressbar.setParent(None)
         for _ in range(total_steps):
             progressbar = QtWidgets.QProgressBar()
-            progressbar.setSizePolicy(
-                QtWidgets.QSizePolicy.Policy.Fixed,
-                QtWidgets.QSizePolicy.Policy.Fixed,
-            )
             progressbar.setMaximum(1)
             progressbar.setTextVisible(False)
-            progressbar.setStyleSheet("width:2em;")
+            progressbar.setFixedWidth(40)
             progressbar_font = QtGui.QFont()
             progressbar_font.setPointSize(1)
             progressbar.setFont(progressbar_font)

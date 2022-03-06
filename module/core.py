@@ -214,26 +214,15 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
         QtWidgets.QPlainTextEdit.focusOutEvent = job
 
-        # ■■■■■ basic display ■■■■■
+        # ■■■■■ basic display configuration ■■■■■
 
-        self.setMinimumSize(1280, 720)
-        self.resize(0, 0)
+        self.resize(0, 0)  # to smallest size possible
 
         fixed_width_font = QtGui.QFont("Consolas", 9)
-        stylesheet = "#script{background-color:#F5F2F0;}"  # noqa:FS003
         self.listWidget.setFont(fixed_width_font)
-        self.listWidget.setObjectName("script")
-        self.listWidget.setStyleSheet(stylesheet)
         self.plainTextEdit.setFont(fixed_width_font)
-        self.plainTextEdit.setObjectName("script")
-        self.plainTextEdit.setStyleSheet(stylesheet)
         self.plainTextEdit_2.setFont(fixed_width_font)
-        self.plainTextEdit_2.setObjectName("script")
-        self.plainTextEdit_2.setStyleSheet(stylesheet)
         self.plainTextEdit_3.setFont(fixed_width_font)
-        self.plainTextEdit_3.setObjectName("script")
-        self.plainTextEdit_3.setStyleSheet(stylesheet)
-
         SyntaxHighlighter(self).setDocument(self.plainTextEdit.document())
         SyntaxHighlighter(self).setDocument(self.plainTextEdit_2.document())
         SyntaxHighlighter(self).setDocument(self.plainTextEdit_3.document())
@@ -394,7 +383,6 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
         name_text_size = 13
         price_text_size = 10
         detail_text_size = 7
-        icon_size = 3
 
         is_long = len(target_symbols) > 5
 
@@ -442,18 +430,14 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
                 symbol_box.setStyleSheet(
                     f"""
                     #symbol_box{{
-                        width: {box_size}em;
+                        min-width: {box_size}em;
                         max-width: {box_size}em;
-                        height: {box_size}em;
+                        min-height: {box_size}em;
                         max-height: {box_size}em;
                         background-color: #F2F2F2;
                         border-radius: {box_size/2}em;
                     }}
                     """
-                )
-                symbol_box.setSizePolicy(
-                    QtWidgets.QSizePolicy.Policy.Fixed,
-                    QtWidgets.QSizePolicy.Policy.Fixed,
                 )
                 if is_long and turn + 1 > math.floor(len(target_symbols) / 2):
                     self.horizontalLayout_17.addWidget(symbol_box)
@@ -474,13 +458,8 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
                 inside_layout.addLayout(this_layout)
                 icon_label.setPixmap(symbol_pixmaps[symbol])
                 icon_label.setScaledContents(True)
-                icon_label.setStyleSheet(
-                    f"""
-                    max-width:{icon_size}em;
-                    max-height:{icon_size}em;
-                    margin: {icon_size*0.1}em;
-                    """
-                )
+                icon_label.setFixedSize(80, 80)
+                icon_label.setMargin(5)
                 this_layout.addWidget(icon_label)
                 name_label = QtWidgets.QLabel(
                     self.symbol_to_alias[symbol],

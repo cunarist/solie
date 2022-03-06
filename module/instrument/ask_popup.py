@@ -52,11 +52,11 @@ class AskPopup(QtWidgets.QWidget):
             }
             #content_box{
                 border: 1px solid #555555;
-                border-radius: 0.2em;
+                border-radius: 0.4em;
                 background: #F9F9F9;
-                width: 24em;
+                min-width: 24em;
                 max-width: 24em;
-                height: 24em;
+                min-height: 24em;
                 max-height: 24em;
                 margin: 0em;
                 padding: 2em;
@@ -74,9 +74,6 @@ class AskPopup(QtWidgets.QWidget):
         content_box = QtWidgets.QGroupBox(
             autoFillBackground=True, objectName="content_box"
         )
-        content_box.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed
-        )
         content_box_layout = QtWidgets.QVBoxLayout(content_box)
         full_layout.addWidget(content_box)
 
@@ -93,9 +90,6 @@ class AskPopup(QtWidgets.QWidget):
         close_button_font = QtGui.QFont()
         close_button_font.setPointSize(11)
         close_button.setFont(close_button_font)
-        close_button.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed
-        )
 
         def job():
             self.done_event.set()

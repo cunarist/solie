@@ -26,15 +26,6 @@ class LicenseArea(QtWidgets.QScrollArea):
         # ■■■■■ full structure ■■■■■
 
         self.setWidgetResizable(True)
-        self.setStyleSheet(
-            """
-            #card {
-                width: 36em;
-                max-width: 36em;
-                padding: 2em;
-            }
-            """
-        )
 
         # ■■■■■ full layout ■■■■■
 
@@ -58,12 +49,10 @@ class LicenseArea(QtWidgets.QScrollArea):
         # ■■■■■ a card ■■■■■
 
         # card structure
-        card = QtWidgets.QGroupBox(objectName="card")
-        card.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed,
-        )
+        card = QtWidgets.QGroupBox()
+        card.setFixedWidth(720)
         card_layout = QtWidgets.QVBoxLayout(card)
+        card_layout.setContentsMargins(40, 40, 40, 40)
         cards_layout.addWidget(card)
 
         # spacing
@@ -119,11 +108,7 @@ class LicenseArea(QtWidgets.QScrollArea):
         )
         this_layout.addItem(spacer)
         key_input = QtWidgets.QLineEdit()
-        key_input.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed,
-        )
-        key_input.setStyleSheet("width: 18em;")
+        key_input.setFixedWidth(360)
         key_input.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         this_layout.addWidget(key_input)
         spacer = QtWidgets.QSpacerItem(
@@ -166,12 +151,10 @@ class LicenseArea(QtWidgets.QScrollArea):
                 root.ask(question)
 
         # card structure
-        card = QtWidgets.QGroupBox(objectName="card")
-        card.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed,
-        )
+        card = QtWidgets.QGroupBox()
+        card.setFixedWidth(720)
         card_layout = QtWidgets.QHBoxLayout(card)
+        card_layout.setContentsMargins(40, 40, 40, 40)
         cards_layout.addWidget(card)
 
         # confirm button

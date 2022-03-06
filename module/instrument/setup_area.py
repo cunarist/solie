@@ -104,15 +104,6 @@ class SetupArea(QtWidgets.QScrollArea):
         # ■■■■■ full structure ■■■■■
 
         self.setWidgetResizable(True)
-        self.setStyleSheet(
-            """
-            #card {
-                width: 36em;
-                max-width: 36em;
-                padding: 2em;
-            }
-            """
-        )
 
         # ■■■■■ full layout ■■■■■
 
@@ -126,11 +117,9 @@ class SetupArea(QtWidgets.QScrollArea):
 
         # card structure
         card = QtWidgets.QGroupBox(objectName="card")
-        card.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed,
-        )
+        card.setFixedWidth(720)
         card_layout = QtWidgets.QVBoxLayout(card)
+        card_layout.setContentsMargins(40, 40, 40, 40)
         cards_layout.addWidget(card)
 
         # spacing
@@ -194,15 +183,8 @@ class SetupArea(QtWidgets.QScrollArea):
             icon_label = QtWidgets.QLabel("", card)
             icon_label.setPixmap(blank_coing_pixmap)
             icon_label.setScaledContents(True)
-            icon_label.setStyleSheet(
-                """
-                width: 1.4em;
-                height: 1.4em;
-                max-width:1.4em;
-                max-height:1.4em;
-                margin: 0.4em;
-                """
-            )
+            icon_label.setFixedSize(40, 40)
+            icon_label.setMargin(5)
             this_layout.addWidget(icon_label)
             symbol_icon_labels[symbol] = icon_label
             if coin_name == "":
@@ -233,11 +215,9 @@ class SetupArea(QtWidgets.QScrollArea):
 
         # card structure
         card = QtWidgets.QGroupBox(objectName="card")
-        card.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed,
-        )
+        card.setFixedWidth(720)
         card_layout = QtWidgets.QHBoxLayout(card)
+        card_layout.setContentsMargins(40, 40, 40, 40)
         cards_layout.addWidget(card)
 
         # confirm button
