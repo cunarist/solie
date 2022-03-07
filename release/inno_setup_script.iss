@@ -27,15 +27,13 @@ PrivilegesRequired=lowest
 OutputDir=..\dist
 OutputBaseFilename=SolsolWindowsSetup
 SetupIconFile=..\resource\image_logo.ico
+UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
-
-[Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
 Source: "..\dist\Solsol\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
@@ -44,5 +42,4 @@ Source: "..\dist\Solsol\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdir
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
