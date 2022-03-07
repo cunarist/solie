@@ -60,7 +60,7 @@ QSplitter::handle {
 QPlainTextEdit, QListWidget {
     background-color: #F5F2F0;
 	border-radius: 0.2em;
-	border: 1px solid rgba(0,0,0,0.2);
+	border: 1px solid rgba(0,0,0,0.1);
 }
 
 #symbol_box{
@@ -69,7 +69,7 @@ QPlainTextEdit, QListWidget {
     min-height: 12em;
     max-height: 12em;
     background-color: #F7F7F7;
-	border: 1px solid rgba(0,0,0,0.2);
+	border: 1px solid rgba(0,0,0,0.1);
     border-radius: 6em;
 }
 
@@ -78,7 +78,7 @@ QPlainTextEdit, QListWidget {
 }
 
 #ask_popup_box{
-    border: 1px solid #555555;
+    border: 1px solid rgba(0,0,0,0.1);
     border-radius: 0.4em;
     background: #F9F9F9;
     min-width: 24em;
