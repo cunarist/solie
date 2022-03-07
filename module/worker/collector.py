@@ -152,7 +152,7 @@ class Collector:
         self.root.scheduler.add_job(
             self.organize_everything,
             trigger="cron",
-            second="*/10",
+            minute="*",
             executor="thread_pool_executor",
         )
         self.root.scheduler.add_job(
@@ -747,6 +747,10 @@ class Collector:
         self.task_durations["add_aggregate_trades"].append(duration)
 
     def organize_everything(self, *args, **kwargs):
+
+        with self.datalocks[0]:
+            self.candle_data = self.candle_data.asfreq("10S")
+            self.candle_data = self.candle_data.astype(np.float32)
 
         with self.datalocks[1]:
             self.realtime_data_chunks[-1].sort(order="index")
