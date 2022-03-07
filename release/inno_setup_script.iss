@@ -43,3 +43,8 @@ Source: "..\dist\Solsol\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdir
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 
+[Code]
+procedure InitializeWizard();
+begin
+  WizardForm.WizardSmallBitmapImage.Visible := False;
+end;
