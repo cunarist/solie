@@ -509,7 +509,7 @@ class Manager:
     def check_update(self, *args, **kwargs):
 
         run_duration = datetime.now(timezone.utc) - self.executed_time
-        did_run_long = run_duration > timedelta(hours=24)
+        did_run_long = run_duration > timedelta(hours=12)
 
         does_update_exist = find_goodies.check()
 
