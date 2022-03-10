@@ -31,12 +31,12 @@
 	height: 1.8em;
 }
 
-QPushButton, QComboBox, QLineEdit{
+QPushButton, QComboBox, QLineEdit {
 	padding-right: 0.8em;
 	padding-left: 0.8em;
 }
 
-QTabWidget::tab-bar{
+QTabWidget::tab-bar {
 	alignment: center;
 }
 
@@ -44,12 +44,12 @@ QProgressBar {
 	height: 0.4em;
 }
 
-QMenu{
+QMenu {
 	padding-top: 0.6em;
 	padding-bottom: 0.6em;
 }
 
-QMenu::separator{
+QMenu::separator {
    	height: 1em;
 }
 
@@ -57,13 +57,13 @@ QSplitter::handle {
     background-color: #FCFCFC;
 }
 
-QPlainTextEdit, QListWidget {
+ScriptEditor, LogList {
     background-color: #F5F2F0;
 	border-radius: 0.2em;
 	border: 1px solid rgba(0,0,0,0.1);
 }
 
-SymbolBox{
+SymbolBox {
     min-width: 12em;
     max-width: 12em;
     min-height: 12em;
@@ -73,11 +73,11 @@ SymbolBox{
     border-radius: 6em;
 }
 
-AskPopup{
+AskPopup {
     background: rgba(0, 0, 0, 127);
 }
 
-AskPopupContent{
+AskPopupContent {
     border: 1px solid rgba(0,0,0,0.1);
     border-radius: 0.4em;
     background: #F9F9F9;
@@ -1040,7 +1040,7 @@ AskPopupContent{
              </widget>
             </item>
             <item>
-             <widget class="QPlainTextEdit" name="plainTextEdit_3">
+             <widget class="ScriptEditor" name="plainTextEdit_3">
               <property name="lineWrapMode">
                <enum>QPlainTextEdit::NoWrap</enum>
               </property>
@@ -1061,7 +1061,7 @@ AskPopupContent{
              </widget>
             </item>
             <item>
-             <widget class="QPlainTextEdit" name="plainTextEdit_2">
+             <widget class="ScriptEditor" name="plainTextEdit_2">
               <property name="lineWrapMode">
                <enum>QPlainTextEdit::NoWrap</enum>
               </property>
@@ -1516,8 +1516,8 @@ AskPopupContent{
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>265</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_6">
@@ -1545,8 +1545,8 @@ AskPopupContent{
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>265</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_7">
@@ -1574,8 +1574,8 @@ AskPopupContent{
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>265</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_4">
@@ -1603,8 +1603,8 @@ AskPopupContent{
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>265</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_8">
@@ -1632,8 +1632,8 @@ AskPopupContent{
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>265</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_5">
@@ -1661,8 +1661,8 @@ AskPopupContent{
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>265</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_9">
@@ -1764,7 +1764,7 @@ AskPopupContent{
                  </widget>
                 </item>
                 <item>
-                 <widget class="QPlainTextEdit" name="plainTextEdit">
+                 <widget class="ScriptEditor" name="plainTextEdit">
                   <property name="lineWrapMode">
                    <enum>QPlainTextEdit::NoWrap</enum>
                   </property>
@@ -1785,7 +1785,7 @@ AskPopupContent{
                  </widget>
                 </item>
                 <item>
-                 <widget class="QListWidget" name="listWidget">
+                 <widget class="LogList" name="listWidget">
                   <property name="verticalScrollMode">
                    <enum>QAbstractItemView::ScrollPerPixel</enum>
                   </property>
@@ -1859,6 +1859,18 @@ AskPopupContent{
    </layout>
   </widget>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ScriptEditor</class>
+   <extends>QPlainTextEdit</extends>
+   <header>widget/script_editor</header>
+  </customwidget>
+  <customwidget>
+   <class>LogList</class>
+   <extends>QListWidget</extends>
+   <header>widget/log_list</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
