@@ -13,6 +13,10 @@ import pyqtgraph
 from apscheduler.schedulers.background import BlockingScheduler
 import black
 
+from widget.ask_popup import AskPopup
+from widget.setup_area import SetupArea
+from widget.guide_frame import GuideFrame
+from widget.license_area import LicenseArea
 from worker.manager import Manager
 from worker.collector import Collector
 from worker.transactor import Transactor
@@ -20,15 +24,11 @@ from worker.simulator import Simulator
 from worker.strategist import Strategiest
 from instrument.thread_pool_executor import ThreadPoolExecutor
 from instrument.percent_axis_item import PercentAxisItem
-from instrument.ask_popup import AskPopup
-from instrument.setup_area import SetupArea
 from instrument.telephone import Telephone
 from instrument.api_streamer import ApiStreamer
 from instrument.api_requester import ApiRequester
-from instrument.guide_frame import GuideFrame
 from instrument.log_handler import LogHandler
 from instrument.syntax_highlighter import SyntaxHighlighter
-from instrument.license_area import LicenseArea
 from recipe import outsource
 from recipe import check_internet
 from recipe import process_toss
