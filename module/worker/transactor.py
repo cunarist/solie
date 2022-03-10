@@ -574,8 +574,8 @@ class Transactor:
         elif returned[0] == 1:
             server = "testnet"
         new_keys["server"] = server
-        new_keys["binance_api"] = returned[1].replace("\n", "")
-        new_keys["binance_secret"] = returned[2].replace("\n", "")
+        new_keys["binance_api"] = returned[1]
+        new_keys["binance_secret"] = returned[2]
 
         before_keys = self.keys
         if before_keys["server"] != new_keys["server"]:

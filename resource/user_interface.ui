@@ -496,6 +496,9 @@ AskPopupContent {
                  <pointsize>5</pointsize>
                 </font>
                </property>
+               <property name="inputMask">
+                <string>NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN</string>
+               </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
                </property>
@@ -526,6 +529,9 @@ AskPopupContent {
                 <font>
                  <pointsize>5</pointsize>
                 </font>
+               </property>
+               <property name="inputMask">
+                <string>NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>

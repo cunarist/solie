@@ -109,6 +109,7 @@ class LicenseArea(QtWidgets.QScrollArea):
         this_layout.addItem(spacer)
         key_input = QtWidgets.QLineEdit()
         key_input.setFixedWidth(360)
+        key_input.setInputMask("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN")
         key_input.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         this_layout.addWidget(key_input)
         spacer = QtWidgets.QSpacerItem(
