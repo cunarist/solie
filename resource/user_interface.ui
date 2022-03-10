@@ -63,7 +63,7 @@ QPlainTextEdit, QListWidget {
 	border: 1px solid rgba(0,0,0,0.1);
 }
 
-#symbol_box{
+SymbolBox{
     min-width: 12em;
     max-width: 12em;
     min-height: 12em;
@@ -73,11 +73,11 @@ QPlainTextEdit, QListWidget {
     border-radius: 6em;
 }
 
-#dark_sheet{
+AskPopup{
     background: rgba(0, 0, 0, 127);
 }
 
-#ask_popup_box{
+AskPopupContent{
     border: 1px solid rgba(0,0,0,0.1);
     border-radius: 0.4em;
     background: #F9F9F9;

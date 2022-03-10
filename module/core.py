@@ -17,6 +17,7 @@ from widget.ask_popup import AskPopup
 from widget.setup_area import SetupArea
 from widget.guide_frame import GuideFrame
 from widget.license_area import LicenseArea
+from widget.symbol_box import SymbolBox
 from worker.manager import Manager
 from worker.collector import Collector
 from worker.transactor import Transactor
@@ -425,7 +426,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             for turn, symbol in enumerate(target_symbols):
                 coin_symbol = symbol.removesuffix("USDT")
                 coin_rank = coin_ranks.get(coin_symbol, 0)
-                symbol_box = QtWidgets.QGroupBox(objectName="symbol_box")
+                symbol_box = SymbolBox()
                 if is_long and turn + 1 > math.floor(len(target_symbols) / 2):
                     self.horizontalLayout_17.addWidget(symbol_box)
                 else:

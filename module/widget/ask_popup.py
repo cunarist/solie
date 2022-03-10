@@ -2,6 +2,8 @@ import threading
 
 from PyQt6 import QtWidgets, QtCore, QtGui
 
+from widget.ask_popup_content import AskPopupContent
+
 # https://stackoverflow.com/questions/67029993/pyqt-creating-a-popup-in-the-window
 
 
@@ -29,7 +31,6 @@ class AskPopup(QtWidgets.QWidget):
 
         # needed for filling the window when resized
         root.installEventFilter(self)
-        self.setObjectName("dark_sheet")
 
         # ■■■■■ in case other ask popup exists ■■■■■
 
@@ -53,9 +54,7 @@ class AskPopup(QtWidgets.QWidget):
         # ■■■■■ visaul box ■■■■■
 
         # box
-        content_box = QtWidgets.QGroupBox(
-            autoFillBackground=True, objectName="ask_popup_box"
-        )
+        content_box = AskPopupContent(autoFillBackground=True)
         content_box_layout = QtWidgets.QVBoxLayout(content_box)
         full_layout.addWidget(content_box)
 
