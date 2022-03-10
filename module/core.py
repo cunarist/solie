@@ -28,7 +28,6 @@ from instrument.telephone import Telephone
 from instrument.api_streamer import ApiStreamer
 from instrument.api_requester import ApiRequester
 from instrument.log_handler import LogHandler
-from instrument.syntax_highlighter import SyntaxHighlighter
 from recipe import outsource
 from recipe import check_internet
 from recipe import process_toss
@@ -139,7 +138,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
         super().__init__()
         self.setupUi(self)
 
-        # ■■■■■ package global settings ■■■■■
+        # ■■■■■ global settings of packages ■■■■■
 
         os.get_terminal_size = lambda *args: os.terminal_size((72, 80))
         pd.set_option("display.precision", 3)
@@ -147,19 +146,9 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
         pd.set_option("display.max_rows", 20)
         pyqtgraph.setConfigOptions(antialias=True)
 
-        # ■■■■■ basic display configuration ■■■■■
+        # ■■■■■ basic sizing ■■■■■
 
         self.resize(0, 0)  # to smallest size possible
-
-        fixed_width_font = QtGui.QFont("Consolas", 9)
-        self.listWidget.setFont(fixed_width_font)
-        self.plainTextEdit.setFont(fixed_width_font)
-        self.plainTextEdit_2.setFont(fixed_width_font)
-        self.plainTextEdit_3.setFont(fixed_width_font)
-        SyntaxHighlighter(self).setDocument(self.plainTextEdit.document())
-        SyntaxHighlighter(self).setDocument(self.plainTextEdit_2.document())
-        SyntaxHighlighter(self).setDocument(self.plainTextEdit_3.document())
-
         self.splitter.setSizes([3, 1, 1, 2])
         self.splitter_2.setSizes([3, 1, 1, 2])
 
