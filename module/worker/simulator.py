@@ -898,7 +898,7 @@ class Simulator:
         text += "  ⦁  "
         text += f"거래량 {round(symbol_margin_ratio,4)}/{round(total_margin_ratio,4)}회분"
         text += "  ⦁  "
-        text += f"자산 변화 {round(symbol_asset_change,4)}/{round(total_asset_change,4)}%"
+        text += f"누적 실현 수익률 {round(symbol_asset_change,4)}/{round(total_asset_change,4)}%"
         text += "  ⦁  "
         text += f"최저 미실현 수익률 {round(min_unrealized_change*100,2)}%"
         self.root.undertake(lambda t=text: self.root.label_13.setText(t), False)
