@@ -116,8 +116,10 @@ class Transactor:
             self.root.undertake(
                 lambda s=state: self.root.checkBox_5.setChecked(s), False
             )
-            text = str(read_data["desired_leverage"])
-            self.root.undertake(lambda t=text: self.root.lineEdit_3.setText(t), False)
+            new_value = read_data["desired_leverage"]
+            self.root.undertake(
+                lambda n=new_value: self.root.spinBox.setValue(n), False
+            )
         except FileNotFoundError:
             self.leverage_settings = {
                 "desired_leverage": 1,
@@ -792,15 +794,15 @@ class Transactor:
             symbol_margin_ratio = 0
         # asset changes
         if len(asset_changes) > 0:
-            total_asset_change = asset_changes.cumprod().iloc[-1]
-            total_asset_change = (total_asset_change - 1) * 100
+            total_yield = asset_changes.cumprod().iloc[-1]
+            total_yield = (total_yield - 1) * 100
         else:
-            total_asset_change = 0
+            total_yield = 0
         if len(asset_changes[symbol_mask]) > 0:
-            symbol_asset_change = asset_changes[symbol_mask].cumprod().iloc[-1]
-            symbol_asset_change = (symbol_asset_change - 1) * 100
+            symbol_yield = asset_changes[symbol_mask].cumprod().iloc[-1]
+            symbol_yield = (symbol_yield - 1) * 100
         else:
-            symbol_asset_change = 0
+            symbol_yield = 0
         # least unrealized changes
         if len(unrealized_changes) > 0:
             min_unrealized_change = unrealized_changes.min()
@@ -827,7 +829,7 @@ class Transactor:
         text += "  ⦁  "
         text += f"거래량 {round(symbol_margin_ratio,4)}/{round(total_margin_ratio,4)}회분"
         text += "  ⦁  "
-        text += f"누적 실현 수익률 {round(symbol_asset_change,4)}/{round(total_asset_change,4)}%"
+        text += f"누적 실현 수익률 {round(symbol_yield,4)}/{round(total_yield,4)}%"
         text += "  ⦁  "
         text += f"최저 미실현 수익률 {round(min_unrealized_change*100,2)}%"
         self.root.undertake(lambda t=text: self.root.label_8.setText(t), False)
@@ -1707,8 +1709,7 @@ class Transactor:
 
     def update_leverage_settings(self, *args, **kwargs):
 
-        text = self.root.undertake(lambda: self.root.lineEdit_3.text(), True)
-        desired_leverage = int(text)
+        desired_leverage = self.root.undertake(lambda: self.root.spinBox.value(), True)
         self.leverage_settings["desired_leverage"] = desired_leverage
 
         is_checked = self.root.undertake(lambda: self.root.checkBox_5.isChecked(), True)

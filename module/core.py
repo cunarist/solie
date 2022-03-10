@@ -1032,9 +1032,9 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             job = self.manager.open_datapath
             outsource.do(self.pushButton_8.clicked, job)
             job = self.simulator.update_presentation_settings
-            outsource.do(self.lineEdit_2.editingFinished, job)
+            outsource.do(self.spinBox_2.editingFinished, job)
             job = self.simulator.update_presentation_settings
-            outsource.do(self.lineEdit_5.editingFinished, job)
+            outsource.do(self.doubleSpinBox.editingFinished, job)
             job = self.simulator.erase
             outsource.do(self.pushButton_4.clicked, job)
             job = self.simulator.update_calculation_settings
@@ -1072,7 +1072,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             job = self.collector.download_fill_history_last_two_days
             outsource.do(self.pushButton_2.clicked, job)
             job = self.transactor.update_leverage_settings
-            outsource.do(self.lineEdit_3.editingFinished, job)
+            outsource.do(self.spinBox.editingFinished, job)
             job = self.transactor.update_leverage_settings
             outsource.do(self.checkBox_5.stateChanged, job)
             job = self.manager.deselect_log_output

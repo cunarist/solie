@@ -202,10 +202,10 @@ class Simulator:
         self.display_lines()
 
     def update_presentation_settings(self, *args, **kwargs):
-        text = self.root.undertake(lambda: self.root.lineEdit_2.text(), True)
-        self.presentation_settings["leverage"] = int(text)
-        text = self.root.undertake(lambda: self.root.lineEdit_5.text(), True)
-        self.presentation_settings["taker_fee"] = float(text)
+        input_value = self.root.undertake(lambda: self.root.spinBox_2.value(), True)
+        self.presentation_settings["leverage"] = input_value
+        input_value = self.root.undertake(lambda: self.root.doubleSpinBox.value(), True)
+        self.presentation_settings["taker_fee"] = input_value
         self.present()
 
     def display_lines(self, *args, **kwargs):
@@ -863,15 +863,15 @@ class Simulator:
             symbol_margin_ratio = 0
         # asset changes
         if len(asset_changes) > 0:
-            total_asset_change = asset_changes.cumprod().iloc[-1]
-            total_asset_change = (total_asset_change - 1) * 100
+            total_yield = asset_changes.cumprod().iloc[-1]
+            total_yield = (total_yield - 1) * 100
         else:
-            total_asset_change = 0
+            total_yield = 0
         if len(asset_changes[symbol_mask]) > 0:
-            symbol_asset_change = asset_changes[symbol_mask].cumprod().iloc[-1]
-            symbol_asset_change = (symbol_asset_change - 1) * 100
+            symbol_yield = asset_changes[symbol_mask].cumprod().iloc[-1]
+            symbol_yield = (symbol_yield - 1) * 100
         else:
-            symbol_asset_change = 0
+            symbol_yield = 0
         # least unrealized changes
         if len(unrealized_changes) > 0:
             min_unrealized_change = unrealized_changes.min()
@@ -898,7 +898,7 @@ class Simulator:
         text += "  ⦁  "
         text += f"거래량 {round(symbol_margin_ratio,4)}/{round(total_margin_ratio,4)}회분"
         text += "  ⦁  "
-        text += f"누적 실현 수익률 {round(symbol_asset_change,4)}/{round(total_asset_change,4)}%"
+        text += f"누적 실현 수익률 {round(symbol_yield,4)}/{round(total_yield,4)}%"
         text += "  ⦁  "
         text += f"최저 미실현 수익률 {round(min_unrealized_change*100,2)}%"
         self.root.undertake(lambda t=text: self.root.label_13.setText(t), False)

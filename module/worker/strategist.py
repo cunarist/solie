@@ -55,13 +55,16 @@ class Strategiest:
             details = [True, True, 30, False]
             self.details = details
         self.root.undertake(
-            lambda d=details: self.root.checkBox_6.setChecked(d[0]), False
+            lambda d=details: self.root.checkBox_6.setChecked(d[0]),
+            False,
         )
         self.root.undertake(
-            lambda d=details: self.root.checkBox_7.setChecked(d[1]), False
+            lambda d=details: self.root.checkBox_7.setChecked(d[1]),
+            False,
         )
         self.root.undertake(
-            lambda d=details: self.root.lineEdit_7.setText(str(d[2])), False
+            lambda d=details: self.root.spinBox_3.setValue(d[2]),
+            False,
         )
         if details[3]:
             self.root.undertake(
@@ -121,13 +124,13 @@ class Strategiest:
             return (
                 self.root.checkBox_6.isChecked(),
                 self.root.checkBox_7.isChecked(),
-                self.root.lineEdit_7.text(),
+                self.root.spinBox_3.value(),
                 self.root.radioButton_12.isChecked(),
             )
 
         retuned = self.root.undertake(job, True)
 
-        details = [retuned[0], retuned[1], int(retuned[2]), retuned[3]]
+        details = [retuned[0], retuned[1], retuned[2], retuned[3]]
         with open(filepath, "w", encoding="utf8") as file:
             json.dump(details, file, indent=4)
         self.details = details
@@ -156,7 +159,7 @@ class Strategiest:
         def job(details=self.details):
             self.root.checkBox_6.setChecked(details[0])
             self.root.checkBox_7.setChecked(details[1])
-            self.root.lineEdit_7.setText(str(details[2]))
+            self.root.spinBox_3.setValue(details[2])
             if details[3]:
                 self.root.radioButton_11.setChecked(False)
                 self.root.radioButton_12.setChecked(True)
@@ -192,7 +195,7 @@ class Strategiest:
         def job():
             self.root.checkBox_6.setChecked(True)
             self.root.checkBox_7.setChecked(True)
-            self.root.lineEdit_7.setText("30")
+            self.root.spinBox_3.setValue(30)
             self.root.radioButton_11.setChecked(True)
             self.root.radioButton_12.setChecked(False)
 
