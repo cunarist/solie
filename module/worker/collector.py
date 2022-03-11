@@ -50,6 +50,7 @@ class Collector:
             "add_book_tickers": deque(maxlen=1280),
             "add_mark_price": deque(maxlen=10),
             "add_aggregate_trades": deque(maxlen=1280),
+            "organize_everything": deque(maxlen=60),
         }
 
         self.exchange_state = {
@@ -748,8 +749,11 @@ class Collector:
 
     def organize_everything(self, *args, **kwargs):
 
+        start_time = datetime.now(timezone.utc)
+
         with self.datalocks[0]:
-            self.candle_data = self.candle_data.asfreq("10S")
+            self.candle_data = self.candle_data.resample("10S").asfreq()
+            self.candle_data = process_toss.apply(sort_dataframe.do, self.candle_data)
             self.candle_data = self.candle_data.astype(np.float32)
 
         with self.datalocks[1]:
@@ -767,6 +771,9 @@ class Collector:
             slice_from = last_index - np.timedelta64(60, "s")
             mask = self.aggregate_trades["index"] > slice_from
             self.aggregate_trades = self.aggregate_trades[mask].copy()
+
+        duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+        self.task_durations["organize_everything"].append(duration)
 
     def clear_aggregate_trades(self, *args, **kwargs):
 
