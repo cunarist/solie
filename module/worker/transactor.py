@@ -108,22 +108,17 @@ class Transactor:
             }
 
         try:
-            filepath = self.workerpath + "/leverage_settings.json"
+            filepath = self.workerpath + "/mode_settings.json"
             with open(filepath, "r", encoding="utf8") as file:
                 read_data = json.load(file)
-            self.leverage_settings = read_data
-            state = read_data["should_watch"]
-            self.root.undertake(
-                lambda s=state: self.root.checkBox_5.setChecked(s), False
-            )
+            self.mode_settings = read_data
             new_value = read_data["desired_leverage"]
             self.root.undertake(
                 lambda n=new_value: self.root.spinBox.setValue(n), False
             )
         except FileNotFoundError:
-            self.leverage_settings = {
+            self.mode_settings = {
                 "desired_leverage": 1,
-                "should_watch": False,
             }
 
         try:
@@ -477,6 +472,17 @@ class Transactor:
                         boundary = stop_price
                         left_quantity = origianal_quantity
                         left_margin = left_quantity * boundary / leverage
+                elif order_type == "LIMIT":
+                    if side == "BUY":
+                        command_name = "book_buy"
+                        boundary = price
+                        left_quantity = origianal_quantity - executed_quantity
+                        left_margin = left_quantity * boundary / leverage
+                    elif side == "SELL":
+                        command_name = "book_sell"
+                        boundary = price
+                        left_quantity = origianal_quantity - executed_quantity
+                        left_margin = left_quantity * boundary / leverage
                 else:
                     command_name = "other"
                     boundary = max(price, stop_price)
@@ -630,7 +636,7 @@ class Transactor:
             elif strategy in (1, 2):
                 question = [
                     "랜덤 주문 전략이 선택되어 있습니다.",
-                    "랜덤 주문 전략이 켜진 상태로 자동 주문을 켜 놓으면 아무 시장에서 총 asset의 1/10000만큼씩 의미 없는"
+                    "랜덤 주문 전략이 켜진 상태로 자동 주문을 켜 놓으면 아무 시장에서 총 자산의 1/10000만큼씩 의미 없는"
                     " 거래를 반복하게 됩니다. 이 전략은 자동 주문 코드가 잘 작동하는지 확인하기 위한 용도로 만들어졌습니다. 오랫동안 켜"
                     " 놓으면 수수료가 많이 발생하니 조심하세요.",
                     ["확인"],
@@ -1659,24 +1665,17 @@ class Transactor:
 
         self.root.undertake(job, False)
 
-    def update_leverage_settings(self, *args, **kwargs):
+    def update_mode_settings(self, *args, **kwargs):
 
         desired_leverage = self.root.undertake(lambda: self.root.spinBox.value(), True)
-        self.leverage_settings["desired_leverage"] = desired_leverage
-
-        is_checked = self.root.undertake(lambda: self.root.checkBox_5.isChecked(), True)
-
-        if is_checked:
-            self.leverage_settings["should_watch"] = True
-        else:
-            self.leverage_settings["should_watch"] = False
+        self.mode_settings["desired_leverage"] = desired_leverage
 
         # ■■■■■ save ■■■■■
 
         with open(
-            self.workerpath + "/leverage_settings.json", "w", encoding="utf8"
+            self.workerpath + "/mode_settings.json", "w", encoding="utf8"
         ) as file:
-            json.dump(self.leverage_settings, file, indent=4)
+            json.dump(self.mode_settings, file, indent=4)
 
     def watch_binance(self, *args, **kwargs):
 
@@ -1818,8 +1817,8 @@ class Transactor:
 
                 price = float(about_open_order["price"])
                 stop_price = float(about_open_order["stopPrice"])
-                origianal_quantity = float(about_open_order["origQtCore.Qty"])
-                executed_quantity = float(about_open_order["executedQtCore.Qty"])
+                origianal_quantity = float(about_open_order["origQty"])
+                executed_quantity = float(about_open_order["executedQty"])
 
                 if order_type == "STOP_MARKET":
                     if close_position:
@@ -1860,6 +1859,17 @@ class Transactor:
                         command_name = "later_up_sell"
                         boundary = stop_price
                         left_quantity = origianal_quantity
+                        left_margin = left_quantity * boundary / leverage
+                elif order_type == "LIMIT":
+                    if side == "BUY":
+                        command_name = "book_buy"
+                        boundary = price
+                        left_quantity = origianal_quantity - executed_quantity
+                        left_margin = left_quantity * boundary / leverage
+                    elif side == "SELL":
+                        command_name = "book_sell"
+                        boundary = price
+                        left_quantity = origianal_quantity - executed_quantity
                         left_margin = left_quantity * boundary / leverage
                 else:
                     command_name = "other"
@@ -1930,29 +1940,27 @@ class Transactor:
 
         # ■■■■■ keep on eye on leverage ■■■■■
 
-        if self.leverage_settings["should_watch"]:
+        def job(symbol):
+            for about_position in about_account["positions"]:
+                if about_position["symbol"] == symbol:
+                    break
+            leverage = int(about_position["leverage"])
 
-            def job(symbol):
-                for about_position in about_account["positions"]:
-                    if about_position["symbol"] == symbol:
-                        break
-                leverage = int(about_position["leverage"])
+            if leverage != self.mode_settings["desired_leverage"]:
 
-                if leverage != self.leverage_settings["desired_leverage"]:
+                timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
+                payload = {
+                    "symbol": symbol,
+                    "timestamp": timestamp,
+                    "leverage": self.mode_settings["desired_leverage"],
+                }
+                self.api_requester.binance(
+                    http_method="POST",
+                    path="/fapi/v1/leverage",
+                    payload=payload,
+                )
 
-                    timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
-                    payload = {
-                        "symbol": symbol,
-                        "timestamp": timestamp,
-                        "leverage": self.leverage_settings["desired_leverage"],
-                    }
-                    self.api_requester.binance(
-                        http_method="POST",
-                        path="/fapi/v1/leverage",
-                        payload=payload,
-                    )
-
-            thread_toss.map(job, standardize.get_basics()["target_symbols"])
+        thread_toss.map(job, standardize.get_basics()["target_symbols"])
 
         # ■■■■■ correct mode of the account if automation is turned on ■■■■■
 
@@ -2036,6 +2044,8 @@ class Transactor:
         # later_down_buy
         # later_up_sell
         # later_down_sell
+        # book_buy
+        # book_sell
 
         # ■■■■■ prepare orders ■■■■■
 
@@ -2210,6 +2220,38 @@ class Transactor:
                     "side": "SELL",
                     "quantity": ball.ceil(quantity, quantity_precision),
                     "stopPrice": round(boundary, price_precision),
+                }
+                new_orders.append(new_order)
+
+            if "book_buy" in decision[symbol]:
+                command = decision[symbol]["book_buy"]
+                notional = max(minimum_notional, command["margin"] * leverage)
+                boundary = command["boundary"]
+                quantity = notional / boundary
+                new_order = {
+                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                    "symbol": symbol,
+                    "type": "LIMIT",
+                    "side": "BUY",
+                    "quantity": ball.ceil(quantity, quantity_precision),
+                    "price": round(boundary, price_precision),
+                    "timeInForce": "GTC",
+                }
+                new_orders.append(new_order)
+
+            if "book_sell" in decision[symbol]:
+                command = decision[symbol]["book_sell"]
+                notional = max(minimum_notional, command["margin"] * leverage)
+                boundary = command["boundary"]
+                quantity = notional / boundary
+                new_order = {
+                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                    "symbol": symbol,
+                    "type": "LIMIT",
+                    "side": "SELL",
+                    "quantity": ball.ceil(quantity, quantity_precision),
+                    "price": round(boundary, price_precision),
+                    "timeInForce": "GTC",
                 }
                 new_orders.append(new_order)
 

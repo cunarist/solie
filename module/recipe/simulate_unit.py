@@ -299,6 +299,54 @@ def do(dataset):
                     amount_shift = -fill_margin / fill_price
                     unit_behind_state["placements"][symbol].pop("later_down_sell")
 
+            if "book_buy" in unit_behind_state["placements"][symbol]:
+
+                command = unit_behind_state["placements"][symbol]["book_buy"]
+                boundary = command["boundary"]
+
+                if is_fast_strategy:
+                    did_cross = boundary > middle_price
+                else:
+                    wobble_high = observed_data_ar[cycle][str((symbol, "High"))]
+                    wobble_low = observed_data_ar[cycle][str((symbol, "Low"))]
+                    did_cross = wobble_low < boundary < wobble_high
+
+                if did_cross:
+                    would_trade_happen = True
+                    role = "maker"
+                    fill_price = boundary
+                    fill_margin = command["margin"]
+                    if fill_margin < 0:
+                        is_margin_negative = True
+                    if math.isnan(fill_margin):
+                        is_margin_nan = True
+                    amount_shift = fill_margin / fill_price
+                    unit_behind_state["placements"][symbol].pop("book_buy")
+
+            if "book_sell" in unit_behind_state["placements"][symbol]:
+
+                command = unit_behind_state["placements"][symbol]["book_sell"]
+                boundary = command["boundary"]
+
+                if is_fast_strategy:
+                    did_cross = boundary < middle_price
+                else:
+                    wobble_high = observed_data_ar[cycle][str((symbol, "High"))]
+                    wobble_low = observed_data_ar[cycle][str((symbol, "Low"))]
+                    did_cross = wobble_low < boundary < wobble_high
+
+                if did_cross:
+                    would_trade_happen = True
+                    role = "maker"
+                    fill_price = boundary
+                    fill_margin = command["margin"]
+                    if fill_margin < 0:
+                        is_margin_negative = True
+                    if math.isnan(fill_margin):
+                        is_margin_nan = True
+                    amount_shift = -fill_margin / fill_price
+                    unit_behind_state["placements"][symbol].pop("book_sell")
+
             # check if situation is okay
             if is_margin_negative:
                 text = ""

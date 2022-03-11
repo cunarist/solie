@@ -92,12 +92,20 @@ def choose(
                     "boundary": current_price * 0.9,
                     "margin": split_ratio * wallet_balance,
                 }
+                decision[symbol]["book_buy"] = {
+                    "boundary": current_price * 0.94,
+                    "margin": split_ratio * wallet_balance,
+                }
+                decision[symbol]["book_sell"] = {
+                    "boundary": current_price * 1.06,
+                    "margin": split_ratio * wallet_balance,
+                }
             else:
                 decision[symbol]["later_down_close"] = {
-                    "boundary": current_price * 0.94,
+                    "boundary": current_price * 0.88,
                 }
                 decision[symbol]["later_up_close"] = {
-                    "boundary": current_price * 1.06,
+                    "boundary": current_price * 1.12,
                 }
 
         elif strategy == 2:

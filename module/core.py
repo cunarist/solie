@@ -80,9 +80,6 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             def job():
                 while True:
                     if done_steps == total_steps:
-                        time.sleep(1)
-                        text = "완료되었습니다."
-                        self.undertake(lambda t=text: guide_frame.announce(t), True)
                         self.undertake(lambda: guide_frame.progress(), True)
                         time.sleep(1)
                         text = "업데이트 확인 중입니다."
@@ -1031,6 +1028,8 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             outsource.do(self.spinBox_2.editingFinished, job)
             job = self.simulator.update_presentation_settings
             outsource.do(self.doubleSpinBox.editingFinished, job)
+            job = self.simulator.update_presentation_settings
+            outsource.do(self.doubleSpinBox_2.editingFinished, job)
             job = self.simulator.erase
             outsource.do(self.pushButton_4.clicked, job)
             job = self.simulator.update_calculation_settings
@@ -1067,10 +1066,8 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             outsource.do(self.comboBox_3.activated, job)
             job = self.collector.download_fill_history_last_two_days
             outsource.do(self.pushButton_2.clicked, job)
-            job = self.transactor.update_leverage_settings
+            job = self.transactor.update_mode_settings
             outsource.do(self.spinBox.editingFinished, job)
-            job = self.transactor.update_leverage_settings
-            outsource.do(self.checkBox_5.stateChanged, job)
             job = self.manager.deselect_log_output
             outsource.do(self.pushButton_6.clicked, job)
             job = self.manager.reset_datapath

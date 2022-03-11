@@ -587,13 +587,6 @@ AskPopupContent {
               </widget>
              </item>
              <item>
-              <widget class="QCheckBox" name="checkBox_5">
-               <property name="text">
-                <string>감시하기</string>
-               </property>
-              </widget>
-             </item>
-             <item>
               <widget class="Line" name="line_3">
                <property name="orientation">
                 <enum>Qt::Vertical</enum>
@@ -760,6 +753,53 @@ AskPopupContent {
               <widget class="Line" name="line_2">
                <property name="orientation">
                 <enum>Qt::Vertical</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_20">
+               <property name="text">
+                <string>메이커 수수료</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QDoubleSpinBox" name="doubleSpinBox_2">
+               <property name="minimumSize">
+                <size>
+                 <width>80</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>80</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+               <property name="buttonSymbols">
+                <enum>QAbstractSpinBox::NoButtons</enum>
+               </property>
+               <property name="correctionMode">
+                <enum>QAbstractSpinBox::CorrectToNearestValue</enum>
+               </property>
+               <property name="suffix">
+                <string>%</string>
+               </property>
+               <property name="decimals">
+                <number>3</number>
+               </property>
+               <property name="maximum">
+                <double>1.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.001000000000000</double>
+               </property>
+               <property name="value">
+                <double>0.020000000000000</double>
                </property>
               </widget>
              </item>
@@ -1564,8 +1604,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>265</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_6">
@@ -1593,8 +1633,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>265</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_7">
@@ -1622,8 +1662,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>265</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_4">
@@ -1651,8 +1691,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>265</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_8">
@@ -1680,8 +1720,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>265</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_5">
@@ -1709,8 +1749,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>265</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_9">

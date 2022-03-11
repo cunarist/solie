@@ -47,8 +47,9 @@ class Simulator:
             "strategy": 0,
         }
         self.presentation_settings = {
-            "leverage": 1,
+            "maker_fee": 0.02,
             "taker_fee": 0.04,
+            "leverage": 1,
         }
 
         self.raw_account_state = {
@@ -202,10 +203,15 @@ class Simulator:
         self.display_lines()
 
     def update_presentation_settings(self, *args, **kwargs):
-        input_value = self.root.undertake(lambda: self.root.spinBox_2.value(), True)
+        widget = self.root.spinBox_2
+        input_value = self.root.undertake(lambda w=widget: w.value(), True)
         self.presentation_settings["leverage"] = input_value
-        input_value = self.root.undertake(lambda: self.root.doubleSpinBox.value(), True)
+        widget = self.root.doubleSpinBox
+        input_value = self.root.undertake(lambda w=widget: w.value(), True)
         self.presentation_settings["taker_fee"] = input_value
+        widget = self.root.doubleSpinBox_2
+        input_value = self.root.undertake(lambda w=widget: w.value(), True)
+        self.presentation_settings["maker_fee"] = input_value
         self.present()
 
     def display_lines(self, *args, **kwargs):
@@ -1330,6 +1336,7 @@ class Simulator:
 
     def present(self, *args, **kwargs):
 
+        maker_fee = self.presentation_settings["maker_fee"]
         taker_fee = self.presentation_settings["taker_fee"]
         leverage = self.presentation_settings["leverage"]
 
@@ -1406,7 +1413,7 @@ class Simulator:
 
             # fee
             month_fees = unit_trade_record["Role"].copy()
-            month_fees[month_fees == "maker"] = 0
+            month_fees[month_fees == "maker"] = maker_fee
             month_fees[month_fees == "taker"] = taker_fee
             month_fees = month_fees.astype(np.float32)
             month_margin_ratios = unit_trade_record["Margin Ratio"]
