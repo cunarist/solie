@@ -753,7 +753,6 @@ class Collector:
 
         with self.datalocks[0]:
             self.candle_data = self.candle_data.resample("10S").asfreq()
-            self.candle_data = process_toss.apply(sort_dataframe.do, self.candle_data)
             self.candle_data = self.candle_data.astype(np.float32)
 
         with self.datalocks[1]:
