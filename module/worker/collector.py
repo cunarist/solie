@@ -104,9 +104,9 @@ class Collector:
             field_names = [str(field_name) for field_name in field_names]
             dtype = [(field_name, np.float32) for field_name in field_names]
             dtpye = [("index", "datetime64[ns]")] + dtype
-            self.realtime_data_chunks = [
-                np.recarray(shape=(0,), dtype=dtpye) for _ in range(2)
-            ]
+            self.realtime_data_chunks = deque(
+                [np.recarray(shape=(0,), dtype=dtpye) for _ in range(2)], maxlen=64
+            )
 
         # aggregate trades
         field_names = itertools.product(
@@ -761,8 +761,6 @@ class Collector:
                 new_chunk = self.realtime_data_chunks[-1][0:0].copy()
                 self.realtime_data_chunks.append(new_chunk)
                 del new_chunk
-            if len(self.realtime_data_chunks) > 64:
-                self.realtime_data_chunks.pop(0)
 
         with self.datalocks[2]:
             self.aggregate_trades.sort(order="index")

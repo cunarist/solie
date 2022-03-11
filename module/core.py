@@ -34,6 +34,7 @@ from recipe import process_toss
 from recipe import thread_toss
 from recipe import standardize
 from recipe import find_goodies
+from recipe import examine_data_files
 
 
 class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui")[0]):
@@ -254,6 +255,10 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             self.centralWidget().layout().addWidget(guide_frame)
 
         self.undertake(job, True)
+
+        # ■■■■■ examine data files ■■■■■
+
+        examine_data_files.do(standardize.get_datapath())
 
         # ■■■■■ multiprocessing ■■■■■
 
