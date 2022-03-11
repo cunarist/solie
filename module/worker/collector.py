@@ -89,7 +89,7 @@ class Collector:
         self.candle_data = self.candle_data[~self.candle_data.index.duplicated()]
         self.candle_data = self.candle_data.sort_index(axis="index")
         self.candle_data = self.candle_data.sort_index(axis="columns")
-        self.candle_data = self.candle_data.asfreq("10S")
+        self.candle_data = self.candle_data.resample("10S").asfreq()
         self.candle_data = self.candle_data.astype(np.float32)
 
         # realtime data chunks
@@ -294,7 +294,7 @@ class Collector:
                     temp_sr[from_moment] = np.nan
                 if until_moment not in temp_sr.index:
                     temp_sr[until_moment] = np.nan
-                temp_sr = temp_sr.asfreq("10S")
+                temp_sr = temp_sr.resample("10S").asfreq()
                 isnan_sr = temp_sr.isna()
                 nan_index = isnan_sr[isnan_sr == 1].index
                 moment_to_fill_from = nan_index[0]
