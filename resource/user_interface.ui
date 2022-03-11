@@ -92,7 +92,7 @@ AskPopupContent {
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_3">
     <item row="5" column="0">
-     <widget class="QLabel" name="gauge">
+     <widget class="Gauge" name="gauge">
       <property name="alignment">
        <set>Qt::AlignCenter</set>
       </property>
@@ -1917,6 +1917,11 @@ AskPopupContent {
    <class>LogList</class>
    <extends>QListWidget</extends>
    <header>widget/log_list</header>
+  </customwidget>
+  <customwidget>
+   <class>Gauge</class>
+   <extends>QLabel</extends>
+   <header>widget/gauge</header>
   </customwidget>
  </customwidgets>
  <resources/>

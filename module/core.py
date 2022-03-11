@@ -974,6 +974,10 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
         def job():
 
+            # 게이지
+            job = self.manager.toggle_board_availability
+            outsource.do(self.gauge.clicked, job)
+
             # 액션
             job = self.collector.save_candle_data
             outsource.do(self.collector_actions[0].triggered, job)

@@ -577,54 +577,6 @@ class Transactor:
         new_keys["binance_api"] = returned[1]
         new_keys["binance_secret"] = returned[2]
 
-        before_keys = self.keys
-        if before_keys["server"] != new_keys["server"]:
-            question = [
-                "서버를 바꾸시겠어요?",
-                "잘못된 값이 입력되면 바이낸스와 연동이 되지 않습니다.",
-                ["아니오", "예"],
-            ]
-            answer = self.root.ask(question)
-            if answer in (0, 1):
-                server = before_keys["server"]
-                index = 0 if server == "real" else 1
-                self.root.undertake(
-                    lambda i=index: self.root.comboBox_3.setCurrentIndex(i), False
-                )
-                return
-            elif answer == 2:
-                pass
-        elif before_keys["binance_api"] != new_keys["binance_api"]:
-            question = [
-                "API 키를 바꾸시겠어요?",
-                "잘못된 값이 입력되면 바이낸스와 연동이 되지 않습니다.",
-                ["아니오", "예"],
-            ]
-            answer = self.root.ask(question)
-            if answer in (0, 1):
-                text = before_keys["binance_api"]
-                self.root.undertake(
-                    lambda t=text: self.root.lineEdit_4.setText(t), False
-                )
-                return
-            elif answer == 2:
-                pass
-        elif before_keys["binance_secret"] != new_keys["binance_secret"]:
-            question = [
-                "비밀 키를 바꾸시겠어요?",
-                "잘못된 값이 입력되면 바이낸스와 연동이 되지 않습니다.",
-                ["아니오", "예"],
-            ]
-            answer = self.root.ask(question)
-            if answer in (0, 1):
-                text = before_keys["binance_secret"]
-                self.root.undertake(
-                    lambda t=text: self.root.lineEdit_6.setText(t), False
-                )
-                return
-            elif answer == 2:
-                pass
-
         self.keys = new_keys
 
         filepath = self.workerpath + "/keys.json"

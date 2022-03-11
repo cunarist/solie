@@ -167,8 +167,8 @@ class SetupArea(QtWidgets.QScrollArea):
         # input
         symbol_icon_labels = {}
         input_layout = QtWidgets.QGridLayout()
-        blank_coing_pixmap = QtGui.QPixmap()
-        blank_coing_pixmap.load("./resource/icon/blank_coin.png")
+        blank_coin_pixmap = QtGui.QPixmap()
+        blank_coin_pixmap.load("./resource/icon/blank_coin.png")
         for turn, symbol in enumerate(available_symbols):
             coin_symbol = symbol.removesuffix("USDT")
             coin_name = coin_names.get(coin_symbol, "")
@@ -181,7 +181,7 @@ class SetupArea(QtWidgets.QScrollArea):
             symbol_checkboxes[symbol] = checkbox
             this_layout.addWidget(checkbox)
             icon_label = QtWidgets.QLabel("", card)
-            icon_label.setPixmap(blank_coing_pixmap)
+            icon_label.setPixmap(blank_coin_pixmap)
             icon_label.setScaledContents(True)
             icon_label.setFixedSize(40, 40)
             icon_label.setMargin(5)

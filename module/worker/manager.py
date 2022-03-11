@@ -523,3 +523,18 @@ class Manager:
 
     def open_documentation(self, *args, **kwargs):
         webbrowser.open("https://cunarist-documentation.azurewebsites.net")
+
+    def toggle_board_availability(self, *args, **kwargs):
+        is_enabled = self.root.undertake(lambda: self.root.board.isEnabled(), True)
+        if is_enabled:
+            self.root.undertake(lambda: self.root.board.setEnabled(False), False)
+        else:
+            question = [
+                "보드 잠금을 해제하시겠어요?",
+                "잠금을 해제하면 보드를 다시 조작할 수 있게 됩니다.",
+                ["아니오", "예"],
+            ]
+            answer = self.root.ask(question)
+            if answer in (0, 1):
+                return
+            self.root.undertake(lambda: self.root.board.setEnabled(True), False)
