@@ -8,7 +8,8 @@ class Gauge(QtWidgets.QLabel):
         super().__init__(parent)
         self.is_mouse_over = False
         self.normal_text = ""
-        self.guide_text = "🔒"
+        self.lock_text = "🔒"
+        self.setFixedHeight(22)
 
     def mousePressEvent(self, event):  # noqa:N802
         self.clicked.emit()
@@ -16,7 +17,7 @@ class Gauge(QtWidgets.QLabel):
 
     def enterEvent(self, event):  # noqa:N802
         self.is_mouse_over = True
-        super().setText(self.guide_text)
+        super().setText(self.lock_text)
         super().enterEvent(event)
 
     def leaveEvent(self, event):  # noqa:N802
@@ -27,6 +28,6 @@ class Gauge(QtWidgets.QLabel):
     def setText(self, text):  # noqa:N802
         self.normal_text = text
         if self.is_mouse_over:
-            super().setText(self.guide_text)
+            super().setText(self.lock_text)
         else:
             super().setText(self.normal_text)
