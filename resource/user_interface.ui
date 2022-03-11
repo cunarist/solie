@@ -92,6 +92,7 @@ AskPopupContent {
 Gauge:hover {
 	background-color: #DDDDDD;
 	border-radius: 0.2em;
+    border: 1px solid rgba(0,0,0,0.1);
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
