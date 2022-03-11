@@ -27,6 +27,7 @@ from recipe import digitize
 from recipe import process_toss
 from recipe import thread_toss
 from recipe import standardize
+from recipe import remember_task_durations
 
 
 class Transactor:
@@ -1322,8 +1323,8 @@ class Transactor:
         # ■■■■■ record task duration ■■■■■
 
         if only_light_lines:
-            duartion = (datetime.now(timezone.utc) - task_start_time).total_seconds()
-            self.task_durations["display_light_lines"].append(duartion)
+            duration = (datetime.now(timezone.utc) - task_start_time).total_seconds()
+            remember_task_durations.add("display_light_lines", duration)
 
     def toggle_vertical_automation(self, *args, **kwargs):
         state = args[0]
@@ -1487,7 +1488,7 @@ class Transactor:
 
             duration = datetime.now(timezone.utc) - task_start_time
             duration = duration.total_seconds()
-            self.task_durations["decide_transacting_fast"].append(duration)
+            remember_task_durations.add("decide_transacting_fast", duration)
 
             # ■■■■■ place order ■■■■■
 
@@ -1631,7 +1632,7 @@ class Transactor:
 
         is_cycle_done = True
         duration = (datetime.now(timezone.utc) - current_moment).total_seconds()
-        self.task_durations["decide_transacting_slow"].append(duration)
+        remember_task_durations.add("decide_transacting_slow", duration)
 
         # ■■■■■ place order ■■■■■
 
@@ -2287,7 +2288,7 @@ class Transactor:
 
         duration = datetime.now(timezone.utc) - task_start_time
         duration = duration.total_seconds()
-        self.task_durations["place_order"].append(duration)
+        remember_task_durations.add("place_order", duration)
 
     def cancel_symbol_orders(self, *args, **kwargs):
         symbol = self.viewing_symbol

@@ -26,6 +26,7 @@ from recipe import download_aggtrade_data
 from recipe import combine_candle_datas
 from recipe import sort_dataframe
 from recipe import fill_holes_with_aggtrades
+from recipe import remember_task_durations
 
 
 class Collector:
@@ -708,7 +709,7 @@ class Collector:
             find_key = str((symbol, "Best Ask Price"))
             self.realtime_data_chunks[-1][-1][find_key] = best_ask
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
-        self.task_durations["add_book_tickers"].append(duration)
+        remember_task_durations.add("add_book_tickers", duration)
 
     def add_mark_price(self, *args, **kwargs):
         received = kwargs.get("received")
@@ -729,7 +730,7 @@ class Collector:
                 find_key = str((symbol, "Mark Price"))
                 self.realtime_data_chunks[-1][-1][find_key] = mark_price
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
-        self.task_durations["add_mark_price"].append(duration)
+        remember_task_durations.add("add_mark_price", duration)
 
     def add_aggregate_trades(self, *args, **kwargs):
         received = kwargs.get("received")
@@ -745,7 +746,7 @@ class Collector:
             self.aggregate_trades[-1][str((symbol, "Price"))] = price
             self.aggregate_trades[-1][str((symbol, "Volume"))] = volume
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
-        self.task_durations["add_aggregate_trades"].append(duration)
+        remember_task_durations.add("add_aggregate_trades", duration)
 
     def organize_everything(self, *args, **kwargs):
 
@@ -770,7 +771,7 @@ class Collector:
             self.aggregate_trades = self.aggregate_trades[mask].copy()
 
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
-        self.task_durations["organize_everything"].append(duration)
+        remember_task_durations.add("organize_everything", duration)
 
     def clear_aggregate_trades(self, *args, **kwargs):
 
@@ -845,7 +846,7 @@ class Collector:
                 self.candle_data.loc[before_moment, column_name] = new_data_value
 
         duration = (datetime.now(timezone.utc) - current_moment).total_seconds()
-        self.task_durations["add_candle_data"].append(duration)
+        remember_task_durations.add("add_candle_data", duration)
 
     def download_fill_history_until_last_month(self, *args, **kwargs):
 

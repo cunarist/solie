@@ -20,6 +20,7 @@ from recipe import process_toss
 from recipe import standardize
 from recipe import thread_toss
 from recipe import find_goodies
+from recipe import remember_task_durations
 
 
 class Manager:
@@ -252,25 +253,10 @@ class Manager:
 
             texts = []
 
-            task_durations = self.root.transactor.task_durations
+            task_durations = remember_task_durations.get()
             for data_name, deque_data in task_durations.items():
                 if len(deque_data) > 0:
-                    text = f"자동 주문 ({data_name})"
-                    text += "\n"
-                    data_value = sum(deque_data) / len(deque_data)
-                    text += f"평균 {simply_format.fixed_float(data_value,6)}초 "
-                    data_value = statistics.median(deque_data)
-                    text += f"중앙 {simply_format.fixed_float(data_value,6)}초 "
-                    data_value = max(deque_data)
-                    text += f"최대 {simply_format.fixed_float(data_value,6)}초 "
-                    data_value = min(deque_data)
-                    text += f"최소 {simply_format.fixed_float(data_value,6)}초 "
-                    texts.append(text)
-
-            task_durations = self.root.collector.task_durations
-            for data_name, deque_data in task_durations.items():
-                if len(deque_data) > 0:
-                    text = f"데이터 수집 ({data_name})"
+                    text = data_name
                     text += "\n"
                     data_value = sum(deque_data) / len(deque_data)
                     text += f"평균 {simply_format.fixed_float(data_value,6)}초 "
