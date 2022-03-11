@@ -71,8 +71,8 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
             def job():
                 nonlocal guide_frame
-                text = "마무리하는 중입니다."
-                guide_frame = GuideFrame(text, total_steps)
+                guide_frame = GuideFrame(2)
+                guide_frame.announce("마무리하는 중입니다.")
                 self.centralWidget().layout().addWidget(guide_frame)
 
             self.undertake(job, True)
@@ -82,35 +82,27 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
                     if done_steps == total_steps:
                         time.sleep(1)
                         text = "완료되었습니다."
-                        self.undertake(lambda t=text: guide_frame.change_text(t), True)
-                        self.undertake(lambda: guide_frame.change_steps(0), True)
+                        self.undertake(lambda t=text: guide_frame.announce(t), True)
+                        self.undertake(lambda: guide_frame.progress(), True)
                         time.sleep(1)
                         text = "업데이트 확인 중입니다."
-                        self.undertake(lambda t=text: guide_frame.change_text(t), True)
+                        self.undertake(lambda t=text: guide_frame.announce(t), True)
                         time.sleep(1)
                         if find_goodies.check():
                             text = "업데이트가 있습니다."
-                            self.undertake(
-                                lambda t=text: guide_frame.change_text(t), True
-                            )
+                            self.undertake(lambda t=text: guide_frame.announce(t), True)
                             time.sleep(1)
                             text = "업데이트를 준비하고 있습니다."
-                            self.undertake(
-                                lambda t=text: guide_frame.change_text(t), True
-                            )
+                            self.undertake(lambda t=text: guide_frame.announce(t), True)
                             time.sleep(1)
                             find_goodies.apply()
                             text = "업데이트가 준비되었습니다. 종료 후 자동으로 설치됩니다."
-                            self.undertake(
-                                lambda t=text: guide_frame.change_text(t), True
-                            )
-                            time.sleep(1)
+                            self.undertake(lambda t=text: guide_frame.announce(t), True)
                         else:
                             text = "업데이트가 없습니다."
-                            self.undertake(
-                                lambda t=text: guide_frame.change_text(t), True
-                            )
-                            time.sleep(1)
+                            self.undertake(lambda t=text: guide_frame.announce(t), True)
+                        self.undertake(lambda: guide_frame.progress(), True)
+                        time.sleep(1)
                         process_toss.terminate_pool()
                         self.closeEvent = lambda e: e.accept()
                         self.undertake(self.close, True)
@@ -127,7 +119,6 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
                 nonlocal done_steps
                 function()
                 done_steps += 1
-                self.undertake(lambda d=done_steps: guide_frame.progress(d), True)
 
             thread_toss.map(job, self.finalize_functions)
 
@@ -261,7 +252,8 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
         def job():
             nonlocal guide_frame
-            guide_frame = GuideFrame("로딩 중입니다.")
+            guide_frame = GuideFrame(2)
+            guide_frame.announce("로딩 중입니다.")
             self.centralWidget().layout().addWidget(guide_frame)
 
         self.undertake(job, True)
@@ -1091,12 +1083,12 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             outsource.do(self.pushButton_7.clicked, job)
 
         self.undertake(job, True)
+        self.undertake(lambda: guide_frame.progress(), True)
 
         # ■■■■■ initialize functions ■■■■■
 
         def job():
-            guide_frame.change_text("초기 실행 중입니다.")
-            guide_frame.change_steps(len(self.initialize_functions))
+            guide_frame.announce("초기 실행 중입니다.")
 
         self.undertake(job, True)
 
@@ -1106,12 +1098,12 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             nonlocal done_steps
             function()
             done_steps += 1
-            self.undertake(lambda d=done_steps: guide_frame.progress(d), True)
 
         map_result = thread_toss.map_async(job, self.initialize_functions)
 
         for _ in range(200):
             if map_result.ready() and map_result.successful():
+                self.undertake(lambda: guide_frame.progress(), True)
                 break
             time.sleep(0.1)
 

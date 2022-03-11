@@ -9,9 +9,11 @@ class GuideFrame(QtWidgets.QFrame):
     with open("./resource/text_logo.png", mode="rb") as file:
         text_logo_data = file.read()
 
-    def __init__(self, guide_text, total_steps=0):
+    def __init__(self, total_steps=0):
 
         super().__init__()
+
+        self.done_steps = 0
 
         full_layout = QtWidgets.QHBoxLayout()
         self.setLayout(full_layout)
@@ -108,34 +110,22 @@ class GuideFrame(QtWidgets.QFrame):
         )
         full_layout.addItem(spacer)
 
-        self.change_text(guide_text)
-        self.change_steps(total_steps)
-
-    def progress(self, done_steps):
-        for turn, progressbar in enumerate(self.progressbars):
-            if turn in range(done_steps):
-                switch_on = True
-            else:
-                switch_on = False
-            current_value = progressbar.value()
-            if switch_on and current_value != 1:
-                progressbar.setValue(1)
-            elif not switch_on and current_value != 0:
-                progressbar.setValue(0)
-
-    def change_text(self, guide_text):
-        self.guide_label.setText(guide_text)
-
-    def change_steps(self, total_steps):
         for progressbar in self.progressbars:
             progressbar.setParent(None)
         for _ in range(total_steps):
             progressbar = QtWidgets.QProgressBar()
             progressbar.setMaximum(1)
             progressbar.setTextVisible(False)
-            progressbar.setFixedWidth(40)
+            progressbar.setFixedWidth(80)
             progressbar_font = QtGui.QFont()
             progressbar_font.setPointSize(1)
             progressbar.setFont(progressbar_font)
             self.progress_layout.addWidget(progressbar)
             self.progressbars.append(progressbar)
+
+    def progress(self):
+        self.progressbars[self.done_steps].setValue(1)
+        self.done_steps += 1
+
+    def announce(self, guide_text):
+        self.guide_label.setText(guide_text)
