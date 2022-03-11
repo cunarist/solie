@@ -87,6 +87,11 @@ AskPopupContent {
     max-height: 24em;
     margin: 0em;
     padding: 2em;
+}
+
+Gauge:hover {
+	background-color: #DDDDDD;
+	border-radius: 0.2em;
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
