@@ -111,16 +111,17 @@ def do(dataset):
             is_margin_negative = False
             is_margin_nan = False
 
-            # instant placements
+            # special placements
             if "cancel_all" in unit_behind_state["placements"][symbol]:
                 cancel_placement_names = []
                 for placement_name in unit_behind_state["placements"][symbol].keys():
-                    if "later" in placement_name:
+                    if any(s in placement_name for s in ("later", "book")):
                         cancel_placement_names.append(placement_name)
                 for cancel_placement_name in cancel_placement_names:
                     unit_behind_state["placements"][symbol].pop(cancel_placement_name)
                 unit_behind_state["placements"][symbol].pop("cancel_all")
 
+            # instant placements
             if "now_close" in unit_behind_state["placements"][symbol]:
                 would_trade_happen = True
                 command = unit_behind_state["placements"][symbol]["now_close"]

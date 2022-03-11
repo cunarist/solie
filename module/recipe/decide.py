@@ -74,6 +74,7 @@ def choose(
                     }
             else:
                 decision[symbol]["now_close"] = {}
+                decision[symbol]["cancel_all"] = {}
 
             if direction == "none":
                 decision[symbol]["later_down_buy"] = {
