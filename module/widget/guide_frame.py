@@ -56,7 +56,7 @@ class GuideFrame(QtWidgets.QFrame):
 
         spacing_text = QtWidgets.QLabel("")
         spacing_text_font = QtGui.QFont()
-        spacing_text_font.setPointSize(6)
+        spacing_text_font.setPointSize(3)
         spacing_text.setFont(spacing_text_font)
         central_layout.addWidget(spacing_text)
 
@@ -67,7 +67,7 @@ class GuideFrame(QtWidgets.QFrame):
 
         spacing_text = QtWidgets.QLabel("")
         spacing_text_font = QtGui.QFont()
-        spacing_text_font.setPointSize(6)
+        spacing_text_font.setPointSize(3)
         spacing_text.setFont(spacing_text_font)
         central_layout.addWidget(spacing_text)
 
@@ -83,14 +83,14 @@ class GuideFrame(QtWidgets.QFrame):
         central_layout.addLayout(this_layout)
         spacing_text = QtWidgets.QLabel("")
         spacing_text_font = QtGui.QFont()
-        spacing_text_font.setPointSize(12)
+        spacing_text_font.setPointSize(6)
         spacing_text.setFont(spacing_text_font)
         this_layout.addWidget(spacing_text)
         self.progress_layout = QtWidgets.QHBoxLayout()
         this_layout.addLayout(self.progress_layout)
         spacing_text = QtWidgets.QLabel("")
         spacing_text_font = QtGui.QFont()
-        spacing_text_font.setPointSize(12)
+        spacing_text_font.setPointSize(6)
         spacing_text.setFont(spacing_text_font)
         this_layout.addWidget(spacing_text)
 

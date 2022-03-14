@@ -87,20 +87,29 @@ AskPopupContent {
     max-height: 24em;
     margin: 0em;
     padding: 2em;
-}
-
-Gauge:hover {
-	background-color: #DDDDDD;
-	border-radius: 0.2em;
-    border: 1px solid rgba(0,0,0,0.1);
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_3">
     <item row="5" column="0">
      <widget class="Gauge" name="gauge">
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>22</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>22</height>
+       </size>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="flat">
+       <bool>true</bool>
       </property>
      </widget>
     </item>
@@ -1966,7 +1975,7 @@ Gauge:hover {
   </customwidget>
   <customwidget>
    <class>Gauge</class>
-   <extends>QLabel</extends>
+   <extends>QPushButton</extends>
    <header>widget/gauge</header>
   </customwidget>
  </customwidgets>
