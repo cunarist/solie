@@ -1372,14 +1372,14 @@ Gauge:hover {
                    <widget class="QLabel" name="label_5">
                     <property name="minimumSize">
                      <size>
-                      <width>120</width>
-                      <height>120</height>
+                      <width>80</width>
+                      <height>80</height>
                      </size>
                     </property>
                     <property name="maximumSize">
                      <size>
-                      <width>120</width>
-                      <height>120</height>
+                      <width>80</width>
+                      <height>80</height>
                      </size>
                     </property>
                     <property name="pixmap">
@@ -1394,14 +1394,14 @@ Gauge:hover {
                    <widget class="QLabel" name="label_9">
                     <property name="minimumSize">
                      <size>
-                      <width>480</width>
-                      <height>120</height>
+                      <width>320</width>
+                      <height>80</height>
                      </size>
                     </property>
                     <property name="maximumSize">
                      <size>
-                      <width>480</width>
-                      <height>120</height>
+                      <width>320</width>
+                      <height>80</height>
                      </size>
                     </property>
                     <property name="pixmap">
