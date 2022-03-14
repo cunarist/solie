@@ -1427,7 +1427,7 @@ AskPopupContent {
                  <widget class="QLabel" name="label_15">
                   <property name="font">
                    <font>
-                    <pointsize>6</pointsize>
+                    <pointsize>3</pointsize>
                    </font>
                   </property>
                  </widget>
@@ -1443,7 +1443,7 @@ AskPopupContent {
                  <widget class="QLabel" name="label_14">
                   <property name="font">
                    <font>
-                    <pointsize>6</pointsize>
+                    <pointsize>3</pointsize>
                    </font>
                   </property>
                  </widget>
