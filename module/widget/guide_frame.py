@@ -81,18 +81,32 @@ class GuideFrame(QtWidgets.QFrame):
         self.progressbars = []
         this_layout = QtWidgets.QHBoxLayout()
         central_layout.addLayout(this_layout)
-        spacing_text = QtWidgets.QLabel("")
-        spacing_text_font = QtGui.QFont()
-        spacing_text_font.setPointSize(6)
-        spacing_text.setFont(spacing_text_font)
-        this_layout.addWidget(spacing_text)
-        self.progress_layout = QtWidgets.QHBoxLayout()
-        this_layout.addLayout(self.progress_layout)
-        spacing_text = QtWidgets.QLabel("")
-        spacing_text_font = QtGui.QFont()
-        spacing_text_font.setPointSize(6)
-        spacing_text.setFont(spacing_text_font)
-        this_layout.addWidget(spacing_text)
+        spacer = QtWidgets.QSpacerItem(
+            6,
+            6,
+            QtWidgets.QSizePolicy.Policy.Fixed,
+            QtWidgets.QSizePolicy.Policy.Fixed,
+        )
+        this_layout.addItem(spacer)
+        progress_layout = QtWidgets.QHBoxLayout()
+        this_layout.addLayout(progress_layout)
+        for _ in range(total_steps):
+            progressbar = QtWidgets.QProgressBar()
+            progressbar.setMaximum(1)
+            progressbar.setTextVisible(False)
+            progressbar.setFixedWidth(60)
+            progressbar_font = QtGui.QFont()
+            progressbar_font.setPointSize(1)
+            progressbar.setFont(progressbar_font)
+            progress_layout.addWidget(progressbar)
+            self.progressbars.append(progressbar)
+        spacer = QtWidgets.QSpacerItem(
+            6,
+            6,
+            QtWidgets.QSizePolicy.Policy.Fixed,
+            QtWidgets.QSizePolicy.Policy.Fixed,
+        )
+        this_layout.addItem(spacer)
 
         spacer = QtWidgets.QSpacerItem(
             0,
@@ -109,19 +123,6 @@ class GuideFrame(QtWidgets.QFrame):
             QtWidgets.QSizePolicy.Policy.Minimum,
         )
         full_layout.addItem(spacer)
-
-        for progressbar in self.progressbars:
-            progressbar.setParent(None)
-        for _ in range(total_steps):
-            progressbar = QtWidgets.QProgressBar()
-            progressbar.setMaximum(1)
-            progressbar.setTextVisible(False)
-            progressbar.setFixedWidth(60)
-            progressbar_font = QtGui.QFont()
-            progressbar_font.setPointSize(1)
-            progressbar.setFont(progressbar_font)
-            self.progress_layout.addWidget(progressbar)
-            self.progressbars.append(progressbar)
 
     def progress(self):
         self.progressbars[self.done_steps].setValue(1)
