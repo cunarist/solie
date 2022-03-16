@@ -81,34 +81,46 @@ if not os.path.isdir(f"{userpath}/miniconda3"):
 balloon_image = tk.PhotoImage(file="./resource/balloon_3.png")
 balloon.configure(image=balloon_image)
 
-if is_development_mode:
-    # install execution packages and development packages
-    commands = [
-        f"{condapath} activate base",
-        "conda env update --file ./resource/environment.yaml",
-        "conda activate solsol",
-        "pip install pyinstaller",
-        "pip install cython",
-        "pip install pyside6",
-        "pip install flake8",
-        "pip install pep8-naming",
-        "pip install flake8-variables-names",
-        "pip install flake8-print",
-        "pip install flake8-blind-except",
-        "pip install flake8-comprehensions",
-        "pip install flake8-use-fstring",
-        "pip install pygount",
-    ]
-else:
-    # install only execution packages and prune up
-    commands = [
-        f"{condapath} activate base",
-        "conda env update --file ./resource/environment.yaml --prune",
-    ]
-subprocess.run(
+commands = [
+    f"{condapath} activate solsol",
+    "conda compare ./resource/environment.yaml",
+]
+run_output = subprocess.run(
     "&&".join(commands),
     creationflags=subprocess.CREATE_NO_WINDOW,
 )
+
+if run_output.returncode != 0:
+    # when environment doesn't satisfy the configuration file
+
+    if is_development_mode:
+        # install execution packages and development packages
+        commands = [
+            f"{condapath} activate base",
+            "conda env update --file ./resource/environment.yaml",
+            "conda activate solsol",
+            "pip install pyinstaller",
+            "pip install cython",
+            "pip install pyside6",
+            "pip install flake8",
+            "pip install pep8-naming",
+            "pip install flake8-variables-names",
+            "pip install flake8-print",
+            "pip install flake8-blind-except",
+            "pip install flake8-comprehensions",
+            "pip install flake8-use-fstring",
+            "pip install pygount",
+        ]
+    else:
+        # install only execution packages and prune up
+        commands = [
+            f"{condapath} activate base",
+            "conda env update --file ./resource/environment.yaml --prune",
+        ]
+    subprocess.run(
+        "&&".join(commands),
+        creationflags=subprocess.CREATE_NO_WINDOW,
+    )
 
 # ■■■■■ code editor settings file ■■■■■
 
