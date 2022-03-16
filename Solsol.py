@@ -129,9 +129,8 @@ if platform.system() == "Windows":
 
     current_directory = os.getcwd()
     commands = [
-        'powershell -windowstyle hidden -command "Start-Process -WindowStyle hidden'
-        f" cmd -ArgumentList '/c cd /d {current_directory} && call {condapath} activate"
-        " solsol && start pythonw ./module/entry.py'  -Verb runas \"",
+        f"{condapath} activate solsol",
+        "start pythonw ./module/entry.py",
     ]
     subprocess.run(
         "&&".join(commands),

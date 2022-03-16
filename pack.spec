@@ -44,6 +44,7 @@ exe = EXE(  # type:ignore # noqa:F821
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    uac_admin=True,
     icon="./resource/image_logo.ico",
 )
 
