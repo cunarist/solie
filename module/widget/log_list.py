@@ -10,7 +10,7 @@ class LogList(QtWidgets.QListWidget):
 
     def addItem(self, text):  # noqa:N802
 
-        maximum_item_limit = 100
+        maximum_item_limit = 256
 
         new_item = QtWidgets.QListWidgetItem(self)
         new_item.fulltext = text
