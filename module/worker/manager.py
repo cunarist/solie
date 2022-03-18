@@ -41,7 +41,6 @@ class Manager:
         self.api_requester = ApiRequester()
 
         self.executed_time = datetime.now(timezone.utc).replace(microsecond=0)
-        self.log_outputs = []
         self.is_terminal_visible = False
 
         self.online_status = {
@@ -135,36 +134,8 @@ class Manager:
     def open_datapath(self, *args, **kwargs):
         os.startfile(standardize.get_datapath())
 
-    def display_selected_log_output(self, *args, **kwargs):
-        def job():
-            selected_index = self.root.listWidget.currentRow()
-            index_count = self.root.listWidget.count()
-            return selected_index, index_count
-
-        selected_index, index_count = self.root.undertake(job, True)
-
-        widget = self.root.listWidget.item(selected_index)
-        text = self.log_outputs[selected_index]
-        self.root.undertake(
-            lambda w=widget, t=text: w.setText(t),
-            False,
-        )
-
-        for index in range(index_count):
-            if selected_index == index:
-                continue
-            widget = self.root.listWidget.item(index)
-            current_text = self.root.undertake(lambda w=widget: w.text(), True)
-            if "\n" in current_text:
-                text = self.log_outputs[index].split("\n")[0]
-                self.root.undertake(
-                    lambda w=widget, t=text: w.setText(t),
-                    False,
-                )
-
     def deselect_log_output(self, *args, **kwargs):
         def job():
-            self.root.listWidget.setCurrentRow(0)
             self.root.listWidget.clearSelection()
 
         self.root.undertake(job, False)
@@ -196,11 +167,7 @@ class Manager:
         log_output = "\n".join(output_lines)
 
         # add to log list
-        self.log_outputs.append(log_output)
-        preview_text = log_output.split("\n")[0]
-        self.root.undertake(
-            lambda p=preview_text: self.root.listWidget.addItem(p), False
-        )
+        self.root.undertake(lambda l=log_output: self.root.listWidget.addItem(l), False)
 
         # save to file
         filepath = str(self.executed_time)

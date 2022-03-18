@@ -958,11 +958,10 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
         log_formatter = logging.Formatter(log_format, datefmt=date_format)
         log_formatter.converter = time.gmtime
         log_handler.setFormatter(log_formatter)
-        logging.addLevelName(1, "START")
         logging.getLogger().addHandler(log_handler)
         logger = logging.getLogger("solsol")
-        logger.setLevel(1)
-        logger.log(1, "")
+        logger.setLevel("DEBUG")
+        logger.info("Started up")
 
         # ■■■■■ connect events to functions ■■■■■
 
@@ -1039,8 +1038,6 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             outsource.do(self.pushButton_4.clicked, job)
             job = self.simulator.update_calculation_settings
             outsource.do(self.comboBox_5.activated, job)
-            job = self.manager.display_selected_log_output
-            outsource.do(self.listWidget.currentItemChanged, job)
             job = self.transactor.update_keys
             outsource.do(self.lineEdit_4.editingFinished, job)
             job = self.transactor.update_keys
