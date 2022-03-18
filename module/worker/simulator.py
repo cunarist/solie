@@ -1664,7 +1664,7 @@ class Simulator:
                 for index, peak_value in peak_sr.iteritems()
             ]
             question = [
-                "least unrealized changes을 기록한 지점들입니다.",
+                "최저 미실현 수익률을 기록한 지점들입니다.",
                 "\n".join(text_lines),
                 ["확인"],
             ]
