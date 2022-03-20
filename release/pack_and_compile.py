@@ -1,9 +1,13 @@
 import os
 import subprocess
 import shutil
+import pathlib
 from setuptools import setup
 
 from Cython.Build import cythonize
+
+userpath = str(pathlib.Path.home())
+condapath = f"{userpath}/miniconda3/condabin/conda.bat"
 
 commands = [
     f"{condapath} activate ./habitat",

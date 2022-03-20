@@ -8,6 +8,10 @@ import shutil
 import tkinter as tk
 import threading
 import time
+import pathlib
+
+userpath = str(pathlib.Path.home())
+condapath = f"{userpath}/miniconda3/condabin/conda.bat"
 
 # ■■■■■ check runtime environment ■■■■■
 
