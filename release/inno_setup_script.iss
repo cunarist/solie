@@ -48,3 +48,6 @@ procedure InitializeWizard();
 begin
   WizardForm.WizardSmallBitmapImage.Visible := False;
 end;
+
+[UninstallDelete]
+Type: filesandordirs; Name: "{app}"
