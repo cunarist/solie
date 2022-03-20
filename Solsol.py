@@ -76,9 +76,6 @@ if not os.path.isdir(f"{userpath}/miniconda3"):
 
 # ■■■■■ prepare python environment ■■■■■
 
-balloon_image = tk.PhotoImage(file="./resource/balloon_3.png")
-balloon.configure(image=balloon_image)
-
 if not os.path.isdir("./habitat"):
     commands = [
         f"{condapath} create --prefix ./habitat --no-default-packages --yes",
