@@ -1,3 +1,4 @@
+name: specialized
 channels:
   - conda-forge
 dependencies:
