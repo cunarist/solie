@@ -7,7 +7,7 @@ from setuptools import setup
 from Cython.Build import cythonize
 
 userpath = str(pathlib.Path.home())
-condapath = f"{userpath}/miniconda3/condabin/conda.bat"
+condapath = userpath+"/miniconda3/condabin/conda.bat"
 
 commands = [
     f"{condapath} activate ./habitat",

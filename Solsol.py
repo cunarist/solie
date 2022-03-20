@@ -11,7 +11,7 @@ import time
 import pathlib
 
 userpath = str(pathlib.Path.home())
-condapath = f"{userpath}/miniconda3/condabin/conda.bat"
+condapath = userpath+"/miniconda3/condabin/conda.bat"
 
 # ■■■■■ check runtime environment ■■■■■
 
