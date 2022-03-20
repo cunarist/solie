@@ -1,18 +1,18 @@
 import os
-import pathlib
 import subprocess
 import shutil
 from distutils.core import setup
 
 from Cython.Build import cythonize
 
-userpath = pathlib.Path.home()
-condapath = f"{userpath}/miniconda3/condabin/conda.bat"
 commands = [
-    f"{condapath} activate solsol",
+    "conda activate solsol",
     "pyinstaller --noconfirm pack.spec",
 ]
-subprocess.run("&&".join(commands))
+subprocess.run(
+    "&&".join(commands),
+    shell=True,
+)
 
 # https://medium.com/@xpl/protecting-python-sources-using-cython-dcd940bb188e
 # https://stackoverflow.com/questions/66967488/creating-pyd-files-in-folder-and-subfolder-using-python

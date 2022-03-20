@@ -1,7 +1,6 @@
 import os
 import sys
 import platform
-import pathlib
 from urllib import request
 import tempfile
 import subprocess
@@ -9,9 +8,6 @@ import shutil
 import tkinter as tk
 import threading
 import time
-
-userpath = str(pathlib.Path.home())
-condapath = f"{userpath}/miniconda3/condabin/conda.bat"
 
 # ■■■■■ check runtime environment ■■■■■
 
@@ -45,7 +41,17 @@ display_event.wait()
 
 # ■■■■■ detect if conda is intalled ■■■■■
 
-if not os.path.isdir(f"{userpath}/miniconda3"):
+try:
+    commands = [
+        "conda activate solsol",
+    ]
+    subprocess.run(
+        "&&".join(commands),
+        creationflags=subprocess.CREATE_NO_WINDOW,
+        shell=True,
+    )
+
+except FileNotFoundError:
 
     balloon_image = tk.PhotoImage(file="./resource/balloon_2.png")
     balloon.configure(image=balloon_image)
@@ -61,11 +67,12 @@ if not os.path.isdir(f"{userpath}/miniconda3"):
                 file.write(installer_file)
 
             commands = [
-                f"{filepath} /S",
+                f"{filepath} /S /AddToPath=1",
             ]
             subprocess.run(
                 "&&".join(commands),
                 creationflags=subprocess.CREATE_NO_WINDOW,
+                shell=True,
             )
 
     elif platform.system() == "Linux":
@@ -78,25 +85,26 @@ if not os.path.isdir(f"{userpath}/miniconda3"):
 
 # ■■■■■ prepare python environment ■■■■■
 
-balloon_image = tk.PhotoImage(file="./resource/balloon_3.png")
-balloon.configure(image=balloon_image)
-
 commands = [
-    f"{condapath} activate solsol",
+    "conda activate solsol",
     "conda compare ./resource/environment.yaml",
 ]
 run_output = subprocess.run(
     "&&".join(commands),
     creationflags=subprocess.CREATE_NO_WINDOW,
+    shell=True,
 )
 
 if run_output.returncode != 0:
     # when environment doesn't satisfy the configuration file
 
+    balloon_image = tk.PhotoImage(file="./resource/balloon_3.png")
+    balloon.configure(image=balloon_image)
+
     if is_development_mode:
         # install execution packages and development packages
         commands = [
-            f"{condapath} activate base",
+            "conda activate base",
             "conda env update --file ./resource/environment.yaml",
             "conda activate solsol",
             "pip install pyinstaller",
@@ -114,12 +122,13 @@ if run_output.returncode != 0:
     else:
         # install only execution packages and prune up
         commands = [
-            f"{condapath} activate base",
+            "conda activate base",
             "conda env update --file ./resource/environment.yaml --prune",
         ]
     subprocess.run(
         "&&".join(commands),
         creationflags=subprocess.CREATE_NO_WINDOW,
+        shell=True,
     )
 
 # ■■■■■ code editor settings file ■■■■■
@@ -141,12 +150,13 @@ if platform.system() == "Windows":
 
     current_directory = os.getcwd()
     commands = [
-        f"{condapath} activate solsol",
+        "conda activate solsol",
         "start pythonw ./module/entry.py",
     ]
     subprocess.run(
         "&&".join(commands),
         creationflags=subprocess.CREATE_NO_WINDOW,
+        shell=True,
     )
 
 

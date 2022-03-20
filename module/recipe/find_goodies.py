@@ -70,8 +70,8 @@ def apply():
         commands = ["timeout 5", f"{filepath} /VERYSILENT"]
         subprocess.Popen(
             "&&".join(commands),
-            shell=True,
             creationflags=subprocess.CREATE_NO_WINDOW,
+            shell=True,
         )
 
     elif platform.system() == "Linux":
