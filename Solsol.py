@@ -42,12 +42,10 @@ display_event.wait()
 # ■■■■■ detect if conda is intalled ■■■■■
 
 if not os.path.isdir("./conda"):
-
     balloon_image = tk.PhotoImage(file="./resource/balloon_2.png")
     balloon.configure(image=balloon_image)
 
     if platform.system() == "Windows":
-
         url = "https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe"
         installer_file = request.urlopen(url).read()
 
@@ -56,8 +54,9 @@ if not os.path.isdir("./conda"):
                 filepath = file.name
                 file.write(installer_file)
 
+            # conda is installed for 'AllUsers' with administrator privileges by default
             commands = [
-                f"{filepath} /S /D={os.getcwd()}\\conda",
+                f"{filepath} /S /InstallationType=JustMe",
             ]
             subprocess.run(
                 "&&".join(commands),
@@ -66,11 +65,9 @@ if not os.path.isdir("./conda"):
             )
 
     elif platform.system() == "Linux":
-
         sys.exit()
 
     elif platform.system() == "Darwin":  # macOS
-
         sys.exit()
 
 # ■■■■■ prepare python environment ■■■■■
@@ -136,7 +133,6 @@ balloon_image = tk.PhotoImage(file="./resource/balloon_4.png")
 balloon.configure(image=balloon_image)
 
 if platform.system() == "Windows":
-
     current_directory = os.getcwd()
     commands = [
         "conda\\condabin\\conda.bat activate",
@@ -150,11 +146,9 @@ if platform.system() == "Windows":
 
 
 elif platform.system() == "Linux":
-
     sys.exit()
 
 elif platform.system() == "Darwin":  # macOS
-
     sys.exit()
 
 # ■■■■■ show splash screen a bit more ■■■■■
