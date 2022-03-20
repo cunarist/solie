@@ -1,4 +1,3 @@
-name: solsol
 channels:
   - conda-forge
 dependencies:

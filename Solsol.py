@@ -41,17 +41,7 @@ display_event.wait()
 
 # ■■■■■ detect if conda is intalled ■■■■■
 
-try:
-    commands = [
-        "conda activate solsol",
-    ]
-    subprocess.run(
-        "&&".join(commands),
-        creationflags=subprocess.CREATE_NO_WINDOW,
-        shell=True,
-    )
-
-except FileNotFoundError:
+if not os.path.isdir("./conda"):
 
     balloon_image = tk.PhotoImage(file="./resource/balloon_2.png")
     balloon.configure(image=balloon_image)
@@ -67,7 +57,7 @@ except FileNotFoundError:
                 file.write(installer_file)
 
             commands = [
-                f"{filepath} /S /AddToPath=1",
+                f"{filepath} /S /D={os.getcwd()}\\conda",
             ]
             subprocess.run(
                 "&&".join(commands),
@@ -86,8 +76,8 @@ except FileNotFoundError:
 # ■■■■■ prepare python environment ■■■■■
 
 commands = [
-    "conda activate solsol",
-    "conda compare ./resource/environment.yaml",
+    "conda\\condabin\\conda.bat activate",
+    "conda\\condabin\\conda.bat compare ./resource/environment.yaml",
 ]
 run_output = subprocess.run(
     "&&".join(commands),
@@ -104,9 +94,8 @@ if run_output.returncode != 0:
     if is_development_mode:
         # install execution packages and development packages
         commands = [
-            "conda activate base",
-            "conda env update --file ./resource/environment.yaml",
-            "conda activate solsol",
+            "conda\\condabin\\conda.bat env update --file ./resource/environment.yaml",
+            "conda\\condabin\\conda.bat activate",
             "pip install pyinstaller",
             "pip install cython",
             "pip install pyside6",
@@ -122,8 +111,8 @@ if run_output.returncode != 0:
     else:
         # install only execution packages and prune up
         commands = [
-            "conda activate base",
-            "conda env update --file ./resource/environment.yaml --prune",
+            "conda\\condabin\\conda.bat env update --file ./resource/environment.yaml"
+            " --prune",
         ]
     subprocess.run(
         "&&".join(commands),
@@ -150,7 +139,7 @@ if platform.system() == "Windows":
 
     current_directory = os.getcwd()
     commands = [
-        "conda activate solsol",
+        "conda\\condabin\\conda.bat activate",
         "start pythonw ./module/entry.py",
     ]
     subprocess.run(

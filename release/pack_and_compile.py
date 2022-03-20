@@ -6,7 +6,7 @@ from distutils.core import setup
 from Cython.Build import cythonize
 
 commands = [
-    "conda activate solsol",
+    "conda\\condabin\\conda.bat activate",
     "pyinstaller --noconfirm pack.spec",
 ]
 subprocess.run(
