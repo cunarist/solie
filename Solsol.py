@@ -104,7 +104,7 @@ if run_output.returncode != 0:
         commands = [
             f"{condapath} env update --file ./resource/environment.yaml --prefix"
             " ./habitat",
-            "conda activate solsol",
+            f"{condapath} activate ./habitat",
             "pip install pyinstaller",
             "pip install cython",
             "pip install pyside6",
