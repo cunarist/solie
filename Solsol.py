@@ -45,7 +45,7 @@ display_event.wait()
 
 # ■■■■■ detect if conda is intalled ■■■■■
 
-if not os.path.isdir("./conda"):
+if not os.path.isdir(f"{userpath}/miniconda3"):
     balloon_image = tk.PhotoImage(file="./resource/balloon_2.png")
     balloon.configure(image=balloon_image)
 
