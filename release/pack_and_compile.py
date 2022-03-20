@@ -6,7 +6,7 @@ from setuptools import setup
 from Cython.Build import cythonize
 
 commands = [
-    "conda\\condabin\\conda.bat activate",
+    f"{condapath} activate ./habitat",
     "pyinstaller --noconfirm pack.spec",
 ]
 subprocess.run(

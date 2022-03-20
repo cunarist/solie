@@ -1,7 +1,7 @@
 # Custom
 note/
 .vscode/
-conda/
+habitat/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

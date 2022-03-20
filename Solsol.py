@@ -72,9 +72,20 @@ if not os.path.isdir("./conda"):
 
 # ■■■■■ prepare python environment ■■■■■
 
+balloon_image = tk.PhotoImage(file="./resource/balloon_3.png")
+balloon.configure(image=balloon_image)
+
+if not os.path.isdir("./habitat"):
+    commands = [
+        f"{condapath} create --prefix ./habitat --no-default-packages --yes",
+    ]
+    run_output = subprocess.run(
+        "&&".join(commands),
+        creationflags=subprocess.CREATE_NO_WINDOW,
+    )
+
 commands = [
-    "conda\\condabin\\conda.bat activate",
-    "conda\\condabin\\conda.bat compare ./resource/environment.yaml",
+    f"{condapath} compare ./resource/environment.yaml --prefix ./habitat",
 ]
 run_output = subprocess.run(
     "&&".join(commands),
@@ -91,8 +102,9 @@ if run_output.returncode != 0:
     if is_development_mode:
         # install execution packages and development packages
         commands = [
-            "conda\\condabin\\conda.bat env update --file ./resource/environment.yaml",
-            "conda\\condabin\\conda.bat activate",
+            f"{condapath} env update --file ./resource/environment.yaml --prefix"
+            " ./habitat",
+            "conda activate solsol",
             "pip install pyinstaller",
             "pip install cython",
             "pip install pyside6",
@@ -108,8 +120,8 @@ if run_output.returncode != 0:
     else:
         # install only execution packages and prune up
         commands = [
-            "conda\\condabin\\conda.bat env update --file ./resource/environment.yaml"
-            " --prune",
+            f"{condapath} env update --file ./resource/environment.yaml --prune"
+            " --prefix ./habitat",
         ]
     subprocess.run(
         "&&".join(commands),
@@ -135,7 +147,7 @@ balloon.configure(image=balloon_image)
 if platform.system() == "Windows":
     current_directory = os.getcwd()
     commands = [
-        "conda\\condabin\\conda.bat activate",
+        f"{condapath} activate ./habitat",
         "start pythonw ./module/entry.py",
     ]
     subprocess.run(
