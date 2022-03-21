@@ -1654,7 +1654,7 @@ class Simulator:
         if len(peak_sr) < 12:
             question = [
                 "계산 데이터가 너무 짧거나 없습니다.",
-                "유의미한 least unrealized changes 목록을 알아낼 수 없습니다.",
+                "유의미한 최저 미실현 수익률 목록을 알아낼 수 없습니다.",
                 ["확인"],
             ]
             self.root.ask(question)
