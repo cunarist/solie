@@ -50,10 +50,8 @@ if not os.path.isdir(f"{userpath}/miniconda3"):
     balloon.configure(image=balloon_image)
 
     if platform.system() == "Windows":
-        url = (
-            "https://repo.anaconda.com"
-            + "/miniconda/Miniconda3-py39_4.11.0-Windows-x86_64.exe"
-        )
+        url = "https://repo.anaconda.com"
+        url += "/miniconda/Miniconda3-py39_4.11.0-Windows-x86_64.exe"
         installer_file = request.urlopen(url).read()
 
         with tempfile.TemporaryDirectory() as directory:
