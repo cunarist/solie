@@ -1,48 +1,53 @@
 # -*- mode: python ; coding: utf-8 -*-
-from PyInstaller.utils.hooks import collect_submodules
+from PyInstaller.utils import hooks
 
-block_cipher = None
+# ■■■■■ files to include ■■■■■
+
+datas = [
+    ("./module", "./module"),
+    ("./resource", "./resource"),
+]
+binaries = []
+hiddenimports = []
+
+# ■■■■■ packages to complete ■■■■■
+
+packages_to_complete = [
+    "talib",
+    "pygments",
+    "yapf",
+    "timesetter",
+]
+for package in packages_to_complete:
+    new_lists = hooks.collect_all(package)
+    datas += new_lists[0]
+    binaries += new_lists[1]
+    hiddenimports += new_lists[2]
+
+# ■■■■■ analysis ■■■■■
 
 analysis = Analysis(  # type:ignore # noqa:F821
     ["Solsol.py"],
     pathex=[],
-    binaries=[],
-    datas=[
-        ("./module", "./module"),
-        ("./resource", "./resource"),
-    ],
-    hiddenimports=(
-        []
-        + collect_submodules("talib")
-        + collect_submodules("numpy")
-        + collect_submodules("pandas")
-        + collect_submodules("scipy")
-        + collect_submodules("PyQt6")
-        + collect_submodules("pyqtgraph")
-        + collect_submodules("requests")
-        + collect_submodules("apscheduler")
-        + collect_submodules("timesetter")
-        + collect_submodules("websocket-client")
-        + collect_submodules("pygments")
-        + collect_submodules("dill")
-        + collect_submodules("pyzipper")
-        + collect_submodules("getmac")
-        + collect_submodules("yapf")
-    ),
+    datas=datas,
+    binaries=binaries,
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
     excludes=[],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
-    cipher=block_cipher,
+    cipher=None,
     noarchive=False,
 )
+
+# ■■■■■ outputs ■■■■■
 
 pyz = PYZ(  # type:ignore # noqa:F821
     analysis.pure,
     analysis.zipped_data,
-    cipher=block_cipher,
+    cipher=None,
 )
 
 exe = EXE(  # type:ignore # noqa:F821
