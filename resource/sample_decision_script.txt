@@ -1,34 +1,41 @@
-acquire_ratio = 0.8 / len(target_symbols)  # distribute by symbols count
+for symbol in target_symbols:
 
-current_price = current_observed_data[str((symbol, "Close"))]
-price_sma_one = current_indicators[str((symbol, "Price", "SMA One (#00BBFF)"))]
-price_sma_two = current_indicators[str((symbol, "Price", "SMA Two (#FF6666)"))]
+    acquire_ratio = 0.8 / len(target_symbols)  # distribute by symbols count
 
-wallet_balance = account_state["wallet_balance"]
-position_direction = account_state["positions"][symbol]["direction"]
-position_margin = account_state["positions"][symbol]["margin"]
+    current_price = current_observed_data[str((symbol, "Close"))]
 
-scribbles["remember_data"] = True  # remember something like this
-remember_data = scribbles.get("remember_data", False) # and retrieve it like this
+    indicator_key = str((symbol, "Price", "SMA One (#00BBFF)"))
+    price_sma_one = current_indicators[indicator_key]
+    indicator_key = str((symbol, "Price", "SMA Two (#FF6666)"))
+    price_sma_two = current_indicators[indicator_key]
 
-if position_direction == "none":
-    if price_sma_one > price_sma_two:
-        decision[symbol]["now_buy"] = {
-            "margin": acquire_ratio * wallet_balance,
-        }
-    elif price_sma_one < price_sma_two:
-        decision[symbol]["now_sell"] = {
-            "margin": acquire_ratio * wallet_balance,
-        }
+    wallet_balance = account_state["wallet_balance"]
+    position_direction = account_state["positions"][symbol]["direction"]
+    position_margin = account_state["positions"][symbol]["margin"]
 
-elif position_direction == "long":
-    if price_sma_one < price_sma_two:
-        decision[symbol]["now_sell"] = {
-            "margin": position_margin + acquire_ratio * wallet_balance,  # flip
-        }
+    scribbles["remember_data"] = True  # remember something
+    remember_data = scribbles.get("remember_data", False)  # retrieve it later
 
-elif position_direction == "short":
-    if price_sma_one > price_sma_two:
-        decision[symbol]["now_buy"] = {
-            "margin": position_margin + acquire_ratio * wallet_balance,  # flip
-        }
+    if position_direction == "none":
+        if price_sma_one > price_sma_two:
+            decision[symbol]["now_buy"] = {
+                "margin": acquire_ratio * wallet_balance,
+            }
+        elif price_sma_one < price_sma_two:
+            decision[symbol]["now_sell"] = {
+                "margin": acquire_ratio * wallet_balance,
+            }
+
+    elif position_direction == "long":
+        if price_sma_one < price_sma_two:
+            decision[symbol]["now_sell"] = {
+                "margin":
+                position_margin + acquire_ratio * wallet_balance,  # flip
+            }
+
+    elif position_direction == "short":
+        if price_sma_one > price_sma_two:
+            decision[symbol]["now_buy"] = {
+                "margin":
+                position_margin + acquire_ratio * wallet_balance,  # flip
+            }

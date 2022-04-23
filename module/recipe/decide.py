@@ -16,32 +16,34 @@ def choose(
     compiled_custom_script,
 ):
 
+    target_symbols = standardize.get_basics()["target_symbols"]
+
     # ■■■■■ decision template ■■■■■
 
     decision = {}
-    for symbol in standardize.get_basics()["target_symbols"]:
+    for symbol in target_symbols:
         decision[symbol] = {}
 
     # ■■■■■ write decisions ■■■■■
 
-    for symbol in standardize.get_basics()["target_symbols"]:
+    if strategy == 0:
 
-        if strategy == 0:
+        namespace = {
+            "symbol": symbol,
+            "target_symbols": target_symbols,
+            "current_moment": current_moment,
+            "current_observed_data": current_observed_data,
+            "current_indicators": current_indicators,
+            "account_state": account_state,
+            "scribbles": scribbles,
+            "decision": decision,
+        }
 
-            namespace = {
-                "symbol": symbol,
-                "target_symbols": standardize.get_basics()["target_symbols"],
-                "current_moment": current_moment,
-                "current_observed_data": current_observed_data,
-                "current_indicators": current_indicators,
-                "account_state": account_state,
-                "scribbles": scribbles,
-                "decision": decision,
-            }
+        exec(compiled_custom_script, namespace)
 
-            exec(compiled_custom_script, namespace)
+    elif strategy == 1:
 
-        elif strategy == 1:
+        for symbol in target_symbols:
 
             split_ratio = 0.0001
 
@@ -50,7 +52,7 @@ def choose(
             wallet_balance = account_state["wallet_balance"]
             direction = account_state["positions"][symbol]["direction"]
 
-            target_symbols = standardize.get_basics()["target_symbols"]
+            target_symbols = target_symbols
             # too little volatility on testnet markets except these symbols
             prefer_symbols = ("BTCUSDT", "ETHUSDT")
             intersection = [
@@ -109,7 +111,9 @@ def choose(
                     "boundary": current_price * 1.12,
                 }
 
-        elif strategy == 2:
+    elif strategy == 2:
+
+        for symbol in target_symbols:
 
             split_ratio = 0.0001
 
@@ -130,7 +134,9 @@ def choose(
                 else:
                     decision[symbol]["now_close"] = {}
 
-        elif strategy == 57:
+    elif strategy == 57:
+
+        for symbol in target_symbols:
 
             current_price = current_observed_data[str((symbol, "Close"))]
 
@@ -272,7 +278,9 @@ def choose(
                         "margin": margin_ratio * wallet_balance,
                     }
 
-        elif strategy == 61:
+    elif strategy == 61:
+
+        for symbol in target_symbols:
 
             current_price = current_observed_data[str((symbol, "Close"))]
 
@@ -420,7 +428,9 @@ def choose(
                         "margin": margin_ratio * wallet_balance * weight,
                     }
 
-        elif strategy == 64:
+    elif strategy == 64:
+
+        for symbol in target_symbols:
 
             current_price = current_observed_data[str((symbol, "Close"))]
 
@@ -546,9 +556,11 @@ def choose(
                     ),
                 }
 
-        elif strategy == 65:
+    elif strategy == 65:
 
-            acquire_ratio = 0.8 / len(standardize.get_basics()["target_symbols"])
+        for symbol in target_symbols:
+
+            acquire_ratio = 0.8 / len(target_symbols)
 
             current_price = current_observed_data[str((symbol, "Close"))]
             current_middle = current_indicators[str((symbol, "Price", "SMA 20"))]
@@ -583,9 +595,11 @@ def choose(
                     "boundary": current_middle,
                 }
 
-        elif strategy == 89:
+    elif strategy == 89:
 
-            symbols_count = len(standardize.get_basics()["target_symbols"])
+        for symbol in target_symbols:
+
+            symbols_count = len(target_symbols)
             acquire_ratio = 0.8 / symbols_count
 
             current_price = current_observed_data[str((symbol, "Close"))]
@@ -628,7 +642,9 @@ def choose(
                     "boundary": current_middle,
                 }
 
-        elif strategy == 93:
+    elif strategy == 93:
+
+        for symbol in target_symbols:
 
             current_price = current_observed_data[str((symbol, "Close"))]
 
@@ -685,7 +701,9 @@ def choose(
                         "margin": margin + 0.15 * wallet_balance,
                     }
 
-        elif strategy == 95:
+    elif strategy == 95:
+
+        for symbol in target_symbols:
 
             interval = 5  # minutes
             hold_duration = 1440  # minutes
@@ -765,7 +783,9 @@ def choose(
                         "margin": needed_margin - margin,
                     }
 
-        elif strategy == 98:
+    elif strategy == 98:
+
+        for symbol in target_symbols:
 
             current_price = current_observed_data[str((symbol, "Close"))]
 
@@ -808,7 +828,9 @@ def choose(
                         "margin": abs(shift),
                     }
 
-        elif strategy == 100:
+    elif strategy == 100:
+
+        for symbol in target_symbols:
 
             current_price = current_observed_data[str((symbol, "Close"))]
 
@@ -869,7 +891,9 @@ def choose(
                 if power > 0:
                     decision[symbol]["now_close"] = {}
 
-        elif strategy == 107:
+    elif strategy == 107:
+
+        for symbol in target_symbols:
 
             acquire_ratio = 0.8
             hold_duration = 1  # minutes
@@ -942,8 +966,11 @@ def choose(
                             "margin": wallet_balance * ratio_shift
                         }
 
-        elif strategy == 110:
-            symbols_count = len(standardize.get_basics()["target_symbols"])
+    elif strategy == 110:
+
+        for symbol in target_symbols:
+
+            symbols_count = len(target_symbols)
             acquire_ratio = 0.8 / symbols_count / (80 * 60 / 10)  # ratio
             release_ratio = 0.8 / symbols_count / (20 * 60 / 10)  # ratio
             max_scoops = 12  # count
