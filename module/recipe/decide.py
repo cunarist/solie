@@ -29,7 +29,6 @@ def choose(
     if strategy == 0:
 
         namespace = {
-            "symbol": symbol,
             "target_symbols": target_symbols,
             "current_moment": current_moment,
             "current_observed_data": current_observed_data,
