@@ -7,8 +7,20 @@ from module.instrument.api_requester import ApiRequester
 from module.recipe import compare_versions
 from module.recipe import check_internet
 
+LATEST_VERSION = "0.0"
+PREPARED_VERSION = "0.0"
+IS_PREPARED = False
 
-def check():
+
+def get_status():
+    return IS_PREPARED
+
+
+def prepare():
+
+    global LATEST_VERSION
+    global PREPARED_VERSION
+    global IS_PREPARED
 
     if not check_internet.connected():
         return False
@@ -16,53 +28,64 @@ def check():
     api_requester = ApiRequester()
     payload = {"id": "version"}
     response = api_requester.cunarist("GET", "/solsol/latest-information", payload)
+    LATEST_VERSION = response["value"]
 
     with open("./resource/version.txt", mode="r", encoding="utf8") as file:
         current_version = file.read()
 
-    latest_version = response["value"]
+    if compare_versions.do(LATEST_VERSION, current_version):
 
-    if not compare_versions.do(latest_version, current_version):
+        if not compare_versions.do(LATEST_VERSION, PREPARED_VERSION):
+            return
 
-        return False
+        platform_system = platform.system()
+        if platform_system == "Windows":
+            platform_name = "Windows"
+        elif platform_system == "Linux":
+            platform_name = "Linux"
+        elif platform_system == "Darwin":
+            platform_name = "macOS"
 
-    return True
+        blob_name = f"Solsol{platform_name}Setup.exe"
+
+        api_requester = ApiRequester()
+
+        payload = {"blobName": blob_name}
+        response = api_requester.cunarist("GET", "/solsol/installer-url", payload)
+        blob_url = response["blobUrl"]
+
+        if platform.system() == "Windows":
+            download_data = request.urlopen(blob_url).read()
+            temp_folder = tempfile.gettempdir()
+            filepath = temp_folder + "/SolsolWindowsSetup.exe"
+            with open(filepath, mode="wb") as file:
+                file.write(download_data)
+
+        elif platform.system() == "Linux":
+            pass
+
+        elif platform.system() == "Darwin":  # macOS
+            pass
+
+        PREPARED_VERSION = LATEST_VERSION
+        IS_PREPARED = True
 
 
 def apply():
 
-    platform_system = platform.system()
-    if platform_system == "Windows":
-        platform_name = "Windows"
-    elif platform_system == "Linux":
-        platform_name = "Linux"
-    elif platform_system == "Darwin":
-        platform_name = "macOS"
+    if IS_PREPARED:
 
-    blob_name = f"Solsol{platform_name}Setup.exe"
+        if platform.system() == "Windows":
+            temp_folder = tempfile.gettempdir()
+            filepath = temp_folder + "/SolsolWindowsSetup.exe"
+            commands = [f"{filepath} /SILENT"]
+            subprocess.Popen(
+                "&&".join(commands),
+                creationflags=subprocess.DETACHED_PROCESS,
+            )
 
-    api_requester = ApiRequester()
+        elif platform.system() == "Linux":
+            pass
 
-    payload = {"blobName": blob_name}
-    response = api_requester.cunarist("GET", "/solsol/installer-url", payload)
-    blob_url = response["blobUrl"]
-
-    if platform.system() == "Windows":
-
-        download_data = request.urlopen(blob_url).read()
-        temp_folder = tempfile.gettempdir()
-
-        filepath = temp_folder + "/SolsolWindowsSetup.exe"
-        with open(filepath, mode="wb") as file:
-            file.write(download_data)
-
-        commands = ["timeout 5", f"{filepath} /SILENT"]
-        subprocess.Popen("&&".join(commands), shell=True)
-
-    elif platform.system() == "Linux":
-
-        pass
-
-    elif platform.system() == "Darwin":  # macOS
-
-        pass
+        elif platform.system() == "Darwin":  # macOS
+            pass

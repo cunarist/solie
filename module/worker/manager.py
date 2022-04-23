@@ -101,6 +101,12 @@ class Manager:
             executor="thread_pool_executor",
         )
         self.root.scheduler.add_job(
+            self.prepare_update,
+            trigger="cron",
+            minute="*/10",
+            executor="thread_pool_executor",
+        )
+        self.root.scheduler.add_job(
             self.check_binance_limits,
             trigger="cron",
             hour="*",
@@ -113,7 +119,7 @@ class Manager:
             executor="thread_pool_executor",
         )
         self.root.scheduler.add_job(
-            self.check_update,
+            self.notify_update,
             trigger="cron",
             hour="*",
             executor="thread_pool_executor",
@@ -463,12 +469,16 @@ class Manager:
         thread_toss.apply_async(job)
         self.root.ask(question)
 
-    def check_update(self, *args, **kwargs):
+    def prepare_update(self, *args, **kwargs):
+
+        find_goodies.prepare()
+
+    def notify_update(self, *args, **kwargs):
 
         run_duration = datetime.now(timezone.utc) - self.executed_time
         did_run_long = run_duration > timedelta(hours=12)
 
-        does_update_exist = find_goodies.check()
+        does_update_exist = find_goodies.get_status()
 
         if does_update_exist and did_run_long:
             question = [

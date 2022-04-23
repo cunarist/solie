@@ -72,7 +72,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
             def job():
                 nonlocal guide_frame
-                guide_frame = GuideFrame(2)
+                guide_frame = GuideFrame(1)
                 guide_frame.announce("마무리하는 중입니다.")
                 self.centralWidget().layout().addWidget(guide_frame)
 
@@ -82,28 +82,14 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
                 while True:
                     if done_steps == total_steps:
                         self.undertake(lambda: guide_frame.progress(), True)
-                        time.sleep(1)
-                        text = "업데이트 확인 중입니다."
+                        text = "마무리가 완료되었습니다."
                         self.undertake(lambda t=text: guide_frame.announce(t), True)
-                        time.sleep(1)
-                        if find_goodies.check():
-                            text = "업데이트가 있습니다."
-                            self.undertake(lambda t=text: guide_frame.announce(t), True)
-                            time.sleep(1)
-                            text = "업데이트를 준비하고 있습니다."
-                            self.undertake(lambda t=text: guide_frame.announce(t), True)
-                            time.sleep(1)
-                            find_goodies.apply()
-                            text = "업데이트가 준비되었습니다. 종료 후 자동으로 설치됩니다."
-                            self.undertake(lambda t=text: guide_frame.announce(t), True)
-                        else:
-                            text = "업데이트가 없습니다."
-                            self.undertake(lambda t=text: guide_frame.announce(t), True)
-                        self.undertake(lambda: guide_frame.progress(), True)
                         time.sleep(1)
                         process_toss.terminate_pool()
                         self.closeEvent = lambda e: e.accept()
+                        find_goodies.apply()
                         self.undertake(self.close, True)
+                        break
                     else:
                         time.sleep(0.1)
 
