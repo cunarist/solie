@@ -13,10 +13,21 @@ analysis = Analysis(  # type:ignore # noqa:F821
     ],
     hiddenimports=(
         []
-        + collect_submodules("PyQt6")
         + collect_submodules("talib")
-        + collect_submodules("yapf")
+        + collect_submodules("numpy")
+        + collect_submodules("pandas")
+        + collect_submodules("scipy")
+        + collect_submodules("PyQt6")
+        + collect_submodules("pyqtgraph")
+        + collect_submodules("requests")
+        + collect_submodules("apscheduler")
+        + collect_submodules("timesetter")
+        + collect_submodules("websocket-client")
         + collect_submodules("pygments")
+        + collect_submodules("dill")
+        + collect_submodules("pyzipper")
+        + collect_submodules("getmac")
+        + collect_submodules("yapf")
     ),
     hookspath=[],
     hooksconfig={},
