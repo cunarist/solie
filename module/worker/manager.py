@@ -170,6 +170,7 @@ class Manager:
         self.root.undertake(lambda l=log_output: self.root.listWidget.addItem(l), False)
 
         # save to file
+        task_start_time = datetime.now(timezone.utc)
         filepath = str(self.executed_time)
         filepath = filepath.replace(":", "_")
         filepath = filepath.replace(" ", "_")
@@ -178,6 +179,9 @@ class Manager:
         filepath = self.workerpath + "/log_outputs_" + filepath + ".txt"
         with open(filepath, "a", encoding="utf8") as file:
             file.write(f"{log_output}\n\n")
+        duration = datetime.now(timezone.utc) - task_start_time
+        duration = duration.total_seconds()
+        remember_task_durations.add("write_logs", duration)
 
     def display_internal_status(self, *args, **kwargs):
         def job():

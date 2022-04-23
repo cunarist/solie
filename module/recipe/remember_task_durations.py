@@ -10,6 +10,7 @@ task_durations = {
     "display_light_lines": deque(maxlen=60),
     "decide_transacting_fast": deque(maxlen=1280),
     "place_order": deque(maxlen=60),
+    "write_logs": deque(maxlen=60),
 }
 
 
