@@ -3,7 +3,7 @@ import socket
 import threading
 import logging
 
-from recipe import thread_toss
+from module.recipe import thread_toss
 
 _IS_READY = threading.Event()
 _WAS_CONNECTED = False

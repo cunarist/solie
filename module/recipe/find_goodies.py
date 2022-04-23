@@ -5,9 +5,9 @@ import subprocess
 
 import pyzipper
 
-from instrument.api_requester import ApiRequester
-from recipe import compare_versions
-from recipe import check_internet
+from module.instrument.api_requester import ApiRequester
+from module.recipe import compare_versions
+from module.recipe import check_internet
 
 
 def check():

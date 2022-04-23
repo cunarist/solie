@@ -3,10 +3,10 @@ import getmac
 
 from PyQt6 import QtWidgets, QtCore, QtGui
 
-from instrument.api_requester import ApiRequester
-from instrument.api_request_error import ApiRequestError
-from recipe import standardize
-from recipe import outsource
+from module.instrument.api_requester import ApiRequester
+from module.instrument.api_request_error import ApiRequestError
+from module.recipe import standardize
+from module.recipe import outsource
 
 
 class LicenseArea(QtWidgets.QScrollArea):

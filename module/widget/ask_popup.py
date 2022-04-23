@@ -2,7 +2,7 @@ import threading
 
 from PyQt6 import QtWidgets, QtCore, QtGui
 
-from widget.ask_popup_content import AskPopupContent
+from module.widget.ask_popup_content import AskPopupContent
 
 # https://stackoverflow.com/questions/67029993/pyqt-creating-a-popup-in-the-window
 

@@ -15,19 +15,19 @@ import pandas as pd
 import numpy as np
 from PyQt6 import QtCore
 
-from instrument.api_requester import ApiRequester
-from instrument.api_streamer import ApiStreamer
-from instrument.api_request_error import ApiRequestError
-from recipe import decide
-from recipe import make_indicators
-from recipe import ball
-from recipe import stop_flag
-from recipe import check_internet
-from recipe import digitize
-from recipe import process_toss
-from recipe import thread_toss
-from recipe import standardize
-from recipe import remember_task_durations
+from module.instrument.api_requester import ApiRequester
+from module.instrument.api_streamer import ApiStreamer
+from module.instrument.api_request_error import ApiRequestError
+from module.recipe import decide
+from module.recipe import make_indicators
+from module.recipe import ball
+from module.recipe import stop_flag
+from module.recipe import check_internet
+from module.recipe import digitize
+from module.recipe import process_toss
+from module.recipe import thread_toss
+from module.recipe import standardize
+from module.recipe import remember_task_durations
 
 
 class Transactor:

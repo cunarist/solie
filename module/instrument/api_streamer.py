@@ -4,7 +4,7 @@ import logging
 
 import websocket
 
-from recipe import thread_toss
+from module.recipe import thread_toss
 
 
 class ApiStreamer:

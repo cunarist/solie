@@ -2,7 +2,7 @@ import math
 
 from pyqtgraph import AxisItem
 
-from recipe import simply_format
+from module.recipe import simply_format
 
 
 class PercentAxisItem(AxisItem):

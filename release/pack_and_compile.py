@@ -10,8 +10,8 @@ userpath = str(pathlib.Path.home())
 condapath = userpath + "/miniconda3/condabin/conda.bat"
 
 commands = [
-    f"{condapath} activate ./habitat",
-    "pyinstaller --noconfirm pack.spec",
+    f"{condapath} activate solsol",
+    "pyinstaller pack.spec --noconfirm",
 ]
 subprocess.run(
     "&&".join(commands),
@@ -23,7 +23,7 @@ subprocess.run(
 
 finalpath = os.getcwd() + "/dist/Solsol"
 
-excludes = ("__init__.py", "entry.py")
+excludes = ("__init__.py",)
 os.chdir(finalpath + "/module")
 for location, foldernames, filenames in os.walk(finalpath + "/module"):
     for filename in filenames:

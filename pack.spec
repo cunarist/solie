@@ -1,8 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
-
+from PyInstaller.utils.hooks import collect_submodules
 
 block_cipher = None
-
 
 analysis = Analysis(  # type:ignore # noqa:F821
     ["Solsol.py"],
@@ -12,7 +11,13 @@ analysis = Analysis(  # type:ignore # noqa:F821
         ("./module", "./module"),
         ("./resource", "./resource"),
     ],
-    hiddenimports=[],
+    hiddenimports=(
+        []
+        + collect_submodules("PyQt6")
+        + collect_submodules("talib")
+        + collect_submodules("yapf")
+        + collect_submodules("pygments")
+    ),
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

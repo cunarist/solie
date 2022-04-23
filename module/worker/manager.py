@@ -12,15 +12,15 @@ import webbrowser
 import timesetter
 import getmac
 
-from instrument.api_requester import ApiRequester
-from instrument.api_request_error import ApiRequestError
-from recipe import simply_format
-from recipe import check_internet
-from recipe import process_toss
-from recipe import standardize
-from recipe import thread_toss
-from recipe import find_goodies
-from recipe import remember_task_durations
+from module.instrument.api_requester import ApiRequester
+from module.instrument.api_request_error import ApiRequestError
+from module.recipe import simply_format
+from module.recipe import check_internet
+from module.recipe import process_toss
+from module.recipe import standardize
+from module.recipe import thread_toss
+from module.recipe import find_goodies
+from module.recipe import remember_task_durations
 
 
 class Manager:

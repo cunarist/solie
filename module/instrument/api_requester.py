@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 import requests
 
-from instrument.api_request_error import ApiRequestError
+from module.instrument.api_request_error import ApiRequestError
 
 
 class ApiRequester:

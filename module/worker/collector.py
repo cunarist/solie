@@ -14,19 +14,19 @@ import logging
 import pandas as pd
 import numpy as np
 
-from instrument.api_requester import ApiRequester
-from instrument.api_streamer import ApiStreamer
-from recipe import simply_format
-from recipe import stop_flag
-from recipe import check_internet
-from recipe import process_toss
-from recipe import thread_toss
-from recipe import standardize
-from recipe import download_aggtrade_data
-from recipe import combine_candle_datas
-from recipe import sort_dataframe
-from recipe import fill_holes_with_aggtrades
-from recipe import remember_task_durations
+from module.instrument.api_requester import ApiRequester
+from module.instrument.api_streamer import ApiStreamer
+from module.recipe import simply_format
+from module.recipe import stop_flag
+from module.recipe import check_internet
+from module.recipe import process_toss
+from module.recipe import thread_toss
+from module.recipe import standardize
+from module.recipe import download_aggtrade_data
+from module.recipe import combine_candle_datas
+from module.recipe import sort_dataframe
+from module.recipe import fill_holes_with_aggtrades
+from module.recipe import remember_task_durations
 
 
 class Collector:

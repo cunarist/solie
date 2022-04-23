@@ -6,9 +6,9 @@ import copy
 import numpy as np
 import pandas as pd
 
-from instrument.simluation_error import SimulationError
-from recipe import decide
-from recipe import standardize
+from module.instrument.simluation_error import SimulationError
+from module.recipe import decide
+from module.recipe import standardize
 
 
 def do(dataset):

@@ -2,8 +2,8 @@ import threading
 import os
 import json
 
-from recipe import check_internet
-from recipe import standardize
+from module.recipe import check_internet
+from module.recipe import standardize
 
 
 class Strategiest:

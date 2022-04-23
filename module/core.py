@@ -12,29 +12,29 @@ import pandas as pd
 import pyqtgraph
 from apscheduler.schedulers.background import BlockingScheduler
 
-from widget.ask_popup import AskPopup
-from widget.setup_area import SetupArea
-from widget.guide_frame import GuideFrame
-from widget.license_area import LicenseArea
-from widget.symbol_box import SymbolBox
-from worker.manager import Manager
-from worker.collector import Collector
-from worker.transactor import Transactor
-from worker.simulator import Simulator
-from worker.strategist import Strategiest
-from instrument.thread_pool_executor import ThreadPoolExecutor
-from instrument.percent_axis_item import PercentAxisItem
-from instrument.telephone import Telephone
-from instrument.api_streamer import ApiStreamer
-from instrument.api_requester import ApiRequester
-from instrument.log_handler import LogHandler
-from recipe import outsource
-from recipe import check_internet
-from recipe import process_toss
-from recipe import thread_toss
-from recipe import standardize
-from recipe import find_goodies
-from recipe import examine_data_files
+from module.widget.ask_popup import AskPopup
+from module.widget.setup_area import SetupArea
+from module.widget.guide_frame import GuideFrame
+from module.widget.license_area import LicenseArea
+from module.widget.symbol_box import SymbolBox
+from module.worker.manager import Manager
+from module.worker.collector import Collector
+from module.worker.transactor import Transactor
+from module.worker.simulator import Simulator
+from module.worker.strategist import Strategiest
+from module.instrument.thread_pool_executor import ThreadPoolExecutor
+from module.instrument.percent_axis_item import PercentAxisItem
+from module.instrument.telephone import Telephone
+from module.instrument.api_streamer import ApiStreamer
+from module.instrument.api_requester import ApiRequester
+from module.instrument.log_handler import LogHandler
+from module.recipe import outsource
+from module.recipe import check_internet
+from module.recipe import process_toss
+from module.recipe import thread_toss
+from module.recipe import standardize
+from module.recipe import find_goodies
+from module.recipe import examine_data_files
 
 
 class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui")[0]):

@@ -2,8 +2,8 @@ from datetime import datetime, timezone, timedelta
 import math
 import random
 
-from recipe import level_constant
-from recipe import standardize
+from module.recipe import level_constant
+from module.recipe import standardize
 
 
 def choose(

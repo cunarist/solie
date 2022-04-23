@@ -1,7 +1,8 @@
 from PyQt6 import QtWidgets, QtGui, QtCore
-import black
+from yapf.yapflib.yapf_api import FormatCode
+from yapf.yapflib.errors import YapfError
 
-from instrument.syntax_highlighter import SyntaxHighlighter
+from module.instrument.syntax_highlighter import SyntaxHighlighter
 
 
 class ScriptEditor(QtWidgets.QPlainTextEdit):
@@ -54,13 +55,13 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
         return super().keyPressEvent(event)
 
     def focusOutEvent(self, event):  # noqa:N802
-        # apply black formatter style
+        # apply formatter style
         scroll_position = self.verticalScrollBar().value()
         text = self.toPlainText()
         try:
-            text = black.format_str(text, mode=black.FileMode())
-            self.setPlainText(text)
-        except black.InvalidInput:
+            formatted_text, _ = FormatCode(text)
+            self.setPlainText(formatted_text)
+        except YapfError:
             pass
         self.verticalScrollBar().setValue(scroll_position)
         # run original function as well

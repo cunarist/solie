@@ -13,14 +13,14 @@ import pandas as pd
 import numpy as np
 from scipy.signal import find_peaks
 
-from recipe import simulate_unit
-from recipe import make_indicators
-from recipe import stop_flag
-from recipe import check_internet
-from recipe import digitize
-from recipe import process_toss
-from recipe import thread_toss
-from recipe import standardize
+from module.recipe import simulate_unit
+from module.recipe import make_indicators
+from module.recipe import stop_flag
+from module.recipe import check_internet
+from module.recipe import digitize
+from module.recipe import process_toss
+from module.recipe import thread_toss
+from module.recipe import standardize
 
 
 class Simulator:

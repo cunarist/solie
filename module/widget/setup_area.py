@@ -4,10 +4,10 @@ import urllib
 
 from PyQt6 import QtWidgets, QtCore, QtGui
 
-from instrument.api_requester import ApiRequester
-from recipe import standardize
-from recipe import outsource
-from recipe import thread_toss
+from module.instrument.api_requester import ApiRequester
+from module.recipe import standardize
+from module.recipe import outsource
+from module.recipe import thread_toss
 
 
 class SetupArea(QtWidgets.QScrollArea):

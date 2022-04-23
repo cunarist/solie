@@ -4,9 +4,9 @@ import numpy as np
 import itertools
 import threading
 
-from recipe import level_constant
-from recipe import thread_toss
-from recipe import standardize
+from module.recipe import level_constant
+from module.recipe import thread_toss
+from module.recipe import standardize
 
 
 def do(observed_data, strategy, compiled_custom_script):

@@ -119,7 +119,7 @@ AskPopupContent {
        <enum>QTabWidget::North</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab_5">
        <attribute name="title">
@@ -1966,17 +1966,17 @@ AskPopupContent {
   <customwidget>
    <class>ScriptEditor</class>
    <extends>QPlainTextEdit</extends>
-   <header>widget/script_editor</header>
+   <header>module/widget/script_editor</header>
   </customwidget>
   <customwidget>
    <class>LogList</class>
    <extends>QListWidget</extends>
-   <header>widget/log_list</header>
+   <header>module/widget/log_list</header>
   </customwidget>
   <customwidget>
    <class>Gauge</class>
    <extends>QPushButton</extends>
-   <header>widget/gauge</header>
+   <header>module/widget/gauge</header>
   </customwidget>
  </customwidgets>
  <resources/>
