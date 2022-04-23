@@ -2,6 +2,7 @@ import pickle
 import copy
 import os
 import json
+import shutil
 
 
 def do(datapath):
@@ -30,3 +31,7 @@ def do(datapath):
             json.dump(mode_settings, file, indent=4)
     except FileNotFoundError:
         pass
+
+    # 2.11: included dependencies in the installer
+    if os.path.isdir("./habitat"):
+        shutil.rmtree("./habitat", ignore_errors=True)
