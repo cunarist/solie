@@ -473,7 +473,7 @@ class Manager:
         if does_update_exist and did_run_long:
             question = [
                 "업데이트가 있습니다.",
-                "쏠쏠을 종료하고 1분 이상 기다렸다 다시 켜세요. 그 사이에 업데이트가 자동으로 설치됩니다.",
+                "쏠쏠을 종료하고 잠시 기다렸다 다시 켜세요. 그 사이에 업데이트가 자동으로 설치됩니다.",
                 ["확인"],
             ]
             self.root.ask(question)

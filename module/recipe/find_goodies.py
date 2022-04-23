@@ -67,7 +67,7 @@ def apply():
             file.write(original_data)
 
         filepath = temp_folder + "/SolsolWindowsSetup.exe"
-        commands = ["timeout 5", f"{filepath} /VERYSILENT"]
+        commands = ["timeout 5", f"{filepath} /SILENT"]
         subprocess.Popen("&&".join(commands), shell=True)
 
     elif platform.system() == "Linux":
