@@ -13,10 +13,7 @@ commands = [
     f"{condapath} activate solsol",
     "pyinstaller pack.spec --noconfirm",
 ]
-subprocess.run(
-    "&&".join(commands),
-    shell=True,
-)
+subprocess.run("&&".join(commands))
 
 # https://medium.com/@xpl/protecting-python-sources-using-cython-dcd940bb188e
 # https://stackoverflow.com/questions/66967488/creating-pyd-files-in-folder-and-subfolder-using-python

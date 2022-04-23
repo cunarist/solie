@@ -68,11 +68,7 @@ def apply():
 
         filepath = temp_folder + "/SolsolWindowsSetup.exe"
         commands = ["timeout 5", f"{filepath} /VERYSILENT"]
-        subprocess.Popen(
-            "&&".join(commands),
-            creationflags=subprocess.CREATE_NO_WINDOW,
-            shell=True,
-        )
+        subprocess.Popen("&&".join(commands), shell=True)
 
     elif platform.system() == "Linux":
 
