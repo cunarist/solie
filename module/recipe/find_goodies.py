@@ -3,8 +3,6 @@ from urllib import request
 import tempfile
 import subprocess
 
-import pyzipper
-
 from module.instrument.api_requester import ApiRequester
 from module.recipe import compare_versions
 from module.recipe import check_internet
@@ -41,12 +39,12 @@ def apply():
     elif platform_system == "Darwin":
         platform_name = "macOS"
 
-    blob_name = f"Solsol{platform_name}Setup.zip"
+    blob_name = f"Solsol{platform_name}Setup.exe"
 
     api_requester = ApiRequester()
 
     payload = {"blobName": blob_name}
-    response = api_requester.cunarist("GET", "/solsol/blob-url", payload)
+    response = api_requester.cunarist("GET", "/solsol/installer-url", payload)
     blob_url = response["blobUrl"]
 
     if platform.system() == "Windows":
@@ -54,19 +52,10 @@ def apply():
         download_data = request.urlopen(blob_url).read()
         temp_folder = tempfile.gettempdir()
 
-        filepath = temp_folder + "/SolsolWindowsSetup.zip"
+        filepath = temp_folder + "/SolsolWindowsSetup.exe"
         with open(filepath, mode="wb") as file:
             file.write(download_data)
 
-        filepath = temp_folder + "/SolsolWindowsSetup.exe"
-        with open(filepath, mode="wb") as file:
-            filepath = temp_folder + "/SolsolWindowsSetup.zip"
-            with pyzipper.AESZipFile(filepath) as zipfile:
-                zipfile.setpassword(bytes("x2P64ETS3xKdFULJxYR38kCs8dW3jp6P", "utf8"))
-                original_data = zipfile.read("SolsolWindowsSetup.exe")
-            file.write(original_data)
-
-        filepath = temp_folder + "/SolsolWindowsSetup.exe"
         commands = ["timeout 5", f"{filepath} /SILENT"]
         subprocess.Popen("&&".join(commands), shell=True)
 
