@@ -82,7 +82,6 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             def job():
                 while True:
                     if done_steps == total_steps:
-                        self.undertake(lambda: guide_frame.progress(), True)
                         text = "마무리가 완료되었습니다."
                         self.undertake(lambda t=text: guide_frame.announce(t), True)
                         time.sleep(1)
@@ -1069,7 +1068,6 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             outsource.do(self.pushButton_7.clicked, job)
 
         self.undertake(job, True)
-        self.undertake(lambda: guide_frame.progress(), True)
 
         # ■■■■■ initialize functions ■■■■■
 
@@ -1089,7 +1087,6 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
         for _ in range(200):
             if map_result.ready() and map_result.successful():
-                self.undertake(lambda: guide_frame.progress(), True)
                 break
             time.sleep(0.1)
 

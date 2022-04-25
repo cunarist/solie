@@ -78,36 +78,6 @@ class GuideFrame(QtWidgets.QFrame):
         )
         central_layout.addWidget(self.guide_label)
 
-        self.progressbars = []
-        this_layout = QtWidgets.QHBoxLayout()
-        central_layout.addLayout(this_layout)
-        spacer = QtWidgets.QSpacerItem(
-            6,
-            6,
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed,
-        )
-        this_layout.addItem(spacer)
-        progress_layout = QtWidgets.QHBoxLayout()
-        this_layout.addLayout(progress_layout)
-        for _ in range(total_steps):
-            progressbar = QtWidgets.QProgressBar()
-            progressbar.setMaximum(1)
-            progressbar.setTextVisible(False)
-            progressbar.setFixedWidth(60)
-            progressbar_font = QtGui.QFont()
-            progressbar_font.setPointSize(1)
-            progressbar.setFont(progressbar_font)
-            progress_layout.addWidget(progressbar)
-            self.progressbars.append(progressbar)
-        spacer = QtWidgets.QSpacerItem(
-            6,
-            6,
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed,
-        )
-        this_layout.addItem(spacer)
-
         spacer = QtWidgets.QSpacerItem(
             0,
             0,
@@ -123,10 +93,6 @@ class GuideFrame(QtWidgets.QFrame):
             QtWidgets.QSizePolicy.Policy.Minimum,
         )
         full_layout.addItem(spacer)
-
-    def progress(self):
-        self.progressbars[self.done_steps].setValue(1)
-        self.done_steps += 1
 
     def announce(self, guide_text):
         self.guide_label.setText(guide_text)
