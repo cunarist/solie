@@ -2,6 +2,7 @@ import platform
 from urllib import request
 import tempfile
 import subprocess
+import os
 
 from module.instrument.api_requester import ApiRequester
 from module.recipe import compare_versions
@@ -78,11 +79,12 @@ def apply():
         if platform.system() == "Windows":
             temp_folder = tempfile.gettempdir()
             filepath = temp_folder + "/SolsolWindowsSetup.exe"
-            commands = [f"{filepath} /SILENT"]
-            subprocess.Popen(
-                "&&".join(commands),
-                creationflags=subprocess.DETACHED_PROCESS,
-            )
+            if os.path.isfile(filepath):
+                commands = [f"{filepath} /SILENT"]
+                subprocess.Popen(
+                    "&&".join(commands),
+                    creationflags=subprocess.DETACHED_PROCESS,
+                )
 
         elif platform.system() == "Linux":
             pass
