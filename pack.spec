@@ -1,14 +1,15 @@
-# -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils import hooks
 
-# ■■■■■ files to include ■■■■■
+# ■■■■■ lists of files and folders to include ■■■■■
 
-datas = [
-    ("./module", "./module"),
-    ("./resource", "./resource"),
-]
+datas = []
 binaries = []
 hiddenimports = []
+
+# ■■■■■ include needed files ■■■■■
+
+datas.append(("./module", "./module"))
+datas.append(("./resource", "./resource"))
 
 # ■■■■■ packages to complete ■■■■■
 

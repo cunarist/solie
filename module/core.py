@@ -6,6 +6,7 @@ import logging
 import pathlib
 import urllib
 import math
+import multiprocessing
 
 from PyQt6 import uic, QtGui, QtWidgets, QtCore
 import pandas as pd
@@ -1148,6 +1149,10 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
 
         return ask_popup.answer
 
+
+# ■■■■■ prerequisites ■■■■■
+
+multiprocessing.freeze_support()
 
 # ■■■■■ app ■■■■■
 
