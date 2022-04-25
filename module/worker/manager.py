@@ -187,7 +187,7 @@ class Manager:
             file.write(f"{log_output}\n\n")
         duration = datetime.now(timezone.utc) - task_start_time
         duration = duration.total_seconds()
-        remember_task_durations.add("write_logs", duration)
+        remember_task_durations.add("write_log", duration)
 
     def display_internal_status(self, *args, **kwargs):
         def job():
