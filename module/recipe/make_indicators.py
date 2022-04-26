@@ -1,8 +1,9 @@
+import itertools
+import threading
+
 import talib
 import pandas as pd
 import numpy as np
-import itertools
-import threading
 
 from module.recipe import level_constant
 from module.recipe import thread_toss
