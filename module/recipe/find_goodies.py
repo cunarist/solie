@@ -3,6 +3,7 @@ from urllib import request
 import tempfile
 import subprocess
 import os
+import logging
 
 from module.instrument.api_requester import ApiRequester
 from module.recipe import compare_versions
@@ -67,6 +68,10 @@ def prepare():
 
         elif platform.system() == "Darwin":  # macOS
             pass
+
+        text = "업데이트 설치 파일을 다운로드해서 준비했습니다."
+        logger = logging.getLogger("solsol")
+        logger.info(text)
 
         PREPARED_VERSION = LATEST_VERSION
         IS_PREPARED = True
