@@ -25,7 +25,7 @@ def prepare():
     global IS_PREPARED
 
     if not check_internet.connected():
-        return False
+        return
 
     api_requester = ApiRequester()
     payload = {"id": "version"}
@@ -35,12 +35,29 @@ def prepare():
     with open("./resource/version.txt", mode="r", encoding="utf8") as file:
         current_version = file.read()
 
+    if IS_PREPARED:
+
+        temp_folder = tempfile.gettempdir()
+
+        if platform.system() == "Windows":
+            filepath = temp_folder + "/SolsolWindowsSetup.exe"
+        elif platform.system() == "Linux":
+            pass
+        elif platform.system() == "Darwin":  # macOS
+            pass
+
+        if not os.path.isfile(filepath):
+            # when temp directory is cleaned up for some reason...
+            IS_PREPARED = False
+            PREPARED_VERSION = "0.0"
+
     if compare_versions.do(LATEST_VERSION, current_version):
 
         if not compare_versions.do(LATEST_VERSION, PREPARED_VERSION):
             return
 
         platform_system = platform.system()
+
         if platform_system == "Windows":
             platform_name = "Windows"
         elif platform_system == "Linux":
@@ -56,18 +73,18 @@ def prepare():
         response = api_requester.cunarist("GET", "/solsol/installer-url", payload)
         blob_url = response["blobUrl"]
 
-        if platform.system() == "Windows":
-            download_data = request.urlopen(blob_url).read()
-            temp_folder = tempfile.gettempdir()
-            filepath = temp_folder + "/SolsolWindowsSetup.exe"
-            with open(filepath, mode="wb") as file:
-                file.write(download_data)
+        download_data = request.urlopen(blob_url).read()
+        temp_folder = tempfile.gettempdir()
 
+        if platform.system() == "Windows":
+            filepath = temp_folder + "/SolsolWindowsSetup.exe"
         elif platform.system() == "Linux":
             pass
-
         elif platform.system() == "Darwin":  # macOS
             pass
+
+        with open(filepath, mode="wb") as file:
+            file.write(download_data)
 
         text = "업데이트 설치 파일을 다운로드해서 준비했습니다."
         logger = logging.getLogger("solsol")
