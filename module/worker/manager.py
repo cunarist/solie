@@ -478,12 +478,12 @@ class Manager:
         run_duration = datetime.now(timezone.utc) - self.executed_time
         did_run_long = run_duration > timedelta(hours=12)
 
-        does_update_exist = find_goodies.get_status()
+        is_prepared = find_goodies.get_status()
 
-        if does_update_exist and did_run_long:
+        if is_prepared and did_run_long:
             question = [
-                "업데이트가 있습니다.",
-                "쏠쏠을 종료하고 잠시 기다렸다 다시 켜세요. 그 사이에 업데이트가 자동으로 설치됩니다.",
+                "업데이트가 준비되었습니다.",
+                "쏠쏠을 종료하고 잠시 기다렸다 다시 켜세요. 그 사이에 업데이트가 자동으로 적용됩니다.",
                 ["확인"],
             ]
             self.root.ask(question)
