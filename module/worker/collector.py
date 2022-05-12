@@ -55,6 +55,7 @@ class Collector:
         }
 
         self.exchange_state = {
+            "maximum_quantities": {},
             "minimum_notionals": {},
             "price_precisions": {},
             "quantity_precisions": {},
@@ -227,6 +228,16 @@ class Collector:
                     break
             minimum_notional = float(about_filter["notional"])
             self.exchange_state["minimum_notionals"][symbol] = minimum_notional
+
+            for about_filter in about_symbol["filters"]:
+                if about_filter["filterType"] == "LOT_SIZE":
+                    break
+            maximum_quantity = float(about_filter["maxQty"])
+            for about_filter in about_symbol["filters"]:
+                if about_filter["filterType"] == "MARKET_LOT_SIZE":
+                    break
+            maximum_quantity = min(maximum_quantity, float(about_filter["maxQty"]))
+            self.exchange_state["maximum_quantities"][symbol] = maximum_quantity
 
             for about_filter in about_symbol["filters"]:
                 if about_filter["filterType"] == "PRICE_FILTER":
