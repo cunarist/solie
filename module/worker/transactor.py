@@ -76,6 +76,7 @@ class Transactor:
         }
 
         self.exchange_state = {
+            "maximum_quantities": {},
             "minimum_notionals": {},
             "price_precisions": {},
             "quantity_precisions": {},
@@ -1713,6 +1714,16 @@ class Transactor:
             self.exchange_state["minimum_notionals"][symbol] = minimum_notional
 
             for about_filter in about_symbol["filters"]:
+                if about_filter["filterType"] == "LOT_SIZE":
+                    break
+            maximum_quantity = float(about_filter["maxQty"])
+            for about_filter in about_symbol["filters"]:
+                if about_filter["filterType"] == "MARKET_LOT_SIZE":
+                    break
+            maximum_quantity = min(maximum_quantity, float(about_filter["maxQty"]))
+            self.exchange_state["maximum_quantities"][symbol] = maximum_quantity
+
+            for about_filter in about_symbol["filters"]:
                 if about_filter["filterType"] == "PRICE_FILTER":
                     break
             ticksize = float(about_filter["tickSize"])
@@ -2065,6 +2076,7 @@ class Transactor:
             current_price = float(temp_ar[-1])
 
             leverage = self.hidden_state["leverages"][symbol]
+            maximum_quantity = self.exchange_state["maximum_quantities"][symbol]
             minimum_notional = self.exchange_state["minimum_notionals"][symbol]
             price_precision = self.exchange_state["price_precisions"][symbol]
             quantity_precision = self.exchange_state["quantity_precisions"][symbol]
@@ -2078,10 +2090,7 @@ class Transactor:
 
             if "now_close" in decision[symbol]:
                 command = decision[symbol]["now_close"]
-                quantity = ball.ceil(
-                    self.account_state["wallet_balance"] / current_price * leverage,
-                    quantity_precision,
-                )
+                quantity = maximum_quantity
                 if self.account_state["positions"][symbol]["direction"] == "long":
                     side = "SELL"
                 elif self.account_state["positions"][symbol]["direction"] == "short":
@@ -2101,7 +2110,7 @@ class Transactor:
             if "now_buy" in decision[symbol]:
                 command = decision[symbol]["now_buy"]
                 notional = max(minimum_notional, command["margin"] * leverage)
-                quantity = notional / current_price
+                quantity = min(maximum_quantity, notional / current_price)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
@@ -2114,7 +2123,7 @@ class Transactor:
             if "now_sell" in decision[symbol]:
                 command = decision[symbol]["now_sell"]
                 notional = max(minimum_notional, command["margin"] * leverage)
-                quantity = notional / current_price
+                quantity = min(maximum_quantity, notional / current_price)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
@@ -2168,7 +2177,7 @@ class Transactor:
                 command = decision[symbol]["later_up_buy"]
                 notional = max(minimum_notional, command["margin"] * leverage)
                 boundary = command["boundary"]
-                quantity = notional / boundary
+                quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
@@ -2183,7 +2192,7 @@ class Transactor:
                 command = decision[symbol]["later_down_buy"]
                 notional = max(minimum_notional, command["margin"] * leverage)
                 boundary = command["boundary"]
-                quantity = notional / boundary
+                quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
@@ -2198,7 +2207,7 @@ class Transactor:
                 command = decision[symbol]["later_up_sell"]
                 notional = max(minimum_notional, command["margin"] * leverage)
                 boundary = command["boundary"]
-                quantity = notional / boundary
+                quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
@@ -2213,7 +2222,7 @@ class Transactor:
                 command = decision[symbol]["later_down_sell"]
                 notional = max(minimum_notional, command["margin"] * leverage)
                 boundary = command["boundary"]
-                quantity = notional / boundary
+                quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
@@ -2228,7 +2237,7 @@ class Transactor:
                 command = decision[symbol]["book_buy"]
                 notional = max(minimum_notional, command["margin"] * leverage)
                 boundary = command["boundary"]
-                quantity = notional / boundary
+                quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
@@ -2244,7 +2253,7 @@ class Transactor:
                 command = decision[symbol]["book_sell"]
                 notional = max(minimum_notional, command["margin"] * leverage)
                 boundary = command["boundary"]
-                quantity = notional / boundary
+                quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
