@@ -29,7 +29,7 @@ def prepare():
 
     api_requester = ApiRequester()
     payload = {"id": "version"}
-    response = api_requester.cunarist("GET", "/solsol/latest-information", payload)
+    response = api_requester.cunarist("GET", "/api/solsol/latest-information", payload)
     LATEST_VERSION = response["value"]
 
     with open("./resource/version.txt", mode="r", encoding="utf8") as file:
@@ -70,7 +70,7 @@ def prepare():
         api_requester = ApiRequester()
 
         payload = {"blobName": blob_name}
-        response = api_requester.cunarist("GET", "/solsol/installer-url", payload)
+        response = api_requester.cunarist("GET", "/api/solsol/installer-url", payload)
         blob_url = response["blobUrl"]
 
         download_data = request.urlopen(blob_url).read()

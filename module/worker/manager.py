@@ -419,7 +419,7 @@ class Manager:
             "licenseKey": license_key,
             "macAddress": getmac.get_mac_address(),
         }
-        self.api_requester.cunarist("PUT", "/solsol/key-mac-pair", payload)
+        self.api_requester.cunarist("PUT", "/api/solsol/key-mac-pair", payload)
 
     def check_license_key(self, *args, **kwargs):
 
@@ -432,7 +432,7 @@ class Manager:
                 "licenseKey": license_key,
             }
             response = self.api_requester.cunarist(
-                "GET", "/solsol/key-mac-pair", payload
+                "GET", "/api/solsol/key-mac-pair", payload
             )
             if response["macAddress"] != getmac.get_mac_address():
                 is_occupying_key = False

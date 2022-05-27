@@ -140,7 +140,7 @@ class LicenseArea(QtWidgets.QScrollArea):
                     "licenseKey": license_key,
                     "macAddress": getmac.get_mac_address(),
                 }
-                api_requester.cunarist("PUT", "/solsol/key-mac-pair", payload)
+                api_requester.cunarist("PUT", "/api/solsol/key-mac-pair", payload)
                 standardize.set_license_key(license_key)
                 self.done_event.set()
             except ApiRequestError:

@@ -130,8 +130,7 @@ class ApiRequester:
         # replace single quote to double quote
         query_string = query_string.replace("%27", "%22")
 
-        # this is a temporary address. will be changed to www.cunarist.com
-        url = "https://cunarist-api.azurewebsites.net" + path + "?" + query_string
+        url = "https://cunarist.com" + path + "?" + query_string
         parameters = {"url": url}
         raw_response = self._request(http_method, parameters)
         response = raw_response.json()
