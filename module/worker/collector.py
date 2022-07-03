@@ -509,53 +509,33 @@ class Collector:
             filepath = f"{self.workerpath}/candle_data_{year}.pickle"
             year_df.to_pickle(filepath)
 
-    def download_fill_history(self, *args, **kwargs):
+    def download_fill_candle_data(self, *args, **kwargs):
 
-        # ■■■■■ confirm ■■■■■
+        # ■■■■■ ask filling type ■■■■■
 
-        target = args[0]
-
-        if target == "until_last_month":
-            question = [
-                "지난 달까지의 캔들 데이터를 채우시겠어요?",
-                "바이낸스가 제공하는 2020년 1월부터 지난 달까지의 데이터를 받아 기록하게 됩니다. 대용량 데이터를 다운로드하기 때문에"
-                " 인터넷 속도에 따라 걸리는 시간이 달라집니다. 짧게는 수십 분, 길게는 몇 시간이 걸릴 수 있습니다. 바이낸스에 데이터가"
-                " 아직 등록되지 않은 경우에는 건너뜁니다.",
-                ["아니오", "예"],
-            ]
-        elif target == "this_month":
-            question = [
-                "이번 달의 캔들 데이터를 채우시겠어요?",
-                "이번 달 1일부터의 어제까지의 데이터를 바이낸스에서 받아 기록하게 됩니다. 대용량 데이터를 다운로드하기 때문에 인터넷 속도에"
-                " 따라 걸리는 시간이 달라집니다. 몇 분이 걸릴 수 있습니다. 바이낸스에 데이터가 아직 등록되지 않은 경우에는 건너뜁니다.",
-                ["아니오", "예"],
-            ]
-        elif target == "last_two_days":
-            question = [
-                "어제와 그저께의 캔들 데이터를 채우시겠어요?",
-                "어제와 그저께의 데이터를 바이낸스에서 받아 기록하게 됩니다. 바이낸스에 데이터가 아직 등록되지 않은 경우에는 건너뜁니다.",
-                ["아니오", "예"],
-            ]
-
+        question = [
+            "캔들 데이터를 얼마나 채우시겠어요?",
+            "바이낸스가 제공하는 과거 데이터를 받아 캔들 데이터로 기록합니다. 더 많은 양을 채울수록 더 오래 걸립니다. 며칠 분량은 몇 분 안에"
+            " 채워지지만, 몇 년 분량은 채워지는 데에 수십 분에서 몇 시간이 걸릴 수 있습니다.",
+            ["2020년부터 작년까지", "올해 첫 달부터 지난 달까지", "이번 달", "어제와 그저께"],
+            True,
+        ]
         answer = self.root.ask(question)
-        if answer in (0, 1):
+        if answer in (0,):
             return
+
+        filling_type = answer
 
         # ■■■■■ prepare target tuples for downloading ■■■■■
 
-        task_id = stop_flag.make("download_fill_history")
+        task_id = stop_flag.make("download_fill_candle_data")
 
+        target_tuples = []
         target_symbols = standardize.get_basics()["target_symbols"]
-        if target == "until_last_month":
+        if filling_type == 1:
             current_year = datetime.now(timezone.utc).year
-            current_month = datetime.now(timezone.utc).month
-            target_tuples = []
-            for year in range(2020, current_year + 1):
-                if year == current_year:
-                    final_month = current_month - 1
-                else:
-                    final_month = 12
-                for month in range(1, final_month + 1):
+            for year in range(2020, current_year):
+                for month in range(1, 12 + 1):
                     for symbol in target_symbols:
                         target_tuples.append(
                             (
@@ -565,11 +545,23 @@ class Collector:
                                 month,
                             )
                         )
-        elif target == "this_month":
+        if filling_type == 2:
+            current_year = datetime.now(timezone.utc).year
+            current_month = datetime.now(timezone.utc).month
+            for month in range(1, current_month):
+                for symbol in target_symbols:
+                    target_tuples.append(
+                        (
+                            symbol,
+                            "monthly",
+                            current_year,
+                            month,
+                        )
+                    )
+        elif filling_type == 3:
             current_year = datetime.now(timezone.utc).year
             current_month = datetime.now(timezone.utc).month
             current_day = datetime.now(timezone.utc).day
-            target_tuples = []
             for target_day in range(1, current_day):
                 for symbol in target_symbols:
                     target_tuples.append(
@@ -581,11 +573,10 @@ class Collector:
                             target_day,
                         )
                     )
-        elif target == "last_two_days":
+        elif filling_type == 4:
             now = datetime.now(timezone.utc)
             yesterday = now - timedelta(hours=24)
             day_before_yesterday = yesterday - timedelta(hours=24)
-            target_tuples = []
             for symbol in target_symbols:
                 target_tuples.append(
                     (
@@ -613,7 +604,7 @@ class Collector:
 
         def job():
             while True:
-                if stop_flag.find("download_fill_history", task_id):
+                if stop_flag.find("download_fill_candle_data", task_id):
                     widget = self.root.progressBar_3
                     self.root.undertake(lambda w=widget: w.setValue(0), False)
                     return
@@ -662,7 +653,7 @@ class Collector:
             nonlocal combined_df
 
             for target_tuple in target_tuple_chunk:
-                if stop_flag.find("download_fill_history", task_id):
+                if stop_flag.find("download_fill_candle_data", task_id):
                     return
                 returned = process_toss.apply(download_aggtrade_data.do, target_tuple)
                 if returned is not None:
@@ -677,7 +668,7 @@ class Collector:
 
         thread_toss.map(job, target_tuple_chunks)
 
-        if stop_flag.find("download_fill_history", task_id):
+        if stop_flag.find("download_fill_candle_data", task_id):
             return
 
         # ■■■■■ combine ■■■■■
@@ -859,14 +850,6 @@ class Collector:
         duration = (datetime.now(timezone.utc) - current_moment).total_seconds()
         remember_task_durations.add("add_candle_data", duration)
 
-    def download_fill_history_until_last_month(self, *args, **kwargs):
+    def stop_filling_candle_data(self, *args, **kwargs):
 
-        self.download_fill_history("until_last_month")
-
-    def download_fill_history_this_month(self, *args, **kwargs):
-
-        self.download_fill_history("this_month")
-
-    def download_fill_history_last_two_days(self, *args, **kwargs):
-
-        self.download_fill_history("last_two_days")
+        stop_flag.make("download_fill_candle_data")

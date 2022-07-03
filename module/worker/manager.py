@@ -334,6 +334,7 @@ class Manager:
             "이탈리아의 수도는 어디일까요?",
             "아무 기능이 없는 코드 시험용 질문입니다.",
             ["로마", "서울", "뉴욕"],
+            False,
         ]
         answer = self.root.ask(question)
 
@@ -377,6 +378,7 @@ class Manager:
             "데이터 저장 폴더를 바꾸기 위해서 쏠쏠이 꺼집니다. 다음에 쏠쏠을 켤 때에 데이터 저장 폴더를 다시 고르게 됩니다. 기존 데이터"
             " 저장 폴더는 사라지지 않고 그대로 남습니다.",
             ["아니오", "예"],
+            False,
         ]
         answer = self.root.ask(question)
 
@@ -397,6 +399,7 @@ class Manager:
             "현재 버전입니다.",
             version,
             ["확인"],
+            False,
         ]
         self.root.ask(question)
 
@@ -409,6 +412,7 @@ class Manager:
             "현재 라이센스 키입니다.",
             license_key,
             ["확인"],
+            False,
         ]
         self.root.ask(question)
 
@@ -451,12 +455,14 @@ class Manager:
                 "라이센스 키가 유효하지 않습니다.",
                 f"쏠쏠이 {exit_time}에 종료됩니다.",
                 ["확인"],
+                False,
             ]
         elif not is_occupying_key:
             question = [
                 "라이센스 키가 다른 컴퓨터에서 사용되고 있습니다.",
                 f"쏠쏠이 {exit_time}에 종료됩니다.",
                 ["확인"],
+                False,
             ]
 
         os.remove("./note/license_key.txt")
@@ -485,6 +491,7 @@ class Manager:
                 "업데이트가 준비되었습니다.",
                 "쏠쏠을 종료하고 잠시 기다렸다 다시 켜세요. 그 사이에 업데이트가 자동으로 적용됩니다.",
                 ["확인"],
+                False,
             ]
             self.root.ask(question)
 
@@ -500,6 +507,7 @@ class Manager:
                 "보드 잠금을 해제하시겠어요?",
                 "잠금을 해제하면 보드를 다시 조작할 수 있게 됩니다.",
                 ["아니오", "예"],
+                False,
             ]
             answer = self.root.ask(question)
             if answer in (0, 1):

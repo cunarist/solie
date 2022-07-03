@@ -148,6 +148,7 @@ class LicenseArea(QtWidgets.QScrollArea):
                     "유효한 라이센스 키가 아닙니다.",
                     "정확한 라이센스 키를 입력해야 합니다.",
                     ["확인"],
+                    False,
                 ]
                 root.ask(question)
 

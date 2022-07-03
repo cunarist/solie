@@ -56,6 +56,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
                     "쏠쏠을 켜 두지 않으면 실시간 데이터 기록이 되지 않습니다. 종료를 선택하면 데이터를 저장하고 통신을 닫는 마무리"
                     " 절차가 수행됩니다.",
                     ["취소", "종료"],
+                    False,
                 ]
                 answer = self.ask(question)
 
@@ -151,6 +152,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
                 "인터넷에 연결되어 있지 않습니다.",
                 "쏠쏠이 켜지려면 인터넷 연결이 반드시 필요합니다.",
                 ["확인"],
+                False,
             ]
             self.ask(question)
             time.sleep(1)
@@ -201,6 +203,7 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
                     "데이터 저장 폴더를 선택하세요.",
                     "앞으로 쏠쏠이 생성하는 모든 데이터는 지금 선택되는 폴더 안에 담기게 됩니다.",
                     ["확인"],
+                    False,
                 ]
                 self.ask(question)
                 self.undertake(job, True)
@@ -869,6 +872,8 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             self.collector_actions.append(action_menu.addAction(text))
             text = "바이낸스 과거 시장 데이터 페이지 열기"
             self.collector_actions.append(action_menu.addAction(text))
+            text = "캔들 데이터를 채우는 작업 멈추기"
+            self.collector_actions.append(action_menu.addAction(text))
             self.pushButton_13.setMenu(action_menu)
 
             action_menu = QtWidgets.QMenu(self)
@@ -964,6 +969,8 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             outsource.do(self.collector_actions[1].triggered, job)
             job = self.collector.open_binance_data_page
             outsource.do(self.collector_actions[2].triggered, job)
+            job = self.collector.stop_filling_candle_data
+            outsource.do(self.collector_actions[3].triggered, job)
             job = self.transactor.open_exchange
             outsource.do(self.transactor_actions[0].triggered, job)
             job = self.transactor.open_futures_wallet_page
@@ -1042,17 +1049,13 @@ class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui
             outsource.do(self.pushButton_16.clicked, job)
             job = self.simulator.draw
             outsource.do(self.pushButton_17.clicked, job)
-            job = self.collector.download_fill_history_until_last_month
-            outsource.do(self.pushButton_18.clicked, job)
-            job = self.collector.download_fill_history_this_month
-            outsource.do(self.pushButton_5.clicked, job)
             job = self.strategist.revert_scripts
             outsource.do(self.pushButton_19.clicked, job)
             job = self.strategist.save_scripts
             outsource.do(self.pushButton_20.clicked, job)
             job = self.transactor.update_keys
             outsource.do(self.comboBox_3.activated, job)
-            job = self.collector.download_fill_history_last_two_days
+            job = self.collector.download_fill_candle_data
             outsource.do(self.pushButton_2.clicked, job)
             job = self.transactor.update_mode_settings
             outsource.do(self.spinBox.editingFinished, job)

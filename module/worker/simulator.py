@@ -197,6 +197,7 @@ class Simulator:
                 "사용 가능 전략이 아닙니다.",
                 "이 전략으로는 시뮬레이션 계산을 할 수 없습니다.",
                 ["확인"],
+                False,
             ]
             self.root.ask(question)
 
@@ -1005,6 +1006,7 @@ class Simulator:
                 "사용 가능 전략이 아닙니다.",
                 "다른 전략을 선택하세요.",
                 ["확인"],
+                False,
             ]
             self.root.ask(question)
             return
@@ -1550,6 +1552,7 @@ class Simulator:
                 f"{year}년의 {strategy}번 전략 계산 데이터는 없습니다.",
                 "계산하기 버튼을 누른다면 해당 연도의 처음부터 계산하게 됩니다.",
                 ["확인"],
+                False,
             ]
             self.root.ask(question)
             return
@@ -1559,6 +1562,7 @@ class Simulator:
                 "삭제하고 나서 이 조합의 시뮬레이션을 다시 보려면 해당 연도 전체를 다시 계산해야 합니다. 다른 조합의 계산 데이터는 영향을"
                 " 받지 않습니다.",
                 ["취소", "삭제"],
+                False,
             ]
             answer = self.root.ask(question)
             if answer in (0, 1):
@@ -1626,6 +1630,7 @@ class Simulator:
                 f"{year}년의 {strategy}번 전략 계산 데이터는 없습니다.",
                 "계산을 먼저 해야 그릴 수 있습니다.",
                 ["확인"],
+                False,
             ]
             self.root.ask(question)
             return
@@ -1656,6 +1661,7 @@ class Simulator:
                 "계산 데이터가 너무 짧거나 없습니다.",
                 "유의미한 최저 미실현 수익률 목록을 알아낼 수 없습니다.",
                 ["확인"],
+                False,
             ]
             self.root.ask(question)
         else:
@@ -1667,5 +1673,6 @@ class Simulator:
                 "최저 미실현 수익률을 기록한 지점들입니다.",
                 "\n".join(text_lines),
                 ["확인"],
+                False,
             ]
             self.root.ask(question)

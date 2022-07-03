@@ -190,23 +190,9 @@ AskPopupContent {
               </spacer>
              </item>
              <item>
-              <widget class="QPushButton" name="pushButton_18">
-               <property name="text">
-                <string>지난 달까지의 캔들 데이터 다시 채우기</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="pushButton_5">
-               <property name="text">
-                <string>이번 달의 캔들 데이터 다시 채우기</string>
-               </property>
-              </widget>
-             </item>
-             <item>
               <widget class="QPushButton" name="pushButton_2">
                <property name="text">
-                <string>어제와 그저께의 캔들 데이터 다시 채우기</string>
+                <string>캔들 데이터 채우기</string>
                </property>
               </widget>
              </item>
@@ -1627,8 +1613,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_6">
@@ -1656,8 +1642,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_7">
@@ -1685,8 +1671,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_4">
@@ -1714,8 +1700,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_8">
@@ -1743,8 +1729,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_5">
@@ -1772,8 +1758,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_9">

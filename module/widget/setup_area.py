@@ -87,6 +87,7 @@ class SetupArea(QtWidgets.QScrollArea):
                     "적절한 개수의 심볼을 선택하세요.",
                     "1개 이상 10개 이하의 심볼을 선택해야 합니다.",
                     ["확인"],
+                    False,
                 ]
                 root.ask(question)
             if is_symbol_count_ok:
@@ -94,6 +95,7 @@ class SetupArea(QtWidgets.QScrollArea):
                     "이대로 결정하시겠어요?",
                     "정한 이후 데이터 저장 폴더를 바꾸기 전까지는 변경할 수 없습니다.",
                     ["아니오", "예"],
+                    False,
                 ]
                 answer = root.ask(question)
                 if answer in (0, 1):

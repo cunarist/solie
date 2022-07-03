@@ -124,7 +124,10 @@ class AskPopup(QtWidgets.QWidget):
         content_box_layout.addItem(widget)
 
         # line including selection buttons
-        this_layout = QtWidgets.QHBoxLayout()
+        if question[3]:
+            this_layout = QtWidgets.QVBoxLayout()
+        else:
+            this_layout = QtWidgets.QHBoxLayout()
         widget = QtWidgets.QSpacerItem(
             0,
             0,
