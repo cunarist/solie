@@ -489,7 +489,7 @@ class Manager:
             self.root.ask(question)
 
     def open_documentation(self, *args, **kwargs):
-        webbrowser.open("https://cunarist-documentation.azurewebsites.net")
+        webbrowser.open("https://cunarist.com/documentation")
 
     def toggle_board_availability(self, *args, **kwargs):
         is_enabled = self.root.undertake(lambda: self.root.board.isEnabled(), True)
