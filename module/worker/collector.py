@@ -387,12 +387,9 @@ class Collector:
         current_moment = datetime.now(timezone.utc).replace(microsecond=0)
         current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
         count_start_moment = current_moment - timedelta(hours=24)
-        text = ""
 
         with self.datalocks[0]:
             df = self.candle_data
-            first_written_moment = df.index[0]
-            last_written_moment = df.index[-1]
             cumulated_moments = len(df[count_start_moment:].dropna())
         needed_moments = 24 * 60 * 60 / 10
         ratio = cumulated_moments / needed_moments
@@ -421,10 +418,7 @@ class Collector:
         range_minutes, remains = divmod(remains, 60)
         written_length_text = f"{range_days}일 {range_hours}시간 {range_minutes}분"
 
-        text += f"캔들 데이터 시작 {first_written_moment}"
-        text += "  ⦁  "
-        text += f"캔들 데이터 끝 {last_written_moment}"
-        text += "  ⦁  "
+        text = ""
         text += f"지난 24시간 캔들 데이터 누적률 {round(ratio * 100, 2)}%"
         text += "  ⦁  "
         text += f"실시간 데이터 길이 {written_length_text}"
