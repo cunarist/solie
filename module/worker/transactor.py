@@ -1954,38 +1954,36 @@ class Transactor:
             with self.datalocks[2]:
                 self.asset_trace.iloc[-1] = wallet_balance
 
-        # ■■■■■ keep on eye on leverage ■■■■■
-
-        def job(symbol):
-            for about_position in about_account["positions"]:
-                if about_position["symbol"] == symbol:
-                    break
-            leverage = int(about_position["leverage"])
-
-            if leverage != self.mode_settings["desired_leverage"]:
-
-                timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
-                payload = {
-                    "symbol": symbol,
-                    "timestamp": timestamp,
-                    "leverage": self.mode_settings["desired_leverage"],
-                }
-                self.api_requester.binance(
-                    http_method="POST",
-                    path="/fapi/v1/leverage",
-                    payload=payload,
-                )
-
-        thread_toss.map(job, standardize.get_basics()["target_symbols"])
-
-        # ■■■■■ correct mode of the account if automation is turned on ■■■■■
+        # ■■■■■ correct mode of the account market if automation is turned on ■■■■■
 
         if self.automation_settings["should_transact"]:
 
             def job(symbol):
+                for about_position in about_account["positions"]:
+                    if about_position["symbol"] == symbol:
+                        break
+                leverage = int(about_position["leverage"])
 
-                for position in about_account["positions"]:
-                    if position["symbol"] == symbol:
+                if leverage != self.mode_settings["desired_leverage"]:
+
+                    timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
+                    payload = {
+                        "symbol": symbol,
+                        "timestamp": timestamp,
+                        "leverage": self.mode_settings["desired_leverage"],
+                    }
+                    self.api_requester.binance(
+                        http_method="POST",
+                        path="/fapi/v1/leverage",
+                        payload=payload,
+                    )
+
+            thread_toss.map(job, standardize.get_basics()["target_symbols"])
+
+            def job(symbol):
+
+                for about_position in about_account["positions"]:
+                    if about_position["symbol"] == symbol:
                         break
 
                 isolated = about_position["isolated"]
@@ -1997,7 +1995,7 @@ class Transactor:
                     if notional != 0:
                         decision = {
                             symbol: {
-                                "close_now": {},
+                                "now_close": {},
                             },
                         }
                         self.place_order(decision)
@@ -2030,6 +2028,7 @@ class Transactor:
                 )
             except ApiRequestError:
                 pass
+
             try:
                 timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
                 payload = {
