@@ -1135,6 +1135,8 @@ class Simulator:
                 previous_asset_trace = blank_asset_trace.copy()
                 previous_unrealized_changes = blank_unrealized_changes.copy()
                 previous_scribbles = blank_scribbles.copy()
+                previous_account_state = blank_account_state.copy()
+                previous_behind_state = blank_behind_state.copy()
 
                 calculate_from = year_observed_data.index[0]
                 calculate_until = year_observed_data.index[-1]
