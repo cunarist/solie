@@ -1,10 +1,11 @@
 import os
 import copy
 import json
+from datetime import datetime, timezone
 
 _LICENSE_KEY = None
 _DATAPATH = None
-_BASICS = None
+_BASICS = {}
 
 
 def load():
@@ -59,9 +60,11 @@ def get_basics():
     return copy.deepcopy(_BASICS)
 
 
-def set_basics(basics):
+def apply_basics(basics):
     global _BASICS
     basics = copy.deepcopy(basics)
+    basics = {**basics, **_BASICS}
+    basics["modified_timestamp"] = int(datetime.now(timezone.utc).timestamp())
     _BASICS = basics
     os.makedirs(os.path.dirname(f"{_DATAPATH}/basics.json"), exist_ok=True)
     with open(f"{_DATAPATH}/basics.json", "w", encoding="utf8") as file:

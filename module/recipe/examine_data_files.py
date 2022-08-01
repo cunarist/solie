@@ -3,6 +3,7 @@ import copy
 import os
 import json
 import shutil
+from datetime import datetime, timezone
 
 
 def do(datapath):
@@ -35,3 +36,19 @@ def do(datapath):
     # 2.11: included dependencies in the installer
     if os.path.isdir("./habitat"):
         shutil.rmtree("./habitat", ignore_errors=True)
+
+    # 3.9: add ability to select token
+    try:
+        filepath = datapath + "/basics.json"
+        with open(filepath, "r", encoding="utf8") as file:
+            basics = json.load(file)
+        if "asset_token" not in basics.keys():
+            basics["asset_token"] = "USDT"
+        if "modified_timestamp" not in basics.keys():
+            basics["modified_timestamp"] = int(datetime.now(timezone.utc).timestamp())
+        if "generated_timestamp" in basics.keys():
+            basics.pop("generated_timestamp")
+        with open(filepath, "w", encoding="utf8") as file:
+            json.dump(basics, file, indent=4)
+    except FileNotFoundError:
+        pass

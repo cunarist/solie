@@ -60,10 +60,10 @@ class GuideFrame(QtWidgets.QFrame):
         spacing_text.setFont(spacing_text_font)
         central_layout.addWidget(spacing_text)
 
-        line = QtWidgets.QFrame(self)
-        line.setFrameShape(QtWidgets.QFrame.Shape.HLine)
-        line.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
-        central_layout.addWidget(line)
+        divider = QtWidgets.QFrame(self)
+        divider.setFrameShape(QtWidgets.QFrame.Shape.HLine)
+        divider.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
+        central_layout.addWidget(divider)
 
         spacing_text = QtWidgets.QLabel("")
         spacing_text_font = QtGui.QFont()

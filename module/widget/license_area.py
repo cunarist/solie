@@ -35,7 +35,7 @@ class LicenseArea(QtWidgets.QScrollArea):
         cards_layout = QtWidgets.QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
-        # ■■■■■ top spacing ■■■■■
+        # ■■■■■ spacing ■■■■■
 
         # spacing
         spacer = QtWidgets.QSpacerItem(
@@ -52,17 +52,8 @@ class LicenseArea(QtWidgets.QScrollArea):
         card = QtWidgets.QGroupBox()
         card.setFixedWidth(720)
         card_layout = QtWidgets.QVBoxLayout(card)
-        card_layout.setContentsMargins(40, 40, 40, 40)
+        card_layout.setContentsMargins(80, 40, 80, 40)
         cards_layout.addWidget(card)
-
-        # spacing
-        spacer = QtWidgets.QSpacerItem(
-            0,
-            0,
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Expanding,
-        )
-        card_layout.addItem(spacer)
 
         # title
         main_text = QtWidgets.QLabel(
@@ -156,7 +147,7 @@ class LicenseArea(QtWidgets.QScrollArea):
         card = QtWidgets.QGroupBox()
         card.setFixedWidth(720)
         card_layout = QtWidgets.QHBoxLayout(card)
-        card_layout.setContentsMargins(40, 40, 40, 40)
+        card_layout.setContentsMargins(80, 40, 80, 40)
         cards_layout.addWidget(card)
 
         # confirm button
@@ -168,7 +159,7 @@ class LicenseArea(QtWidgets.QScrollArea):
         )
         card_layout.addWidget(confirm_button)
 
-        # ■■■■■ bottom spacing ■■■■■
+        # ■■■■■ spacing ■■■■■
 
         # spacing
         spacer = QtWidgets.QSpacerItem(

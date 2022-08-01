@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 import threading
 import urllib
 
@@ -10,7 +9,7 @@ from module.recipe import outsource
 from module.recipe import thread_toss
 
 
-class SetupArea(QtWidgets.QScrollArea):
+class CoinSelectionArea(QtWidgets.QScrollArea):
 
     done_event = threading.Event()
 
@@ -30,6 +29,8 @@ class SetupArea(QtWidgets.QScrollArea):
 
         # ■■■■■ get available symbols ■■■■■
 
+        asset_token = standardize.get_basics()["asset_token"]
+
         response = api_requester.binance(
             http_method="GET",
             path="/fapi/v1/exchangeInfo",
@@ -39,7 +40,7 @@ class SetupArea(QtWidgets.QScrollArea):
         available_symbols = []
         for about_symbol in about_symbols:
             symbol = about_symbol["symbol"]
-            if symbol.endswith("USDT"):
+            if symbol.endswith(asset_token):
                 available_symbols.append(symbol)
 
         # ■■■■■ get coin informations ■■■■■
@@ -62,7 +63,7 @@ class SetupArea(QtWidgets.QScrollArea):
                 continue
             index_to_find = list(coin_ranks.values()).index(rank)
             coin_symbol = list(coin_ranks.keys())[index_to_find]
-            symbol = coin_symbol + "USDT"
+            symbol = coin_symbol + asset_token
             if symbol not in available_symbols:
                 continue
             original_index = available_symbols.index(symbol)
@@ -72,7 +73,6 @@ class SetupArea(QtWidgets.QScrollArea):
 
         def job(*args):
             basics = {}
-            basics["generated_timestamp"] = int(datetime.now(timezone.utc).timestamp())
             selected_symbols = []
             for symbol, checkbox in symbol_checkboxes.items():
                 is_checked = root.undertake(lambda: checkbox.isChecked(), True)
@@ -100,7 +100,7 @@ class SetupArea(QtWidgets.QScrollArea):
                 answer = root.ask(question)
                 if answer in (0, 1):
                     return
-                standardize.set_basics(basics)
+                standardize.apply_basics(basics)
                 self.done_event.set()
 
         # ■■■■■ full structure ■■■■■
@@ -115,23 +115,24 @@ class SetupArea(QtWidgets.QScrollArea):
         cards_layout = QtWidgets.QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
-        # ■■■■■ a card ■■■■■
+        # ■■■■■ spacing ■■■■■
 
-        # card structure
-        card = QtWidgets.QGroupBox(objectName="card")
-        card.setFixedWidth(720)
-        card_layout = QtWidgets.QVBoxLayout(card)
-        card_layout.setContentsMargins(40, 40, 40, 40)
-        cards_layout.addWidget(card)
-
-        # spacing
         spacer = QtWidgets.QSpacerItem(
             0,
             0,
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Expanding,
         )
-        card_layout.addItem(spacer)
+        cards_layout.addItem(spacer)
+
+        # ■■■■■ a card ■■■■■
+
+        # card structure
+        card = QtWidgets.QGroupBox(objectName="card")
+        card.setFixedWidth(720)
+        card_layout = QtWidgets.QVBoxLayout(card)
+        card_layout.setContentsMargins(80, 40, 80, 40)
+        cards_layout.addWidget(card)
 
         # title
         main_text = QtWidgets.QLabel(
@@ -166,13 +167,26 @@ class SetupArea(QtWidgets.QScrollArea):
         spacing_text.setFont(spacing_text_font)
         card_layout.addWidget(spacing_text)
 
+        # divider
+        divider = QtWidgets.QFrame(self)
+        divider.setFrameShape(QtWidgets.QFrame.Shape.HLine)
+        divider.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
+        card_layout.addWidget(divider)
+
+        # spacing
+        spacing_text = QtWidgets.QLabel("")
+        spacing_text_font = QtGui.QFont()
+        spacing_text_font.setPointSize(3)
+        spacing_text.setFont(spacing_text_font)
+        card_layout.addWidget(spacing_text)
+
         # input
         symbol_icon_labels = {}
         input_layout = QtWidgets.QGridLayout()
         blank_coin_pixmap = QtGui.QPixmap()
         blank_coin_pixmap.load("./resource/icon/blank_coin.png")
         for turn, symbol in enumerate(available_symbols):
-            coin_symbol = symbol.removesuffix("USDT")
+            coin_symbol = symbol.removesuffix(asset_token)
             coin_name = coin_names.get(coin_symbol, "")
             coin_rank = coin_ranks.get(coin_symbol, 0)
             this_layout = QtWidgets.QHBoxLayout()
@@ -204,22 +218,13 @@ class SetupArea(QtWidgets.QScrollArea):
             this_layout.addItem(spacer)
         card_layout.addItem(input_layout)
 
-        # spacing
-        spacer = QtWidgets.QSpacerItem(
-            0,
-            0,
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Expanding,
-        )
-        card_layout.addItem(spacer)
-
         # ■■■■■ a card ■■■■■
 
         # card structure
         card = QtWidgets.QGroupBox(objectName="card")
         card.setFixedWidth(720)
         card_layout = QtWidgets.QHBoxLayout(card)
-        card_layout.setContentsMargins(40, 40, 40, 40)
+        card_layout.setContentsMargins(80, 40, 80, 40)
         cards_layout.addWidget(card)
 
         # confirm button
@@ -231,11 +236,21 @@ class SetupArea(QtWidgets.QScrollArea):
         )
         card_layout.addWidget(confirm_button)
 
+        # ■■■■■ spacing ■■■■■
+
+        spacer = QtWidgets.QSpacerItem(
+            0,
+            0,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+        )
+        cards_layout.addItem(spacer)
+
         # ■■■■■ draw crypto icons from another thread ■■■■■
 
         def job():
             for symbol, icon_label in symbol_icon_labels.items():
-                coin_symbol = symbol.removesuffix("USDT")
+                coin_symbol = symbol.removesuffix(asset_token)
                 coin_icon_url = coin_icon_urls.get(coin_symbol, "")
                 if coin_icon_url == "":
                     continue

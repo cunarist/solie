@@ -354,11 +354,13 @@ class Transactor:
             about_assets = about_update["B"]
             about_positions = about_update["P"]
 
-            if "USDT" in [about_asset["a"] for about_asset in about_assets]:
+            asset_token = standardize.get_basics()["asset_token"]
+
+            if asset_token in [about_asset["a"] for about_asset in about_assets]:
 
                 for about_asset in about_assets:
                     asset_name = about_asset["a"]
-                    if asset_name == "USDT":
+                    if asset_name == asset_token:
                         break
 
                 wallet_balance = float(about_asset["wb"])
@@ -1789,7 +1791,7 @@ class Transactor:
 
         # wallet_balance
         for about_asset in about_account["assets"]:
-            if about_asset["asset"] == "USDT":
+            if about_asset["asset"] == standardize.get_basics()["asset_token"]:
                 break
         wallet_balance = float(about_asset["walletBalance"])
         self.account_state["wallet_balance"] = wallet_balance
@@ -1923,7 +1925,7 @@ class Transactor:
         # ■■■■■ record unrealized change ■■■■■
 
         for about_asset in about_account["assets"]:
-            if about_asset["asset"] == "USDT":
+            if about_asset["asset"] == standardize.get_basics()["asset_token"]:
                 break
         # walletBalance에 미실현 수익은 포함되지 않음
         wallet_balance = float(about_asset["walletBalance"])
@@ -1937,7 +1939,7 @@ class Transactor:
 
         if len(self.asset_trace) == 0:
             for about_asset in about_account["assets"]:
-                if about_asset["asset"] == "USDT":
+                if about_asset["asset"] == standardize.get_basics()["asset_token"]:
                     break
             wallet_balance = float(about_asset["walletBalance"])
             with self.datalocks[2]:
@@ -1948,7 +1950,7 @@ class Transactor:
         # ■■■■■ when the wallet balance changed for no good reason ■■■■■
 
         for about_asset in about_account["assets"]:
-            if about_asset["asset"] == "USDT":
+            if about_asset["asset"] == standardize.get_basics()["asset_token"]:
                 break
         wallet_balance = float(about_asset["walletBalance"])
         if abs(wallet_balance - self.asset_trace.iloc[-1]) / wallet_balance > 10**-9:

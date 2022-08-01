@@ -33,7 +33,8 @@ from module.recipe import standardize
 from module.recipe import find_goodies
 from module.recipe import examine_data_files
 from module.widget.ask_popup import AskPopup
-from module.widget.setup_area import SetupArea
+from module.widget.token_selection_area import TokenSelectionArea
+from module.widget.coin_selection_area import CoinSelectionArea
 from module.widget.guide_frame import GuideFrame
 from module.widget.license_area import LicenseArea
 from module.widget.symbol_box import SymbolBox
@@ -210,27 +211,51 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.undertake(job, True)
 
             standardize.set_datapath(datapath)
-            standardize.load()
+
+        # ■■■■■ examine data files ■■■■■
+
+        examine_data_files.do(standardize.get_datapath())
+        standardize.load()
 
         # ■■■■■ check basics ■■■■■
 
-        if standardize.get_basics() is None:
+        if "asset_token" not in standardize.get_basics().keys():
 
-            setup_area = None
+            token_selection_area = None
 
             # add temporary widget
             def job():
-                nonlocal setup_area
-                setup_area = SetupArea(self)
-                self.centralWidget().layout().addWidget(setup_area)
+                nonlocal token_selection_area
+                token_selection_area = TokenSelectionArea(self)
+                self.centralWidget().layout().addWidget(token_selection_area)
 
             self.undertake(job, True)
 
-            setup_area.done_event.wait()
+            token_selection_area.done_event.wait()
 
             # remove temporary widget
             def job():
-                setup_area.setParent(None)
+                token_selection_area.setParent(None)
+
+            self.undertake(job, True)
+
+        if "target_symbols" not in standardize.get_basics().keys():
+
+            coin_selection_area = None
+
+            # add temporary widget
+            def job():
+                nonlocal coin_selection_area
+                coin_selection_area = CoinSelectionArea(self)
+                self.centralWidget().layout().addWidget(coin_selection_area)
+
+            self.undertake(job, True)
+
+            coin_selection_area.done_event.wait()
+
+            # remove temporary widget
+            def job():
+                coin_selection_area.setParent(None)
 
             self.undertake(job, True)
 
@@ -246,16 +271,13 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.undertake(job, True)
 
-        # ■■■■■ examine data files ■■■■■
-
-        examine_data_files.do(standardize.get_datapath())
-
         # ■■■■■ multiprocessing ■■■■■
 
         process_toss.start_pool()
 
         # ■■■■■ get information about target symbols ■■■■■
 
+        asset_token = standardize.get_basics()["asset_token"]
         target_symbols = standardize.get_basics()["target_symbols"]
         response = ApiRequester().coinstats("GET", "/public/v1/coins")
         about_coins = response["coins"]
@@ -274,7 +296,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.symbol_to_alias = {}
 
         for symbol in target_symbols:
-            coin_symbol = symbol.removesuffix("USDT")
+            coin_symbol = symbol.removesuffix(asset_token)
             coin_name = coin_names.get(coin_symbol, "")
             if coin_name == "":
                 alias = coin_symbol
@@ -293,7 +315,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         symbol_pixmaps = {}
         for symbol in target_symbols:
-            coin_symbol = symbol.removesuffix("USDT")
+            coin_symbol = symbol.removesuffix(asset_token)
             coin_icon_url = coin_icon_urls.get(coin_symbol, "")
             pixmap = QtGui.QPixmap()
             if coin_icon_url != "":
@@ -329,7 +351,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.horizontalLayout_17.addItem(spacer)
             self.price_labels = {}
             for turn, symbol in enumerate(target_symbols):
-                coin_symbol = symbol.removesuffix("USDT")
+                coin_symbol = symbol.removesuffix(asset_token)
                 coin_rank = coin_ranks.get(coin_symbol, 0)
                 symbol_box = SymbolBox()
                 if is_long and turn + 1 > math.floor(len(target_symbols) / 2):

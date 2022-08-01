@@ -53,7 +53,8 @@ def choose(
 
             target_symbols = target_symbols
             # too little volatility on testnet markets except these symbols
-            prefer_symbols = ("BTCUSDT", "ETHUSDT")
+            asset_token = standardize.get_basics()["asset_token"]
+            prefer_symbols = ("BTC" + asset_token, "ETH" + asset_token)
             intersection = [
                 target_symbol
                 for target_symbol in target_symbols
@@ -119,7 +120,8 @@ def choose(
             wallet_balance = account_state["wallet_balance"]
             direction = account_state["positions"][symbol]["direction"]
 
-            if symbol in ("BTCUSDT", "ETHUSDT"):
+            asset_token = standardize.get_basics()["asset_token"]
+            if symbol in ("BTC" + asset_token, "ETH" + asset_token):
                 # too little volatility on testnet markets except these symbols
                 if direction == "none":
                     if random.random() < 0.5:
