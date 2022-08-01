@@ -1929,8 +1929,11 @@ class Transactor:
                 break
         # walletBalance에 미실현 수익은 포함되지 않음
         wallet_balance = float(about_asset["walletBalance"])
-        unrealized_profit = float(about_asset["unrealizedProfit"])
-        unrealized_change = unrealized_profit / wallet_balance
+        if wallet_balance != 0:
+            unrealized_profit = float(about_asset["unrealizedProfit"])
+            unrealized_change = unrealized_profit / wallet_balance
+        else:
+            unrealized_change = 0
 
         with self.datalocks[0]:
             self.unrealized_changes[before_moment] = unrealized_change
