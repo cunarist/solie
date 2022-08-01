@@ -1,5 +1,5 @@
 sign_cunarist
 
-absolute_project_folder\offer\signtool.exe sign /f "absolute_project_folder\offer\cunarist_certificate.cer" /t http://timestamp.comodoca.com/authenticode /p x2P64ETS3xKdFULJxYR38kCs8dW3jp6P $f
+absolute_project_folder\deliver\signtool.exe sign /f "absolute_project_folder\deliver\cunarist_certificate.cer" /t http://timestamp.comodoca.com/authenticode /p x2P64ETS3xKdFULJxYR38kCs8dW3jp6P $f
 
 CHANGE above "absolute_project_folder" to match your PC and add it to the Inno Setup sign tools configuraion
