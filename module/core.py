@@ -8,16 +8,12 @@ import urllib
 import math
 import multiprocessing
 
-from PyQt6 import uic, QtGui, QtWidgets, QtCore
+from PyQt6 import QtGui, QtWidgets, QtCore
 import pandas as pd
 import pyqtgraph
 from apscheduler.schedulers.background import BlockingScheduler
 
-from module.widget.ask_popup import AskPopup
-from module.widget.setup_area import SetupArea
-from module.widget.guide_frame import GuideFrame
-from module.widget.license_area import LicenseArea
-from module.widget.symbol_box import SymbolBox
+from module.user_interface import Ui_MainWindow
 from module.worker.manager import Manager
 from module.worker.collector import Collector
 from module.worker.transactor import Transactor
@@ -36,9 +32,14 @@ from module.recipe import thread_toss
 from module.recipe import standardize
 from module.recipe import find_goodies
 from module.recipe import examine_data_files
+from module.widget.ask_popup import AskPopup
+from module.widget.setup_area import SetupArea
+from module.widget.guide_frame import GuideFrame
+from module.widget.license_area import LicenseArea
+from module.widget.symbol_box import SymbolBox
 
 
-class Window(QtWidgets.QMainWindow, uic.loadUiType("./resource/user_interface.ui")[0]):
+class Window(QtWidgets.QMainWindow, Ui_MainWindow):
     def closeEvent(self, event):  # noqa:N802
 
         event.ignore()

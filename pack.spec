@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from PyInstaller.utils import hooks
 
 # ■■■■■ lists of files and folders to include ■■■■■
@@ -8,16 +10,27 @@ hiddenimports = []
 
 # ■■■■■ include needed files ■■■■■
 
-datas.append(("./module", "./module"))
 datas.append(("./resource", "./resource"))
 
 # ■■■■■ packages to complete ■■■■■
 
 packages_to_complete = [
+    # conda
     "talib",
-    "pygments",
-    "yapf",
+    "numpy",
+    "pandas",
+    "scipy",
+    # pip
+    "pyqt6",
+    "pyqtgraph",
+    "requests",
+    "apscheduler",
     "timesetter",
+    "websocket",
+    "pygments",
+    "dill",
+    "getmac",
+    "yapf",
 ]
 for package in packages_to_complete:
     new_lists = hooks.collect_all(package)
@@ -27,7 +40,7 @@ for package in packages_to_complete:
 
 # ■■■■■ analysis ■■■■■
 
-analysis = Analysis(  # type:ignore # noqa:F821
+a = Analysis(  # type:ignore # noqa:F821,VNE001
     ["Solsol.py"],
     pathex=[],
     datas=datas,
@@ -46,14 +59,14 @@ analysis = Analysis(  # type:ignore # noqa:F821
 # ■■■■■ outputs ■■■■■
 
 pyz = PYZ(  # type:ignore # noqa:F821
-    analysis.pure,
-    analysis.zipped_data,
+    a.pure,
+    a.zipped_data,
     cipher=None,
 )
 
 exe = EXE(  # type:ignore # noqa:F821
     pyz,
-    analysis.scripts,
+    a.scripts,
     [],
     exclude_binaries=True,
     name="Solsol",
@@ -72,9 +85,9 @@ exe = EXE(  # type:ignore # noqa:F821
 
 coll = COLLECT(  # type:ignore # noqa:F821
     exe,
-    analysis.binaries,
-    analysis.zipfiles,
-    analysis.datas,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
     strip=False,
     upx=True,
     upx_exclude=[],

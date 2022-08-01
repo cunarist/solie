@@ -21,8 +21,8 @@ dependencies:
       - yapf==0.32.0
       # only for developers
       - black
+      - pyarmor
       - pyinstaller
-      - cython
       - pyside6
       - flake8
       - pep8-naming

@@ -1,0 +1,1 @@
+pyuic6 craft/user_interface.ui > module/user_interface.py
