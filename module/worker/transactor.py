@@ -798,6 +798,15 @@ class Transactor:
         text += f"최저 미실현 수익률 {round(min_unrealized_change*100,2)}%"
         self.root.undertake(lambda t=text: self.root.label_8.setText(t), False)
 
+    def set_minimum_view_range(self, *args, **kwargs):
+        def job():
+            range_up = self.root.plot_widget.getAxis("left").range[1]
+            self.root.plot_widget.plotItem.vb.setLimits(minYRange=range_up * 0.004)
+            range_up = self.root.plot_widget_1.getAxis("left").range[1]
+            self.root.plot_widget_1.plotItem.vb.setLimits(minYRange=range_up * 0.004)
+
+        self.root.undertake(job, False)
+
     def display_lines(self, *args, **kwargs):
 
         periodic = kwargs.get("periodic", False)

@@ -1008,7 +1008,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             # 특수 위젯
             job = self.transactor.display_range_information
             outsource.do(self.plot_widget.sigRangeChanged, job)
+            job = self.transactor.set_minimum_view_range
+            outsource.do(self.plot_widget.sigRangeChanged, job)
             job = self.simulator.display_range_information
+            outsource.do(self.plot_widget_2.sigRangeChanged, job)
+            job = self.simulator.set_minimum_view_range
             outsource.do(self.plot_widget_2.sigRangeChanged, job)
 
             # 일반 위젯

@@ -910,6 +910,15 @@ class Simulator:
         text += f"최저 미실현 수익률 {round(min_unrealized_change*100,2)}%"
         self.root.undertake(lambda t=text: self.root.label_13.setText(t), False)
 
+    def set_minimum_view_range(self, *args, **kwargs):
+        def job():
+            range_up = self.root.plot_widget_2.getAxis("left").range[1]
+            self.root.plot_widget_2.plotItem.vb.setLimits(minYRange=range_up * 0.004)
+            range_up = self.root.plot_widget_3.getAxis("left").range[1]
+            self.root.plot_widget_3.plotItem.vb.setLimits(minYRange=range_up * 0.004)
+
+        self.root.undertake(job, False)
+
     def calculate(self, *args, **kwargs):
 
         task_id = stop_flag.make("calculate_simulation")
