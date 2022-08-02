@@ -89,6 +89,13 @@ class TokenSelectionArea(QtWidgets.QScrollArea):
 
         # ■■■■■ set things ■■■■■
 
+        available_tokens = []
+        for symbol in available_symbols:
+            if "_" in symbol:
+                continue
+            if symbol.startswith("BTC"):
+                token = symbol.removeprefix("BTC")
+                available_tokens.append(token)
         available_tokens = ["USDT", "BUSD"]
         number_of_markets = {token: 0 for token in available_tokens}
 
