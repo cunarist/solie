@@ -1118,4 +1118,4 @@ def choose(
     for blank_symbol in blank_symbols:
         decision.pop(blank_symbol)
 
-    return decision
+    return decision, scribbles

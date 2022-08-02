@@ -1482,7 +1482,8 @@ class Transactor:
             decision_script = self.root.strategist.decision_script
             compiled_decision_script = compile(decision_script, "<string>", "exec")
 
-            decision = decide.choose(
+            decision, scribbles = process_toss.apply(
+                decide.choose,
                 current_moment=current_moment,
                 current_observed_data=current_observed_data,
                 current_indicators=current_indicators,
@@ -1491,6 +1492,7 @@ class Transactor:
                 scribbles=self.scribbles,
                 compiled_custom_script=compiled_decision_script,
             )
+            self.scribbles = scribbles
 
             # ■■■■■ record task duration ■■■■■
 
@@ -1626,7 +1628,8 @@ class Transactor:
         decision_script = self.root.strategist.decision_script
         compiled_decision_script = compile(decision_script, "<string>", "exec")
 
-        decision = decide.choose(
+        decision, scribbles = process_toss.apply(
+            decide.choose,
             current_moment=current_moment,
             current_observed_data=current_observed_data,
             current_indicators=current_indicators,
@@ -1635,6 +1638,7 @@ class Transactor:
             scribbles=self.scribbles,
             compiled_custom_script=compiled_decision_script,
         )
+        self.scribbles = scribbles
 
         # ■■■■■ record task duration ■■■■■
 
