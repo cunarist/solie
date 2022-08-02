@@ -52,3 +52,27 @@ def do(datapath):
             json.dump(basics, file, indent=4)
     except FileNotFoundError:
         pass
+
+    # 3.11: merge asset_trace and trade_record to asset_record
+    try:
+        filepath = datapath + "/transactor/asset_trace.pickle"
+        with open(filepath, "rb") as file:
+            asset_trace = pickle.load(file)
+        filepath = datapath + "/transactor/trade_record.pickle"
+        with open(filepath, "rb") as file:
+            trade_record = pickle.load(file)
+
+        asset_record = trade_record.copy()
+        asset_record["Cause"] = "other"
+        asset_record["Result Asset"] = asset_trace
+
+        filepath = datapath + "/transactor/asset_record.pickle"
+        with open(filepath, "wb") as file:
+            pickle.dump(asset_record, file)
+        filepath = datapath + "/transactor/asset_trace.pickle"
+        os.remove(filepath)
+        filepath = datapath + "/transactor/trade_record.pickle"
+        os.remove(filepath)
+
+    except FileNotFoundError:
+        pass

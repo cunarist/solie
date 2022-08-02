@@ -25,8 +25,7 @@ def do(dataset):
     is_fast_strategy = dataset["is_fast_strategy"]
     unit_observed_data = dataset["unit_observed_data"]
     unit_indicators = dataset["unit_indicators"]
-    unit_trade_record = dataset["unit_trade_record"]
-    unit_asset_trace = dataset["unit_asset_trace"]
+    unit_asset_record = dataset["unit_asset_record"]
     unit_unrealized_changes = dataset["unit_unrealized_changes"]
     unit_scribbles = dataset["unit_scribbles"]
     unit_account_state = dataset["unit_account_state"]
@@ -45,8 +44,7 @@ def do(dataset):
     if len(target_moments) == 0:
 
         dataset = {
-            "unit_trade_record": unit_trade_record,
-            "unit_asset_trace": unit_asset_trace,
+            "unit_asset_record": unit_asset_record,
             "unit_unrealized_changes": unit_unrealized_changes,
             "unit_scribbles": unit_scribbles,
             "unit_account_state": unit_account_state,
@@ -65,8 +63,7 @@ def do(dataset):
     sliced_indicators = unit_indicators[calculate_from:calculate_until]
     indicators_ar = sliced_indicators.to_records()
 
-    trade_record_ar = unit_trade_record.to_records()
-    asset_trace_ar = unit_asset_trace.to_frame().to_records()
+    asset_record_ar = unit_asset_record.to_records()
     unit_unrealized_changes_ar = unit_unrealized_changes.to_frame().to_records()
 
     # ■■■■■ actual loop calculation ■■■■■
@@ -464,7 +461,7 @@ def do(dataset):
 
                 fill_time = before_moment + timedelta(milliseconds=decision_lag)
                 fill_time = np.datetime64(fill_time)
-                while fill_time in trade_record_ar["index"]:
+                while fill_time in asset_record_ar["index"]:
                     fill_time += np.timedelta64(1, "ms")
 
                 wallet_balance = unit_behind_state["available_balance"]
@@ -485,11 +482,6 @@ def do(dataset):
                     current_margin = abs(location["amount"]) * location["entry_price"]
                     wallet_balance += current_margin
 
-                original_size = asset_trace_ar.shape[0]
-                asset_trace_ar.resize(original_size + 1)
-                asset_trace_ar[-1]["index"] = fill_time
-                asset_trace_ar[-1]["0"] = wallet_balance
-
                 if amount_shift > 0:
                     side = "buy"
                 elif amount_shift < 0:
@@ -502,15 +494,17 @@ def do(dataset):
 
                 order_id = random.randint(10**18, 10**19 - 1)
 
-                original_size = trade_record_ar.shape[0]
-                trade_record_ar.resize(original_size + 1)
-                trade_record_ar[-1]["index"] = fill_time
-                trade_record_ar[-1]["Side"] = side
-                trade_record_ar[-1]["Symbol"] = symbol
-                trade_record_ar[-1]["Fill Price"] = fill_price
-                trade_record_ar[-1]["Role"] = role
-                trade_record_ar[-1]["Margin Ratio"] = margin_ratio
-                trade_record_ar[-1]["Order ID"] = order_id
+                original_size = asset_record_ar.shape[0]
+                asset_record_ar.resize(original_size + 1)
+                asset_record_ar[-1]["index"] = fill_time
+                asset_record_ar[-1]["Cause"] = "trade"
+                asset_record_ar[-1]["Symbol"] = symbol
+                asset_record_ar[-1]["Side"] = side
+                asset_record_ar[-1]["Fill Price"] = fill_price
+                asset_record_ar[-1]["Role"] = role
+                asset_record_ar[-1]["Margin Ratio"] = margin_ratio
+                asset_record_ar[-1]["Order ID"] = order_id
+                asset_record_ar[-1]["Result Asset"] = wallet_balance
 
                 update_time = fill_time.astype(datetime).replace(tzinfo=timezone.utc)
                 unit_account_state["positions"][symbol]["update_time"] = update_time
@@ -595,16 +589,10 @@ def do(dataset):
 
     # ■■■■■ convert back numpy objects to pandas objects ■■■■■
 
-    unit_trade_record = pd.DataFrame(trade_record_ar)
-    unit_trade_record = unit_trade_record.set_index("index")
-    unit_trade_record.index.name = None
-    unit_trade_record.index = pd.to_datetime(unit_trade_record.index, utc=True)
-
-    unit_asset_trace = pd.DataFrame(asset_trace_ar)
-    unit_asset_trace = unit_asset_trace.set_index("index")
-    unit_asset_trace.index.name = None
-    unit_asset_trace.index = pd.to_datetime(unit_asset_trace.index, utc=True)
-    unit_asset_trace = unit_asset_trace["0"]
+    unit_asset_record = pd.DataFrame(asset_record_ar)
+    unit_asset_record = unit_asset_record.set_index("index")
+    unit_asset_record.index.name = None
+    unit_asset_record.index = pd.to_datetime(unit_asset_record.index, utc=True)
 
     unit_unrealized_changes = pd.DataFrame(unit_unrealized_changes_ar)
     unit_unrealized_changes = unit_unrealized_changes.set_index("index")
@@ -620,8 +608,7 @@ def do(dataset):
     # ■■■■■ return calculated data ■■■■■
 
     dataset = {
-        "unit_trade_record": unit_trade_record,
-        "unit_asset_trace": unit_asset_trace,
+        "unit_asset_record": unit_asset_record,
         "unit_unrealized_changes": unit_unrealized_changes,
         "unit_scribbles": unit_scribbles,
         "unit_account_state": unit_account_state,

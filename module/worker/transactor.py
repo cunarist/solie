@@ -148,29 +148,22 @@ class Transactor:
             }
 
         try:
-            filepath = self.workerpath + "/trade_record.pickle"
-            self.trade_record = pd.read_pickle(filepath)
-            self.trade_record = self.trade_record.sort_index()
+            filepath = self.workerpath + "/asset_record.pickle"
+            self.asset_record = pd.read_pickle(filepath)
+            self.asset_record = self.asset_record.sort_index()
         except FileNotFoundError:
-            self.trade_record = pd.DataFrame(
+            self.asset_record = pd.DataFrame(
                 columns=[
+                    "Cause",
                     "Symbol",
                     "Side",
                     "Fill Price",
                     "Role",
                     "Margin Ratio",
                     "Order ID",
+                    "Result Asset",
                 ],
                 index=pd.DatetimeIndex([], tz="UTC"),
-            )
-
-        try:
-            self.asset_trace = pd.read_pickle(self.workerpath + "/asset_trace.pickle")
-            self.asset_trace = self.asset_trace.sort_index()
-            self.asset_trace = self.asset_trace.astype(np.float32)
-        except FileNotFoundError:
-            self.asset_trace = pd.Series(
-                index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32
             )
 
         try:
@@ -508,7 +501,7 @@ class Transactor:
                 added_margin_ratio = added_margin / wallet_balance
 
                 with self.datalocks[1]:
-                    df = self.trade_record
+                    df = self.asset_record
                     symbol_df = df[df["Symbol"] == symbol]
                     recorded_id_list = symbol_df["Order ID"].tolist()
                     does_record_exist = order_id in recorded_id_list
@@ -517,35 +510,33 @@ class Transactor:
                         recorded_time = symbol_df.index[mask_sr][0]
                         recorded_value = symbol_df.loc[recorded_time, "Margin Ratio"]
                         new_value = recorded_value + added_margin_ratio
-                        self.trade_record.loc[recorded_time, "Margin Ratio"] = new_value
-                        with self.datalocks[2]:
-                            last_asset = self.asset_trace.iloc[-1]
-                            new_value = last_asset + asset_change
-                            self.asset_trace.iloc[-1] = new_value
-                            asset_trace_copy = self.asset_trace.copy()
+                        self.asset_record.loc[recorded_time, "Margin Ratio"] = new_value
+                        last_index = self.asset_record.index[-1]
+                        last_asset = self.asset_record.loc[last_index, "Result Asset"]
+                        new_value = last_asset + asset_change
+                        self.asset_record.loc[last_index, "Result Asset"] = new_value
                     else:
                         new_value = symbol
-                        self.trade_record.loc[event_time, "Symbol"] = new_value
+                        self.asset_record.loc[event_time, "Symbol"] = new_value
                         new_value = "sell" if side == "SELL" else "buy"
-                        self.trade_record.loc[event_time, "Side"] = new_value
+                        self.asset_record.loc[event_time, "Side"] = new_value
                         new_value = last_filled_price
-                        self.trade_record.loc[event_time, "Fill Price"] = new_value
+                        self.asset_record.loc[event_time, "Fill Price"] = new_value
                         new_value = "maker" if is_maker else "taker"
-                        self.trade_record.loc[event_time, "Role"] = new_value
+                        self.asset_record.loc[event_time, "Role"] = new_value
                         new_value = added_margin_ratio
-                        self.trade_record.loc[event_time, "Margin Ratio"] = new_value
+                        self.asset_record.loc[event_time, "Margin Ratio"] = new_value
                         new_value = order_id
-                        self.trade_record.loc[event_time, "Order ID"] = new_value
-                        with self.datalocks[2]:
-                            last_asset = self.asset_trace.iloc[-1]
-                            new_value = last_asset + asset_change
-                            self.asset_trace[event_time] = new_value
-                            self.asset_trace = self.asset_trace.sort_index()
-                            asset_trace_copy = self.asset_trace.copy()
-                    trade_record_copy = self.trade_record.copy()
+                        self.asset_record.loc[event_time, "Order ID"] = new_value
+                        last_index = self.asset_record.index[-1]
+                        last_asset = self.asset_record.loc[last_index, "Result Asset"]
+                        new_value = last_asset + asset_change
+                        self.asset_record.loc[event_time, "Result Asset"] = new_value
+                        self.asset_record.loc[event_time, "Cause"] = "trade"
+                        self.asset_record = self.asset_record.sort_index()
+                    asset_record_copy = self.asset_record.copy()
 
-                asset_trace_copy.to_pickle(self.workerpath + "/asset_trace.pickle")
-                trade_record_copy.to_pickle(self.workerpath + "/trade_record.pickle")
+                asset_record_copy.to_pickle(self.workerpath + "/asset_record.pickle")
 
         # ■■■■■ cancel conflicting orders ■■■■■
 
@@ -738,24 +729,22 @@ class Transactor:
         with self.datalocks[0]:
             unrealized_changes = self.unrealized_changes[range_start:range_end].copy()
         with self.datalocks[1]:
-            trade_record = self.trade_record[range_start:range_end].copy()
-        with self.datalocks[2]:
-            asset_trace = self.asset_trace[range_start:range_end].copy()
+            asset_record = self.asset_record[range_start:range_end].copy()
 
-        asset_changes = asset_trace.pct_change() + 1
-        asset_changes = asset_changes.reindex(trade_record.index).fillna(value=1)
-        symbol_mask = trade_record["Symbol"] == symbol
+        asset_changes = asset_record["Result Asset"].pct_change() + 1
+        asset_changes = asset_changes.reindex(asset_record.index).fillna(value=1)
+        symbol_mask = asset_record["Symbol"] == symbol
 
         # trade count
         total_change_count = len(asset_changes)
         symbol_change_count = len(asset_changes[symbol_mask])
         # trade volume
-        if len(trade_record) > 0:
-            total_margin_ratio = trade_record["Margin Ratio"].sum()
+        if len(asset_record) > 0:
+            total_margin_ratio = asset_record["Margin Ratio"].sum()
         else:
             total_margin_ratio = 0
-        if len(trade_record[symbol_mask]) > 0:
-            symbol_margin_ratio = trade_record[symbol_mask]["Margin Ratio"].sum()
+        if len(asset_record[symbol_mask]) > 0:
+            symbol_margin_ratio = asset_record[symbol_mask]["Margin Ratio"].sum()
         else:
             symbol_margin_ratio = 0
         # asset changes
@@ -889,9 +878,7 @@ class Transactor:
         with self.datalocks[0]:
             unrealized_changes = self.unrealized_changes.copy()
         with self.datalocks[1]:
-            trade_record = self.trade_record.copy()
-        with self.datalocks[2]:
-            asset_trace = self.asset_trace.copy()
+            asset_record = self.asset_record.copy()
 
         # ■■■■■ make indicators ■■■■■
 
@@ -926,8 +913,11 @@ class Transactor:
                 candle_data = candle_data.reindex(new_index)
 
         observed_until = self.account_state["observed_until"]
-        if len(asset_trace) > 0:
-            asset_trace[observed_until] = asset_trace.iloc[-1]
+        if len(asset_record) > 0:
+            final_index = asset_record.index[-1]
+            final_asset = asset_record.loc[final_index, "Result Asset"]
+            asset_record.loc[observed_until, "Cause"] = "other"
+            asset_record.loc[observed_until, "Result Asset"] = final_asset
 
         # ■■■■■ draw ■■■■■
 
@@ -1248,8 +1238,10 @@ class Transactor:
         # asset
         is_light_line = True
         if (only_light_lines and is_light_line) or not only_light_lines:
-            data_x = asset_trace.index.to_numpy(dtype=np.int64) / 10**9
-            data_y = asset_trace.to_numpy(dtype=np.float32)
+            data_x = (
+                asset_record["Result Asset"].index.to_numpy(dtype=np.int64) / 10**9
+            )
+            data_y = asset_record["Result Asset"].to_numpy(dtype=np.float32)
             widget = self.root.transaction_lines["asset"]
 
             def job(widget=widget, data_x=data_x, data_y=data_y):
@@ -1263,8 +1255,8 @@ class Transactor:
         # asset with unrealized profit
         is_light_line = False
         if (only_light_lines and is_light_line) or not only_light_lines:
-            if len(asset_trace) >= 2:
-                sr = asset_trace.resample("10S").ffill()
+            if len(asset_record["Result Asset"]) >= 2:
+                sr = asset_record["Result Asset"].resample("10S").ffill()
             unrealized_changes_sr = unrealized_changes.reindex(sr.index)
             sr = sr * (1 + unrealized_changes_sr)
             data_x = sr.index.to_numpy(dtype=np.int64) / 10**9 + 5
@@ -1282,7 +1274,7 @@ class Transactor:
         # buy and sell
         is_light_line = True
         if (only_light_lines and is_light_line) or not only_light_lines:
-            df = trade_record.loc[trade_record["Symbol"] == symbol]
+            df = asset_record.loc[asset_record["Symbol"] == symbol]
             df = df[df["Side"] == "sell"]
             sr = df["Fill Price"]
             data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
@@ -1297,7 +1289,7 @@ class Transactor:
                     return
             self.root.undertake(job, False)
 
-            df = trade_record.loc[trade_record["Symbol"] == symbol]
+            df = asset_record.loc[asset_record["Symbol"] == symbol]
             df = df[df["Side"] == "buy"]
             sr = df["Fill Price"]
             data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
@@ -1940,15 +1932,16 @@ class Transactor:
 
         # ■■■■■ make an asset trace if it's blank ■■■■■
 
-        if len(self.asset_trace) == 0:
+        if len(self.asset_record) == 0:
             for about_asset in about_account["assets"]:
                 if about_asset["asset"] == standardize.get_basics()["asset_token"]:
                     break
             wallet_balance = float(about_asset["walletBalance"])
-            with self.datalocks[2]:
+            with self.datalocks[1]:
                 current_time = datetime.now(timezone.utc)
-                self.asset_trace[current_time] = wallet_balance
-                self.asset_trace.to_pickle(self.workerpath + "/asset_trace.pickle")
+                self.asset_record.loc[current_time, "Cause"] = "other"
+                self.asset_record.loc[current_time, "Result Asset"] = wallet_balance
+                self.asset_record.to_pickle(self.workerpath + "/asset_record.pickle")
 
         # ■■■■■ when the wallet balance changed for no good reason ■■■■■
 
@@ -1956,17 +1949,23 @@ class Transactor:
             if about_asset["asset"] == standardize.get_basics()["asset_token"]:
                 break
         wallet_balance = float(about_asset["walletBalance"])
-        if abs(wallet_balance - self.asset_trace.iloc[-1]) / wallet_balance > 10**-9:
+
+        last_index = self.asset_record.index[-1]
+        last_asset = self.asset_record.loc[last_index, "Result Asset"]
+
+        if abs(wallet_balance - last_asset) / wallet_balance > 10**-9:
             # when the difference is bigger than one billionth
-            # referal fee, funding fee, wallet transfer, ect..
-            with self.datalocks[2]:
+            # referal fee, funding fee, wallet transfer, etc..
+            with self.datalocks[1]:
                 current_time = datetime.now(timezone.utc)
-                self.asset_trace[current_time] = wallet_balance
-                self.asset_trace.to_pickle(self.workerpath + "/asset_trace.pickle")
+                self.asset_record.loc[current_time, "Cause"] = "other"
+                self.asset_record.loc[current_time, "Result Asset"] = wallet_balance
+                self.asset_record.to_pickle(self.workerpath + "/asset_record.pickle")
         else:
             # when the difference is small enough to consider as an numeric error
-            with self.datalocks[2]:
-                self.asset_trace.iloc[-1] = wallet_balance
+            with self.datalocks[1]:
+                last_index = self.asset_record.index[-1]
+                self.asset_record.loc[last_index, "Result Asset"] = wallet_balance
 
         # ■■■■■ correct mode of the account market if automation is turned on ■■■■■
 

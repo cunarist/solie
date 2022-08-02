@@ -67,19 +67,18 @@ class Simulator:
             }
             self.raw_account_state["open_orders"][symbol] = {}
         self.raw_scribbles = {}
-        self.raw_trade_record = pd.DataFrame(
+        self.raw_asset_record = pd.DataFrame(
             columns=[
+                "Cause",
                 "Symbol",
                 "Side",
                 "Fill Price",
                 "Role",
                 "Margin Ratio",
                 "Order ID",
+                "Result Asset",
             ],
             index=pd.DatetimeIndex([], tz="UTC"),
-        )
-        self.raw_asset_trace = pd.Series(
-            index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32
         )
         self.raw_unrealized_changes = pd.Series(
             index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32
@@ -100,19 +99,18 @@ class Simulator:
             }
             self.account_state["open_orders"][symbol] = {}
         self.scribbles = {}
-        self.trade_record = pd.DataFrame(
+        self.asset_record = pd.DataFrame(
             columns=[
+                "Cause",
                 "Symbol",
                 "Side",
                 "Fill Price",
                 "Role",
                 "Margin Ratio",
                 "Order ID",
+                "Result Asset",
             ],
             index=pd.DatetimeIndex([], tz="UTC"),
-        )
-        self.asset_trace = pd.Series(
-            index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32
         )
         self.unrealized_changes = pd.Series(
             index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32
@@ -297,9 +295,7 @@ class Simulator:
         with self.datalocks[0]:
             unrealized_changes = self.unrealized_changes.copy()
         with self.datalocks[1]:
-            trade_record = self.trade_record.copy()
-        with self.datalocks[2]:
-            asset_trace = self.asset_trace.copy()
+            asset_record = self.asset_record.copy()
 
         # ■■■■■ make indicators ■■■■■
 
@@ -334,8 +330,11 @@ class Simulator:
                 candle_data = candle_data.reindex(new_index)
 
         observed_until = self.account_state["observed_until"]
-        if len(asset_trace) > 0:
-            asset_trace[observed_until] = asset_trace.iloc[-1]
+        if len(asset_record) > 0:
+            final_index = asset_record.index[-1]
+            final_asset = asset_record.loc[final_index, "Result Asset"]
+            asset_record.loc[observed_until, "Cause"] = "other"
+            asset_record.loc[observed_until, "Result Asset"] = final_asset
 
         # ■■■■■ draw ■■■■■
 
@@ -656,8 +655,10 @@ class Simulator:
         # asset
         is_light_line = True
         if (only_light_lines and is_light_line) or not only_light_lines:
-            data_x = asset_trace.index.to_numpy(dtype=np.int64) / 10**9
-            data_y = asset_trace.to_numpy(dtype=np.float32)
+            data_x = (
+                asset_record["Result Asset"].index.to_numpy(dtype=np.int64) / 10**9
+            )
+            data_y = asset_record["Result Asset"].to_numpy(dtype=np.float32)
             widget = self.root.simulation_lines["asset"]
 
             def job(widget=widget, data_x=data_x, data_y=data_y):
@@ -671,8 +672,8 @@ class Simulator:
         # asset with unrealized profit
         is_light_line = False
         if (only_light_lines and is_light_line) or not only_light_lines:
-            if len(asset_trace) >= 2:
-                sr = asset_trace.resample("10S").ffill()
+            if len(asset_record) >= 2:
+                sr = asset_record["Result Asset"].resample("10S").ffill()
             unrealized_changes_sr = unrealized_changes.reindex(sr.index)
             sr = sr * (1 + unrealized_changes_sr)
             data_x = sr.index.to_numpy(dtype=np.int64) / 10**9 + 5
@@ -690,7 +691,7 @@ class Simulator:
         # buy and sell
         is_light_line = True
         if (only_light_lines and is_light_line) or not only_light_lines:
-            df = trade_record.loc[trade_record["Symbol"] == symbol]
+            df = asset_record.loc[asset_record["Symbol"] == symbol]
             df = df[df["Side"] == "sell"]
             sr = df["Fill Price"]
             data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
@@ -705,7 +706,7 @@ class Simulator:
                     return
             self.root.undertake(job, False)
 
-            df = trade_record.loc[trade_record["Symbol"] == symbol]
+            df = asset_record.loc[asset_record["Symbol"] == symbol]
             df = df[df["Side"] == "buy"]
             sr = df["Fill Price"]
             data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
@@ -761,19 +762,18 @@ class Simulator:
             }
             self.raw_account_state["open_orders"][symbol] = {}
         self.raw_scribbles = {}
-        self.raw_trade_record = pd.DataFrame(
+        self.raw_asset_record = pd.DataFrame(
             columns=[
+                "Cause",
                 "Symbol",
                 "Side",
                 "Fill Price",
                 "Role",
                 "Margin Ratio",
                 "Order ID",
+                "Result Asset",
             ],
             index=pd.DatetimeIndex([], tz="UTC"),
-        )
-        self.raw_asset_trace = pd.Series(
-            index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32
         )
         self.raw_unrealized_changes = pd.Series(
             index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32
@@ -848,24 +848,22 @@ class Simulator:
         with self.datalocks[0]:
             unrealized_changes = self.unrealized_changes[range_start:range_end].copy()
         with self.datalocks[1]:
-            trade_record = self.trade_record[range_start:range_end].copy()
-        with self.datalocks[2]:
-            asset_trace = self.asset_trace[range_start:range_end].copy()
+            asset_record = self.asset_record[range_start:range_end].copy()
 
-        asset_changes = asset_trace[range_start:range_end].pct_change() + 1
-        asset_changes = asset_changes.reindex(trade_record.index).fillna(value=1)
-        symbol_mask = trade_record["Symbol"] == symbol
+        asset_changes = asset_record["Result Asset"].pct_change() + 1
+        asset_changes = asset_changes.reindex(asset_record.index).fillna(value=1)
+        symbol_mask = asset_record["Symbol"] == symbol
 
         # trade count
         total_change_count = len(asset_changes)
         symbol_change_count = len(asset_changes[symbol_mask])
         # trade volume
-        if len(trade_record) > 0:
-            total_margin_ratio = trade_record["Margin Ratio"].sum()
+        if len(asset_record) > 0:
+            total_margin_ratio = asset_record["Margin Ratio"].sum()
         else:
             total_margin_ratio = 0
-        if len(trade_record[symbol_mask]) > 0:
-            symbol_margin_ratio = trade_record[symbol_mask]["Margin Ratio"].sum()
+        if len(asset_record[symbol_mask]) > 0:
+            symbol_margin_ratio = asset_record[symbol_mask]["Margin Ratio"].sum()
         else:
             symbol_margin_ratio = 0
         # asset changes
@@ -983,10 +981,9 @@ class Simulator:
         year = self.calculation_settings["year"]
         strategy = self.calculation_settings["strategy"]
 
-        trade_record_filepath = (
-            f"{self.workerpath}/{strategy}_{year}_trade_record.pickle"
+        asset_record_filepath = (
+            f"{self.workerpath}/{strategy}_{year}_asset_record.pickle"
         )
-        asset_trace_filepath = f"{self.workerpath}/{strategy}_{year}_asset_trace.pickle"
         unrealized_changes_filepath = (
             f"{self.workerpath}/{strategy}_{year}_unrealized_changes.pickle"
         )
@@ -1048,19 +1045,18 @@ class Simulator:
 
         # ■■■■■ prepare data and calculation range ■■■■■
 
-        blank_trade_record = pd.DataFrame(
+        blank_asset_record = pd.DataFrame(
             columns=[
+                "Cause",
                 "Symbol",
                 "Side",
                 "Fill Price",
                 "Role",
                 "Margin Ratio",
                 "Order ID",
+                "Result Asset",
             ],
             index=pd.DatetimeIndex([], tz="UTC"),
-        )
-        blank_asset_trace = pd.Series(
-            index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32
         )
         blank_unrealized_changes = pd.Series(
             index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32
@@ -1097,8 +1093,7 @@ class Simulator:
         if only_visible:
             # when calculating only visible range
 
-            previous_trade_record = blank_trade_record.copy()
-            previous_asset_trace = blank_asset_trace.copy()
+            previous_asset_record = blank_asset_record.copy()
             previous_unrealized_changes = blank_unrealized_changes.copy()
             previous_scribbles = blank_scribbles.copy()
             previous_account_state = blank_account_state.copy()
@@ -1125,8 +1120,7 @@ class Simulator:
         else:
             # when calculating properly
             try:
-                previous_trade_record = pd.read_pickle(trade_record_filepath)
-                previous_asset_trace = pd.read_pickle(asset_trace_filepath)
+                previous_asset_record = pd.read_pickle(asset_record_filepath)
                 previous_unrealized_changes = pd.read_pickle(
                     unrealized_changes_filepath
                 )
@@ -1140,8 +1134,7 @@ class Simulator:
                 calculate_from = previous_account_state["observed_until"]
                 calculate_until = year_observed_data.index[-1]
             except FileNotFoundError:
-                previous_trade_record = blank_trade_record.copy()
-                previous_asset_trace = blank_asset_trace.copy()
+                previous_asset_record = blank_asset_record.copy()
                 previous_unrealized_changes = blank_unrealized_changes.copy()
                 previous_scribbles = blank_scribbles.copy()
                 previous_account_state = blank_account_state.copy()
@@ -1151,9 +1144,9 @@ class Simulator:
                 calculate_until = year_observed_data.index[-1]
 
         should_calculate = calculate_from < calculate_until
-        if len(previous_asset_trace) == 0:
-            intial_value = float(1)
-            previous_asset_trace[calculate_from] = intial_value
+        if len(previous_asset_record) == 0:
+            previous_asset_record.loc[calculate_from, "Cause"] = "other"
+            previous_asset_record.loc[calculate_from, "Result Asset"] = float(1)
 
         prepare_step = 5
 
@@ -1199,8 +1192,7 @@ class Simulator:
                     unit_indicators = year_indicators.reindex(base_index)
                     get_from = base_index[0]
                     get_to = base_index[-1] + timedelta(seconds=10)
-                    unit_trade_record = previous_trade_record[get_from:get_to]
-                    unit_asset_trace = previous_asset_trace[get_from:get_to]
+                    unit_asset_record = previous_asset_record[get_from:get_to]
                     unit_unrealized_changes = previous_unrealized_changes[
                         get_from:get_to
                     ]
@@ -1220,8 +1212,7 @@ class Simulator:
                         "is_fast_strategy": is_fast_strategy,
                         "unit_observed_data": unit_observed_data,
                         "unit_indicators": unit_indicators,
-                        "unit_trade_record": unit_trade_record,
-                        "unit_asset_trace": unit_asset_trace,
+                        "unit_asset_record": unit_asset_record,
                         "unit_unrealized_changes": unit_unrealized_changes,
                         "unit_scribbles": unit_scribbles,
                         "unit_account_state": unit_account_state,
@@ -1245,8 +1236,7 @@ class Simulator:
                     "is_fast_strategy": is_fast_strategy,
                     "unit_observed_data": year_observed_data,
                     "unit_indicators": year_indicators,
-                    "unit_trade_record": previous_trade_record,
-                    "unit_asset_trace": previous_asset_trace,
+                    "unit_asset_record": previous_asset_record,
                     "unit_unrealized_changes": previous_unrealized_changes,
                     "unit_scribbles": previous_scribbles,
                     "unit_account_state": previous_account_state,
@@ -1284,23 +1274,14 @@ class Simulator:
 
         if should_calculate:
 
-            trade_record = previous_trade_record
+            asset_record = previous_asset_record
             for month_ouput_data in output_data:
-                month_trade_record = month_ouput_data["unit_trade_record"]
-                concat_data = [trade_record, month_trade_record]
-                trade_record = pd.concat(concat_data)
-            mask = ~trade_record.index.duplicated()
-            trade_record = trade_record[mask]
-            trade_record = trade_record.sort_index()
-
-            asset_trace = previous_asset_trace
-            for month_ouput_data in output_data:
-                month_asset_trace = month_ouput_data["unit_asset_trace"]
-                concat_data = [asset_trace, month_asset_trace]
-                asset_trace = pd.concat(concat_data)
-            mask = ~asset_trace.index.duplicated()
-            asset_trace = asset_trace[mask]
-            asset_trace = asset_trace.sort_index()
+                month_asset_record = month_ouput_data["unit_asset_record"]
+                concat_data = [asset_record, month_asset_record]
+                asset_record = pd.concat(concat_data)
+            mask = ~asset_record.index.duplicated()
+            asset_record = asset_record[mask]
+            asset_record = asset_record.sort_index()
 
             unrealized_changes = previous_unrealized_changes
             for month_ouput_data in output_data:
@@ -1317,17 +1298,15 @@ class Simulator:
 
         else:
 
-            trade_record = previous_trade_record
-            asset_trace = previous_asset_trace
+            asset_record = previous_asset_record
             unrealized_changes = previous_unrealized_changes
             scribbles = previous_scribbles
             account_state = previous_account_state
 
         # ■■■■■ remember and present ■■■■■
 
-        self.raw_trade_record = trade_record
+        self.raw_asset_record = asset_record
         self.raw_unrealized_changes = unrealized_changes
-        self.raw_asset_trace = asset_trace
         self.raw_scribbles = scribbles
         self.raw_account_state = account_state
         self.about_viewing = {"year": year, "strategy": strategy}
@@ -1337,8 +1316,7 @@ class Simulator:
 
         if not only_visible and should_calculate:
 
-            trade_record.to_pickle(trade_record_filepath)
-            asset_trace.to_pickle(asset_trace_filepath)
+            asset_record.to_pickle(asset_record_filepath)
             unrealized_changes.to_pickle(unrealized_changes_filepath)
             with open(scribbles_filepath, "wb") as file:
                 pickle.dump(scribbles, file)
@@ -1354,15 +1332,10 @@ class Simulator:
         leverage = self.presentation_settings["leverage"]
 
         with self.datalocks[0]:
-            asset_trace = self.raw_asset_trace.copy()
-            trade_record = self.raw_trade_record.copy()
+            asset_record = self.raw_asset_record.copy()
             unrealized_changes = self.raw_unrealized_changes.copy()
             scribbles = self.raw_scribbles.copy()
             account_state = self.raw_account_state.copy()
-
-        # trade record index is the subset of asset trace index
-        base_index = asset_trace.index
-        trade_record = trade_record.reindex(base_index)
 
         # ■■■■■ get strategy details ■■■■
 
@@ -1388,48 +1361,40 @@ class Simulator:
                 frequency = timedelta(minutes=unit_length)
             else:
                 frequency = timedelta(days=unit_length)
-            unit_asset_trace_list = [
-                unit_asset_trace
-                for _, unit_asset_trace in asset_trace.groupby(
+            unit_asset_record_list = [
+                unit_asset_record.dropna()
+                for _, unit_asset_record in asset_record.groupby(
                     pd.Grouper(freq=frequency, origin="epoch")
                 )
             ]
-            unit_trade_record_list = [
-                unit_trade_record.dropna()
-                for _, unit_trade_record in trade_record.groupby(
-                    pd.Grouper(freq=frequency, origin="epoch")
-                )
-            ]
-            unit_count = len(unit_asset_trace_list)
+            unit_count = len(unit_asset_record_list)
 
         else:
-            unit_asset_trace_list = [asset_trace]
-            unit_trade_record_list = [trade_record]
+            unit_asset_record_list = [asset_record]
             unit_count = 1
 
         unit_asset_changes_list = []
         for turn in range(unit_count):
 
-            unit_asset_trace = unit_asset_trace_list[turn]
-            unit_trade_record = unit_trade_record_list[turn]
+            unit_asset_record = unit_asset_record_list[turn]
 
             # leverage
-            unit_asset_shifts = unit_asset_trace.diff()
+            unit_asset_shifts = unit_asset_record["Result Asset"].diff()
             if len(unit_asset_shifts) > 0:
                 unit_asset_shifts.iloc[0] = 0
-            lazy_unit_asset_trace = unit_asset_trace.shift(periods=1)
-            if len(lazy_unit_asset_trace) > 0:
-                lazy_unit_asset_trace.iloc[0] = 1
+            lazy_unit_result_asset = unit_asset_record["Result Asset"].shift(periods=1)
+            if len(lazy_unit_result_asset) > 0:
+                lazy_unit_result_asset.iloc[0] = 1
             unit_asset_changes_by_leverage = (
-                1 + unit_asset_shifts / lazy_unit_asset_trace * leverage
+                1 + unit_asset_shifts / lazy_unit_result_asset * leverage
             )
 
             # fee
-            month_fees = unit_trade_record["Role"].copy()
+            month_fees = unit_asset_record["Role"].copy()
             month_fees[month_fees == "maker"] = maker_fee
             month_fees[month_fees == "taker"] = taker_fee
             month_fees = month_fees.astype(np.float32)
-            month_margin_ratios = unit_trade_record["Margin Ratio"]
+            month_margin_ratios = unit_asset_record["Margin Ratio"]
             month_asset_changes_by_fee = (
                 1 - (month_fees / 100) * month_margin_ratios * leverage
             )
@@ -1447,8 +1412,7 @@ class Simulator:
 
         unrealized_changes = unrealized_changes * leverage
 
-        presentation_asset_trace = year_asset_changes.cumprod()
-        presentation_trade_record = trade_record.copy()
+        presentation_asset_record = asset_record.copy()
         presentation_unrealized_changes = unrealized_changes.copy()
         presentation_scribbles = scribbles.copy()
         presentation_account_state = account_state.copy()
@@ -1460,9 +1424,7 @@ class Simulator:
         with self.datalocks[0]:
             self.unrealized_changes = presentation_unrealized_changes
         with self.datalocks[1]:
-            self.trade_record = presentation_trade_record
-        with self.datalocks[2]:
-            self.asset_trace = presentation_asset_trace
+            self.asset_record = presentation_asset_record
 
         # ■■■■■ display ■■■■■
 
@@ -1528,10 +1490,9 @@ class Simulator:
         year = self.calculation_settings["year"]
         strategy = self.calculation_settings["strategy"]
 
-        trade_record_filepath = (
-            f"{self.workerpath}/{strategy}_{year}_trade_record.pickle"
+        asset_record_filepath = (
+            f"{self.workerpath}/{strategy}_{year}_asset_record.pickle"
         )
-        asset_trace_filepath = f"{self.workerpath}/{strategy}_{year}_asset_trace.pickle"
         unrealized_changes_filepath = (
             f"{self.workerpath}/{strategy}_{year}_unrealized_changes.pickle"
         )
@@ -1545,9 +1506,7 @@ class Simulator:
 
         does_file_exist = False
 
-        if os.path.exists(trade_record_filepath):
-            does_file_exist = True
-        if os.path.exists(asset_trace_filepath):
+        if os.path.exists(asset_record_filepath):
             does_file_exist = True
         if os.path.exists(unrealized_changes_filepath):
             does_file_exist = True
@@ -1580,11 +1539,7 @@ class Simulator:
                 return
 
         try:
-            os.remove(trade_record_filepath)
-        except FileNotFoundError:
-            pass
-        try:
-            os.remove(asset_trace_filepath)
+            os.remove(asset_record_filepath)
         except FileNotFoundError:
             pass
         try:
@@ -1611,10 +1566,9 @@ class Simulator:
         year = self.calculation_settings["year"]
         strategy = self.calculation_settings["strategy"]
 
-        trade_record_filepath = (
-            f"{self.workerpath}/{strategy}_{year}_trade_record.pickle"
+        asset_record_filepath = (
+            f"{self.workerpath}/{strategy}_{year}_asset_record.pickle"
         )
-        asset_trace_filepath = f"{self.workerpath}/{strategy}_{year}_asset_trace.pickle"
         unrealized_changes_filepath = (
             f"{self.workerpath}/{strategy}_{year}_unrealized_changes.pickle"
         )
@@ -1625,8 +1579,7 @@ class Simulator:
 
         try:
             with self.datalocks[0]:
-                self.raw_trade_record = pd.read_pickle(trade_record_filepath)
-                self.raw_asset_trace = pd.read_pickle(asset_trace_filepath)
+                self.raw_asset_record = pd.read_pickle(asset_record_filepath)
                 self.raw_unrealized_changes = pd.read_pickle(
                     unrealized_changes_filepath
                 )
