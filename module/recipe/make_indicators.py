@@ -52,6 +52,9 @@ def do(observed_data, strategy, compiled_custom_script):
         if strategy == 0:
 
             namespace = {
+                "talib": talib,
+                "pd": pd,
+                "np": np,
                 "symbol": symbol,
                 "observed_data": observed_data,
                 "observed_data_lock": observed_data_lock,
