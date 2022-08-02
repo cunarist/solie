@@ -1,6 +1,7 @@
 # Custom
 note/
 .vscode/
+pack-patched.spec
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
