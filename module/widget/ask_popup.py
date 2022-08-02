@@ -136,6 +136,8 @@ class AskPopup(QtWidgets.QWidget):
                 self.done_event.set()
 
             option_button.clicked.connect(job)
+            if not question[3]:
+                option_button.setMaximumWidth(240)
             this_layout.addWidget(option_button)
 
         content_box_layout.addLayout(this_layout)
