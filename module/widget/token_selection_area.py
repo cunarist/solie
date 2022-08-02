@@ -1,9 +1,12 @@
 import threading
+import urllib
 
 from PyQt6 import QtWidgets, QtCore, QtGui
 
+from module.instrument.api_requester import ApiRequester
 from module.recipe import standardize
 from module.recipe import outsource
+from module.recipe import thread_toss
 
 
 class TokenSelectionArea(QtWidgets.QScrollArea):
@@ -20,9 +23,35 @@ class TokenSelectionArea(QtWidgets.QScrollArea):
 
         token_radioboxes = {}
 
-        # ■■■■■ set things ■■■■■
+        # ■■■■■ prepare the api requester ■■■■■
 
-        available_tokens = ["USDT", "BUSD"]
+        api_requester = ApiRequester()
+
+        # ■■■■■ get all symbols ■■■■■
+
+        response = api_requester.binance(
+            http_method="GET",
+            path="/fapi/v1/exchangeInfo",
+            payload={},
+        )
+        about_symbols = response["symbols"]
+        available_symbols = []
+        for about_symbol in about_symbols:
+            symbol = about_symbol["symbol"]
+            available_symbols.append(symbol)
+
+        # ■■■■■ get coin informations ■■■■■
+
+        response = api_requester.coinstats("GET", "/public/v1/coins")
+        about_coins = response["coins"]
+        coin_names = {}
+        coin_icon_urls = {}
+        coin_ranks = {}
+        for about_coin in about_coins:
+            coin_symbol = about_coin["symbol"]
+            coin_names[coin_symbol] = about_coin["name"]
+            coin_icon_urls[coin_symbol] = about_coin["icon"]
+            coin_ranks[coin_symbol] = about_coin["rank"]
 
         # ■■■■■ prepare confirm function ■■■■■
 
@@ -57,6 +86,16 @@ class TokenSelectionArea(QtWidgets.QScrollArea):
                     return
                 standardize.apply_basics(basics)
                 self.done_event.set()
+
+        # ■■■■■ set things ■■■■■
+
+        available_tokens = ["USDT", "BUSD"]
+        number_of_markets = {token: 0 for token in available_tokens}
+
+        for symbol in available_symbols:
+            for token in available_tokens:
+                if symbol.endswith(token):
+                    number_of_markets[token] += 1
 
         # ■■■■■ full structure ■■■■■
 
@@ -136,7 +175,10 @@ class TokenSelectionArea(QtWidgets.QScrollArea):
         card_layout.addWidget(spacing_text)
 
         # input
+        token_icon_labels = {}
         input_layout = QtWidgets.QGridLayout()
+        blank_coin_pixmap = QtGui.QPixmap()
+        blank_coin_pixmap.load("./resource/icon/blank_coin.png")
         for turn, token in enumerate(available_tokens):
             this_layout = QtWidgets.QHBoxLayout()
             row = turn // 2
@@ -145,9 +187,15 @@ class TokenSelectionArea(QtWidgets.QScrollArea):
             radiobutton = QtWidgets.QRadioButton(card)
             token_radioboxes[token] = radiobutton
             this_layout.addWidget(radiobutton)
-            text = token
+            icon_label = QtWidgets.QLabel("", card)
+            icon_label.setPixmap(blank_coin_pixmap)
+            icon_label.setScaledContents(True)
+            icon_label.setFixedSize(40, 40)
+            icon_label.setMargin(5)
+            this_layout.addWidget(icon_label)
+            token_icon_labels[token] = icon_label
+            text = f"{token} ({number_of_markets[token]}개 코인 거래 가능)"
             text_label = QtWidgets.QLabel(text, card)
-            text_label.setMargin(5)
             this_layout.addWidget(text_label)
             spacer = QtWidgets.QSpacerItem(
                 0,
@@ -185,3 +233,21 @@ class TokenSelectionArea(QtWidgets.QScrollArea):
             QtWidgets.QSizePolicy.Policy.Expanding,
         )
         cards_layout.addItem(spacer)
+
+        # ■■■■■ draw crypto icons from another thread ■■■■■
+
+        def job():
+            for token, icon_label in token_icon_labels.items():
+                coin_icon_url = coin_icon_urls.get(token, "")
+                if coin_icon_url == "":
+                    continue
+                image_data = urllib.request.urlopen(coin_icon_url).read()
+                pixmap = QtGui.QPixmap()
+                pixmap.loadFromData(image_data)
+
+                def job(icon_label=icon_label, pixmap=pixmap):
+                    icon_label.setPixmap(pixmap)
+
+                root.undertake(job, False)
+
+        thread_toss.apply_async(job)

@@ -27,9 +27,11 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
 
         api_requester = ApiRequester()
 
-        # ■■■■■ get available symbols ■■■■■
+        # ■■■■■ get previous things ■■■■■
 
         asset_token = standardize.get_basics()["asset_token"]
+
+        # ■■■■■ get available symbols ■■■■■
 
         response = api_requester.binance(
             http_method="GET",
