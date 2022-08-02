@@ -29,7 +29,7 @@ def do(dataset):
     unit_unrealized_changes = dataset["unit_unrealized_changes"]
     unit_scribbles = dataset["unit_scribbles"]
     unit_account_state = dataset["unit_account_state"]
-    unit_behind_state = dataset["unit_behind_state"]
+    unit_virtual_state = dataset["unit_virtual_state"]
     calculate_from = dataset["calculate_from"]
     calculate_until = dataset["calculate_until"]
     decision_script = dataset["decision_script"]
@@ -48,7 +48,7 @@ def do(dataset):
             "unit_unrealized_changes": unit_unrealized_changes,
             "unit_scribbles": unit_scribbles,
             "unit_account_state": unit_account_state,
-            "unit_behind_state": unit_behind_state,
+            "unit_virtual_state": unit_virtual_state,
         }
 
         return dataset
@@ -109,30 +109,30 @@ def do(dataset):
             is_margin_nan = False
 
             # special placements
-            if "cancel_all" in unit_behind_state["placements"][symbol]:
+            if "cancel_all" in unit_virtual_state["placements"][symbol]:
                 cancel_placement_names = []
-                for placement_name in unit_behind_state["placements"][symbol].keys():
+                for placement_name in unit_virtual_state["placements"][symbol].keys():
                     if any(s in placement_name for s in ("later", "book")):
                         cancel_placement_names.append(placement_name)
                 for cancel_placement_name in cancel_placement_names:
-                    unit_behind_state["placements"][symbol].pop(cancel_placement_name)
-                unit_behind_state["placements"][symbol].pop("cancel_all")
+                    unit_virtual_state["placements"][symbol].pop(cancel_placement_name)
+                unit_virtual_state["placements"][symbol].pop("cancel_all")
 
             # instant placements
-            if "now_close" in unit_behind_state["placements"][symbol]:
+            if "now_close" in unit_virtual_state["placements"][symbol]:
                 would_trade_happen = True
-                command = unit_behind_state["placements"][symbol]["now_close"]
+                command = unit_virtual_state["placements"][symbol]["now_close"]
                 role = "taker"
                 if is_fast_strategy:
                     fill_price = middle_price
                 else:
                     fill_price = open_price + price_speed * (decision_lag / 1000)
-                amount_shift = -unit_behind_state["locations"][symbol]["amount"]
-                unit_behind_state["placements"][symbol].pop("now_close")
+                amount_shift = -unit_virtual_state["locations"][symbol]["amount"]
+                unit_virtual_state["placements"][symbol].pop("now_close")
 
-            if "now_buy" in unit_behind_state["placements"][symbol]:
+            if "now_buy" in unit_virtual_state["placements"][symbol]:
                 would_trade_happen = True
-                command = unit_behind_state["placements"][symbol]["now_buy"]
+                command = unit_virtual_state["placements"][symbol]["now_buy"]
                 role = "taker"
                 if is_fast_strategy:
                     fill_price = best_bid_price
@@ -144,11 +144,11 @@ def do(dataset):
                 if math.isnan(fill_margin):
                     is_margin_nan = True
                 amount_shift = fill_margin / fill_price
-                unit_behind_state["placements"][symbol].pop("now_buy")
+                unit_virtual_state["placements"][symbol].pop("now_buy")
 
-            if "now_sell" in unit_behind_state["placements"][symbol]:
+            if "now_sell" in unit_virtual_state["placements"][symbol]:
                 would_trade_happen = True
-                command = unit_behind_state["placements"][symbol]["now_sell"]
+                command = unit_virtual_state["placements"][symbol]["now_sell"]
                 role = "taker"
                 if is_fast_strategy:
                     fill_price = best_ask_price
@@ -160,12 +160,12 @@ def do(dataset):
                 if math.isnan(fill_margin):
                     is_margin_nan = True
                 amount_shift = -fill_margin / fill_price
-                unit_behind_state["placements"][symbol].pop("now_sell")
+                unit_virtual_state["placements"][symbol].pop("now_sell")
 
             # conditional placements
-            if "later_up_close" in unit_behind_state["placements"][symbol]:
+            if "later_up_close" in unit_virtual_state["placements"][symbol]:
 
-                command = unit_behind_state["placements"][symbol]["later_up_close"]
+                command = unit_virtual_state["placements"][symbol]["later_up_close"]
                 boundary = command["boundary"]
 
                 if is_fast_strategy:
@@ -179,12 +179,12 @@ def do(dataset):
                     would_trade_happen = True
                     role = "taker"
                     fill_price = boundary
-                    amount_shift = -unit_behind_state["locations"][symbol]["amount"]
-                    unit_behind_state["placements"][symbol].pop("later_up_close")
+                    amount_shift = -unit_virtual_state["locations"][symbol]["amount"]
+                    unit_virtual_state["placements"][symbol].pop("later_up_close")
 
-            if "later_down_close" in unit_behind_state["placements"][symbol]:
+            if "later_down_close" in unit_virtual_state["placements"][symbol]:
 
-                command = unit_behind_state["placements"][symbol]["later_down_close"]
+                command = unit_virtual_state["placements"][symbol]["later_down_close"]
                 boundary = command["boundary"]
 
                 if is_fast_strategy:
@@ -198,12 +198,12 @@ def do(dataset):
                     would_trade_happen = True
                     role = "taker"
                     fill_price = boundary
-                    amount_shift = -unit_behind_state["locations"][symbol]["amount"]
-                    unit_behind_state["placements"][symbol].pop("later_down_close")
+                    amount_shift = -unit_virtual_state["locations"][symbol]["amount"]
+                    unit_virtual_state["placements"][symbol].pop("later_down_close")
 
-            if "later_up_buy" in unit_behind_state["placements"][symbol]:
+            if "later_up_buy" in unit_virtual_state["placements"][symbol]:
 
-                command = unit_behind_state["placements"][symbol]["later_up_buy"]
+                command = unit_virtual_state["placements"][symbol]["later_up_buy"]
                 boundary = command["boundary"]
 
                 if is_fast_strategy:
@@ -223,11 +223,11 @@ def do(dataset):
                     if math.isnan(fill_margin):
                         is_margin_nan = True
                     amount_shift = fill_margin / fill_price
-                    unit_behind_state["placements"][symbol].pop("later_up_buy")
+                    unit_virtual_state["placements"][symbol].pop("later_up_buy")
 
-            if "later_down_buy" in unit_behind_state["placements"][symbol]:
+            if "later_down_buy" in unit_virtual_state["placements"][symbol]:
 
-                command = unit_behind_state["placements"][symbol]["later_down_buy"]
+                command = unit_virtual_state["placements"][symbol]["later_down_buy"]
                 boundary = command["boundary"]
 
                 if is_fast_strategy:
@@ -247,11 +247,11 @@ def do(dataset):
                     if math.isnan(fill_margin):
                         is_margin_nan = True
                     amount_shift = fill_margin / fill_price
-                    unit_behind_state["placements"][symbol].pop("later_down_buy")
+                    unit_virtual_state["placements"][symbol].pop("later_down_buy")
 
-            if "later_up_sell" in unit_behind_state["placements"][symbol]:
+            if "later_up_sell" in unit_virtual_state["placements"][symbol]:
 
-                command = unit_behind_state["placements"][symbol]["later_up_sell"]
+                command = unit_virtual_state["placements"][symbol]["later_up_sell"]
                 boundary = command["boundary"]
 
                 if is_fast_strategy:
@@ -271,11 +271,11 @@ def do(dataset):
                     if math.isnan(fill_margin):
                         is_margin_nan = True
                     amount_shift = -fill_margin / fill_price
-                    unit_behind_state["placements"][symbol].pop("later_up_sell")
+                    unit_virtual_state["placements"][symbol].pop("later_up_sell")
 
-            if "later_down_sell" in unit_behind_state["placements"][symbol]:
+            if "later_down_sell" in unit_virtual_state["placements"][symbol]:
 
-                command = unit_behind_state["placements"][symbol]["later_down_sell"]
+                command = unit_virtual_state["placements"][symbol]["later_down_sell"]
                 boundary = command["boundary"]
 
                 if is_fast_strategy:
@@ -295,11 +295,11 @@ def do(dataset):
                     if math.isnan(fill_margin):
                         is_margin_nan = True
                     amount_shift = -fill_margin / fill_price
-                    unit_behind_state["placements"][symbol].pop("later_down_sell")
+                    unit_virtual_state["placements"][symbol].pop("later_down_sell")
 
-            if "book_buy" in unit_behind_state["placements"][symbol]:
+            if "book_buy" in unit_virtual_state["placements"][symbol]:
 
-                command = unit_behind_state["placements"][symbol]["book_buy"]
+                command = unit_virtual_state["placements"][symbol]["book_buy"]
                 boundary = command["boundary"]
 
                 if is_fast_strategy:
@@ -319,11 +319,11 @@ def do(dataset):
                     if math.isnan(fill_margin):
                         is_margin_nan = True
                     amount_shift = fill_margin / fill_price
-                    unit_behind_state["placements"][symbol].pop("book_buy")
+                    unit_virtual_state["placements"][symbol].pop("book_buy")
 
-            if "book_sell" in unit_behind_state["placements"][symbol]:
+            if "book_sell" in unit_virtual_state["placements"][symbol]:
 
-                command = unit_behind_state["placements"][symbol]["book_sell"]
+                command = unit_virtual_state["placements"][symbol]["book_sell"]
                 boundary = command["boundary"]
 
                 if is_fast_strategy:
@@ -343,7 +343,7 @@ def do(dataset):
                     if math.isnan(fill_margin):
                         is_margin_nan = True
                     amount_shift = -fill_margin / fill_price
-                    unit_behind_state["placements"][symbol].pop("book_sell")
+                    unit_virtual_state["placements"][symbol].pop("book_sell")
 
             # check if situation is okay
             if is_margin_negative:
@@ -362,7 +362,7 @@ def do(dataset):
 
             if would_trade_happen:
 
-                symbol_location = unit_behind_state["locations"][symbol]
+                symbol_location = unit_virtual_state["locations"][symbol]
                 before_entry_price = symbol_location["entry_price"]
                 before_amount = symbol_location["amount"]
 
@@ -373,15 +373,15 @@ def do(dataset):
                 if before_amount == 0 and current_amount != 0:
                     symbol_location["entry_price"] = fill_price
                     invested_margin = abs(current_amount) * fill_price
-                    unit_behind_state["available_balance"] -= invested_margin
+                    unit_virtual_state["available_balance"] -= invested_margin
                 # case when the position is closed from something
                 elif before_amount != 0 and current_amount == 0:
                     symbol_location["entry_price"] = 0
                     price_difference = fill_price - before_entry_price
                     realized_profit = price_difference * before_amount
                     returned_margin = abs(before_amount) * before_entry_price
-                    unit_behind_state["available_balance"] += returned_margin
-                    unit_behind_state["available_balance"] += realized_profit
+                    unit_virtual_state["available_balance"] += returned_margin
+                    unit_virtual_state["available_balance"] += realized_profit
                 # case when the position direction is flipped
                 elif before_amount * current_amount < 0:
                     symbol_location["entry_price"] = fill_price
@@ -389,9 +389,9 @@ def do(dataset):
                     realized_profit = price_difference * before_amount
                     returned_margin = abs(before_amount) * before_entry_price
                     invested_margin = abs(current_amount) * fill_price
-                    unit_behind_state["available_balance"] += returned_margin
-                    unit_behind_state["available_balance"] -= invested_margin
-                    unit_behind_state["available_balance"] += realized_profit
+                    unit_virtual_state["available_balance"] += returned_margin
+                    unit_virtual_state["available_balance"] -= invested_margin
+                    unit_virtual_state["available_balance"] += realized_profit
                 # case when the position size is increased one the same direction
                 elif abs(current_amount) > abs(before_amount):
                     before_numerator = before_entry_price * before_amount
@@ -401,20 +401,20 @@ def do(dataset):
                     symbol_location["entry_price"] = new_entry_price
                     realized_profit = 0
                     invested_margin = abs(amount_shift) * fill_price
-                    unit_behind_state["available_balance"] -= invested_margin
-                    unit_behind_state["available_balance"] += realized_profit
+                    unit_virtual_state["available_balance"] -= invested_margin
+                    unit_virtual_state["available_balance"] += realized_profit
                 # case when the position size is decreased one the same direction
                 else:
                     symbol_location["entry_price"] = before_entry_price
                     price_difference = fill_price - before_entry_price
                     realized_profit = price_difference * (-amount_shift)
                     returned_margin = abs(amount_shift) * before_entry_price
-                    unit_behind_state["available_balance"] += returned_margin
-                    unit_behind_state["available_balance"] += realized_profit
+                    unit_virtual_state["available_balance"] += returned_margin
+                    unit_virtual_state["available_balance"] += realized_profit
 
                 did_found_new_trade = True
 
-                if unit_behind_state["available_balance"] < 0:
+                if unit_virtual_state["available_balance"] < 0:
                     text = ""
                     text += "Available balance went below zero"
                     text += f" while calculating {symbol} market"
@@ -424,22 +424,22 @@ def do(dataset):
             # ■■■■■ update the account state (symbol dependent) ■■■■■
 
             # locations
-            current_entry_price = unit_behind_state["locations"][symbol]["entry_price"]
+            current_entry_price = unit_virtual_state["locations"][symbol]["entry_price"]
             current_entry_price = float(current_entry_price)
-            current_amount = unit_behind_state["locations"][symbol]["amount"]
+            current_amount = unit_virtual_state["locations"][symbol]["amount"]
             current_margin = abs(current_amount) * current_entry_price
             current_margin = float(current_margin)
             unit_account_state["positions"][symbol]["entry_price"] = current_entry_price
             unit_account_state["positions"][symbol]["margin"] = current_margin
-            if unit_behind_state["locations"][symbol]["amount"] > 0:
+            if unit_virtual_state["locations"][symbol]["amount"] > 0:
                 unit_account_state["positions"][symbol]["direction"] = "long"
-            if unit_behind_state["locations"][symbol]["amount"] < 0:
+            if unit_virtual_state["locations"][symbol]["amount"] < 0:
                 unit_account_state["positions"][symbol]["direction"] = "short"
-            if unit_behind_state["locations"][symbol]["amount"] == 0:
+            if unit_virtual_state["locations"][symbol]["amount"] == 0:
                 unit_account_state["positions"][symbol]["direction"] = "none"
 
             # placements
-            symbol_placements = unit_behind_state["placements"][symbol]
+            symbol_placements = unit_virtual_state["placements"][symbol]
             symbol_open_orders = {}
             for command_name, placement in symbol_placements.items():
                 order_id = placement["order_id"]
@@ -464,8 +464,8 @@ def do(dataset):
                 while fill_time in asset_record_ar["index"]:
                     fill_time += np.timedelta64(1, "ms")
 
-                wallet_balance = unit_behind_state["available_balance"]
-                for symbol_key, location in unit_behind_state["locations"].items():
+                wallet_balance = unit_virtual_state["available_balance"]
+                for symbol_key, location in unit_virtual_state["locations"].items():
                     if location["amount"] == 0:
                         continue
                     if is_fast_strategy:
@@ -511,9 +511,9 @@ def do(dataset):
 
         # ■■■■■ understand the situation ■■■■■
 
-        wallet_balance = unit_behind_state["available_balance"]
+        wallet_balance = unit_virtual_state["available_balance"]
         unrealized_profit = 0
-        for symbol_key, location in unit_behind_state["locations"].items():
+        for symbol_key, location in unit_virtual_state["locations"].items():
             if location["amount"] == 0:
                 continue
             if is_fast_strategy:
@@ -579,7 +579,7 @@ def do(dataset):
         for symbol_key, symbol_decision in decision.items():
             for each_decision in symbol_decision.values():
                 each_decision["order_id"] = random.randint(10**18, 10**19 - 1)
-            unit_behind_state["placements"][symbol_key].update(decision[symbol_key])
+            unit_virtual_state["placements"][symbol_key].update(decision[symbol_key])
 
         # ■■■■■ report the progress in seconds ■■■■■
 
@@ -612,7 +612,7 @@ def do(dataset):
         "unit_unrealized_changes": unit_unrealized_changes,
         "unit_scribbles": unit_scribbles,
         "unit_account_state": unit_account_state,
-        "unit_behind_state": unit_behind_state,
+        "unit_virtual_state": unit_virtual_state,
     }
 
     return dataset

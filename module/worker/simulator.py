@@ -991,8 +991,8 @@ class Simulator:
         account_state_filepath = (
             f"{self.workerpath}/{strategy}_{year}_account_state.pickle"
         )
-        behind_state_filepath = (
-            f"{self.workerpath}/{strategy}_{year}_behind_state.pickle"
+        virtual_state_filepath = (
+            f"{self.workerpath}/{strategy}_{year}_virtual_state.pickle"
         )
 
         if strategy == 0:
@@ -1076,17 +1076,17 @@ class Simulator:
                 "update_time": datetime.fromtimestamp(0, tz=timezone.utc),
             }
             blank_account_state["open_orders"][symbol] = {}
-        blank_behind_state = {
+        blank_virtual_state = {
             "available_balance": 1,
             "locations": {},
             "placements": {},
         }
         for symbol in standardize.get_basics()["target_symbols"]:
-            blank_behind_state["locations"][symbol] = {
+            blank_virtual_state["locations"][symbol] = {
                 "amount": 0,
                 "entry_price": 0,
             }
-            blank_behind_state["placements"][symbol] = {}
+            blank_virtual_state["placements"][symbol] = {}
 
         prepare_step = 4
 
@@ -1097,7 +1097,7 @@ class Simulator:
             previous_unrealized_changes = blank_unrealized_changes.copy()
             previous_scribbles = blank_scribbles.copy()
             previous_account_state = blank_account_state.copy()
-            previous_behind_state = blank_behind_state.copy()
+            previous_virtual_state = blank_virtual_state.copy()
 
             range_start = self.root.undertake(
                 lambda: self.root.plot_widget_2.getAxis("bottom").range[0], True
@@ -1128,8 +1128,8 @@ class Simulator:
                     previous_scribbles = pickle.load(file)
                 with open(account_state_filepath, "rb") as file:
                     previous_account_state = pickle.load(file)
-                with open(behind_state_filepath, "rb") as file:
-                    previous_behind_state = pickle.load(file)
+                with open(virtual_state_filepath, "rb") as file:
+                    previous_virtual_state = pickle.load(file)
 
                 calculate_from = previous_account_state["observed_until"]
                 calculate_until = year_observed_data.index[-1]
@@ -1138,7 +1138,7 @@ class Simulator:
                 previous_unrealized_changes = blank_unrealized_changes.copy()
                 previous_scribbles = blank_scribbles.copy()
                 previous_account_state = blank_account_state.copy()
-                previous_behind_state = blank_behind_state.copy()
+                previous_virtual_state = blank_virtual_state.copy()
 
                 calculate_from = year_observed_data.index[0]
                 calculate_until = year_observed_data.index[-1]
@@ -1199,11 +1199,11 @@ class Simulator:
                     if get_from < calculate_from <= get_to:
                         unit_scribbles = previous_scribbles
                         unit_account_state = previous_account_state
-                        unit_behind_state = previous_behind_state
+                        unit_virtual_state = previous_virtual_state
                     else:
                         unit_scribbles = blank_scribbles
                         unit_account_state = blank_account_state
-                        unit_behind_state = blank_behind_state
+                        unit_virtual_state = blank_virtual_state
 
                     dataset = {
                         "progress_list": progress_list,
@@ -1216,7 +1216,7 @@ class Simulator:
                         "unit_unrealized_changes": unit_unrealized_changes,
                         "unit_scribbles": unit_scribbles,
                         "unit_account_state": unit_account_state,
-                        "unit_behind_state": unit_behind_state,
+                        "unit_virtual_state": unit_virtual_state,
                         "calculate_from": calculate_from,
                         "calculate_until": calculate_until,
                         "decision_script": decision_script,
@@ -1240,7 +1240,7 @@ class Simulator:
                     "unit_unrealized_changes": previous_unrealized_changes,
                     "unit_scribbles": previous_scribbles,
                     "unit_account_state": previous_account_state,
-                    "unit_behind_state": previous_behind_state,
+                    "unit_virtual_state": previous_virtual_state,
                     "calculate_from": calculate_from,
                     "calculate_until": calculate_until,
                     "decision_script": decision_script,
@@ -1294,7 +1294,7 @@ class Simulator:
 
             scribbles = output_data[-1]["unit_scribbles"]
             account_state = output_data[-1]["unit_account_state"]
-            behind_state = output_data[-1]["unit_behind_state"]
+            virtual_state = output_data[-1]["unit_virtual_state"]
 
         else:
 
@@ -1322,8 +1322,8 @@ class Simulator:
                 pickle.dump(scribbles, file)
             with open(account_state_filepath, "wb") as file:
                 pickle.dump(account_state, file)
-            with open(behind_state_filepath, "wb") as file:
-                pickle.dump(behind_state, file)
+            with open(virtual_state_filepath, "wb") as file:
+                pickle.dump(virtual_state, file)
 
     def present(self, *args, **kwargs):
 
@@ -1500,8 +1500,8 @@ class Simulator:
         account_state_filepath = (
             f"{self.workerpath}/{strategy}_{year}_account_state.pickle"
         )
-        behind_state_filepath = (
-            f"{self.workerpath}/{strategy}_{year}_behind_state.pickle"
+        virtual_state_filepath = (
+            f"{self.workerpath}/{strategy}_{year}_virtual_state.pickle"
         )
 
         does_file_exist = False
@@ -1514,7 +1514,7 @@ class Simulator:
             does_file_exist = True
         if os.path.exists(account_state_filepath):
             does_file_exist = True
-        if os.path.exists(behind_state_filepath):
+        if os.path.exists(virtual_state_filepath):
             does_file_exist = True
 
         if not does_file_exist:
@@ -1555,7 +1555,7 @@ class Simulator:
         except FileNotFoundError:
             pass
         try:
-            os.remove(behind_state_filepath)
+            os.remove(virtual_state_filepath)
         except FileNotFoundError:
             pass
 
