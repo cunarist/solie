@@ -88,6 +88,19 @@ class LicenseArea(QtWidgets.QScrollArea):
         spacing_text.setFont(spacing_text_font)
         card_layout.addWidget(spacing_text)
 
+        # divider
+        divider = QtWidgets.QFrame(self)
+        divider.setFrameShape(QtWidgets.QFrame.Shape.HLine)
+        divider.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
+        card_layout.addWidget(divider)
+
+        # spacing
+        spacing_text = QtWidgets.QLabel("")
+        spacing_text_font = QtGui.QFont()
+        spacing_text_font.setPointSize(3)
+        spacing_text.setFont(spacing_text_font)
+        card_layout.addWidget(spacing_text)
+
         # input
         this_layout = QtWidgets.QHBoxLayout()
         card_layout.addLayout(this_layout)
