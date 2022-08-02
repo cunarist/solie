@@ -276,6 +276,15 @@ class Manager:
     def run_script(self, *args, **kwargs):
         widget = self.root.plainTextEdit
         script_text = self.root.undertake(lambda w=widget: w.toPlainText(), True)
+        if "# long live cunarist" not in script_text:
+            question = [
+                "코드 실행 조건이 충족되지 않았습니다.",
+                "조건을 먼저 충족시킨 후에 코드를 실행할 수 있습니다.",
+                ["확인"],
+                False,
+            ]
+            self.root.ask(question)
+            return
         filepath = self.workerpath + "/python_script.txt"
         with open(filepath, "w", encoding="utf8") as file:
             file.write(script_text)
