@@ -505,13 +505,13 @@ class Transactor:
                     symbol_df = df[df["Symbol"] == symbol]
                     recorded_id_list = symbol_df["Order ID"].tolist()
                     does_record_exist = order_id in recorded_id_list
+                    last_index = self.asset_record.index[-1]
                     if does_record_exist:
                         mask_sr = symbol_df["Order ID"] == order_id
                         recorded_time = symbol_df.index[mask_sr][0]
                         recorded_value = symbol_df.loc[recorded_time, "Margin Ratio"]
                         new_value = recorded_value + added_margin_ratio
                         self.asset_record.loc[recorded_time, "Margin Ratio"] = new_value
-                        last_index = self.asset_record.index[-1]
                         last_asset = self.asset_record.loc[last_index, "Result Asset"]
                         new_value = last_asset + asset_change
                         self.asset_record.loc[last_index, "Result Asset"] = new_value
@@ -528,7 +528,6 @@ class Transactor:
                         self.asset_record.loc[event_time, "Margin Ratio"] = new_value
                         new_value = order_id
                         self.asset_record.loc[event_time, "Order ID"] = new_value
-                        last_index = self.asset_record.index[-1]
                         last_asset = self.asset_record.loc[last_index, "Result Asset"]
                         new_value = last_asset + asset_change
                         self.asset_record.loc[event_time, "Result Asset"] = new_value
