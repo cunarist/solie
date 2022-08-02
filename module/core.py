@@ -305,10 +305,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.alias_to_symbol[alias] = symbol
             self.symbol_to_alias[symbol] = alias
 
-        # ■■■■■ make widgets according to the target symbols list ■■■■■
+        # ■■■■■ make widgets according to the basics ■■■■■
 
-        name_text_size = 13
-        price_text_size = 10
+        token_text_size = 14
+        name_text_size = 11
+        price_text_size = 9
         detail_text_size = 7
 
         is_long = len(target_symbols) > 5
@@ -325,8 +326,53 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 pixmap.load("./resource/icon/blank_coin.png")
             symbol_pixmaps[symbol] = pixmap
 
+        token_icon_url = coin_icon_urls.get(asset_token, "")
+        token_pixmap = QtGui.QPixmap()
+        image_data = urllib.request.urlopen(token_icon_url).read()
+        token_pixmap.loadFromData(image_data)
+
         def job():
             self.lineEdit.setText(standardize.get_datapath())
+
+            icon_label = QtWidgets.QLabel(
+                "",
+                self,
+                alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
+            )
+            icon_label.setPixmap(token_pixmap)
+            icon_label.setScaledContents(True)
+            icon_label.setFixedSize(30, 30)
+            this_layout = QtWidgets.QHBoxLayout()
+            self.verticalLayout_14.addLayout(this_layout)
+            this_layout.addWidget(icon_label)
+            text = asset_token
+            token_font = QtGui.QFont()
+            token_font.setPointSize(token_text_size)
+            token_font.setWeight(QtGui.QFont.Weight.Bold)
+            text_label = QtWidgets.QLabel(
+                text,
+                self,
+                alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
+            )
+            text_label.setFont(token_font)
+            self.verticalLayout_14.addWidget(text_label)
+            spacing_text = QtWidgets.QLabel("")
+            spacing_text_font = QtGui.QFont()
+            spacing_text_font.setPointSize(3)
+            spacing_text.setFont(spacing_text_font)
+            self.verticalLayout_14.addWidget(spacing_text)
+            this_layout = QtWidgets.QHBoxLayout()
+            self.verticalLayout_14.addLayout(this_layout)
+            divider = QtWidgets.QFrame(self)
+            divider.setFrameShape(QtWidgets.QFrame.Shape.HLine)
+            divider.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
+            divider.setFixedWidth(320)
+            this_layout.addWidget(divider)
+            spacing_text = QtWidgets.QLabel("")
+            spacing_text_font = QtGui.QFont()
+            spacing_text_font.setPointSize(3)
+            spacing_text.setFont(spacing_text_font)
+            self.verticalLayout_14.addWidget(spacing_text)
 
             for symbol in target_symbols:
                 icon = QtGui.QIcon()
@@ -373,7 +419,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 inside_layout.addLayout(this_layout)
                 icon_label.setPixmap(symbol_pixmaps[symbol])
                 icon_label.setScaledContents(True)
-                icon_label.setFixedSize(70, 70)
+                icon_label.setFixedSize(50, 50)
                 icon_label.setMargin(5)
                 this_layout.addWidget(icon_label)
                 name_label = QtWidgets.QLabel(

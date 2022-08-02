@@ -12,8 +12,8 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1280, 720)
-        MainWindow.setMinimumSize(QtCore.QSize(1280, 720))
+        MainWindow.resize(1280, 800)
+        MainWindow.setMinimumSize(QtCore.QSize(1280, 800))
         font = QtGui.QFont()
         MainWindow.setFont(font)
         icon = QtGui.QIcon()
@@ -56,13 +56,13 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "SymbolBox {\n"
-"    min-width: 12em;\n"
-"    max-width: 12em;\n"
-"    min-height: 12em;\n"
-"    max-height: 12em;\n"
+"    min-width: 10em;\n"
+"    max-width: 10em;\n"
+"    min-height: 10em;\n"
+"    max-height: 10em;\n"
 "    background-color: #F7F7F7;\n"
 "    border: 1px solid rgba(0,0,0,0.1);\n"
-"    border-radius: 6em;\n"
+"    border-radius: 5em;\n"
 "}\n"
 "\n"
 "AskPopup {\n"
@@ -100,6 +100,9 @@ class Ui_MainWindow(object):
         self.verticalLayout_4.setObjectName("verticalLayout_4")
         spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         self.verticalLayout_4.addItem(spacerItem)
+        self.verticalLayout_14 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_14.setObjectName("verticalLayout_14")
+        self.verticalLayout_4.addLayout(self.verticalLayout_14)
         self.horizontalLayout_20 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_20.setObjectName("horizontalLayout_20")
         self.verticalLayout_4.addLayout(self.horizontalLayout_20)
