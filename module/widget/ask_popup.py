@@ -128,13 +128,6 @@ class AskPopup(QtWidgets.QWidget):
             this_layout = QtWidgets.QVBoxLayout()
         else:
             this_layout = QtWidgets.QHBoxLayout()
-        widget = QtWidgets.QSpacerItem(
-            0,
-            0,
-            QtWidgets.QSizePolicy.Policy.Expanding,
-            QtWidgets.QSizePolicy.Policy.Minimum,
-        )
-        this_layout.addItem(widget)
         for turn, option in enumerate(question[2]):
             option_button = QtWidgets.QPushButton(option, content_box)
 
