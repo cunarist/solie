@@ -388,11 +388,12 @@ class Collector:
         current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
         count_start_moment = current_moment - timedelta(hours=24)
 
+        # add one to ignore temporarily missing candle
         with self.datalocks[0]:
             df = self.candle_data
             cumulated_moments = len(df[count_start_moment:].dropna())
         needed_moments = 24 * 60 * 60 / 10
-        ratio = cumulated_moments / needed_moments
+        ratio = min(float(1), (cumulated_moments + 1) / needed_moments)
 
         chunk_count = len(self.realtime_data_chunks)
         first_written_time = None
