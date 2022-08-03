@@ -214,13 +214,6 @@ class Transactor:
             kwargs={"only_light_lines": True, "frequent": True},
         )
         self.root.scheduler.add_job(
-            self.display_lines,
-            trigger="cron",
-            second="*/10",
-            executor="thread_pool_executor",
-            kwargs={"periodic": True, "frequent": True},
-        )
-        self.root.scheduler.add_job(
             self.display_asset_information,
             trigger="cron",
             second="*",
@@ -242,6 +235,19 @@ class Transactor:
             self.cancel_conflicting_orders,
             trigger="cron",
             second="*",
+            executor="thread_pool_executor",
+        )
+        self.root.scheduler.add_job(
+            self.display_lines,
+            trigger="cron",
+            second="*/10",
+            executor="thread_pool_executor",
+            kwargs={"periodic": True, "frequent": True},
+        )
+        self.root.scheduler.add_job(
+            self.move_view_range,
+            trigger="cron",
+            second="*/10",
             executor="thread_pool_executor",
         )
         self.root.scheduler.add_job(
@@ -2425,3 +2431,23 @@ class Transactor:
                     pass
 
             thread_toss.apply_async(job)
+
+    def move_view_range(self, *args, **kwargs):
+
+        if not self.should_draw_frequently:
+            return
+
+        widget = self.root.plot_widget
+        axis = widget.getAxis("bottom")
+
+        before_range = self.root.undertake(lambda: axis.range, True)
+        range_start = before_range[0]
+        range_end = before_range[1]
+
+        if range_end - range_start < 6 * 60 * 60:  # six hours
+            return
+
+        def job():
+            widget.setXRange(range_start + 10, range_end + 10, padding=0)
+
+        self.root.undertake(job, False)
