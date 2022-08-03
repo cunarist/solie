@@ -5,9 +5,7 @@ import threading
 import time
 import webbrowser
 from collections import deque
-import pickle
 import itertools
-import copy
 import random
 import logging
 
@@ -94,21 +92,16 @@ class Collector:
         self.candle_data = self.candle_data.astype(np.float32)
 
         # realtime data chunks
-        try:
-            filepath = self.workerpath + "/realtime_data_chunks.pickle"
-            with open(filepath, "rb") as file:
-                self.realtime_data_chunks = copy.deepcopy(pickle.load(file))
-        except FileNotFoundError:
-            field_names = itertools.product(
-                standardize.get_basics()["target_symbols"],
-                ("Best Bid Price", "Best Ask Price", "Mark Price"),
-            )
-            field_names = [str(field_name) for field_name in field_names]
-            dtype = [(field_name, np.float32) for field_name in field_names]
-            dtpye = [("index", "datetime64[ns]")] + dtype
-            self.realtime_data_chunks = deque(
-                [np.recarray(shape=(0,), dtype=dtpye) for _ in range(2)], maxlen=64
-            )
+        field_names = itertools.product(
+            standardize.get_basics()["target_symbols"],
+            ("Best Bid Price", "Best Ask Price", "Mark Price"),
+        )
+        field_names = [str(field_name) for field_name in field_names]
+        dtype = [(field_name, np.float32) for field_name in field_names]
+        dtpye = [("index", "datetime64[ns]")] + dtype
+        self.realtime_data_chunks = deque(
+            [np.recarray(shape=(0,), dtype=dtpye) for _ in range(2)], maxlen=64
+        )
 
         # aggregate trades
         field_names = itertools.product(
@@ -127,9 +120,6 @@ class Collector:
         )
         self.root.finalize_functions.append(
             lambda: self.save_candle_data(),
-        )
-        self.root.finalize_functions.append(
-            lambda: self.save_realtime_data_chunks(),
         )
 
         # ■■■■■ repetitive schedules ■■■■■
@@ -162,12 +152,6 @@ class Collector:
             self.get_exchange_information,
             trigger="cron",
             minute="*",
-            executor="thread_pool_executor",
-        )
-        self.root.scheduler.add_job(
-            self.save_realtime_data_chunks,
-            trigger="cron",
-            hour="*",
             executor="thread_pool_executor",
         )
         self.root.scheduler.add_job(
@@ -481,15 +465,6 @@ class Collector:
                 os.remove(filepath)
             except FileNotFoundError:
                 pass
-
-    def save_realtime_data_chunks(self, *args, **kwargs):
-
-        with self.datalocks[1]:
-            realtime_data_chunks = copy.deepcopy(self.realtime_data_chunks)
-
-        filepath = f"{self.workerpath}/realtime_data_chunks.pickle"
-        with open(filepath, "wb") as file:
-            pickle.dump(realtime_data_chunks, file)
 
     def save_all_years_history(self, *args, **kwargs):
 
