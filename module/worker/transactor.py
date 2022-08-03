@@ -1070,17 +1070,42 @@ class Transactor:
         is_light_line = False
         if (only_light_lines and is_light_line) or not only_light_lines:
             index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
-            index_ar += 5
             open_ar = candle_data[(symbol, "Open")].to_numpy()
             close_ar = candle_data[(symbol, "Close")].to_numpy()
+            high_ar = candle_data[(symbol, "High")].to_numpy()
+            low_ar = candle_data[(symbol, "Low")].to_numpy()
             rise_ar = close_ar > open_ar
             length = len(index_ar)
             nan_ar = np.empty(length)
             nan_ar[:] = np.nan
 
-            data_x = np.repeat(index_ar[rise_ar], 3)
+            data_x = np.stack(
+                [
+                    index_ar[rise_ar] + 2,
+                    index_ar[rise_ar] + 5,
+                    index_ar[rise_ar],
+                    index_ar[rise_ar] + 5,
+                    index_ar[rise_ar] + 8,
+                    index_ar[rise_ar],
+                    index_ar[rise_ar] + 5,
+                    index_ar[rise_ar] + 5,
+                    index_ar[rise_ar],
+                ],
+                axis=1,
+            ).reshape(-1)
             data_y = np.stack(
-                [nan_ar[rise_ar], open_ar[rise_ar], close_ar[rise_ar]], axis=1
+                [
+                    open_ar[rise_ar],
+                    open_ar[rise_ar],
+                    nan_ar[rise_ar],
+                    close_ar[rise_ar],
+                    close_ar[rise_ar],
+                    nan_ar[rise_ar],
+                    high_ar[rise_ar],
+                    low_ar[rise_ar],
+                    nan_ar[rise_ar],
+                ],
+                axis=1,
             ).reshape(-1)
             widget = self.root.transaction_lines["price_up"]
 
@@ -1092,9 +1117,33 @@ class Transactor:
                     return
             self.root.undertake(job, False)
 
-            data_x = np.repeat(index_ar[~rise_ar], 3)
+            data_x = np.stack(
+                [
+                    index_ar[~rise_ar] + 2,
+                    index_ar[~rise_ar] + 5,
+                    index_ar[~rise_ar],
+                    index_ar[~rise_ar] + 5,
+                    index_ar[~rise_ar] + 8,
+                    index_ar[~rise_ar],
+                    index_ar[~rise_ar] + 5,
+                    index_ar[~rise_ar] + 5,
+                    index_ar[~rise_ar],
+                ],
+                axis=1,
+            ).reshape(-1)
             data_y = np.stack(
-                [nan_ar[~rise_ar], open_ar[~rise_ar], close_ar[~rise_ar]], axis=1
+                [
+                    open_ar[~rise_ar],
+                    open_ar[~rise_ar],
+                    nan_ar[~rise_ar],
+                    close_ar[~rise_ar],
+                    close_ar[~rise_ar],
+                    nan_ar[~rise_ar],
+                    high_ar[~rise_ar],
+                    low_ar[~rise_ar],
+                    nan_ar[~rise_ar],
+                ],
+                axis=1,
             ).reshape(-1)
             widget = self.root.transaction_lines["price_down"]
 
