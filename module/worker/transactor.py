@@ -1982,7 +1982,9 @@ class Transactor:
         last_index = self.asset_record.index[-1]
         last_asset = self.asset_record.loc[last_index, "Result Asset"]
 
-        if abs(wallet_balance - last_asset) / wallet_balance > 10**-9:
+        if wallet_balance == 0:
+            pass
+        elif abs(wallet_balance - last_asset) / wallet_balance > 10**-9:
             # when the difference is bigger than one billionth
             # referal fee, funding fee, wallet transfer, etc..
             with self.datalocks[1]:
