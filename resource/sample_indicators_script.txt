@@ -1,5 +1,3 @@
-import talib
-
 # get observed data
 with observed_data_lock:
     close_sr = observed_data[(symbol, "Close")].copy()
