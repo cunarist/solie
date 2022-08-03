@@ -475,12 +475,19 @@ class Simulator:
             index_ar += 5
             open_ar = candle_data[(symbol, "Open")].to_numpy()
             close_ar = candle_data[(symbol, "Close")].to_numpy()
+            rise_ar = close_ar > open_ar
             length = len(index_ar)
             nan_ar = np.empty(length)
             nan_ar[:] = np.nan
             data_x = np.repeat(index_ar, 3)
             data_y = np.stack([nan_ar, open_ar, close_ar], axis=1).reshape(-1)
-            widget = self.root.simulation_lines["price_movement"]
+            widget = self.root.simulation_lines["price_up"]
+
+            data_x = np.repeat(index_ar[rise_ar], 3)
+            data_y = np.stack(
+                [nan_ar[rise_ar], open_ar[rise_ar], close_ar[rise_ar]], axis=1
+            ).reshape(-1)
+            widget = self.root.simulation_lines["price_up"]
 
             def job(widget=widget, data_x=data_x, data_y=data_y):
                 widget.setData(data_x, data_y)
@@ -490,19 +497,11 @@ class Simulator:
                     return
             self.root.undertake(job, False)
 
-        # close price
-        is_light_line = False
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            close_ar = candle_data[(symbol, "Close")].to_numpy()
-            index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
-            left_ar = index_ar + 2
-            right_ar = index_ar + 8
-            length = len(index_ar)
-            nan_ar = np.empty(length)
-            nan_ar[:] = np.nan
-            data_x = np.stack([index_ar, left_ar, right_ar], axis=1).reshape(-1)
-            data_y = np.stack([nan_ar, close_ar, close_ar], axis=1).reshape(-1)
-            widget = self.root.simulation_lines["close_price"]
+            data_x = np.repeat(index_ar[~rise_ar], 3)
+            data_y = np.stack(
+                [nan_ar[~rise_ar], open_ar[~rise_ar], close_ar[~rise_ar]], axis=1
+            ).reshape(-1)
+            widget = self.root.simulation_lines["price_down"]
 
             def job(widget=widget, data_x=data_x, data_y=data_y):
                 widget.setData(data_x, data_y)
@@ -915,9 +914,9 @@ class Simulator:
     def set_minimum_view_range(self, *args, **kwargs):
         def job():
             range_down = self.root.plot_widget_2.getAxis("left").range[0]
-            self.root.plot_widget_2.plotItem.vb.setLimits(minYRange=range_down * 0.01)
+            self.root.plot_widget_2.plotItem.vb.setLimits(minYRange=range_down * 0.005)
             range_down = self.root.plot_widget_3.getAxis("left").range[0]
-            self.root.plot_widget_3.plotItem.vb.setLimits(minYRange=range_down * 0.01)
+            self.root.plot_widget_3.plotItem.vb.setLimits(minYRange=range_down * 0.005)
 
         self.root.undertake(job, False)
 

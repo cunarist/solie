@@ -621,18 +621,18 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 ],
                 "wobbles": [
                     plot_item.plot(
-                        pen=pyqtgraph.mkPen("#8AAE31"),
+                        pen=pyqtgraph.mkPen("#BBBBBB"),
                         connect="finite",
                         stepMode="right",
                     )
                     for _ in range(2)
                 ],
-                "price_movement": plot_item.plot(
-                    pen=pyqtgraph.mkPen("#3C7800"),
+                "price_down": plot_item.plot(
+                    pen=pyqtgraph.mkPen("#DD0000"),
                     connect="finite",
                 ),
-                "close_price": plot_item.plot(
-                    pen=pyqtgraph.mkPen("#3C7800"),
+                "price_up": plot_item.plot(
+                    pen=pyqtgraph.mkPen("#1CA200"),
                     connect="finite",
                 ),
                 "sell": plot_item.plot(
@@ -824,18 +824,18 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 ],
                 "wobbles": [
                     plot_item_2.plot(
-                        pen=pyqtgraph.mkPen("#8AAE31"),
+                        pen=pyqtgraph.mkPen("#BBBBBB"),
                         connect="finite",
                         stepMode="right",
                     )
                     for _ in range(2)
                 ],
-                "price_movement": plot_item_2.plot(
-                    pen=pyqtgraph.mkPen("#3C7800"),
+                "price_down": plot_item_2.plot(
+                    pen=pyqtgraph.mkPen("#DD0000"),
                     connect="finite",
                 ),
-                "close_price": plot_item_2.plot(
-                    pen=pyqtgraph.mkPen("#3C7800"),
+                "price_up": plot_item_2.plot(
+                    pen=pyqtgraph.mkPen("#1CA200"),
                     connect="finite",
                 ),
                 "sell": plot_item_2.plot(
