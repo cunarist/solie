@@ -176,7 +176,11 @@ class Simulator:
     def update_calculation_settings(self, *args, **kwargs):
 
         text = self.root.undertake(lambda: self.root.comboBox_5.currentText(), True)
-        self.calculation_settings["year"] = int(text)
+        from_year = self.calculation_settings["year"]
+        to_year = int(text)
+        self.calculation_settings["year"] = to_year
+        if from_year != to_year:
+            self.display_year_range()
 
         index = self.root.undertake(lambda: self.root.comboBox.currentIndex(), True)
         strategy = self.root.strategy_tuples[index][0]
