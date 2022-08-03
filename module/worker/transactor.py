@@ -177,6 +177,19 @@ class Transactor:
                 index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32
             )
 
+        try:
+            filepath = self.workerpath + "/auto_order_record.pickle"
+            self.auto_order_record = pd.read_pickle(filepath)
+            self.auto_order_record = self.auto_order_record.sort_index()
+        except FileNotFoundError:
+            self.auto_order_record = pd.DataFrame(
+                columns=[
+                    "Order ID",
+                    "Net Profit",
+                ],
+                index=pd.DatetimeIndex([], tz="UTC"),
+            )
+
         # ■■■■■ default executions ■■■■■
 
         self.root.initialize_functions.append(
@@ -495,7 +508,7 @@ class Transactor:
             # when the order is filled
             if execution_type == "TRADE":
 
-                asset_change = realized_profit - commission
+                net_profit = realized_profit - commission
                 added_notional = last_filled_price * last_filled_quantity
                 added_margin = added_notional / leverage
                 added_margin_ratio = added_margin / wallet_balance
@@ -513,7 +526,7 @@ class Transactor:
                         new_value = recorded_value + added_margin_ratio
                         self.asset_record.loc[recorded_time, "Margin Ratio"] = new_value
                         last_asset = self.asset_record.loc[last_index, "Result Asset"]
-                        new_value = last_asset + asset_change
+                        new_value = last_asset + net_profit
                         self.asset_record.loc[last_index, "Result Asset"] = new_value
                     else:
                         new_value = symbol
@@ -529,13 +542,20 @@ class Transactor:
                         new_value = order_id
                         self.asset_record.loc[event_time, "Order ID"] = new_value
                         last_asset = self.asset_record.loc[last_index, "Result Asset"]
-                        new_value = last_asset + asset_change
+                        new_value = last_asset + net_profit
                         self.asset_record.loc[event_time, "Result Asset"] = new_value
                         self.asset_record.loc[event_time, "Cause"] = "trade"
                         self.asset_record = self.asset_record.sort_index()
-                    asset_record_copy = self.asset_record.copy()
+                    filepath = self.workerpath + "/asset_record.pickle"
+                    self.asset_record.to_pickle(filepath)
 
-                asset_record_copy.to_pickle(self.workerpath + "/asset_record.pickle")
+                with self.datalocks[2]:
+                    if order_id in self.auto_order_record["Order ID"].unique():
+                        mask_sr = self.auto_order_record["Order ID"] == order_id
+                        index = self.auto_order_record.index[mask_sr][0]
+                        self.auto_order_record.loc[index, "Net Profit"] += net_profit
+                        filepath = self.workerpath + "/auto_order_record.pickle"
+                        self.auto_order_record.to_pickle(filepath)
 
         # ■■■■■ cancel conflicting orders ■■■■■
 
@@ -1389,6 +1409,13 @@ class Transactor:
         margin_sum = 0
         for each_position in self.account_state["positions"].values():
             margin_sum += each_position["margin"]
+
+        with self.datalocks[2]:
+            if len(self.auto_order_record) > 0:
+                total_profit = self.auto_order_record["Net Profit"].sum()
+            else:
+                total_profit = 0
+
         text = ""
         text += f"총 자산 ＄{round(self.account_state['wallet_balance'],4)}"
         text += "  ⦁  "
@@ -1397,6 +1424,9 @@ class Transactor:
         text += f"방향 {direction_text}"
         text += "  ⦁  "
         text += f"평균 단가 ＄{round(position['entry_price'],price_precision)}"
+        text += "  ⦁  "
+        text += f"자동 수익 ＄{round(total_profit,4)}"
+
         self.root.undertake(lambda t=text: self.root.label_16.setText(t), False)
 
     def transact_fast(self, *args, **kwargs):
@@ -2291,11 +2321,18 @@ class Transactor:
             payload = new_order
 
             def job(payload=payload):
-                self.api_requester.binance(
+                response = self.api_requester.binance(
                     http_method="POST",
                     path="/fapi/v1/order",
                     payload=payload,
                 )
+                order_id = response["orderId"]
+                timestamp = response["updateTime"] / 1000
+                update_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+                with self.datalocks[2]:
+                    self.auto_order_record.loc[update_time, "Order ID"] = order_id
+                    self.auto_order_record.loc[update_time, "Net Profit"] = 0
+                    self.auto_order_record = self.auto_order_record.sort_index()
 
             thread_toss.apply_async(job)
 
