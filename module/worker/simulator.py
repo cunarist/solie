@@ -910,10 +910,10 @@ class Simulator:
 
     def set_minimum_view_range(self, *args, **kwargs):
         def job():
-            range_up = self.root.plot_widget_2.getAxis("left").range[1]
-            self.root.plot_widget_2.plotItem.vb.setLimits(minYRange=range_up * 0.004)
-            range_up = self.root.plot_widget_3.getAxis("left").range[1]
-            self.root.plot_widget_3.plotItem.vb.setLimits(minYRange=range_up * 0.004)
+            range_down = self.root.plot_widget_2.getAxis("left").range[0]
+            self.root.plot_widget_2.plotItem.vb.setLimits(minYRange=range_down * 0.01)
+            range_down = self.root.plot_widget_3.getAxis("left").range[0]
+            self.root.plot_widget_3.plotItem.vb.setLimits(minYRange=range_down * 0.01)
 
         self.root.undertake(job, False)
 

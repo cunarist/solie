@@ -582,10 +582,10 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             plot_item_4.getAxis("bottom").setHeight(0)
             plot_item_6.getAxis("top").setHeight(0)
             plot_item_6.getAxis("bottom").setHeight(0)
-            plot_item.showGrid(x=True, y=True, alpha=0.1)
-            plot_item_1.showGrid(x=True, y=True, alpha=0.1)
-            plot_item_4.showGrid(x=True, y=True, alpha=0.1)
-            plot_item_6.showGrid(x=True, y=True, alpha=0.1)
+            plot_item.showGrid(x=True, y=True, alpha=0.15)
+            plot_item_1.showGrid(x=True, y=True, alpha=0.15)
+            plot_item_4.showGrid(x=True, y=True, alpha=0.15)
+            plot_item_6.showGrid(x=True, y=True, alpha=0.15)
 
             self.transaction_lines = {
                 "book_tickers": [
@@ -785,10 +785,10 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             plot_item_5.getAxis("bottom").setHeight(0)
             plot_item_7.getAxis("top").setHeight(0)
             plot_item_7.getAxis("bottom").setHeight(0)
-            plot_item_2.showGrid(x=True, y=True, alpha=0.1)
-            plot_item_3.showGrid(x=True, y=True, alpha=0.1)
-            plot_item_5.showGrid(x=True, y=True, alpha=0.1)
-            plot_item_7.showGrid(x=True, y=True, alpha=0.1)
+            plot_item_2.showGrid(x=True, y=True, alpha=0.15)
+            plot_item_3.showGrid(x=True, y=True, alpha=0.15)
+            plot_item_5.showGrid(x=True, y=True, alpha=0.15)
+            plot_item_7.showGrid(x=True, y=True, alpha=0.15)
 
             self.simulation_lines = {
                 "book_tickers": [
