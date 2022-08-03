@@ -10,7 +10,6 @@ from pyqtgraph import AxisItem
 class TimeAxisItem(AxisItem):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._oldAxis = None
 
     def tickValues(self, min_value, max_value, size):  # noqa:N802
 

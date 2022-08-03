@@ -8,8 +8,6 @@ from module.recipe import simply_format
 class PercentAxisItem(AxisItem):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._oldAxis = None
-        self.fixedWidth = 15
 
     def tickValues(self, min_value, max_value, size):  # noqa:N802
 
