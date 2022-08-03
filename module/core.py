@@ -21,6 +21,7 @@ from module.worker.simulator import Simulator
 from module.worker.strategist import Strategiest
 from module.instrument.thread_pool_executor import ThreadPoolExecutor
 from module.instrument.percent_axis_item import PercentAxisItem
+from module.instrument.time_axis_item import TimeAxisItem
 from module.instrument.telephone import Telephone
 from module.instrument.api_streamer import ApiStreamer
 from module.instrument.api_requester import ApiRequester
@@ -523,29 +524,29 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             plot_item_6.setClipToView(True)
             plot_item_6.setAutoVisible(y=True)
             axis_items = {
-                "top": pyqtgraph.DateAxisItem(orientation="top"),
-                "bottom": pyqtgraph.DateAxisItem(orientation="bottom"),
+                "top": TimeAxisItem(orientation="top"),
+                "bottom": TimeAxisItem(orientation="bottom"),
                 "left": PercentAxisItem(orientation="left"),
                 "right": PercentAxisItem(orientation="right"),
             }
             plot_item.setAxisItems(axis_items)
             axis_items = {
-                "top": pyqtgraph.DateAxisItem(orientation="top"),
-                "bottom": pyqtgraph.DateAxisItem(orientation="bottom"),
+                "top": TimeAxisItem(orientation="top"),
+                "bottom": TimeAxisItem(orientation="bottom"),
                 "left": PercentAxisItem(orientation="left"),
                 "right": PercentAxisItem(orientation="right"),
             }
             plot_item_1.setAxisItems(axis_items)
             axis_items = {
-                "top": pyqtgraph.DateAxisItem(orientation="top"),
-                "bottom": pyqtgraph.DateAxisItem(orientation="bottom"),
+                "top": TimeAxisItem(orientation="top"),
+                "bottom": TimeAxisItem(orientation="bottom"),
                 "left": pyqtgraph.AxisItem(orientation="left"),
                 "right": pyqtgraph.AxisItem(orientation="right"),
             }
             plot_item_4.setAxisItems(axis_items)
             axis_items = {
-                "top": pyqtgraph.DateAxisItem(orientation="top"),
-                "bottom": pyqtgraph.DateAxisItem(orientation="bottom"),
+                "top": TimeAxisItem(orientation="top"),
+                "bottom": TimeAxisItem(orientation="bottom"),
                 "left": pyqtgraph.AxisItem(orientation="left"),
                 "right": pyqtgraph.AxisItem(orientation="right"),
             }
@@ -726,29 +727,29 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             plot_item_7.setClipToView(True)
             plot_item_7.setAutoVisible(y=True)
             axis_items = {
-                "top": pyqtgraph.DateAxisItem(orientation="top"),
-                "bottom": pyqtgraph.DateAxisItem(orientation="bottom"),
+                "top": TimeAxisItem(orientation="top"),
+                "bottom": TimeAxisItem(orientation="bottom"),
                 "left": PercentAxisItem(orientation="left"),
                 "right": PercentAxisItem(orientation="right"),
             }
             plot_item_2.setAxisItems(axis_items)
             axis_items = {
-                "top": pyqtgraph.DateAxisItem(orientation="top"),
-                "bottom": pyqtgraph.DateAxisItem(orientation="bottom"),
+                "top": TimeAxisItem(orientation="top"),
+                "bottom": TimeAxisItem(orientation="bottom"),
                 "left": PercentAxisItem(orientation="left"),
                 "right": PercentAxisItem(orientation="right"),
             }
             plot_item_3.setAxisItems(axis_items)
             axis_items = {
-                "top": pyqtgraph.DateAxisItem(orientation="top"),
-                "bottom": pyqtgraph.DateAxisItem(orientation="bottom"),
+                "top": TimeAxisItem(orientation="top"),
+                "bottom": TimeAxisItem(orientation="bottom"),
                 "left": pyqtgraph.AxisItem(orientation="left"),
                 "right": pyqtgraph.AxisItem(orientation="right"),
             }
             plot_item_5.setAxisItems(axis_items)
             axis_items = {
-                "top": pyqtgraph.DateAxisItem(orientation="top"),
-                "bottom": pyqtgraph.DateAxisItem(orientation="bottom"),
+                "top": TimeAxisItem(orientation="top"),
+                "bottom": TimeAxisItem(orientation="bottom"),
                 "left": pyqtgraph.AxisItem(orientation="left"),
                 "right": pyqtgraph.AxisItem(orientation="right"),
             }

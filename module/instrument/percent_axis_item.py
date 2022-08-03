@@ -7,7 +7,7 @@ from module.recipe import simply_format
 
 class PercentAxisItem(AxisItem):
     def __init__(self, *args, **kwargs):
-        AxisItem.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._oldAxis = None
         self.fixedWidth = 15
 
