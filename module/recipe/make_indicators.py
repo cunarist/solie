@@ -1,5 +1,6 @@
 import itertools
 import threading
+from datetime import timedelta
 
 import talib
 import pandas as pd
@@ -15,6 +16,11 @@ def do(observed_data, strategy, compiled_custom_script):
     # ■■■■■ interpolate nans ■■■■■
 
     observed_data = observed_data.interpolate()
+
+    # ■■■■■ make dummy row to avoid talib error with all nan series ■■■■■
+
+    last_index = observed_data.index[-1]
+    observed_data.loc[last_index + timedelta(seconds=1)] = 0
 
     # ■■■■■ basic values ■■■■■
 
@@ -32,14 +38,6 @@ def do(observed_data, strategy, compiled_custom_script):
             index=base_index,
             dtype=np.float32,
         )
-
-    # ■■■■■ return empty indicators if the observed data is empty ■■■■■
-
-    if len(observed_data.dropna()) < 3:
-        for column_name, new_indicator in new_indicators.items():
-            new_indicator.name = column_name
-        indicators = pd.concat(new_indicators.values(), axis="columns")
-        return indicators
 
     # ■■■■■ make individual indicators ■■■■■
 
@@ -234,5 +232,9 @@ def do(observed_data, strategy, compiled_custom_script):
 
     indicators = pd.concat(new_indicators.values(), axis="columns")
     indicators = indicators.astype(np.float32)
+
+    # ■■■■■ remove dummy row ■■■■■
+
+    indicators = indicators.iloc[:-1]
 
     return indicators

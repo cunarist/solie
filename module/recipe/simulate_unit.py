@@ -566,7 +566,7 @@ def do(dataset):
 
         current_observed_data = observed_data_ar[cycle]
         current_indicators = indicators_ar[cycle]
-        decision = decide.choose(
+        decision, unit_scribbles = decide.choose(
             current_moment=current_moment,
             current_observed_data=current_observed_data,
             current_indicators=current_indicators,
