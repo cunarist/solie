@@ -44,14 +44,6 @@ class Collector:
 
         self.api_requester = ApiRequester()
 
-        self.task_durations = {
-            "add_candle_data": deque(maxlen=360),
-            "add_book_tickers": deque(maxlen=1280),
-            "add_mark_price": deque(maxlen=10),
-            "add_aggregate_trades": deque(maxlen=1280),
-            "organize_everything": deque(maxlen=60),
-        }
-
         self.exchange_state = {
             "maximum_quantities": {},
             "minimum_notionals": {},
@@ -183,8 +175,8 @@ class Collector:
 
         # ■■■■■ invoked by the internet connection  ■■■■■
 
-        connected_functrions = []
-        check_internet.add_connected_functions(connected_functrions)
+        connected_functions = []
+        check_internet.add_connected_functions(connected_functions)
 
         disconnected_functions = [
             lambda: self.clear_aggregate_trades(),

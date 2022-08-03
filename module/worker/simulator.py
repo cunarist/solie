@@ -8,10 +8,10 @@ import re
 import pickle
 import copy
 
-from PyQt6 import QtCore
 import pandas as pd
 import numpy as np
 from scipy.signal import find_peaks
+from PyQt6 import QtCore
 
 from module.recipe import simulate_unit
 from module.recipe import make_indicators
@@ -39,6 +39,7 @@ class Simulator:
         # ■■■■■ remember and display ■■■■■
 
         self.viewing_symbol = standardize.get_basics()["target_symbols"][0]
+        self.should_draw_combined = False
 
         self.about_viewing = None
 
@@ -131,13 +132,6 @@ class Simulator:
         # ■■■■■ repetitive schedules ■■■■■
 
         self.root.scheduler.add_job(
-            self.display_lines,
-            trigger="cron",
-            minute="*",
-            executor="thread_pool_executor",
-            kwargs={"only_light_lines": True},
-        )
-        self.root.scheduler.add_job(
             self.display_available_years,
             trigger="cron",
             second="*",
@@ -157,8 +151,8 @@ class Simulator:
 
         # ■■■■■ invoked by the internet connection  ■■■■■
 
-        connected_functrions = []
-        check_internet.add_connected_functions(connected_functrions)
+        connected_functions = []
+        check_internet.add_connected_functions(connected_functions)
 
         disconnected_functions = []
         check_internet.add_disconnected_functions(disconnected_functions)
@@ -219,11 +213,27 @@ class Simulator:
 
     def display_lines(self, *args, **kwargs):
 
+        # ■■■■■ start the task ■■■■■
+
         periodic = kwargs.get("periodic", False)
+        frequent = kwargs.get("frequent", False)
         only_light_lines = kwargs.get("only_light_lines", False)
 
-        if not only_light_lines:
-            task_id = stop_flag.make("display_simulation_lines")
+        if only_light_lines:
+            task_name = "display_light_simulation_lines"
+        else:
+            task_name = "display_all_simulation_lines"
+
+        task_id = stop_flag.make(task_name)
+
+        # ■■■■■ check frequent drawing ■■■■■
+
+        if frequent:
+            pass
+
+        # ■■■■■ get ready for task duration measurement ■■■■■
+
+        pass
 
         # ■■■■■ check if the data exists ■■■■■
 
@@ -231,27 +241,25 @@ class Simulator:
             if len(self.root.collector.candle_data) == 0:
                 return
 
-        # ■■■■■ moment ■■■■■
+        # ■■■■■ wait for the latest data to be added ■■■■■
 
         current_moment = datetime.now(timezone.utc).replace(microsecond=0)
         current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
         before_moment = current_moment - timedelta(seconds=10)
 
-        # ■■■■■ wait for the latest data to be added ■■■■■
-
         if periodic:
             for _ in range(50):
-                if not only_light_lines:
-                    if stop_flag.find("display_simulation_lines", task_id):
-                        return
+                if stop_flag.find(task_name, task_id):
+                    return
                 with self.root.collector.datalocks[0]:
                     last_index = self.root.collector.candle_data.index[-1]
                     if last_index == before_moment:
                         break
                 time.sleep(0.1)
 
-        # ■■■■■ check strategy ■■■■■
+        # ■■■■■ check things ■■■■■
 
+        symbol = self.viewing_symbol
         strategy = self.calculation_settings["strategy"]
 
         if strategy == 0:
@@ -262,37 +270,12 @@ class Simulator:
                     strategy_details = strategy_tuple[2]
         is_fast_strategy = strategy_details[3]
 
-        # ■■■■■ get the data ■■■■■
-
-        symbol = self.viewing_symbol
-        year = self.calculation_settings["year"]
-        slice_until = datetime.now(timezone.utc)
-        slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
-        slice_until -= timedelta(seconds=1)
-
-        if not only_light_lines:
-            if is_fast_strategy:
-                candle_data = pd.DataFrame(
-                    columns=pd.MultiIndex.from_product(
-                        [
-                            standardize.get_basics()["target_symbols"],
-                            ("Open", "High", "Low", "Close", "Volume"),
-                        ]
-                    ),
-                    dtype=np.float32,
-                    index=pd.DatetimeIndex([], tz="UTC"),
-                )
-            else:
-                with self.root.collector.datalocks[0]:
-                    df = self.root.collector.candle_data
-                    mask = df.index.year == year
-                    df = df[mask][:slice_until][[symbol]].copy()
-                    candle_data = df
+        # ■■■■■ get light data ■■■■■
 
         with self.root.collector.datalocks[1]:
-            original_chunks = self.root.collector.realtime_data_chunks
-            realtime_data_chunks = copy.deepcopy(original_chunks)
-        realtime_data = np.concatenate(realtime_data_chunks)
+            before_chunk = self.root.collector.realtime_data_chunks[-2].copy()
+            current_chunk = self.root.collector.realtime_data_chunks[-1].copy()
+        realtime_data = np.concatenate((before_chunk, current_chunk))
         with self.root.collector.datalocks[2]:
             aggregate_trades = self.root.collector.aggregate_trades.copy()
 
@@ -300,6 +283,193 @@ class Simulator:
             unrealized_changes = self.unrealized_changes.copy()
         with self.datalocks[1]:
             asset_record = self.asset_record.copy()
+
+        # ■■■■■ draw light lines ■■■■■
+
+        # mark price
+        data_x = realtime_data["index"].astype(np.int64) / 10**9
+        data_y = realtime_data[str((symbol, "Mark Price"))]
+        mask = data_y != 0
+        data_y = data_y[mask]
+        data_x = data_x[mask]
+        widget = self.root.simulation_lines["mark_price"]
+
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
+
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
+
+        # last price
+        data_x = aggregate_trades["index"].astype(np.int64) / 10**9
+        data_y = aggregate_trades[str((symbol, "Price"))]
+        mask = data_y != 0
+        data_y = data_y[mask]
+        data_x = data_x[mask]
+        widget = self.root.simulation_lines["last_price"]
+
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
+
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
+
+        # last trade volume
+        index_ar = aggregate_trades["index"].astype(np.int64) / 10**9
+        value_ar = aggregate_trades[str((symbol, "Volume"))]
+        mask = value_ar != 0
+        index_ar = index_ar[mask]
+        value_ar = value_ar[mask]
+        length = len(index_ar)
+        zero_ar = np.zeros(length)
+        nan_ar = np.empty(length)
+        nan_ar[:] = np.nan
+        data_x = np.repeat(index_ar, 3)
+        data_y = np.stack([nan_ar, zero_ar, value_ar], axis=1).reshape(-1)
+        widget = self.root.simulation_lines["last_volume"]
+
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
+
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
+
+        # book tickers
+        data_x = realtime_data["index"].astype(np.int64) / 10**9
+        data_y = realtime_data[str((symbol, "Best Bid Price"))]
+        mask = data_y != 0
+        data_y = data_y[mask]
+        data_x = data_x[mask]
+        widget = self.root.simulation_lines["book_tickers"][0]
+
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
+
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
+
+        data_x = realtime_data["index"].astype(np.int64) / 10**9
+        data_y = realtime_data[str((symbol, "Best Ask Price"))]
+        mask = data_y != 0
+        data_y = data_y[mask]
+        data_x = data_x[mask]
+        widget = self.root.simulation_lines["book_tickers"][1]
+
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
+
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
+
+        # open orders
+        boundaries = [
+            open_order["boundary"]
+            for open_order in self.account_state["open_orders"][symbol].values()
+            if "boundary" in open_order
+        ]
+        first_moment = self.account_state["observed_until"] - timedelta(hours=12)
+        last_moment = self.account_state["observed_until"] + timedelta(hours=12)
+        for turn, widget in enumerate(self.root.simulation_lines["boundaries"]):
+            if turn < len(boundaries):
+                boundary = boundaries[turn]
+                data_x = np.linspace(
+                    first_moment.timestamp(), last_moment.timestamp(), num=1000
+                )
+                data_y = np.linspace(boundary, boundary, num=1000)
+                widget = self.root.simulation_lines["boundaries"][turn]
+
+                def job(widget=widget, data_x=data_x, data_y=data_y):
+                    widget.setData(data_x, data_y)
+
+                if stop_flag.find(task_name, task_id):
+                    return
+                self.root.undertake(job, False)
+            else:
+                if stop_flag.find(task_name, task_id):
+                    return
+                self.root.undertake(lambda w=widget: w.clear(), False)
+
+        # entry price
+        entry_price = self.account_state["positions"][symbol]["entry_price"]
+        first_moment = self.account_state["observed_until"] - timedelta(hours=12)
+        last_moment = self.account_state["observed_until"] + timedelta(hours=12)
+        if entry_price != 0:
+            data_x = np.linspace(
+                first_moment.timestamp(), last_moment.timestamp(), num=1000
+            )
+            data_y = np.linspace(entry_price, entry_price, num=1000)
+        else:
+            data_x = []
+            data_y = []
+        widget = self.root.simulation_lines["entry_price"]
+
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
+
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
+
+        # ■■■■■ record task duration ■■■■■
+
+        pass
+
+        # ■■■■■ stop if the target is only light lines ■■■■■
+
+        if only_light_lines:
+            return
+
+        # ■■■■■ get heavy data ■■■■■
+
+        if is_fast_strategy:
+            candle_data = pd.DataFrame(
+                columns=pd.MultiIndex.from_product(
+                    [
+                        standardize.get_basics()["target_symbols"],
+                        ("Open", "High", "Low", "Close", "Volume"),
+                    ]
+                ),
+                dtype=np.float32,
+                index=pd.DatetimeIndex([], tz="UTC"),
+            )
+        else:
+            with self.root.collector.datalocks[0]:
+                candle_data = self.root.collector.candle_data.copy()
+
+        # ■■■■■ maniuplate heavy data ■■■■■
+
+        # range cut
+
+        year = self.calculation_settings["year"]
+        slice_until = datetime.now(timezone.utc)
+        slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
+        slice_until -= timedelta(seconds=1)
+
+        if not self.should_draw_combined:
+            mask = candle_data.index.year == year
+            candle_data = candle_data[mask]
+        candle_data = candle_data[:slice_until][[symbol]]
+
+        # add the right end
+
+        if len(candle_data) > 0:
+            last_written_moment = candle_data.index[-1]
+            new_moment = last_written_moment + timedelta(seconds=10)
+            new_index = candle_data.index.union([new_moment])
+            candle_data = candle_data.reindex(new_index)
+
+        observed_until = self.account_state["observed_until"]
+        if len(asset_record) > 0:
+            final_index = asset_record.index[-1]
+            final_asset = asset_record.loc[final_index, "Result Asset"]
+            asset_record.loc[observed_until, "Cause"] = "other"
+            asset_record.loc[observed_until, "Result Asset"] = final_asset
+            asset_record = asset_record.sort_index()
 
         # ■■■■■ make indicators ■■■■■
 
@@ -314,485 +484,287 @@ class Simulator:
                 strategy=strategy,
                 compiled_custom_script=compiled_indicators_script,
             )
-
         else:
-            if not only_light_lines:
-                indicators = process_toss.apply(
-                    make_indicators.do,
-                    observed_data=candle_data,
-                    strategy=strategy,
-                    compiled_custom_script=compiled_indicators_script,
-                )
+            indicators = process_toss.apply(
+                make_indicators.do,
+                observed_data=candle_data,
+                strategy=strategy,
+                compiled_custom_script=compiled_indicators_script,
+            )
 
-        # ■■■■■ add the right end ■■■■■
-
-        if not only_light_lines:
-            if len(candle_data) > 0:
-                last_written_moment = candle_data.index[-1]
-                new_moment = last_written_moment + timedelta(seconds=10)
-                new_index = candle_data.index.union([new_moment])
-                candle_data = candle_data.reindex(new_index)
-
-        observed_until = self.account_state["observed_until"]
-        if len(asset_record) > 0:
-            final_index = asset_record.index[-1]
-            final_asset = asset_record.loc[final_index, "Result Asset"]
-            asset_record.loc[observed_until, "Cause"] = "other"
-            asset_record.loc[observed_until, "Result Asset"] = final_asset
-
-        # ■■■■■ draw ■■■■■
-
-        # mark price
-        is_light_line = True
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            data_x = realtime_data["index"].astype(np.int64) / 10**9
-            data_y = realtime_data[str((symbol, "Mark Price"))]
-            mask = data_y != 0
-            data_y = data_y[mask]
-            data_x = data_x[mask]
-            widget = self.root.simulation_lines["mark_price"]
-
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
-
-            if not only_light_lines:
-                if stop_flag.find("display_simulation_lines", task_id):
-                    return
-            self.root.undertake(job, False)
-
-        # last price
-        is_light_line = True
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            data_x = aggregate_trades["index"].astype(np.int64) / 10**9
-            data_y = aggregate_trades[str((symbol, "Price"))]
-            mask = data_y != 0
-            data_y = data_y[mask]
-            data_x = data_x[mask]
-            widget = self.root.simulation_lines["last_price"]
-
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
-
-            if not only_light_lines:
-                if stop_flag.find("display_simulation_lines", task_id):
-                    return
-            self.root.undertake(job, False)
-
-        # last trade volume
-        is_light_line = True
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            index_ar = aggregate_trades["index"].astype(np.int64) / 10**9
-            value_ar = aggregate_trades[str((symbol, "Volume"))]
-            mask = value_ar != 0
-            index_ar = index_ar[mask]
-            value_ar = value_ar[mask]
-            length = len(index_ar)
-            zero_ar = np.zeros(length)
-            nan_ar = np.empty(length)
-            nan_ar[:] = np.nan
-            data_x = np.repeat(index_ar, 3)
-            data_y = np.stack([nan_ar, zero_ar, value_ar], axis=1).reshape(-1)
-            widget = self.root.simulation_lines["last_volume"]
-
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
-
-            if not only_light_lines:
-                if stop_flag.find("display_simulation_lines", task_id):
-                    return
-            self.root.undertake(job, False)
-
-        # book tickers
-        is_light_line = True
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            data_x = realtime_data["index"].astype(np.int64) / 10**9
-            data_y = realtime_data[str((symbol, "Best Bid Price"))]
-            mask = data_y != 0
-            data_y = data_y[mask]
-            data_x = data_x[mask]
-            widget = self.root.simulation_lines["book_tickers"][0]
-
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
-
-            if not only_light_lines:
-                if stop_flag.find("display_simulation_lines", task_id):
-                    return
-            self.root.undertake(job, False)
-
-            data_x = realtime_data["index"].astype(np.int64) / 10**9
-            data_y = realtime_data[str((symbol, "Best Ask Price"))]
-            mask = data_y != 0
-            data_y = data_y[mask]
-            data_x = data_x[mask]
-            widget = self.root.simulation_lines["book_tickers"][1]
-
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
-
-            if not only_light_lines:
-                if stop_flag.find("display_simulation_lines", task_id):
-                    return
-            self.root.undertake(job, False)
+        # ■■■■■ draw heavy lines ■■■■■
 
         # price indicators
-        is_light_line = True if is_fast_strategy else False
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            df = indicators[symbol]["Price"]
-            data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-            if not is_fast_strategy:
-                data_x += 5
-            line_list = self.root.simulation_lines["price_indicators"]
-            for turn, widget in enumerate(line_list):
-                if turn < len(df.columns):
-                    column_name = df.columns[turn]
-                    sr = df[column_name]
-                    data_y = sr.to_numpy(dtype=np.float32)
-                    inside_strings = re.findall(r"\(([^)]+)", column_name)
-                    if len(inside_strings) == 0:
-                        color = "#AAAAAA"
-                    else:
-                        color = inside_strings[0]
+        df = indicators[symbol]["Price"]
+        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
+        if not is_fast_strategy:
+            data_x += 5
+        line_list = self.root.simulation_lines["price_indicators"]
+        for turn, widget in enumerate(line_list):
+            if turn < len(df.columns):
+                column_name = df.columns[turn]
+                sr = df[column_name]
+                data_y = sr.to_numpy(dtype=np.float32)
+                inside_strings = re.findall(r"\(([^)]+)", column_name)
+                if len(inside_strings) == 0:
+                    color = "#AAAAAA"
+                else:
+                    color = inside_strings[0]
 
-                    def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
-                        widget.setPen(color)
-                        widget.setData(data_x, data_y)
+                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
+                    widget.setPen(color)
+                    widget.setData(data_x, data_y)
 
-                    if not only_light_lines:
-                        if stop_flag.find("display_simulation_lines", task_id):
-                            return
-                    self.root.undertake(job, False)
-                elif not only_light_lines:
-                    if not only_light_lines:
-                        if stop_flag.find("display_simulation_lines", task_id):
-                            return
-                    self.root.undertake(lambda w=widget: w.clear(), False)
+                if stop_flag.find(task_name, task_id):
+                    return
+                self.root.undertake(job, False)
+            else:
+                if stop_flag.find(task_name, task_id):
+                    return
+                self.root.undertake(lambda w=widget: w.clear(), False)
 
         # price movement
-        is_light_line = False
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
-            open_ar = candle_data[(symbol, "Open")].to_numpy()
-            close_ar = candle_data[(symbol, "Close")].to_numpy()
-            high_ar = candle_data[(symbol, "High")].to_numpy()
-            low_ar = candle_data[(symbol, "Low")].to_numpy()
-            rise_ar = close_ar > open_ar
-            length = len(index_ar)
-            nan_ar = np.empty(length)
-            nan_ar[:] = np.nan
+        index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
+        open_ar = candle_data[(symbol, "Open")].to_numpy()
+        close_ar = candle_data[(symbol, "Close")].to_numpy()
+        high_ar = candle_data[(symbol, "High")].to_numpy()
+        low_ar = candle_data[(symbol, "Low")].to_numpy()
+        rise_ar = close_ar > open_ar
+        length = len(index_ar)
+        nan_ar = np.empty(length)
+        nan_ar[:] = np.nan
 
-            data_x = np.stack(
-                [
-                    index_ar[rise_ar] + 2,
-                    index_ar[rise_ar] + 5,
-                    index_ar[rise_ar],
-                    index_ar[rise_ar] + 5,
-                    index_ar[rise_ar] + 8,
-                    index_ar[rise_ar],
-                    index_ar[rise_ar] + 5,
-                    index_ar[rise_ar] + 5,
-                    index_ar[rise_ar],
-                ],
-                axis=1,
-            ).reshape(-1)
-            data_y = np.stack(
-                [
-                    open_ar[rise_ar],
-                    open_ar[rise_ar],
-                    nan_ar[rise_ar],
-                    close_ar[rise_ar],
-                    close_ar[rise_ar],
-                    nan_ar[rise_ar],
-                    high_ar[rise_ar],
-                    low_ar[rise_ar],
-                    nan_ar[rise_ar],
-                ],
-                axis=1,
-            ).reshape(-1)
-            widget = self.root.simulation_lines["price_up"]
+        data_x = np.stack(
+            [
+                index_ar[rise_ar] + 2,
+                index_ar[rise_ar] + 5,
+                index_ar[rise_ar],
+                index_ar[rise_ar] + 5,
+                index_ar[rise_ar] + 8,
+                index_ar[rise_ar],
+                index_ar[rise_ar] + 5,
+                index_ar[rise_ar] + 5,
+                index_ar[rise_ar],
+            ],
+            axis=1,
+        ).reshape(-1)
+        data_y = np.stack(
+            [
+                open_ar[rise_ar],
+                open_ar[rise_ar],
+                nan_ar[rise_ar],
+                close_ar[rise_ar],
+                close_ar[rise_ar],
+                nan_ar[rise_ar],
+                high_ar[rise_ar],
+                low_ar[rise_ar],
+                nan_ar[rise_ar],
+            ],
+            axis=1,
+        ).reshape(-1)
+        widget = self.root.simulation_lines["price_up"]
 
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
 
-            if not only_light_lines:
-                if stop_flag.find("display_simulation_lines", task_id):
-                    return
-            self.root.undertake(job, False)
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
 
-            data_x = np.stack(
-                [
-                    index_ar[~rise_ar] + 2,
-                    index_ar[~rise_ar] + 5,
-                    index_ar[~rise_ar],
-                    index_ar[~rise_ar] + 5,
-                    index_ar[~rise_ar] + 8,
-                    index_ar[~rise_ar],
-                    index_ar[~rise_ar] + 5,
-                    index_ar[~rise_ar] + 5,
-                    index_ar[~rise_ar],
-                ],
-                axis=1,
-            ).reshape(-1)
-            data_y = np.stack(
-                [
-                    open_ar[~rise_ar],
-                    open_ar[~rise_ar],
-                    nan_ar[~rise_ar],
-                    close_ar[~rise_ar],
-                    close_ar[~rise_ar],
-                    nan_ar[~rise_ar],
-                    high_ar[~rise_ar],
-                    low_ar[~rise_ar],
-                    nan_ar[~rise_ar],
-                ],
-                axis=1,
-            ).reshape(-1)
-            widget = self.root.simulation_lines["price_down"]
+        data_x = np.stack(
+            [
+                index_ar[~rise_ar] + 2,
+                index_ar[~rise_ar] + 5,
+                index_ar[~rise_ar],
+                index_ar[~rise_ar] + 5,
+                index_ar[~rise_ar] + 8,
+                index_ar[~rise_ar],
+                index_ar[~rise_ar] + 5,
+                index_ar[~rise_ar] + 5,
+                index_ar[~rise_ar],
+            ],
+            axis=1,
+        ).reshape(-1)
+        data_y = np.stack(
+            [
+                open_ar[~rise_ar],
+                open_ar[~rise_ar],
+                nan_ar[~rise_ar],
+                close_ar[~rise_ar],
+                close_ar[~rise_ar],
+                nan_ar[~rise_ar],
+                high_ar[~rise_ar],
+                low_ar[~rise_ar],
+                nan_ar[~rise_ar],
+            ],
+            axis=1,
+        ).reshape(-1)
+        widget = self.root.simulation_lines["price_down"]
 
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
 
-            if not only_light_lines:
-                if stop_flag.find("display_simulation_lines", task_id):
-                    return
-            self.root.undertake(job, False)
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
 
         # wobbles
-        is_light_line = False
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            sr = candle_data[(symbol, "High")]
-            data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
-            data_y = sr.to_numpy(dtype=np.float32)
-            widget = self.root.simulation_lines["wobbles"][0]
+        sr = candle_data[(symbol, "High")]
+        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
+        data_y = sr.to_numpy(dtype=np.float32)
+        widget = self.root.simulation_lines["wobbles"][0]
 
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
 
-            if not only_light_lines:
-                if stop_flag.find("display_simulation_lines", task_id):
-                    return
-            self.root.undertake(job, False)
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
 
-            sr = candle_data[(symbol, "Low")]
-            data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
-            data_y = sr.to_numpy(dtype=np.float32)
-            widget = self.root.simulation_lines["wobbles"][1]
+        sr = candle_data[(symbol, "Low")]
+        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
+        data_y = sr.to_numpy(dtype=np.float32)
+        widget = self.root.simulation_lines["wobbles"][1]
 
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
 
-            if not only_light_lines:
-                if stop_flag.find("display_simulation_lines", task_id):
-                    return
-            self.root.undertake(job, False)
-
-        # open orders
-        is_light_line = True
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            boundaries = [
-                open_order["boundary"]
-                for open_order in self.account_state["open_orders"][symbol].values()
-                if "boundary" in open_order
-            ]
-            first_moment = self.account_state["observed_until"] - timedelta(hours=12)
-            last_moment = self.account_state["observed_until"] + timedelta(hours=12)
-            for turn, widget in enumerate(self.root.simulation_lines["boundaries"]):
-                if turn < len(boundaries):
-                    boundary = boundaries[turn]
-                    data_x = np.linspace(
-                        first_moment.timestamp(), last_moment.timestamp(), num=1000
-                    )
-                    data_y = np.linspace(boundary, boundary, num=1000)
-                    widget = self.root.simulation_lines["boundaries"][turn]
-
-                    def job(widget=widget, data_x=data_x, data_y=data_y):
-                        widget.setData(data_x, data_y)
-
-                    if not only_light_lines:
-                        if stop_flag.find("display_simulation_lines", task_id):
-                            return
-                    self.root.undertake(job, False)
-                elif not only_light_lines:
-                    if not only_light_lines:
-                        if stop_flag.find("display_simulation_lines", task_id):
-                            return
-                    self.root.undertake(lambda w=widget: w.clear(), False)
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
 
         # trade volume indicators
-        is_light_line = True if is_fast_strategy else False
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            df = indicators[symbol]["Volume"]
-            data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-            if not is_fast_strategy:
-                data_x += 5
-            line_list = self.root.simulation_lines["volume_indicators"]
-            for turn, widget in enumerate(line_list):
-                if turn < len(df.columns):
-                    column_name = df.columns[turn]
-                    sr = df[column_name]
-                    data_y = sr.to_numpy(dtype=np.float32)
-                    inside_strings = re.findall(r"\(([^)]+)", column_name)
-                    if len(inside_strings) == 0:
-                        color = "#AAAAAA"
-                    else:
-                        color = inside_strings[0]
+        df = indicators[symbol]["Volume"]
+        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
+        if not is_fast_strategy:
+            data_x += 5
+        line_list = self.root.simulation_lines["volume_indicators"]
+        for turn, widget in enumerate(line_list):
+            if turn < len(df.columns):
+                column_name = df.columns[turn]
+                sr = df[column_name]
+                data_y = sr.to_numpy(dtype=np.float32)
+                inside_strings = re.findall(r"\(([^)]+)", column_name)
+                if len(inside_strings) == 0:
+                    color = "#AAAAAA"
+                else:
+                    color = inside_strings[0]
 
-                    def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
-                        widget.setPen(color)
-                        widget.setData(data_x, data_y)
+                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
+                    widget.setPen(color)
+                    widget.setData(data_x, data_y)
 
-                    if not only_light_lines:
-                        if stop_flag.find("display_simulation_lines", task_id):
-                            return
-                    self.root.undertake(job, False)
-                elif not only_light_lines:
-                    if not only_light_lines:
-                        if stop_flag.find("display_simulation_lines", task_id):
-                            return
-                    self.root.undertake(lambda w=widget: w.clear(), False)
+                if stop_flag.find(task_name, task_id):
+                    return
+                self.root.undertake(job, False)
+            else:
+                if stop_flag.find(task_name, task_id):
+                    return
+                self.root.undertake(lambda w=widget: w.clear(), False)
 
         # trade volume
-        is_light_line = False
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            sr = candle_data[(symbol, "Volume")]
-            sr = sr.fillna(value=0)
-            data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
-            data_y = sr.to_numpy(dtype=np.float32)
-            widget = self.root.simulation_lines["volume"]
+        sr = candle_data[(symbol, "Volume")]
+        sr = sr.fillna(value=0)
+        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
+        data_y = sr.to_numpy(dtype=np.float32)
+        widget = self.root.simulation_lines["volume"]
 
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
 
-            if not only_light_lines:
-                if stop_flag.find("display_simulation_lines", task_id):
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
+
+        # abstract indicators
+        df = indicators[symbol]["Abstract"]
+        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
+        if not is_fast_strategy:
+            data_x += 5
+        line_list = self.root.simulation_lines["abstract_indicators"]
+        for turn, widget in enumerate(line_list):
+            if turn < len(df.columns):
+                column_name = df.columns[turn]
+                sr = df[column_name]
+                data_y = sr.to_numpy(dtype=np.float32)
+                inside_strings = re.findall(r"\(([^)]+)", column_name)
+                if len(inside_strings) == 0:
+                    color = "#AAAAAA"
+                else:
+                    color = inside_strings[0]
+
+                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
+                    widget.setPen(color)
+                    widget.setData(data_x, data_y)
+
+                if stop_flag.find(task_name, task_id):
                     return
-            self.root.undertake(job, False)
-
-        # abstract indicators indicators
-        is_light_line = True if is_fast_strategy else False
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            df = indicators[symbol]["Abstract"]
-            data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-            if not is_fast_strategy:
-                data_x += 5
-            line_list = self.root.simulation_lines["abstract_indicators"]
-            for turn, widget in enumerate(line_list):
-                if turn < len(df.columns):
-                    column_name = df.columns[turn]
-                    sr = df[column_name]
-                    data_y = sr.to_numpy(dtype=np.float32)
-                    inside_strings = re.findall(r"\(([^)]+)", column_name)
-                    if len(inside_strings) == 0:
-                        color = "#AAAAAA"
-                    else:
-                        color = inside_strings[0]
-
-                    def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
-                        widget.setPen(color)
-                        widget.setData(data_x, data_y)
-
-                    if not only_light_lines:
-                        if stop_flag.find("display_simulation_lines", task_id):
-                            return
-                    self.root.undertake(job, False)
-                elif not only_light_lines:
-                    if not only_light_lines:
-                        if stop_flag.find("display_simulation_lines", task_id):
-                            return
-                    self.root.undertake(lambda w=widget: w.clear(), False)
+                self.root.undertake(job, False)
+            else:
+                if stop_flag.find(task_name, task_id):
+                    return
+                self.root.undertake(lambda w=widget: w.clear(), False)
 
         # asset
-        is_light_line = True
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            data_x = (
-                asset_record["Result Asset"].index.to_numpy(dtype=np.int64) / 10**9
-            )
-            data_y = asset_record["Result Asset"].to_numpy(dtype=np.float32)
-            widget = self.root.simulation_lines["asset"]
+        data_x = asset_record["Result Asset"].index.to_numpy(dtype=np.int64) / 10**9
+        data_y = asset_record["Result Asset"].to_numpy(dtype=np.float32)
+        widget = self.root.simulation_lines["asset"]
 
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
 
-            if not only_light_lines:
-                if stop_flag.find("display_simulation_lines", task_id):
-                    return
-            self.root.undertake(job, False)
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
 
         # asset with unrealized profit
-        is_light_line = False
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            if len(asset_record) >= 2:
-                sr = asset_record["Result Asset"].resample("10S").ffill()
-            unrealized_changes_sr = unrealized_changes.reindex(sr.index)
-            sr = sr * (1 + unrealized_changes_sr)
-            data_x = sr.index.to_numpy(dtype=np.int64) / 10**9 + 5
-            data_y = sr.to_numpy(dtype=np.float32)
-            widget = self.root.simulation_lines["asset_with_unrealized_profit"]
+        if len(asset_record) >= 2:
+            sr = asset_record["Result Asset"].resample("10S").ffill()
+        unrealized_changes_sr = unrealized_changes.reindex(sr.index)
+        sr = sr * (1 + unrealized_changes_sr)
+        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9 + 5
+        data_y = sr.to_numpy(dtype=np.float32)
+        widget = self.root.simulation_lines["asset_with_unrealized_profit"]
 
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
 
-            if not only_light_lines:
-                if stop_flag.find("display_simulation_lines", task_id):
-                    return
-            self.root.undertake(job, False)
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
 
         # buy and sell
-        is_light_line = True
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            df = asset_record.loc[asset_record["Symbol"] == symbol]
-            df = df[df["Side"] == "sell"]
-            sr = df["Fill Price"]
-            data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
-            data_y = sr.to_numpy(dtype=np.float32)
-            widget = self.root.simulation_lines["sell"]
+        df = asset_record.loc[asset_record["Symbol"] == symbol]
+        df = df[df["Side"] == "sell"]
+        sr = df["Fill Price"]
+        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
+        data_y = sr.to_numpy(dtype=np.float32)
+        widget = self.root.simulation_lines["sell"]
 
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
 
-            if not only_light_lines:
-                if stop_flag.find("display_simulation_lines", task_id):
-                    return
-            self.root.undertake(job, False)
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
 
-            df = asset_record.loc[asset_record["Symbol"] == symbol]
-            df = df[df["Side"] == "buy"]
-            sr = df["Fill Price"]
-            data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
-            data_y = sr.to_numpy(dtype=np.float32)
-            widget = self.root.simulation_lines["buy"]
+        df = asset_record.loc[asset_record["Symbol"] == symbol]
+        df = df[df["Side"] == "buy"]
+        sr = df["Fill Price"]
+        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
+        data_y = sr.to_numpy(dtype=np.float32)
+        widget = self.root.simulation_lines["buy"]
 
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
 
-            if not only_light_lines:
-                if stop_flag.find("display_simulation_lines", task_id):
-                    return
-            self.root.undertake(job, False)
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
 
-        # entry price
-        is_light_line = True
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            entry_price = self.account_state["positions"][symbol]["entry_price"]
-            first_moment = self.account_state["observed_until"] - timedelta(hours=12)
-            last_moment = self.account_state["observed_until"] + timedelta(hours=12)
-            if entry_price != 0:
-                data_x = np.linspace(
-                    first_moment.timestamp(), last_moment.timestamp(), num=1000
-                )
-                data_y = np.linspace(entry_price, entry_price, num=1000)
-            else:
-                data_x = []
-                data_y = []
-            widget = self.root.simulation_lines["entry_price"]
+        # ■■■■■ record task duration ■■■■■
 
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
-
-            if not only_light_lines:
-                if stop_flag.find("display_simulation_lines", task_id):
-                    return
-            self.root.undertake(job, False)
+        pass
 
     def erase(self, *args, **kwargs):
 
@@ -1492,27 +1464,6 @@ class Simulator:
             text += f"전략 {strategy}번"
             self.root.undertake(lambda t=text: self.root.label_19.setText(t), False)
 
-    def toggle_vertical_automation(self, *args, **kwargs):
-        state = args[0]
-        if state == QtCore.Qt.CheckState.Checked.value:
-            self.root.plot_widget_2.setMouseEnabled(y=True)
-            self.root.plot_widget_3.setMouseEnabled(y=True)
-            self.root.plot_widget_5.setMouseEnabled(y=True)
-            self.root.plot_widget_7.setMouseEnabled(y=True)
-            self.root.plot_widget_2.enableAutoRange(y=False)
-            self.root.plot_widget_3.enableAutoRange(y=False)
-            self.root.plot_widget_5.enableAutoRange(y=False)
-            self.root.plot_widget_7.enableAutoRange(y=False)
-        else:
-            self.root.plot_widget_2.setMouseEnabled(y=False)
-            self.root.plot_widget_3.setMouseEnabled(y=False)
-            self.root.plot_widget_5.setMouseEnabled(y=False)
-            self.root.plot_widget_7.setMouseEnabled(y=False)
-            self.root.plot_widget_2.enableAutoRange(y=True)
-            self.root.plot_widget_3.enableAutoRange(y=True)
-            self.root.plot_widget_5.enableAutoRange(y=True)
-            self.root.plot_widget_7.enableAutoRange(y=True)
-
     def display_year_range(self, *args, **kwargs):
         range_start = datetime(
             year=self.calculation_settings["year"],
@@ -1689,3 +1640,11 @@ class Simulator:
                 False,
             ]
             self.root.ask(question)
+
+    def toggle_combined_draw(self, *args, **kwargs):
+        state = args[0]
+        if state == QtCore.Qt.CheckState.Checked.value:
+            self.should_draw_combined = True
+        else:
+            self.should_draw_combined = False
+        self.display_lines()

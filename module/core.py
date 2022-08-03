@@ -1111,9 +1111,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             outsource.do(self.lineEdit_6.editingFinished, job)
             job = self.manager.run_script
             outsource.do(self.pushButton.clicked, job)
-            job = self.transactor.toggle_vertical_automation
+            job = self.transactor.toggle_frequent_draw
             outsource.do(self.checkBox_2.stateChanged, job)
-            job = self.simulator.toggle_vertical_automation
+            job = self.simulator.toggle_combined_draw
             outsource.do(self.checkBox_3.stateChanged, job)
             job = self.transactor.display_day_range
             outsource.do(self.pushButton_14.clicked, job)
@@ -1153,12 +1153,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.undertake(job, True)
 
-        done_steps = 0
-
         def job(function):
-            nonlocal done_steps
             function()
-            done_steps += 1
 
         map_result = thread_toss.map_async(job, self.initialize_functions)
 

@@ -338,7 +338,10 @@ AskPopupContent {
              <item>
               <widget class="QCheckBox" name="checkBox_2">
                <property name="text">
-                <string>세로축 자유롭게 탐색하기</string>
+                <string>시시각각 그리기</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -727,7 +730,7 @@ AskPopupContent {
              <item>
               <widget class="QCheckBox" name="checkBox_3">
                <property name="text">
-                <string>세로축 자유롭게 탐색하기</string>
+                <string>한꺼번에 그리기</string>
                </property>
               </widget>
              </item>

@@ -6,7 +6,6 @@ import time
 import webbrowser
 import math
 import re
-from collections import deque
 import pickle
 import copy
 import logging
@@ -48,13 +47,7 @@ class Transactor:
         self.api_requester = ApiRequester()
 
         self.viewing_symbol = standardize.get_basics()["target_symbols"][0]
-
-        self.task_durations = {
-            "decide_transacting_slow": deque(maxlen=360),
-            "display_light_lines": deque(maxlen=60),
-            "decide_transacting_fast": deque(maxlen=1280),
-            "place_order": deque(maxlen=60),
-        }
+        self.should_draw_frequently = True
 
         self.account_state = {
             "observed_until": datetime.now(timezone.utc) - timedelta(days=7),
@@ -148,6 +141,17 @@ class Transactor:
             }
 
         try:
+            self.unrealized_changes = pd.read_pickle(
+                self.workerpath + "/unrealized_changes.pickle"
+            )
+            self.unrealized_changes = self.unrealized_changes.sort_index()
+            self.unrealized_changes = self.unrealized_changes.astype(np.float32)
+        except FileNotFoundError:
+            self.unrealized_changes = pd.Series(
+                index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32
+            )
+
+        try:
             filepath = self.workerpath + "/asset_record.pickle"
             self.asset_record = pd.read_pickle(filepath)
             self.asset_record = self.asset_record.sort_index()
@@ -164,17 +168,6 @@ class Transactor:
                     "Result Asset",
                 ],
                 index=pd.DatetimeIndex([], tz="UTC"),
-            )
-
-        try:
-            self.unrealized_changes = pd.read_pickle(
-                self.workerpath + "/unrealized_changes.pickle"
-            )
-            self.unrealized_changes = self.unrealized_changes.sort_index()
-            self.unrealized_changes = self.unrealized_changes.astype(np.float32)
-        except FileNotFoundError:
-            self.unrealized_changes = pd.Series(
-                index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32
             )
 
         try:
@@ -218,7 +211,14 @@ class Transactor:
             trigger="cron",
             second="*",
             executor="thread_pool_executor",
-            kwargs={"only_light_lines": True},
+            kwargs={"only_light_lines": True, "frequent": True},
+        )
+        self.root.scheduler.add_job(
+            self.display_lines,
+            trigger="cron",
+            second="*/10",
+            executor="thread_pool_executor",
+            kwargs={"periodic": True, "frequent": True},
         )
         self.root.scheduler.add_job(
             self.display_asset_information,
@@ -257,13 +257,6 @@ class Transactor:
             executor="thread_pool_executor",
         )
         self.root.scheduler.add_job(
-            self.display_lines,
-            trigger="cron",
-            second="*/10",
-            executor="thread_pool_executor",
-            kwargs={"periodic": True},
-        )
-        self.root.scheduler.add_job(
             self.watch_binance,
             trigger="cron",
             second="*/10",
@@ -281,6 +274,13 @@ class Transactor:
             hour="*",
             executor="thread_pool_executor",
         )
+        self.root.scheduler.add_job(
+            self.display_lines,
+            trigger="cron",
+            hour="*",
+            executor="thread_pool_executor",
+            kwargs={"periodic": True},
+        )
 
         # ■■■■■ websocket streamings ■■■■■
 
@@ -293,11 +293,11 @@ class Transactor:
 
         # ■■■■■ invoked by the internet connection  ■■■■■
 
-        connected_functrions = [
+        connected_functions = [
             lambda: self.update_user_data_stream(),
             lambda: self.watch_binance(),
         ]
-        check_internet.add_connected_functions(connected_functrions)
+        check_internet.add_connected_functions(connected_functions)
 
         disconnected_functions = []
         check_internet.add_disconnected_functions(disconnected_functions)
@@ -819,14 +819,28 @@ class Transactor:
 
     def display_lines(self, *args, **kwargs):
 
+        # ■■■■■ start the task ■■■■■
+
         periodic = kwargs.get("periodic", False)
+        frequent = kwargs.get("frequent", False)
         only_light_lines = kwargs.get("only_light_lines", False)
 
         if only_light_lines:
-            task_start_time = datetime.now(timezone.utc)
+            task_name = "display_light_transaction_lines"
+        else:
+            task_name = "display_all_transaction_lines"
 
-        if not only_light_lines:
-            task_id = stop_flag.make("display_transaction_lines")
+        task_id = stop_flag.make(task_name)
+
+        # ■■■■■ check frequent drawing ■■■■■
+
+        if frequent:
+            if not self.should_draw_frequently:
+                return
+
+        # ■■■■■ get ready for task duration measurement ■■■■■
+
+        task_start_time = datetime.now(timezone.utc)
 
         # ■■■■■ check if the data exists ■■■■■
 
@@ -834,27 +848,25 @@ class Transactor:
             if len(self.root.collector.candle_data) == 0:
                 return
 
-        # ■■■■■ moment ■■■■■
+        # ■■■■■ wait for the latest data to be added ■■■■■
 
         current_moment = datetime.now(timezone.utc).replace(microsecond=0)
         current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
         before_moment = current_moment - timedelta(seconds=10)
 
-        # ■■■■■ wait for the latest data to be added ■■■■■
-
         if periodic:
             for _ in range(50):
-                if not only_light_lines:
-                    if stop_flag.find("display_transaction_lines", task_id):
-                        return
+                if stop_flag.find(task_name, task_id):
+                    return
                 with self.root.collector.datalocks[0]:
                     last_index = self.root.collector.candle_data.index[-1]
                     if last_index == before_moment:
                         break
                 time.sleep(0.1)
 
-        # ■■■■■ check strategy ■■■■■
+        # ■■■■■ check things ■■■■■
 
+        symbol = self.viewing_symbol
         strategy = self.automation_settings["strategy"]
 
         if strategy == 0:
@@ -865,27 +877,7 @@ class Transactor:
                     strategy_details = strategy_tuple[2]
         is_fast_strategy = strategy_details[3]
 
-        # ■■■■■ get the data ■■■■■
-
-        symbol = self.viewing_symbol
-
-        if not only_light_lines:
-            if is_fast_strategy:
-                candle_data = pd.DataFrame(
-                    columns=pd.MultiIndex.from_product(
-                        [
-                            standardize.get_basics()["target_symbols"],
-                            ("Open", "High", "Low", "Close", "Volume"),
-                        ]
-                    ),
-                    dtype=np.float32,
-                    index=pd.DatetimeIndex([], tz="UTC"),
-                )
-            else:
-                with self.root.collector.datalocks[0]:
-                    df = self.root.collector.candle_data
-                    df = df.iloc[-2 * 10**5 :][[symbol]].copy()
-                    candle_data = df
+        # ■■■■■ get light data ■■■■■
 
         with self.root.collector.datalocks[1]:
             before_chunk = self.root.collector.realtime_data_chunks[-2].copy()
@@ -899,37 +891,189 @@ class Transactor:
         with self.datalocks[1]:
             asset_record = self.asset_record.copy()
 
-        # ■■■■■ make indicators ■■■■■
+        # ■■■■■ draw light lines ■■■■■
 
-        indicators_script = self.root.strategist.indicators_script
-        compiled_indicators_script = compile(indicators_script, "<string>", "exec")
+        # mark price
+        data_x = realtime_data["index"].astype(np.int64) / 10**9
+        data_y = realtime_data[str((symbol, "Mark Price"))]
+        mask = data_y != 0
+        data_y = data_y[mask]
+        data_x = data_x[mask]
+        widget = self.root.transaction_lines["mark_price"]
+
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
+
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
+
+        # last price
+        data_x = aggregate_trades["index"].astype(np.int64) / 10**9
+        data_y = aggregate_trades[str((symbol, "Price"))]
+        mask = data_y != 0
+        data_y = data_y[mask]
+        data_x = data_x[mask]
+        widget = self.root.transaction_lines["last_price"]
+
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
+
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
+
+        # last trade volume
+        index_ar = aggregate_trades["index"].astype(np.int64) / 10**9
+        value_ar = aggregate_trades[str((symbol, "Volume"))]
+        mask = value_ar != 0
+        index_ar = index_ar[mask]
+        value_ar = value_ar[mask]
+        length = len(index_ar)
+        zero_ar = np.zeros(length)
+        nan_ar = np.empty(length)
+        nan_ar[:] = np.nan
+        data_x = np.repeat(index_ar, 3)
+        data_y = np.stack([nan_ar, zero_ar, value_ar], axis=1).reshape(-1)
+        widget = self.root.transaction_lines["last_volume"]
+
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
+
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
+
+        # book tickers
+        data_x = realtime_data["index"].astype(np.int64) / 10**9
+        data_y = realtime_data[str((symbol, "Best Bid Price"))]
+        mask = data_y != 0
+        data_y = data_y[mask]
+        data_x = data_x[mask]
+        widget = self.root.transaction_lines["book_tickers"][0]
+
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
+
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
+
+        data_x = realtime_data["index"].astype(np.int64) / 10**9
+        data_y = realtime_data[str((symbol, "Best Ask Price"))]
+        mask = data_y != 0
+        data_y = data_y[mask]
+        data_x = data_x[mask]
+        widget = self.root.transaction_lines["book_tickers"][1]
+
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
+
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
+
+        # open orders
+        boundaries = [
+            open_order["boundary"]
+            for open_order in self.account_state["open_orders"][symbol].values()
+            if "boundary" in open_order
+        ]
+        first_moment = self.account_state["observed_until"] - timedelta(hours=12)
+        last_moment = self.account_state["observed_until"] + timedelta(hours=12)
+        for turn, widget in enumerate(self.root.transaction_lines["boundaries"]):
+            if turn < len(boundaries):
+                boundary = boundaries[turn]
+                data_x = np.linspace(
+                    first_moment.timestamp(), last_moment.timestamp(), num=1000
+                )
+                data_y = np.linspace(boundary, boundary, num=1000)
+                widget = self.root.transaction_lines["boundaries"][turn]
+
+                def job(widget=widget, data_x=data_x, data_y=data_y):
+                    widget.setData(data_x, data_y)
+
+                if stop_flag.find(task_name, task_id):
+                    return
+                self.root.undertake(job, False)
+            else:
+                if stop_flag.find(task_name, task_id):
+                    return
+                self.root.undertake(lambda w=widget: w.clear(), False)
+
+        # entry price
+        entry_price = self.account_state["positions"][symbol]["entry_price"]
+        first_moment = self.account_state["observed_until"] - timedelta(hours=12)
+        last_moment = self.account_state["observed_until"] + timedelta(hours=12)
+        if entry_price != 0:
+            data_x = np.linspace(
+                first_moment.timestamp(), last_moment.timestamp(), num=1000
+            )
+            data_y = np.linspace(entry_price, entry_price, num=1000)
+        else:
+            data_x = []
+            data_y = []
+        widget = self.root.transaction_lines["entry_price"]
+
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
+
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
+
+        # ■■■■■ record task duration ■■■■■
+
+        if only_light_lines:
+            duration = (datetime.now(timezone.utc) - task_start_time).total_seconds()
+            remember_task_durations.add(task_name, duration)
+
+        # ■■■■■ stop if the target is only light lines ■■■■■
+
+        if only_light_lines:
+            return
+
+        # ■■■■■ get heavy data ■■■■■
 
         if is_fast_strategy:
-            observed_data = process_toss.apply(digitize.do, realtime_data)
-            observed_data = observed_data.iloc[-3600 * 10 :]  # recent one hour
-            indicators = process_toss.apply(
-                make_indicators.do,
-                observed_data=observed_data,
-                strategy=strategy,
-                compiled_custom_script=compiled_indicators_script,
+            candle_data = pd.DataFrame(
+                columns=pd.MultiIndex.from_product(
+                    [
+                        standardize.get_basics()["target_symbols"],
+                        ("Open", "High", "Low", "Close", "Volume"),
+                    ]
+                ),
+                dtype=np.float32,
+                index=pd.DatetimeIndex([], tz="UTC"),
             )
         else:
-            if not only_light_lines:
-                indicators = process_toss.apply(
-                    make_indicators.do,
-                    observed_data=candle_data,
-                    strategy=strategy,
-                    compiled_custom_script=compiled_indicators_script,
-                )
+            with self.root.collector.datalocks[0]:
+                candle_data = self.root.collector.candle_data.copy()
 
-        # ■■■■■ add the right end ■■■■■
+        # ■■■■■ maniuplate heavy data ■■■■■
 
-        if not only_light_lines:
-            if len(candle_data) > 0:
-                last_written_moment = candle_data.index[-1]
-                new_moment = last_written_moment + timedelta(seconds=10)
-                new_index = candle_data.index.union([new_moment])
-                candle_data = candle_data.reindex(new_index)
+        # range cut
+
+        slice_from = datetime.now(timezone.utc)
+        slice_from -= timedelta(hours=24)
+        year = datetime.now(timezone.utc).year
+
+        if self.should_draw_frequently:
+            candle_data = candle_data[slice_from:][[symbol]]
+            asset_record = asset_record[slice_from:]
+        else:
+            mask = candle_data.index.year == year
+            candle_data = candle_data[mask][[symbol]]
+            mask = asset_record.index.year == year
+            asset_record = asset_record[mask]
+
+        # add the right end
+
+        if len(candle_data) > 0:
+            last_written_moment = candle_data.index[-1]
+            new_moment = last_written_moment + timedelta(seconds=10)
+            new_index = candle_data.index.union([new_moment])
+            candle_data = candle_data.reindex(new_index)
 
         observed_until = self.account_state["observed_until"]
         if len(asset_record) > 0:
@@ -937,487 +1081,311 @@ class Transactor:
             final_asset = asset_record.loc[final_index, "Result Asset"]
             asset_record.loc[observed_until, "Cause"] = "other"
             asset_record.loc[observed_until, "Result Asset"] = final_asset
+            asset_record = asset_record.sort_index()
 
-        # ■■■■■ draw ■■■■■
+        # ■■■■■ make indicators ■■■■■
 
-        # mark price
-        is_light_line = True
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            data_x = realtime_data["index"].astype(np.int64) / 10**9
-            data_y = realtime_data[str((symbol, "Mark Price"))]
-            mask = data_y != 0
-            data_y = data_y[mask]
-            data_x = data_x[mask]
-            widget = self.root.transaction_lines["mark_price"]
+        indicators_script = self.root.strategist.indicators_script
+        compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
+        if is_fast_strategy:
+            observed_data = process_toss.apply(digitize.do, realtime_data)
+            indicators = process_toss.apply(
+                make_indicators.do,
+                observed_data=observed_data,
+                strategy=strategy,
+                compiled_custom_script=compiled_indicators_script,
+            )
+        else:
+            indicators = process_toss.apply(
+                make_indicators.do,
+                observed_data=candle_data,
+                strategy=strategy,
+                compiled_custom_script=compiled_indicators_script,
+            )
 
-            if not only_light_lines:
-                if stop_flag.find("display_transaction_lines", task_id):
-                    return
-            self.root.undertake(job, False)
-
-        # last price
-        is_light_line = True
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            data_x = aggregate_trades["index"].astype(np.int64) / 10**9
-            data_y = aggregate_trades[str((symbol, "Price"))]
-            mask = data_y != 0
-            data_y = data_y[mask]
-            data_x = data_x[mask]
-            widget = self.root.transaction_lines["last_price"]
-
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
-
-            if not only_light_lines:
-                if stop_flag.find("display_transaction_lines", task_id):
-                    return
-            self.root.undertake(job, False)
-
-        # last trade volume
-        is_light_line = True
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            index_ar = aggregate_trades["index"].astype(np.int64) / 10**9
-            value_ar = aggregate_trades[str((symbol, "Volume"))]
-            mask = value_ar != 0
-            index_ar = index_ar[mask]
-            value_ar = value_ar[mask]
-            length = len(index_ar)
-            zero_ar = np.zeros(length)
-            nan_ar = np.empty(length)
-            nan_ar[:] = np.nan
-            data_x = np.repeat(index_ar, 3)
-            data_y = np.stack([nan_ar, zero_ar, value_ar], axis=1).reshape(-1)
-            widget = self.root.transaction_lines["last_volume"]
-
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
-
-            if not only_light_lines:
-                if stop_flag.find("display_transaction_lines", task_id):
-                    return
-            self.root.undertake(job, False)
-
-        # book tickers
-        is_light_line = True
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            data_x = realtime_data["index"].astype(np.int64) / 10**9
-            data_y = realtime_data[str((symbol, "Best Bid Price"))]
-            mask = data_y != 0
-            data_y = data_y[mask]
-            data_x = data_x[mask]
-            widget = self.root.transaction_lines["book_tickers"][0]
-
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
-
-            if not only_light_lines:
-                if stop_flag.find("display_transaction_lines", task_id):
-                    return
-            self.root.undertake(job, False)
-
-            data_x = realtime_data["index"].astype(np.int64) / 10**9
-            data_y = realtime_data[str((symbol, "Best Ask Price"))]
-            mask = data_y != 0
-            data_y = data_y[mask]
-            data_x = data_x[mask]
-            widget = self.root.transaction_lines["book_tickers"][1]
-
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
-
-            if not only_light_lines:
-                if stop_flag.find("display_transaction_lines", task_id):
-                    return
-            self.root.undertake(job, False)
+        # ■■■■■ draw heavy lines ■■■■■
 
         # price indicators
-        is_light_line = True if is_fast_strategy else False
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            df = indicators[symbol]["Price"]
-            data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-            if not is_fast_strategy:
-                data_x += 5
-            line_list = self.root.transaction_lines["price_indicators"]
-            for turn, widget in enumerate(line_list):
-                if turn < len(df.columns):
-                    column_name = df.columns[turn]
-                    sr = df[column_name]
-                    data_y = sr.to_numpy(dtype=np.float32)
-                    inside_strings = re.findall(r"\(([^)]+)", column_name)
-                    if len(inside_strings) == 0:
-                        color = "#AAAAAA"
-                    else:
-                        color = inside_strings[0]
+        df = indicators[symbol]["Price"]
+        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
+        if not is_fast_strategy:
+            data_x += 5
+        line_list = self.root.transaction_lines["price_indicators"]
+        for turn, widget in enumerate(line_list):
+            if turn < len(df.columns):
+                column_name = df.columns[turn]
+                sr = df[column_name]
+                data_y = sr.to_numpy(dtype=np.float32)
+                inside_strings = re.findall(r"\(([^)]+)", column_name)
+                if len(inside_strings) == 0:
+                    color = "#AAAAAA"
+                else:
+                    color = inside_strings[0]
 
-                    def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
-                        widget.setPen(color)
-                        widget.setData(data_x, data_y)
+                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
+                    widget.setPen(color)
+                    widget.setData(data_x, data_y)
 
-                    if not only_light_lines:
-                        if stop_flag.find("display_transaction_lines", task_id):
-                            return
-                    self.root.undertake(job, False)
-                elif not only_light_lines:
-                    if not only_light_lines:
-                        if stop_flag.find("display_transaction_lines", task_id):
-                            return
-                    self.root.undertake(lambda w=widget: w.clear(), False)
+                if stop_flag.find(task_name, task_id):
+                    return
+                self.root.undertake(job, False)
+            else:
+                if stop_flag.find(task_name, task_id):
+                    return
+                self.root.undertake(lambda w=widget: w.clear(), False)
 
         # price movement
-        is_light_line = False
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
-            open_ar = candle_data[(symbol, "Open")].to_numpy()
-            close_ar = candle_data[(symbol, "Close")].to_numpy()
-            high_ar = candle_data[(symbol, "High")].to_numpy()
-            low_ar = candle_data[(symbol, "Low")].to_numpy()
-            rise_ar = close_ar > open_ar
-            length = len(index_ar)
-            nan_ar = np.empty(length)
-            nan_ar[:] = np.nan
+        index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
+        open_ar = candle_data[(symbol, "Open")].to_numpy()
+        close_ar = candle_data[(symbol, "Close")].to_numpy()
+        high_ar = candle_data[(symbol, "High")].to_numpy()
+        low_ar = candle_data[(symbol, "Low")].to_numpy()
+        rise_ar = close_ar > open_ar
+        length = len(index_ar)
+        nan_ar = np.empty(length)
+        nan_ar[:] = np.nan
 
-            data_x = np.stack(
-                [
-                    index_ar[rise_ar] + 2,
-                    index_ar[rise_ar] + 5,
-                    index_ar[rise_ar],
-                    index_ar[rise_ar] + 5,
-                    index_ar[rise_ar] + 8,
-                    index_ar[rise_ar],
-                    index_ar[rise_ar] + 5,
-                    index_ar[rise_ar] + 5,
-                    index_ar[rise_ar],
-                ],
-                axis=1,
-            ).reshape(-1)
-            data_y = np.stack(
-                [
-                    open_ar[rise_ar],
-                    open_ar[rise_ar],
-                    nan_ar[rise_ar],
-                    close_ar[rise_ar],
-                    close_ar[rise_ar],
-                    nan_ar[rise_ar],
-                    high_ar[rise_ar],
-                    low_ar[rise_ar],
-                    nan_ar[rise_ar],
-                ],
-                axis=1,
-            ).reshape(-1)
-            widget = self.root.transaction_lines["price_up"]
+        data_x = np.stack(
+            [
+                index_ar[rise_ar] + 2,
+                index_ar[rise_ar] + 5,
+                index_ar[rise_ar],
+                index_ar[rise_ar] + 5,
+                index_ar[rise_ar] + 8,
+                index_ar[rise_ar],
+                index_ar[rise_ar] + 5,
+                index_ar[rise_ar] + 5,
+                index_ar[rise_ar],
+            ],
+            axis=1,
+        ).reshape(-1)
+        data_y = np.stack(
+            [
+                open_ar[rise_ar],
+                open_ar[rise_ar],
+                nan_ar[rise_ar],
+                close_ar[rise_ar],
+                close_ar[rise_ar],
+                nan_ar[rise_ar],
+                high_ar[rise_ar],
+                low_ar[rise_ar],
+                nan_ar[rise_ar],
+            ],
+            axis=1,
+        ).reshape(-1)
+        widget = self.root.transaction_lines["price_up"]
 
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
 
-            if not only_light_lines:
-                if stop_flag.find("display_transaction_lines", task_id):
-                    return
-            self.root.undertake(job, False)
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
 
-            data_x = np.stack(
-                [
-                    index_ar[~rise_ar] + 2,
-                    index_ar[~rise_ar] + 5,
-                    index_ar[~rise_ar],
-                    index_ar[~rise_ar] + 5,
-                    index_ar[~rise_ar] + 8,
-                    index_ar[~rise_ar],
-                    index_ar[~rise_ar] + 5,
-                    index_ar[~rise_ar] + 5,
-                    index_ar[~rise_ar],
-                ],
-                axis=1,
-            ).reshape(-1)
-            data_y = np.stack(
-                [
-                    open_ar[~rise_ar],
-                    open_ar[~rise_ar],
-                    nan_ar[~rise_ar],
-                    close_ar[~rise_ar],
-                    close_ar[~rise_ar],
-                    nan_ar[~rise_ar],
-                    high_ar[~rise_ar],
-                    low_ar[~rise_ar],
-                    nan_ar[~rise_ar],
-                ],
-                axis=1,
-            ).reshape(-1)
-            widget = self.root.transaction_lines["price_down"]
+        data_x = np.stack(
+            [
+                index_ar[~rise_ar] + 2,
+                index_ar[~rise_ar] + 5,
+                index_ar[~rise_ar],
+                index_ar[~rise_ar] + 5,
+                index_ar[~rise_ar] + 8,
+                index_ar[~rise_ar],
+                index_ar[~rise_ar] + 5,
+                index_ar[~rise_ar] + 5,
+                index_ar[~rise_ar],
+            ],
+            axis=1,
+        ).reshape(-1)
+        data_y = np.stack(
+            [
+                open_ar[~rise_ar],
+                open_ar[~rise_ar],
+                nan_ar[~rise_ar],
+                close_ar[~rise_ar],
+                close_ar[~rise_ar],
+                nan_ar[~rise_ar],
+                high_ar[~rise_ar],
+                low_ar[~rise_ar],
+                nan_ar[~rise_ar],
+            ],
+            axis=1,
+        ).reshape(-1)
+        widget = self.root.transaction_lines["price_down"]
 
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
 
-            if not only_light_lines:
-                if stop_flag.find("display_transaction_lines", task_id):
-                    return
-            self.root.undertake(job, False)
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
 
         # wobbles
-        is_light_line = False
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            sr = candle_data[(symbol, "High")]
-            data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
-            data_y = sr.to_numpy(dtype=np.float32)
-            widget = self.root.transaction_lines["wobbles"][0]
+        sr = candle_data[(symbol, "High")]
+        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
+        data_y = sr.to_numpy(dtype=np.float32)
+        widget = self.root.transaction_lines["wobbles"][0]
 
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
 
-            if not only_light_lines:
-                if stop_flag.find("display_transaction_lines", task_id):
-                    return
-            self.root.undertake(job, False)
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
 
-            sr = candle_data[(symbol, "Low")]
-            data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
-            data_y = sr.to_numpy(dtype=np.float32)
-            widget = self.root.transaction_lines["wobbles"][1]
+        sr = candle_data[(symbol, "Low")]
+        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
+        data_y = sr.to_numpy(dtype=np.float32)
+        widget = self.root.transaction_lines["wobbles"][1]
 
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
 
-            if not only_light_lines:
-                if stop_flag.find("display_transaction_lines", task_id):
-                    return
-            self.root.undertake(job, False)
-
-        # open orders
-        is_light_line = True
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            boundaries = [
-                open_order["boundary"]
-                for open_order in self.account_state["open_orders"][symbol].values()
-                if "boundary" in open_order
-            ]
-            first_moment = self.account_state["observed_until"] - timedelta(hours=12)
-            last_moment = self.account_state["observed_until"] + timedelta(hours=12)
-            for turn, widget in enumerate(self.root.transaction_lines["boundaries"]):
-                if turn < len(boundaries):
-                    boundary = boundaries[turn]
-                    data_x = np.linspace(
-                        first_moment.timestamp(), last_moment.timestamp(), num=1000
-                    )
-                    data_y = np.linspace(boundary, boundary, num=1000)
-                    widget = self.root.transaction_lines["boundaries"][turn]
-
-                    def job(widget=widget, data_x=data_x, data_y=data_y):
-                        widget.setData(data_x, data_y)
-
-                    if not only_light_lines:
-                        if stop_flag.find("display_transaction_lines", task_id):
-                            return
-                    self.root.undertake(job, False)
-                elif not only_light_lines:
-                    if not only_light_lines:
-                        if stop_flag.find("display_transaction_lines", task_id):
-                            return
-                    self.root.undertake(lambda w=widget: w.clear(), False)
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
 
         # trade volume indicators
-        is_light_line = True if is_fast_strategy else False
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            df = indicators[symbol]["Volume"]
-            data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-            if not is_fast_strategy:
-                data_x += 5
-            line_list = self.root.transaction_lines["volume_indicators"]
-            for turn, widget in enumerate(line_list):
-                if turn < len(df.columns):
-                    column_name = df.columns[turn]
-                    sr = df[column_name]
-                    data_y = sr.to_numpy(dtype=np.float32)
-                    inside_strings = re.findall(r"\(([^)]+)", column_name)
-                    if len(inside_strings) == 0:
-                        color = "#AAAAAA"
-                    else:
-                        color = inside_strings[0]
+        df = indicators[symbol]["Volume"]
+        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
+        if not is_fast_strategy:
+            data_x += 5
+        line_list = self.root.transaction_lines["volume_indicators"]
+        for turn, widget in enumerate(line_list):
+            if turn < len(df.columns):
+                column_name = df.columns[turn]
+                sr = df[column_name]
+                data_y = sr.to_numpy(dtype=np.float32)
+                inside_strings = re.findall(r"\(([^)]+)", column_name)
+                if len(inside_strings) == 0:
+                    color = "#AAAAAA"
+                else:
+                    color = inside_strings[0]
 
-                    def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
-                        widget.setPen(color)
-                        widget.setData(data_x, data_y)
+                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
+                    widget.setPen(color)
+                    widget.setData(data_x, data_y)
 
-                    if not only_light_lines:
-                        if stop_flag.find("display_transaction_lines", task_id):
-                            return
-                    self.root.undertake(job, False)
-                elif not only_light_lines:
-                    if not only_light_lines:
-                        if stop_flag.find("display_transaction_lines", task_id):
-                            return
-                    self.root.undertake(lambda w=widget: w.clear(), False)
+                if stop_flag.find(task_name, task_id):
+                    return
+                self.root.undertake(job, False)
+            else:
+                if stop_flag.find(task_name, task_id):
+                    return
+                self.root.undertake(lambda w=widget: w.clear(), False)
 
         # trade volume
-        is_light_line = False
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            sr = candle_data[(symbol, "Volume")]
-            sr = sr.fillna(value=0)
-            data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
-            data_y = sr.to_numpy(dtype=np.float32)
-            widget = self.root.transaction_lines["volume"]
+        sr = candle_data[(symbol, "Volume")]
+        sr = sr.fillna(value=0)
+        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
+        data_y = sr.to_numpy(dtype=np.float32)
+        widget = self.root.transaction_lines["volume"]
 
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
 
-            if not only_light_lines:
-                if stop_flag.find("display_transaction_lines", task_id):
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
+
+        # abstract indicators
+        df = indicators[symbol]["Abstract"]
+        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
+        if not is_fast_strategy:
+            data_x += 5
+        line_list = self.root.transaction_lines["abstract_indicators"]
+        for turn, widget in enumerate(line_list):
+            if turn < len(df.columns):
+                column_name = df.columns[turn]
+                sr = df[column_name]
+                data_y = sr.to_numpy(dtype=np.float32)
+                inside_strings = re.findall(r"\(([^)]+)", column_name)
+                if len(inside_strings) == 0:
+                    color = "#AAAAAA"
+                else:
+                    color = inside_strings[0]
+
+                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
+                    widget.setPen(color)
+                    widget.setData(data_x, data_y)
+
+                if stop_flag.find(task_name, task_id):
                     return
-            self.root.undertake(job, False)
-
-        # abstract indicators indicators
-        is_light_line = True if is_fast_strategy else False
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            df = indicators[symbol]["Abstract"]
-            data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-            if not is_fast_strategy:
-                data_x += 5
-            line_list = self.root.transaction_lines["abstract_indicators"]
-            for turn, widget in enumerate(line_list):
-                if turn < len(df.columns):
-                    column_name = df.columns[turn]
-                    sr = df[column_name]
-                    data_y = sr.to_numpy(dtype=np.float32)
-                    inside_strings = re.findall(r"\(([^)]+)", column_name)
-                    if len(inside_strings) == 0:
-                        color = "#AAAAAA"
-                    else:
-                        color = inside_strings[0]
-
-                    def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
-                        widget.setPen(color)
-                        widget.setData(data_x, data_y)
-
-                    if not only_light_lines:
-                        if stop_flag.find("display_transaction_lines", task_id):
-                            return
-                    self.root.undertake(job, False)
-                elif not only_light_lines:
-                    if not only_light_lines:
-                        if stop_flag.find("display_transaction_lines", task_id):
-                            return
-                    self.root.undertake(lambda w=widget: w.clear(), False)
+                self.root.undertake(job, False)
+            else:
+                if stop_flag.find(task_name, task_id):
+                    return
+                self.root.undertake(lambda w=widget: w.clear(), False)
 
         # asset
-        is_light_line = True
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            data_x = (
-                asset_record["Result Asset"].index.to_numpy(dtype=np.int64) / 10**9
-            )
-            data_y = asset_record["Result Asset"].to_numpy(dtype=np.float32)
-            widget = self.root.transaction_lines["asset"]
+        data_x = asset_record["Result Asset"].index.to_numpy(dtype=np.int64) / 10**9
+        data_y = asset_record["Result Asset"].to_numpy(dtype=np.float32)
+        widget = self.root.transaction_lines["asset"]
 
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
 
-            if not only_light_lines:
-                if stop_flag.find("display_transaction_lines", task_id):
-                    return
-            self.root.undertake(job, False)
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
 
         # asset with unrealized profit
-        is_light_line = False
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            if len(asset_record["Result Asset"]) >= 2:
-                sr = asset_record["Result Asset"].resample("10S").ffill()
-            unrealized_changes_sr = unrealized_changes.reindex(sr.index)
-            sr = sr * (1 + unrealized_changes_sr)
-            data_x = sr.index.to_numpy(dtype=np.int64) / 10**9 + 5
-            data_y = sr.to_numpy(dtype=np.float32)
-            widget = self.root.transaction_lines["asset_with_unrealized_profit"]
+        if len(asset_record["Result Asset"]) >= 2:
+            sr = asset_record["Result Asset"].resample("10S").ffill()
+        unrealized_changes_sr = unrealized_changes.reindex(sr.index)
+        sr = sr * (1 + unrealized_changes_sr)
+        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9 + 5
+        data_y = sr.to_numpy(dtype=np.float32)
+        widget = self.root.transaction_lines["asset_with_unrealized_profit"]
 
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
 
-            if not only_light_lines:
-                if stop_flag.find("display_transaction_lines", task_id):
-                    return
-            self.root.undertake(job, False)
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
 
         # buy and sell
-        is_light_line = True
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            df = asset_record.loc[asset_record["Symbol"] == symbol]
-            df = df[df["Side"] == "sell"]
-            sr = df["Fill Price"]
-            data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
-            data_y = sr.to_numpy(dtype=np.float32)
-            widget = self.root.transaction_lines["sell"]
+        df = asset_record.loc[asset_record["Symbol"] == symbol]
+        df = df[df["Side"] == "sell"]
+        sr = df["Fill Price"]
+        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
+        data_y = sr.to_numpy(dtype=np.float32)
+        widget = self.root.transaction_lines["sell"]
 
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
 
-            if not only_light_lines:
-                if stop_flag.find("display_transaction_lines", task_id):
-                    return
-            self.root.undertake(job, False)
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
 
-            df = asset_record.loc[asset_record["Symbol"] == symbol]
-            df = df[df["Side"] == "buy"]
-            sr = df["Fill Price"]
-            data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
-            data_y = sr.to_numpy(dtype=np.float32)
-            widget = self.root.transaction_lines["buy"]
+        df = asset_record.loc[asset_record["Symbol"] == symbol]
+        df = df[df["Side"] == "buy"]
+        sr = df["Fill Price"]
+        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
+        data_y = sr.to_numpy(dtype=np.float32)
+        widget = self.root.transaction_lines["buy"]
 
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
 
-            if not only_light_lines:
-                if stop_flag.find("display_transaction_lines", task_id):
-                    return
-            self.root.undertake(job, False)
-
-        # entry price
-        is_light_line = True
-        if (only_light_lines and is_light_line) or not only_light_lines:
-            entry_price = self.account_state["positions"][symbol]["entry_price"]
-            first_moment = self.account_state["observed_until"] - timedelta(hours=12)
-            last_moment = self.account_state["observed_until"] + timedelta(hours=12)
-            if entry_price != 0:
-                data_x = np.linspace(
-                    first_moment.timestamp(), last_moment.timestamp(), num=1000
-                )
-                data_y = np.linspace(entry_price, entry_price, num=1000)
-            else:
-                data_x = []
-                data_y = []
-            widget = self.root.transaction_lines["entry_price"]
-
-            def job(widget=widget, data_x=data_x, data_y=data_y):
-                widget.setData(data_x, data_y)
-
-            if not only_light_lines:
-                if stop_flag.find("display_transaction_lines", task_id):
-                    return
-            self.root.undertake(job, False)
+        if stop_flag.find(task_name, task_id):
+            return
+        self.root.undertake(job, False)
 
         # ■■■■■ record task duration ■■■■■
 
-        if only_light_lines:
-            duration = (datetime.now(timezone.utc) - task_start_time).total_seconds()
-            remember_task_durations.add("display_light_lines", duration)
+        duration = (datetime.now(timezone.utc) - task_start_time).total_seconds()
+        remember_task_durations.add(task_name, duration)
 
-    def toggle_vertical_automation(self, *args, **kwargs):
+    def toggle_frequent_draw(self, *args, **kwargs):
         state = args[0]
         if state == QtCore.Qt.CheckState.Checked.value:
-            self.root.plot_widget.setMouseEnabled(y=True)
-            self.root.plot_widget_1.setMouseEnabled(y=True)
-            self.root.plot_widget_4.setMouseEnabled(y=True)
-            self.root.plot_widget_6.setMouseEnabled(y=True)
-            self.root.plot_widget.enableAutoRange(y=False)
-            self.root.plot_widget_1.enableAutoRange(y=False)
-            self.root.plot_widget_4.enableAutoRange(y=False)
-            self.root.plot_widget_6.enableAutoRange(y=False)
+            self.should_draw_frequently = True
         else:
-            self.root.plot_widget.setMouseEnabled(y=False)
-            self.root.plot_widget_1.setMouseEnabled(y=False)
-            self.root.plot_widget_4.setMouseEnabled(y=False)
-            self.root.plot_widget_6.setMouseEnabled(y=False)
-            self.root.plot_widget.enableAutoRange(y=True)
-            self.root.plot_widget_1.enableAutoRange(y=True)
-            self.root.plot_widget_4.enableAutoRange(y=True)
-            self.root.plot_widget_6.enableAutoRange(y=True)
+            self.should_draw_frequently = False
+        self.display_lines()
 
     def update_viewing_symbol(self, *args, **kwargs):
         def job():
@@ -2010,12 +1978,12 @@ class Transactor:
 
         # ■■■■■ make an asset trace if it's blank ■■■■■
 
-        if len(self.asset_record) == 0:
-            for about_asset in about_account["assets"]:
-                if about_asset["asset"] == standardize.get_basics()["asset_token"]:
-                    break
-            wallet_balance = float(about_asset["walletBalance"])
-            with self.datalocks[1]:
+        with self.datalocks[1]:
+            if len(self.asset_record) == 0:
+                for about_asset in about_account["assets"]:
+                    if about_asset["asset"] == standardize.get_basics()["asset_token"]:
+                        break
+                wallet_balance = float(about_asset["walletBalance"])
                 current_time = datetime.now(timezone.utc)
                 self.asset_record.loc[current_time, "Cause"] = "other"
                 self.asset_record.loc[current_time, "Result Asset"] = wallet_balance
@@ -2028,8 +1996,9 @@ class Transactor:
                 break
         wallet_balance = float(about_asset["walletBalance"])
 
-        last_index = self.asset_record.index[-1]
-        last_asset = self.asset_record.loc[last_index, "Result Asset"]
+        with self.datalocks[1]:
+            last_index = self.asset_record.index[-1]
+            last_asset = self.asset_record.loc[last_index, "Result Asset"]
 
         if wallet_balance == 0:
             pass
@@ -2040,6 +2009,7 @@ class Transactor:
                 current_time = datetime.now(timezone.utc)
                 self.asset_record.loc[current_time, "Cause"] = "other"
                 self.asset_record.loc[current_time, "Result Asset"] = wallet_balance
+                self.asset_record = self.asset_record.sort_index()
                 self.asset_record.to_pickle(self.workerpath + "/asset_record.pickle")
         else:
             # when the difference is small enough to consider as an numeric error

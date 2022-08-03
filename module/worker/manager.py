@@ -131,8 +131,8 @@ class Manager:
 
         # ■■■■■ invoked by the internet connection  ■■■■■
 
-        connected_functrions = []
-        check_internet.add_connected_functions(connected_functrions)
+        connected_functions = []
+        check_internet.add_connected_functions(connected_functions)
 
         disconnected_functions = []
         check_internet.add_disconnected_functions(disconnected_functions)
