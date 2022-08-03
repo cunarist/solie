@@ -1922,7 +1922,7 @@ class Transactor:
         for about_asset in about_account["assets"]:
             if about_asset["asset"] == standardize.get_basics()["asset_token"]:
                 break
-        # walletBalance에 미실현 수익은 포함되지 않음
+        # unrealized profit is not included in walletBalance
         wallet_balance = float(about_asset["walletBalance"])
         if wallet_balance != 0:
             unrealized_profit = float(about_asset["unrealizedProfit"])
