@@ -359,7 +359,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.verticalLayout_14.addWidget(text_label)
             spacing_text = QtWidgets.QLabel("")
             spacing_text_font = QtGui.QFont()
-            spacing_text_font.setPointSize(3)
+            spacing_text_font.setPointSize(1)
             spacing_text.setFont(spacing_text_font)
             self.verticalLayout_14.addWidget(spacing_text)
             this_layout = QtWidgets.QHBoxLayout()
@@ -371,7 +371,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             this_layout.addWidget(divider)
             spacing_text = QtWidgets.QLabel("")
             spacing_text_font = QtGui.QFont()
-            spacing_text_font.setPointSize(3)
+            spacing_text_font.setPointSize(2)
             spacing_text.setFont(spacing_text_font)
             self.verticalLayout_14.addWidget(spacing_text)
 
