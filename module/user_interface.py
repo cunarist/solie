@@ -12,74 +12,80 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1280, 800)
-        MainWindow.setMinimumSize(QtCore.QSize(1280, 800))
+        MainWindow.resize(1280, 720)
+        MainWindow.setMinimumSize(QtCore.QSize(1280, 720))
         font = QtGui.QFont()
         MainWindow.setFont(font)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("craft\\../resource/image_logo.png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon.addPixmap(
+            QtGui.QPixmap("craft\\../resource/image_logo.png"),
+            QtGui.QIcon.Mode.Normal,
+            QtGui.QIcon.State.Off,
+        )
         MainWindow.setWindowIcon(icon)
-        MainWindow.setStyleSheet("QPushButton, QComboBox, QLineEdit, QCheckBox, QSpinBox, QDoubleSpinBox {\n"
-"    height: 1.8em;\n"
-"}\n"
-"\n"
-"QPushButton, QComboBox, QLineEdit {\n"
-"    padding-right: 0.8em;\n"
-"    padding-left: 0.8em;\n"
-"}\n"
-"\n"
-"QTabWidget::tab-bar {\n"
-"    alignment: center;\n"
-"}\n"
-"\n"
-"QProgressBar {\n"
-"    height: 0.4em;\n"
-"}\n"
-"\n"
-"QMenu {\n"
-"    padding-top: 0.6em;\n"
-"    padding-bottom: 0.6em;\n"
-"}\n"
-"\n"
-"QMenu::separator {\n"
-"       height: 1em;\n"
-"}\n"
-"\n"
-"QSplitter::handle {\n"
-"    background-color: #FCFCFC;\n"
-"}\n"
-"\n"
-"ScriptEditor, LogList {\n"
-"    background-color: #F5F2F0;\n"
-"    border-radius: 0.2em;\n"
-"    border: 1px solid rgba(0,0,0,0.1);\n"
-"}\n"
-"\n"
-"SymbolBox {\n"
-"    min-width: 10em;\n"
-"    max-width: 10em;\n"
-"    min-height: 10em;\n"
-"    max-height: 10em;\n"
-"    background-color: #F7F7F7;\n"
-"    border: 1px solid rgba(0,0,0,0.1);\n"
-"    border-radius: 5em;\n"
-"}\n"
-"\n"
-"AskPopup {\n"
-"    background: rgba(0, 0, 0, 127);\n"
-"}\n"
-"\n"
-"AskPopupContent {\n"
-"    border: 1px solid rgba(0,0,0,0.1);\n"
-"    border-radius: 0.4em;\n"
-"    background: #F9F9F9;\n"
-"    min-width: 24em;\n"
-"    max-width: 24em;\n"
-"    min-height: 24em;\n"
-"    max-height: 24em;\n"
-"    margin: 0em;\n"
-"    padding: 2em;\n"
-"}")
+        MainWindow.setStyleSheet(
+            "QPushButton, QComboBox, QLineEdit, QCheckBox, QSpinBox, QDoubleSpinBox {\n"
+            "    height: 1.8em;\n"
+            "}\n"
+            "\n"
+            "QPushButton, QComboBox, QLineEdit {\n"
+            "    padding-right: 0.8em;\n"
+            "    padding-left: 0.8em;\n"
+            "}\n"
+            "\n"
+            "QTabWidget::tab-bar {\n"
+            "    alignment: center;\n"
+            "}\n"
+            "\n"
+            "QProgressBar {\n"
+            "    height: 0.4em;\n"
+            "}\n"
+            "\n"
+            "QMenu {\n"
+            "    padding-top: 0.6em;\n"
+            "    padding-bottom: 0.6em;\n"
+            "}\n"
+            "\n"
+            "QMenu::separator {\n"
+            "       height: 1em;\n"
+            "}\n"
+            "\n"
+            "QSplitter::handle {\n"
+            "    background-color: #FCFCFC;\n"
+            "}\n"
+            "\n"
+            "ScriptEditor, LogList {\n"
+            "    background-color: #F5F2F0;\n"
+            "    border-radius: 0.2em;\n"
+            "    border: 1px solid rgba(0,0,0,0.1);\n"
+            "}\n"
+            "\n"
+            "SymbolBox {\n"
+            "    min-width: 10em;\n"
+            "    max-width: 10em;\n"
+            "    min-height: 10em;\n"
+            "    max-height: 10em;\n"
+            "    background-color: #F7F7F7;\n"
+            "    border: 1px solid rgba(0,0,0,0.1);\n"
+            "    border-radius: 5em;\n"
+            "}\n"
+            "\n"
+            "AskPopup {\n"
+            "    background: rgba(0, 0, 0, 127);\n"
+            "}\n"
+            "\n"
+            "AskPopupContent {\n"
+            "    border: 1px solid rgba(0,0,0,0.1);\n"
+            "    border-radius: 0.4em;\n"
+            "    background: #F9F9F9;\n"
+            "    min-width: 24em;\n"
+            "    max-width: 24em;\n"
+            "    min-height: 24em;\n"
+            "    max-height: 24em;\n"
+            "    margin: 0em;\n"
+            "    padding: 2em;\n"
+            "}"
+        )
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout_3 = QtWidgets.QGridLayout(self.centralwidget)
@@ -98,7 +104,12 @@ class Ui_MainWindow(object):
         self.tab_5.setObjectName("tab_5")
         self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.tab_5)
         self.verticalLayout_4.setObjectName("verticalLayout_4")
-        spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        spacerItem = QtWidgets.QSpacerItem(
+            20,
+            40,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+        )
         self.verticalLayout_4.addItem(spacerItem)
         self.verticalLayout_14 = QtWidgets.QVBoxLayout()
         self.verticalLayout_14.setObjectName("verticalLayout_14")
@@ -109,7 +120,12 @@ class Ui_MainWindow(object):
         self.horizontalLayout_17 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_17.setObjectName("horizontalLayout_17")
         self.verticalLayout_4.addLayout(self.horizontalLayout_17)
-        spacerItem1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        spacerItem1 = QtWidgets.QSpacerItem(
+            20,
+            40,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+        )
         self.verticalLayout_4.addItem(spacerItem1)
         self.groupBox_10 = QtWidgets.QGroupBox(self.tab_5)
         self.groupBox_10.setObjectName("groupBox_10")
@@ -126,7 +142,12 @@ class Ui_MainWindow(object):
         self.verticalLayout_17.setObjectName("verticalLayout_17")
         self.horizontalLayout_24 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_24.setObjectName("horizontalLayout_24")
-        spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem2 = QtWidgets.QSpacerItem(
+            40,
+            20,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout_24.addItem(spacerItem2)
         self.pushButton_2 = QtWidgets.QPushButton(self.groupBox_6)
         self.pushButton_2.setObjectName("pushButton_2")
@@ -137,14 +158,23 @@ class Ui_MainWindow(object):
         self.line_6.setObjectName("line_6")
         self.horizontalLayout_24.addWidget(self.line_6)
         self.pushButton_13 = QtWidgets.QPushButton(self.groupBox_6)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.pushButton_13.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.pushButton_13.sizePolicy().hasHeightForWidth()
+        )
         self.pushButton_13.setSizePolicy(sizePolicy)
         self.pushButton_13.setObjectName("pushButton_13")
         self.horizontalLayout_24.addWidget(self.pushButton_13)
-        spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem3 = QtWidgets.QSpacerItem(
+            40,
+            20,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout_24.addItem(spacerItem3)
         self.verticalLayout_17.addLayout(self.horizontalLayout_24)
         self.horizontalLayout_12 = QtWidgets.QHBoxLayout()
@@ -202,7 +232,9 @@ class Ui_MainWindow(object):
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout(self.groupBox)
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
         self.label_16 = QtWidgets.QLabel(self.groupBox)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.label_16.sizePolicy().hasHeightForWidth())
@@ -219,7 +251,12 @@ class Ui_MainWindow(object):
         self.verticalLayout_5.setObjectName("verticalLayout_5")
         self.horizontalLayout_15 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_15.setObjectName("horizontalLayout_15")
-        spacerItem4 = QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem4 = QtWidgets.QSpacerItem(
+            0,
+            0,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout_15.addItem(spacerItem4)
         self.checkBox_2 = QtWidgets.QCheckBox(self.groupBox_9)
         self.checkBox_2.setChecked(True)
@@ -253,12 +290,22 @@ class Ui_MainWindow(object):
         self.checkBox.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.checkBox.setObjectName("checkBox")
         self.horizontalLayout_15.addWidget(self.checkBox)
-        spacerItem5 = QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem5 = QtWidgets.QSpacerItem(
+            0,
+            0,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout_15.addItem(spacerItem5)
         self.verticalLayout_5.addLayout(self.horizontalLayout_15)
         self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_5.setObjectName("horizontalLayout_5")
-        spacerItem6 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem6 = QtWidgets.QSpacerItem(
+            40,
+            20,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout_5.addItem(spacerItem6)
         self.label_31 = QtWidgets.QLabel(self.groupBox_9)
         self.label_31.setObjectName("label_31")
@@ -308,8 +355,12 @@ class Ui_MainWindow(object):
         self.spinBox.setMinimumSize(QtCore.QSize(80, 0))
         self.spinBox.setMaximumSize(QtCore.QSize(80, 16777215))
         self.spinBox.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        self.spinBox.setButtonSymbols(QtWidgets.QAbstractSpinBox.ButtonSymbols.NoButtons)
-        self.spinBox.setCorrectionMode(QtWidgets.QAbstractSpinBox.CorrectionMode.CorrectToNearestValue)
+        self.spinBox.setButtonSymbols(
+            QtWidgets.QAbstractSpinBox.ButtonSymbols.NoButtons
+        )
+        self.spinBox.setCorrectionMode(
+            QtWidgets.QAbstractSpinBox.CorrectionMode.CorrectToNearestValue
+        )
         self.spinBox.setMinimum(1)
         self.spinBox.setMaximum(100)
         self.spinBox.setObjectName("spinBox")
@@ -320,14 +371,23 @@ class Ui_MainWindow(object):
         self.line_3.setObjectName("line_3")
         self.horizontalLayout_5.addWidget(self.line_3)
         self.pushButton_12 = QtWidgets.QPushButton(self.groupBox_9)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.pushButton_12.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.pushButton_12.sizePolicy().hasHeightForWidth()
+        )
         self.pushButton_12.setSizePolicy(sizePolicy)
         self.pushButton_12.setObjectName("pushButton_12")
         self.horizontalLayout_5.addWidget(self.pushButton_12)
-        spacerItem7 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem7 = QtWidgets.QSpacerItem(
+            40,
+            20,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout_5.addItem(spacerItem7)
         self.verticalLayout_5.addLayout(self.horizontalLayout_5)
         self.horizontalLayout_27 = QtWidgets.QHBoxLayout()
@@ -396,7 +456,12 @@ class Ui_MainWindow(object):
         self.verticalLayout_6.setObjectName("verticalLayout_6")
         self.horizontalLayout_23 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_23.setObjectName("horizontalLayout_23")
-        spacerItem8 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem8 = QtWidgets.QSpacerItem(
+            40,
+            20,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout_23.addItem(spacerItem8)
         self.checkBox_3 = QtWidgets.QCheckBox(self.groupBox_3)
         self.checkBox_3.setObjectName("checkBox_3")
@@ -424,8 +489,12 @@ class Ui_MainWindow(object):
         self.doubleSpinBox_2.setMinimumSize(QtCore.QSize(80, 0))
         self.doubleSpinBox_2.setMaximumSize(QtCore.QSize(80, 16777215))
         self.doubleSpinBox_2.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        self.doubleSpinBox_2.setButtonSymbols(QtWidgets.QAbstractSpinBox.ButtonSymbols.NoButtons)
-        self.doubleSpinBox_2.setCorrectionMode(QtWidgets.QAbstractSpinBox.CorrectionMode.CorrectToNearestValue)
+        self.doubleSpinBox_2.setButtonSymbols(
+            QtWidgets.QAbstractSpinBox.ButtonSymbols.NoButtons
+        )
+        self.doubleSpinBox_2.setCorrectionMode(
+            QtWidgets.QAbstractSpinBox.CorrectionMode.CorrectToNearestValue
+        )
         self.doubleSpinBox_2.setDecimals(3)
         self.doubleSpinBox_2.setMaximum(1.0)
         self.doubleSpinBox_2.setSingleStep(0.001)
@@ -439,8 +508,12 @@ class Ui_MainWindow(object):
         self.doubleSpinBox.setMinimumSize(QtCore.QSize(80, 0))
         self.doubleSpinBox.setMaximumSize(QtCore.QSize(80, 16777215))
         self.doubleSpinBox.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        self.doubleSpinBox.setButtonSymbols(QtWidgets.QAbstractSpinBox.ButtonSymbols.NoButtons)
-        self.doubleSpinBox.setCorrectionMode(QtWidgets.QAbstractSpinBox.CorrectionMode.CorrectToNearestValue)
+        self.doubleSpinBox.setButtonSymbols(
+            QtWidgets.QAbstractSpinBox.ButtonSymbols.NoButtons
+        )
+        self.doubleSpinBox.setCorrectionMode(
+            QtWidgets.QAbstractSpinBox.CorrectionMode.CorrectToNearestValue
+        )
         self.doubleSpinBox.setDecimals(3)
         self.doubleSpinBox.setMaximum(1.0)
         self.doubleSpinBox.setSingleStep(0.001)
@@ -454,18 +527,32 @@ class Ui_MainWindow(object):
         self.spinBox_2.setMinimumSize(QtCore.QSize(80, 0))
         self.spinBox_2.setMaximumSize(QtCore.QSize(80, 16777215))
         self.spinBox_2.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        self.spinBox_2.setButtonSymbols(QtWidgets.QAbstractSpinBox.ButtonSymbols.NoButtons)
-        self.spinBox_2.setCorrectionMode(QtWidgets.QAbstractSpinBox.CorrectionMode.CorrectToNearestValue)
+        self.spinBox_2.setButtonSymbols(
+            QtWidgets.QAbstractSpinBox.ButtonSymbols.NoButtons
+        )
+        self.spinBox_2.setCorrectionMode(
+            QtWidgets.QAbstractSpinBox.CorrectionMode.CorrectToNearestValue
+        )
         self.spinBox_2.setMinimum(1)
         self.spinBox_2.setMaximum(100)
         self.spinBox_2.setObjectName("spinBox_2")
         self.horizontalLayout_23.addWidget(self.spinBox_2)
-        spacerItem9 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem9 = QtWidgets.QSpacerItem(
+            40,
+            20,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout_23.addItem(spacerItem9)
         self.verticalLayout_6.addLayout(self.horizontalLayout_23)
         self.horizontalLayout_9 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_9.setObjectName("horizontalLayout_9")
-        spacerItem10 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem10 = QtWidgets.QSpacerItem(
+            40,
+            20,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout_9.addItem(spacerItem10)
         self.label_23 = QtWidgets.QLabel(self.groupBox_3)
         self.label_23.setObjectName("label_23")
@@ -484,7 +571,9 @@ class Ui_MainWindow(object):
         self.comboBox.setObjectName("comboBox")
         self.horizontalLayout_9.addWidget(self.comboBox)
         self.pushButton_3 = QtWidgets.QPushButton(self.groupBox_3)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.pushButton_3.sizePolicy().hasHeightForWidth())
@@ -495,7 +584,9 @@ class Ui_MainWindow(object):
         self.pushButton_17.setObjectName("pushButton_17")
         self.horizontalLayout_9.addWidget(self.pushButton_17)
         self.pushButton_4 = QtWidgets.QPushButton(self.groupBox_3)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.pushButton_4.sizePolicy().hasHeightForWidth())
@@ -511,14 +602,23 @@ class Ui_MainWindow(object):
         self.line_4.setObjectName("line_4")
         self.horizontalLayout_9.addWidget(self.line_4)
         self.pushButton_11 = QtWidgets.QPushButton(self.groupBox_3)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.pushButton_11.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.pushButton_11.sizePolicy().hasHeightForWidth()
+        )
         self.pushButton_11.setSizePolicy(sizePolicy)
         self.pushButton_11.setObjectName("pushButton_11")
         self.horizontalLayout_9.addWidget(self.pushButton_11)
-        spacerItem11 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem11 = QtWidgets.QSpacerItem(
+            40,
+            20,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout_9.addItem(spacerItem11)
         self.verticalLayout_6.addLayout(self.horizontalLayout_9)
         self.horizontalLayout_8 = QtWidgets.QHBoxLayout()
@@ -557,7 +657,9 @@ class Ui_MainWindow(object):
         self.label_30.setObjectName("label_30")
         self.verticalLayout_20.addWidget(self.label_30)
         self.plainTextEdit_3 = ScriptEditor(self.tab_3)
-        self.plainTextEdit_3.setLineWrapMode(QtWidgets.QPlainTextEdit.LineWrapMode.NoWrap)
+        self.plainTextEdit_3.setLineWrapMode(
+            QtWidgets.QPlainTextEdit.LineWrapMode.NoWrap
+        )
         self.plainTextEdit_3.setObjectName("plainTextEdit_3")
         self.verticalLayout_20.addWidget(self.plainTextEdit_3)
         self.horizontalLayout_25.addLayout(self.verticalLayout_20)
@@ -568,7 +670,9 @@ class Ui_MainWindow(object):
         self.label_11.setObjectName("label_11")
         self.verticalLayout_19.addWidget(self.label_11)
         self.plainTextEdit_2 = ScriptEditor(self.tab_3)
-        self.plainTextEdit_2.setLineWrapMode(QtWidgets.QPlainTextEdit.LineWrapMode.NoWrap)
+        self.plainTextEdit_2.setLineWrapMode(
+            QtWidgets.QPlainTextEdit.LineWrapMode.NoWrap
+        )
         self.plainTextEdit_2.setObjectName("plainTextEdit_2")
         self.verticalLayout_19.addWidget(self.plainTextEdit_2)
         self.horizontalLayout_25.addLayout(self.verticalLayout_19)
@@ -579,7 +683,12 @@ class Ui_MainWindow(object):
         self.verticalLayout_23.setObjectName("verticalLayout_23")
         self.horizontalLayout_26 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_26.setObjectName("horizontalLayout_26")
-        spacerItem12 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem12 = QtWidgets.QSpacerItem(
+            40,
+            20,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout_26.addItem(spacerItem12)
         self.checkBox_6 = QtWidgets.QCheckBox(self.groupBox_17)
         self.checkBox_6.setChecked(True)
@@ -597,8 +706,12 @@ class Ui_MainWindow(object):
         self.spinBox_3.setMinimumSize(QtCore.QSize(80, 0))
         self.spinBox_3.setMaximumSize(QtCore.QSize(80, 16777215))
         self.spinBox_3.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        self.spinBox_3.setButtonSymbols(QtWidgets.QAbstractSpinBox.ButtonSymbols.NoButtons)
-        self.spinBox_3.setCorrectionMode(QtWidgets.QAbstractSpinBox.CorrectionMode.CorrectToNearestValue)
+        self.spinBox_3.setButtonSymbols(
+            QtWidgets.QAbstractSpinBox.ButtonSymbols.NoButtons
+        )
+        self.spinBox_3.setCorrectionMode(
+            QtWidgets.QAbstractSpinBox.CorrectionMode.CorrectToNearestValue
+        )
         self.spinBox_3.setMinimum(7)
         self.spinBox_3.setMaximum(90)
         self.spinBox_3.setProperty("value", 30)
@@ -639,7 +752,12 @@ class Ui_MainWindow(object):
         self.pushButton_9 = QtWidgets.QPushButton(self.groupBox_17)
         self.pushButton_9.setObjectName("pushButton_9")
         self.horizontalLayout_26.addWidget(self.pushButton_9)
-        spacerItem13 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem13 = QtWidgets.QSpacerItem(
+            40,
+            20,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout_26.addItem(spacerItem13)
         self.verticalLayout_23.addLayout(self.horizontalLayout_26)
         self.verticalLayout_21.addWidget(self.groupBox_17)
@@ -656,11 +774,21 @@ class Ui_MainWindow(object):
         self.verticalLayout_9.setObjectName("verticalLayout_9")
         self.horizontalLayout_22 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_22.setObjectName("horizontalLayout_22")
-        spacerItem14 = QtWidgets.QSpacerItem(323, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem14 = QtWidgets.QSpacerItem(
+            323,
+            20,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout_22.addItem(spacerItem14)
         self.verticalLayout_13 = QtWidgets.QVBoxLayout()
         self.verticalLayout_13.setObjectName("verticalLayout_13")
-        spacerItem15 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        spacerItem15 = QtWidgets.QSpacerItem(
+            20,
+            40,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+        )
         self.verticalLayout_13.addItem(spacerItem15)
         self.horizontalLayout_13 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_13.setObjectName("horizontalLayout_13")
@@ -699,7 +827,9 @@ class Ui_MainWindow(object):
         self.horizontalLayout_18 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_18.setObjectName("horizontalLayout_18")
         self.pushButton_7 = QtWidgets.QPushButton(self.tab_4)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.pushButton_7.sizePolicy().hasHeightForWidth())
@@ -707,10 +837,20 @@ class Ui_MainWindow(object):
         self.pushButton_7.setObjectName("pushButton_7")
         self.horizontalLayout_18.addWidget(self.pushButton_7)
         self.verticalLayout_13.addLayout(self.horizontalLayout_18)
-        spacerItem16 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        spacerItem16 = QtWidgets.QSpacerItem(
+            20,
+            40,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+        )
         self.verticalLayout_13.addItem(spacerItem16)
         self.horizontalLayout_22.addLayout(self.verticalLayout_13)
-        spacerItem17 = QtWidgets.QSpacerItem(324, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem17 = QtWidgets.QSpacerItem(
+            324,
+            20,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout_22.addItem(spacerItem17)
         self.verticalLayout_9.addLayout(self.horizontalLayout_22)
         self.groupBox_7 = QtWidgets.QGroupBox(self.tab_4)
@@ -719,13 +859,20 @@ class Ui_MainWindow(object):
         self.horizontalLayout_6.setObjectName("horizontalLayout_6")
         self.horizontalLayout_21 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_21.setObjectName("horizontalLayout_21")
-        spacerItem18 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem18 = QtWidgets.QSpacerItem(
+            40,
+            20,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout_21.addItem(spacerItem18)
         self.label_3 = QtWidgets.QLabel(self.groupBox_7)
         self.label_3.setObjectName("label_3")
         self.horizontalLayout_21.addWidget(self.label_3)
         self.lineEdit = QtWidgets.QLineEdit(self.groupBox_7)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.lineEdit.sizePolicy().hasHeightForWidth())
@@ -748,14 +895,23 @@ class Ui_MainWindow(object):
         self.line_5.setObjectName("line_5")
         self.horizontalLayout_21.addWidget(self.line_5)
         self.pushButton_10 = QtWidgets.QPushButton(self.groupBox_7)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.pushButton_10.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.pushButton_10.sizePolicy().hasHeightForWidth()
+        )
         self.pushButton_10.setSizePolicy(sizePolicy)
         self.pushButton_10.setObjectName("pushButton_10")
         self.horizontalLayout_21.addWidget(self.pushButton_10)
-        spacerItem19 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem19 = QtWidgets.QSpacerItem(
+            40,
+            20,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout_21.addItem(spacerItem19)
         self.horizontalLayout_6.addLayout(self.horizontalLayout_21)
         self.verticalLayout_9.addWidget(self.groupBox_7)
@@ -911,8 +1067,12 @@ class Ui_MainWindow(object):
         self.label_25.setObjectName("label_25")
         self.verticalLayout_11.addWidget(self.label_25)
         self.listWidget = LogList(self.tab_6)
-        self.listWidget.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollMode.ScrollPerPixel)
-        self.listWidget.setHorizontalScrollMode(QtWidgets.QAbstractItemView.ScrollMode.ScrollPerPixel)
+        self.listWidget.setVerticalScrollMode(
+            QtWidgets.QAbstractItemView.ScrollMode.ScrollPerPixel
+        )
+        self.listWidget.setHorizontalScrollMode(
+            QtWidgets.QAbstractItemView.ScrollMode.ScrollPerPixel
+        )
         self.listWidget.setObjectName("listWidget")
         self.verticalLayout_11.addWidget(self.listWidget)
         self.horizontalLayout_14.addLayout(self.verticalLayout_11)
@@ -923,7 +1083,12 @@ class Ui_MainWindow(object):
         self.verticalLayout_24.setObjectName("verticalLayout_24")
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
-        spacerItem20 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem20 = QtWidgets.QSpacerItem(
+            40,
+            20,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout_2.addItem(spacerItem20)
         self.pushButton = QtWidgets.QPushButton(self.groupBox_18)
         self.pushButton.setObjectName("pushButton")
@@ -931,7 +1096,12 @@ class Ui_MainWindow(object):
         self.pushButton_6 = QtWidgets.QPushButton(self.groupBox_18)
         self.pushButton_6.setObjectName("pushButton_6")
         self.horizontalLayout_2.addWidget(self.pushButton_6)
-        spacerItem21 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem21 = QtWidgets.QSpacerItem(
+            40,
+            20,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+        )
         self.horizontalLayout_2.addItem(spacerItem21)
         self.verticalLayout_24.addLayout(self.horizontalLayout_2)
         self.verticalLayout_8.addWidget(self.groupBox_18)
@@ -952,7 +1122,9 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "Solsol"))
         self.pushButton_2.setText(_translate("MainWindow", "캔들 데이터 채우기"))
         self.pushButton_13.setText(_translate("MainWindow", "☰"))
-        self.board.setTabText(self.board.indexOf(self.tab_5), _translate("MainWindow", "데이터 수집"))
+        self.board.setTabText(
+            self.board.indexOf(self.tab_5), _translate("MainWindow", "데이터 수집")
+        )
         self.checkBox_2.setText(_translate("MainWindow", "시시각각 그리기"))
         self.pushButton_14.setText(_translate("MainWindow", "지난 24시간 범위 보기"))
         self.label_2.setText(_translate("MainWindow", "표시 코인"))
@@ -966,7 +1138,9 @@ class Ui_MainWindow(object):
         self.label_7.setText(_translate("MainWindow", "레버리지"))
         self.spinBox.setPrefix(_translate("MainWindow", "×"))
         self.pushButton_12.setText(_translate("MainWindow", "☰"))
-        self.board.setTabText(self.board.indexOf(self.tab), _translate("MainWindow", "자동 주문"))
+        self.board.setTabText(
+            self.board.indexOf(self.tab), _translate("MainWindow", "자동 주문")
+        )
         self.checkBox_3.setText(_translate("MainWindow", "한꺼번에 그리기"))
         self.pushButton_15.setText(_translate("MainWindow", "선택된 연도 범위 보기"))
         self.label_10.setText(_translate("MainWindow", "표시 코인"))
@@ -983,7 +1157,9 @@ class Ui_MainWindow(object):
         self.pushButton_4.setText(_translate("MainWindow", "지우기"))
         self.pushButton_16.setText(_translate("MainWindow", "잊기"))
         self.pushButton_11.setText(_translate("MainWindow", "☰"))
-        self.board.setTabText(self.board.indexOf(self.tab_13), _translate("MainWindow", "시뮬레이션"))
+        self.board.setTabText(
+            self.board.indexOf(self.tab_13), _translate("MainWindow", "시뮬레이션")
+        )
         self.label_30.setText(_translate("MainWindow", "지표 스크립트"))
         self.label_11.setText(_translate("MainWindow", "결정 스크립트"))
         self.checkBox_6.setText(_translate("MainWindow", "사용 가능으로 취급하기"))
@@ -995,26 +1171,38 @@ class Ui_MainWindow(object):
         self.pushButton_19.setText(_translate("MainWindow", "되돌리기"))
         self.pushButton_20.setText(_translate("MainWindow", "저장하기"))
         self.pushButton_9.setText(_translate("MainWindow", "☰"))
-        self.board.setTabText(self.board.indexOf(self.tab_3), _translate("MainWindow", "나만의 전략"))
+        self.board.setTabText(
+            self.board.indexOf(self.tab_3), _translate("MainWindow", "나만의 전략")
+        )
         self.pushButton_7.setText(_translate("MainWindow", "설명서 열기"))
         self.label_3.setText(_translate("MainWindow", "데이터 저장 폴더"))
         self.pushButton_8.setText(_translate("MainWindow", "탐색기로 열기"))
         self.pushButton_22.setText(_translate("MainWindow", "바꾸기"))
         self.pushButton_10.setText(_translate("MainWindow", "☰"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), _translate("MainWindow", "기본"))
+        self.tabWidget.setTabText(
+            self.tabWidget.indexOf(self.tab_4), _translate("MainWindow", "기본")
+        )
         self.label_37.setText(_translate("MainWindow", "프로세스별 쓰레드 개수"))
         self.label_38.setText(_translate("MainWindow", "최근 캔들 거래 개수"))
         self.label_39.setText(_translate("MainWindow", "부모 프로세스의 쓰레드"))
         self.label_40.setText(_translate("MainWindow", "(미정)"))
         self.label_41.setText(_translate("MainWindow", "성능과 직결된 작업에 걸린 시간"))
         self.label_42.setText(_translate("MainWindow", "바이낸스 API 요청의 한계치와 사용량"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_7), _translate("MainWindow", "상태"))
+        self.tabWidget.setTabText(
+            self.tabWidget.indexOf(self.tab_7), _translate("MainWindow", "상태")
+        )
         self.label_24.setText(_translate("MainWindow", "파이썬 스크립트"))
         self.label_25.setText(_translate("MainWindow", "로그 출력"))
         self.pushButton.setText(_translate("MainWindow", "코드 실행하기"))
         self.pushButton_6.setText(_translate("MainWindow", "선택 해제하기"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_6), _translate("MainWindow", "디버거"))
-        self.board.setTabText(self.board.indexOf(self.tab_2), _translate("MainWindow", "관리"))
+        self.tabWidget.setTabText(
+            self.tabWidget.indexOf(self.tab_6), _translate("MainWindow", "디버거")
+        )
+        self.board.setTabText(
+            self.board.indexOf(self.tab_2), _translate("MainWindow", "관리")
+        )
+
+
 from module.widget.gauge import Gauge
 from module.widget.log_list import LogList
 from module.widget.script_editor import ScriptEditor
