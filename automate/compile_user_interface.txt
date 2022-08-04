@@ -1,1 +1,1 @@
-pyside6-uic user_interface.ui > module/user_interface.py
+pyside6-uic craft/user_interface.ui > module/user_interface.py
