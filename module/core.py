@@ -481,7 +481,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 project_name = package.project_name
                 about = metadata.metadata(project_name)
 
-                text = str(project_name)
+                text = project_name
                 text += ": " + str(about["License"])
 
                 # card structure
@@ -504,9 +504,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                     webbrowser.open(homepage)
 
                 if about["Home-page"] is not None:
-                    link_button = QtWidgets.QPushButton(str(about["Home-page"]), card)
-                    outsource.do(link_button.clicked, job)
-                    card_layout.addWidget(link_button)
+                    homepage = about["Home-page"]
+                    if homepage.startswith("http"):
+                        link_button = QtWidgets.QPushButton(homepage, card)
+                        outsource.do(link_button.clicked, job)
+                        card_layout.addWidget(link_button)
 
                 self.verticalLayout_15.addWidget(card)
 
