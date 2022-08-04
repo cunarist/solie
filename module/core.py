@@ -500,8 +500,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 )
                 card_layout.addItem(spacer)
 
-                def job():
-                    webbrowser.open(str(about["Home-page"]))
+                def job(homepage=str(about["Home-page"])):
+                    webbrowser.open(homepage)
 
                 if about["Home-page"] is not None:
                     link_button = QtWidgets.QPushButton(str(about["Home-page"]), card)
