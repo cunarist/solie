@@ -4,7 +4,6 @@ from pygments import lex, lexers
 
 class SyntaxHighlighter(QtGui.QSyntaxHighlighter):
     def highlightBlock(self, script):  # noqa:N802
-
         current_position = 0
 
         for token, text_block in lex(script, self._lexer):
@@ -18,7 +17,7 @@ class SyntaxHighlighter(QtGui.QSyntaxHighlighter):
                 self.setFormat(current_position, length, text_format)
             current_position += length
 
-    def __init__(self, parent=None):
+    def __init__(self, parent):
         super().__init__(parent)
 
         self._lexer = lexers.PythonLexer()

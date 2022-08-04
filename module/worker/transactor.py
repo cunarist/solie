@@ -13,6 +13,7 @@ import logging
 import pandas as pd
 import numpy as np
 
+from module import core
 from module import process_toss
 from module import thread_toss
 from module.instrument.api_requester import ApiRequester
@@ -29,11 +30,7 @@ from module.recipe import remember_task_durations
 
 
 class Transactor:
-    def __init__(self, root):
-        # ■■■■■ the basic ■■■■■
-
-        self.root = root
-
+    def __init__(self):
         # ■■■■■ for data management ■■■■■
 
         self.workerpath = standardize.get_datapath() + "/transactor"
@@ -86,12 +83,14 @@ class Transactor:
                 read_data = json.load(file)
             self.automation_settings = read_data
             state = read_data["should_transact"]
-            self.root.undertake(lambda s=state: self.root.checkBox.setChecked(s), False)
+            core.window.undertake(
+                lambda s=state: core.window.checkBox.setChecked(s), False
+            )
             strategy = read_data["strategy"]
-            for index, strategy_tuple in enumerate(self.root.strategy_tuples):
+            for index, strategy_tuple in enumerate(core.window.strategy_tuples):
                 if strategy == strategy_tuple[0]:
-                    self.root.undertake(
-                        lambda i=index: self.root.comboBox_2.setCurrentIndex(i), False
+                    core.window.undertake(
+                        lambda i=index: core.window.comboBox_2.setCurrentIndex(i), False
                     )
 
         except FileNotFoundError:
@@ -106,8 +105,8 @@ class Transactor:
                 read_data = json.load(file)
             self.mode_settings = read_data
             new_value = read_data["desired_leverage"]
-            self.root.undertake(
-                lambda n=new_value: self.root.spinBox.setValue(n), False
+            core.window.undertake(
+                lambda n=new_value: core.window.spinBox.setValue(n), False
             )
         except FileNotFoundError:
             self.mode_settings = {
@@ -119,15 +118,19 @@ class Transactor:
             with open(filepath, "r", encoding="utf8") as file:
                 keys = json.load(file)
             text = keys["binance_api"]
-            self.root.undertake(lambda t=text: self.root.lineEdit_4.setText(t), False)
+            core.window.undertake(
+                lambda t=text: core.window.lineEdit_4.setText(t), False
+            )
             text = keys["binance_secret"]
-            self.root.undertake(lambda t=text: self.root.lineEdit_6.setText(t), False)
+            core.window.undertake(
+                lambda t=text: core.window.lineEdit_6.setText(t), False
+            )
             if keys["server"] == "real":
                 index = 0
             elif keys["server"] == "testnet":
                 index = 1
-            self.root.undertake(
-                lambda i=index: self.root.comboBox_3.setCurrentIndex(i), False
+            core.window.undertake(
+                lambda i=index: core.window.comboBox_3.setCurrentIndex(i), False
             )
             self.keys = keys
             self.api_requester.update_keys(keys)
@@ -183,102 +186,102 @@ class Transactor:
 
         # ■■■■■ default executions ■■■■■
 
-        self.root.initialize_functions.append(
+        core.window.initialize_functions.append(
             lambda: self.watch_binance(),
         )
-        self.root.initialize_functions.append(
+        core.window.initialize_functions.append(
             lambda: self.update_user_data_stream(),
         )
-        self.root.initialize_functions.append(
+        core.window.initialize_functions.append(
             lambda: self.display_lines(),
         )
-        self.root.initialize_functions.append(
+        core.window.initialize_functions.append(
             lambda: self.display_day_range(),
         )
-        self.root.finalize_functions.append(
+        core.window.finalize_functions.append(
             lambda: self.save_unrealized_changes(),
         )
-        self.root.finalize_functions.append(
+        core.window.finalize_functions.append(
             lambda: self.save_scribbles(),
         )
 
         # ■■■■■ repetitive schedules ■■■■■
 
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.display_lines,
             trigger="cron",
             second="*",
             executor="thread_pool_executor",
             kwargs={"only_light_lines": True, "frequent": True},
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.display_asset_information,
             trigger="cron",
             second="*",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.display_range_information,
             trigger="cron",
             second="*",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.transact_fast,
             trigger="cron",
             second="*",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.cancel_conflicting_orders,
             trigger="cron",
             second="*",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.display_lines,
             trigger="cron",
             second="*/10",
             executor="thread_pool_executor",
             kwargs={"periodic": True, "frequent": True},
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.move_view_range,
             trigger="cron",
             second="*/10",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.transact_slow,
             trigger="cron",
             second="*/10",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.save_scribbles,
             trigger="cron",
             second="*/10",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.watch_binance,
             trigger="cron",
             second="*/10",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.update_user_data_stream,
             trigger="cron",
             minute="*/10",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.save_unrealized_changes,
             trigger="cron",
             hour="*",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.display_lines,
             trigger="cron",
             hour="*",
@@ -575,12 +578,12 @@ class Transactor:
     def update_keys(self, *args, **kwargs):
         def job():
             return (
-                self.root.comboBox_3.currentIndex(),
-                self.root.lineEdit_4.text(),
-                self.root.lineEdit_6.text(),
+                core.window.comboBox_3.currentIndex(),
+                core.window.lineEdit_4.text(),
+                core.window.lineEdit_6.text(),
             )
 
-        returned = self.root.undertake(job, True)
+        returned = core.window.undertake(job, True)
 
         new_keys = {}
         if returned[0] == 0:
@@ -603,14 +606,16 @@ class Transactor:
     def update_automation_settings(self, *args, **kwargs):
         # ■■■■■ get information about strategy ■■■■■
 
-        index = self.root.undertake(lambda: self.root.comboBox_2.currentIndex(), True)
-        strategy = self.root.strategy_tuples[index][0]
+        index = core.window.undertake(
+            lambda: core.window.comboBox_2.currentIndex(), True
+        )
+        strategy = core.window.strategy_tuples[index][0]
         self.automation_settings["strategy"] = strategy
 
         if strategy == 0:
-            strategy_details = self.root.strategist.details
+            strategy_details = core.window.strategist.details
         else:
-            for strategy_tuple in self.root.strategy_tuples:
+            for strategy_tuple in core.window.strategy_tuples:
                 if strategy_tuple[0] == strategy:
                     strategy_details = strategy_tuple[2]
         is_working_strategy = strategy_details[0]
@@ -622,13 +627,15 @@ class Transactor:
                 ["확인"],
                 False,
             ]
-            self.root.ask(question)
+            core.window.ask(question)
 
         self.display_lines()
 
         # ■■■■■ is automation turned on ■■■■■
 
-        is_checked = self.root.undertake(lambda: self.root.checkBox.isChecked(), True)
+        is_checked = core.window.undertake(
+            lambda: core.window.checkBox.isChecked(), True
+        )
 
         if is_checked:
             if strategy == 0:
@@ -639,7 +646,7 @@ class Transactor:
                     ["확인"],
                     False,
                 ]
-                self.root.ask(question)
+                core.window.ask(question)
 
             elif strategy in (1, 2):
                 question = [
@@ -650,12 +657,12 @@ class Transactor:
                     ["확인"],
                     False,
                 ]
-                self.root.ask(question)
+                core.window.ask(question)
 
             if strategy == 0:
-                strategy_details = self.root.strategist.details
+                strategy_details = core.window.strategist.details
             else:
-                for strategy_tuple in self.root.strategy_tuples:
+                for strategy_tuple in core.window.strategy_tuples:
                     if strategy_tuple[0] == strategy:
                         strategy_details = strategy_tuple[2]
             is_fast_strategy = strategy_details[3]
@@ -666,8 +673,8 @@ class Transactor:
                     seconds=current_moment.second % 10
                 )
                 count_start_time = current_moment - timedelta(hours=24)
-                with self.root.collector.datalocks[0]:
-                    df = self.root.collector.candle_data
+                with core.window.collector.datalocks[0]:
+                    df = core.window.collector.candle_data
                     cumulated_moments = len(df[count_start_time:].dropna())
                 needed_moments = 24 * 60 * 60 / 10
                 ratio = cumulated_moments / needed_moments
@@ -684,7 +691,7 @@ class Transactor:
                         ["확인"],
                         False,
                     ]
-                    self.root.ask(question)
+                    core.window.ask(question)
 
             self.automation_settings["should_transact"] = True
 
@@ -703,8 +710,8 @@ class Transactor:
 
         symbol = self.viewing_symbol
 
-        range_start = self.root.undertake(
-            lambda: self.root.plot_widget.getAxis("bottom").range[0], True
+        range_start = core.window.undertake(
+            lambda: core.window.plot_widget.getAxis("bottom").range[0], True
         )
         range_start = max(range_start, 0)
         range_start = datetime.fromtimestamp(range_start, tz=timezone.utc)
@@ -712,8 +719,8 @@ class Transactor:
         if stop_flag.find("display_transaction_range_information", task_id):
             return
 
-        range_end = self.root.undertake(
-            lambda: self.root.plot_widget.getAxis("bottom").range[1], True
+        range_end = core.window.undertake(
+            lambda: core.window.plot_widget.getAxis("bottom").range[1], True
         )
         if range_end < 0:
             # case when pyqtgraph passed negative value because it's too big
@@ -776,11 +783,11 @@ class Transactor:
         if stop_flag.find("display_transaction_range_information", task_id):
             return
 
-        range_down = self.root.undertake(
-            lambda: self.root.plot_widget.getAxis("left").range[0], True
+        range_down = core.window.undertake(
+            lambda: core.window.plot_widget.getAxis("left").range[0], True
         )
-        range_up = self.root.undertake(
-            lambda: self.root.plot_widget.getAxis("left").range[1], True
+        range_up = core.window.undertake(
+            lambda: core.window.plot_widget.getAxis("left").range[1], True
         )
         range_height = round((1 - range_down / range_up) * 100, 2)
 
@@ -796,16 +803,18 @@ class Transactor:
         text += f"누적 실현 수익률 {round(symbol_yield,4)}/{round(total_yield,4)}%"
         text += "  ⦁  "
         text += f"최저 미실현 수익률 {round(min_unrealized_change*100,2)}%"
-        self.root.undertake(lambda t=text: self.root.label_8.setText(t), False)
+        core.window.undertake(lambda t=text: core.window.label_8.setText(t), False)
 
     def set_minimum_view_range(self, *args, **kwargs):
         def job():
-            range_down = self.root.plot_widget.getAxis("left").range[0]
-            self.root.plot_widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)
-            range_down = self.root.plot_widget_1.getAxis("left").range[0]
-            self.root.plot_widget_1.plotItem.vb.setLimits(minYRange=range_down * 0.005)
+            range_down = core.window.plot_widget.getAxis("left").range[0]
+            core.window.plot_widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)
+            range_down = core.window.plot_widget_1.getAxis("left").range[0]
+            core.window.plot_widget_1.plotItem.vb.setLimits(
+                minYRange=range_down * 0.005
+            )
 
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
     def display_lines(self, *args, **kwargs):
         # ■■■■■ start the task ■■■■■
@@ -833,8 +842,8 @@ class Transactor:
 
         # ■■■■■ check if the data exists ■■■■■
 
-        with self.root.collector.datalocks[0]:
-            if len(self.root.collector.candle_data) == 0:
+        with core.window.collector.datalocks[0]:
+            if len(core.window.collector.candle_data) == 0:
                 return
 
         # ■■■■■ wait for the latest data to be added ■■■■■
@@ -847,8 +856,8 @@ class Transactor:
             for _ in range(50):
                 if stop_flag.find(task_name, task_id):
                     return
-                with self.root.collector.datalocks[0]:
-                    last_index = self.root.collector.candle_data.index[-1]
+                with core.window.collector.datalocks[0]:
+                    last_index = core.window.collector.candle_data.index[-1]
                     if last_index == before_moment:
                         break
                 time.sleep(0.1)
@@ -859,21 +868,21 @@ class Transactor:
         strategy = self.automation_settings["strategy"]
 
         if strategy == 0:
-            strategy_details = self.root.strategist.details
+            strategy_details = core.window.strategist.details
         else:
-            for strategy_tuple in self.root.strategy_tuples:
+            for strategy_tuple in core.window.strategy_tuples:
                 if strategy_tuple[0] == strategy:
                     strategy_details = strategy_tuple[2]
         is_fast_strategy = strategy_details[3]
 
         # ■■■■■ get light data ■■■■■
 
-        with self.root.collector.datalocks[1]:
-            before_chunk = self.root.collector.realtime_data_chunks[-2].copy()
-            current_chunk = self.root.collector.realtime_data_chunks[-1].copy()
+        with core.window.collector.datalocks[1]:
+            before_chunk = core.window.collector.realtime_data_chunks[-2].copy()
+            current_chunk = core.window.collector.realtime_data_chunks[-1].copy()
         realtime_data = np.concatenate((before_chunk, current_chunk))
-        with self.root.collector.datalocks[2]:
-            aggregate_trades = self.root.collector.aggregate_trades.copy()
+        with core.window.collector.datalocks[2]:
+            aggregate_trades = core.window.collector.aggregate_trades.copy()
 
         with self.datalocks[0]:
             unrealized_changes = self.unrealized_changes.copy()
@@ -888,14 +897,14 @@ class Transactor:
         mask = data_y != 0
         data_y = data_y[mask]
         data_x = data_x[mask]
-        widget = self.root.transaction_lines["mark_price"]
+        widget = core.window.transaction_lines["mark_price"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # last price
         data_x = aggregate_trades["index"].astype(np.int64) / 10**9
@@ -903,14 +912,14 @@ class Transactor:
         mask = data_y != 0
         data_y = data_y[mask]
         data_x = data_x[mask]
-        widget = self.root.transaction_lines["last_price"]
+        widget = core.window.transaction_lines["last_price"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # last trade volume
         index_ar = aggregate_trades["index"].astype(np.int64) / 10**9
@@ -924,14 +933,14 @@ class Transactor:
         nan_ar[:] = np.nan
         data_x = np.repeat(index_ar, 3)
         data_y = np.stack([nan_ar, zero_ar, value_ar], axis=1).reshape(-1)
-        widget = self.root.transaction_lines["last_volume"]
+        widget = core.window.transaction_lines["last_volume"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # book tickers
         data_x = realtime_data["index"].astype(np.int64) / 10**9
@@ -939,28 +948,28 @@ class Transactor:
         mask = data_y != 0
         data_y = data_y[mask]
         data_x = data_x[mask]
-        widget = self.root.transaction_lines["book_tickers"][0]
+        widget = core.window.transaction_lines["book_tickers"][0]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         data_x = realtime_data["index"].astype(np.int64) / 10**9
         data_y = realtime_data[str((symbol, "Best Ask Price"))]
         mask = data_y != 0
         data_y = data_y[mask]
         data_x = data_x[mask]
-        widget = self.root.transaction_lines["book_tickers"][1]
+        widget = core.window.transaction_lines["book_tickers"][1]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # open orders
         boundaries = [
@@ -970,25 +979,25 @@ class Transactor:
         ]
         first_moment = self.account_state["observed_until"] - timedelta(hours=12)
         last_moment = self.account_state["observed_until"] + timedelta(hours=12)
-        for turn, widget in enumerate(self.root.transaction_lines["boundaries"]):
+        for turn, widget in enumerate(core.window.transaction_lines["boundaries"]):
             if turn < len(boundaries):
                 boundary = boundaries[turn]
                 data_x = np.linspace(
                     first_moment.timestamp(), last_moment.timestamp(), num=1000
                 )
                 data_y = np.linspace(boundary, boundary, num=1000)
-                widget = self.root.transaction_lines["boundaries"][turn]
+                widget = core.window.transaction_lines["boundaries"][turn]
 
                 def job(widget=widget, data_x=data_x, data_y=data_y):
                     widget.setData(data_x, data_y)
 
                 if stop_flag.find(task_name, task_id):
                     return
-                self.root.undertake(job, False)
+                core.window.undertake(job, False)
             else:
                 if stop_flag.find(task_name, task_id):
                     return
-                self.root.undertake(lambda w=widget: w.clear(), False)
+                core.window.undertake(lambda w=widget: w.clear(), False)
 
         # entry price
         entry_price = self.account_state["positions"][symbol]["entry_price"]
@@ -1002,14 +1011,14 @@ class Transactor:
         else:
             data_x = []
             data_y = []
-        widget = self.root.transaction_lines["entry_price"]
+        widget = core.window.transaction_lines["entry_price"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # ■■■■■ record task duration ■■■■■
 
@@ -1036,8 +1045,8 @@ class Transactor:
                 index=pd.DatetimeIndex([], tz="UTC"),
             )
         else:
-            with self.root.collector.datalocks[0]:
-                candle_data = self.root.collector.candle_data.copy()
+            with core.window.collector.datalocks[0]:
+                candle_data = core.window.collector.candle_data.copy()
 
         # ■■■■■ maniuplate heavy data ■■■■■
 
@@ -1074,7 +1083,7 @@ class Transactor:
 
         # ■■■■■ make indicators ■■■■■
 
-        indicators_script = self.root.strategist.indicators_script
+        indicators_script = core.window.strategist.indicators_script
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
         if is_fast_strategy:
@@ -1100,7 +1109,7 @@ class Transactor:
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         if not is_fast_strategy:
             data_x += 5
-        line_list = self.root.transaction_lines["price_indicators"]
+        line_list = core.window.transaction_lines["price_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
                 column_name = df.columns[turn]
@@ -1118,11 +1127,11 @@ class Transactor:
 
                 if stop_flag.find(task_name, task_id):
                     return
-                self.root.undertake(job, False)
+                core.window.undertake(job, False)
             else:
                 if stop_flag.find(task_name, task_id):
                     return
-                self.root.undertake(lambda w=widget: w.clear(), False)
+                core.window.undertake(lambda w=widget: w.clear(), False)
 
         # price movement
         index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
@@ -1163,14 +1172,14 @@ class Transactor:
             ],
             axis=1,
         ).reshape(-1)
-        widget = self.root.transaction_lines["price_up"]
+        widget = core.window.transaction_lines["price_up"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         data_x = np.stack(
             [
@@ -1200,46 +1209,46 @@ class Transactor:
             ],
             axis=1,
         ).reshape(-1)
-        widget = self.root.transaction_lines["price_down"]
+        widget = core.window.transaction_lines["price_down"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # wobbles
         sr = candle_data[(symbol, "High")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.root.transaction_lines["wobbles"][0]
+        widget = core.window.transaction_lines["wobbles"][0]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         sr = candle_data[(symbol, "Low")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.root.transaction_lines["wobbles"][1]
+        widget = core.window.transaction_lines["wobbles"][1]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # trade volume indicators
         df = indicators[symbol]["Volume"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         if not is_fast_strategy:
             data_x += 5
-        line_list = self.root.transaction_lines["volume_indicators"]
+        line_list = core.window.transaction_lines["volume_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
                 column_name = df.columns[turn]
@@ -1257,32 +1266,32 @@ class Transactor:
 
                 if stop_flag.find(task_name, task_id):
                     return
-                self.root.undertake(job, False)
+                core.window.undertake(job, False)
             else:
                 if stop_flag.find(task_name, task_id):
                     return
-                self.root.undertake(lambda w=widget: w.clear(), False)
+                core.window.undertake(lambda w=widget: w.clear(), False)
 
         # trade volume
         sr = candle_data[(symbol, "Volume")]
         sr = sr.fillna(value=0)
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.root.transaction_lines["volume"]
+        widget = core.window.transaction_lines["volume"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # abstract indicators
         df = indicators[symbol]["Abstract"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         if not is_fast_strategy:
             data_x += 5
-        line_list = self.root.transaction_lines["abstract_indicators"]
+        line_list = core.window.transaction_lines["abstract_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
                 column_name = df.columns[turn]
@@ -1300,23 +1309,23 @@ class Transactor:
 
                 if stop_flag.find(task_name, task_id):
                     return
-                self.root.undertake(job, False)
+                core.window.undertake(job, False)
             else:
                 if stop_flag.find(task_name, task_id):
                     return
-                self.root.undertake(lambda w=widget: w.clear(), False)
+                core.window.undertake(lambda w=widget: w.clear(), False)
 
         # asset
         data_x = asset_record["Result Asset"].index.to_numpy(dtype=np.int64) / 10**9
         data_y = asset_record["Result Asset"].to_numpy(dtype=np.float32)
-        widget = self.root.transaction_lines["asset"]
+        widget = core.window.transaction_lines["asset"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # asset with unrealized profit
         if len(asset_record["Result Asset"]) >= 2:
@@ -1325,14 +1334,14 @@ class Transactor:
         sr = sr * (1 + unrealized_changes_sr)
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9 + 5
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.root.transaction_lines["asset_with_unrealized_profit"]
+        widget = core.window.transaction_lines["asset_with_unrealized_profit"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # buy and sell
         df = asset_record.loc[asset_record["Symbol"] == symbol]
@@ -1340,28 +1349,28 @@ class Transactor:
         sr = df["Fill Price"]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.root.transaction_lines["sell"]
+        widget = core.window.transaction_lines["sell"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         df = asset_record.loc[asset_record["Symbol"] == symbol]
         df = df[df["Side"] == "buy"]
         sr = df["Fill Price"]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.root.transaction_lines["buy"]
+        widget = core.window.transaction_lines["buy"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # ■■■■■ record task duration ■■■■■
 
@@ -1378,10 +1387,10 @@ class Transactor:
 
     def update_viewing_symbol(self, *args, **kwargs):
         def job():
-            return self.root.comboBox_4.currentText()
+            return core.window.comboBox_4.currentText()
 
-        alias = self.root.undertake(job, True)
-        symbol = self.root.alias_to_symbol[alias]
+        alias = core.window.undertake(job, True)
+        symbol = core.window.alias_to_symbol[alias]
         self.viewing_symbol = symbol
 
         self.display_lines()
@@ -1394,7 +1403,7 @@ class Transactor:
         time_passed = datetime.now(timezone.utc) - self.account_state["observed_until"]
         if time_passed > timedelta(seconds=30):
             text = "키 또는 바이낸스 서버 연결에 문제가 있어 바이낸스 계정의 최신 정보를 알아내지 못함"
-            self.root.undertake(lambda t=text: self.root.label_16.setText(t), False)
+            core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
             return
 
         # ■■■■■ display the information ■■■■■
@@ -1428,7 +1437,7 @@ class Transactor:
         text += "  ⦁  "
         text += f"자동 수익 ＄{round(total_profit,4)}"
 
-        self.root.undertake(lambda t=text: self.root.label_16.setText(t), False)
+        core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
 
     def transact_fast(self, *args, **kwargs):
         # stop if it's not connected to the internet
@@ -1443,9 +1452,9 @@ class Transactor:
         strategy = self.automation_settings["strategy"]
 
         if strategy == 0:
-            strategy_details = self.root.strategist.details
+            strategy_details = core.window.strategist.details
         else:
-            for strategy_tuple in self.root.strategy_tuples:
+            for strategy_tuple in core.window.strategy_tuples:
                 if strategy_tuple[0] == strategy:
                     strategy_details = strategy_tuple[2]
 
@@ -1461,12 +1470,14 @@ class Transactor:
         # play the progress bar
         def job():
             start_time = datetime.now(timezone.utc)
-            self.root.undertake(lambda: self.root.progressBar_2.setValue(1000), False)
+            core.window.undertake(
+                lambda: core.window.progressBar_2.setValue(1000), False
+            )
             passed_time = timedelta(seconds=0)
             while passed_time < timedelta(milliseconds=500):
                 passed_time = datetime.now(timezone.utc) - start_time
                 time.sleep(0.01)
-            self.root.undertake(lambda: self.root.progressBar_2.setValue(0), False)
+            core.window.undertake(lambda: core.window.progressBar_2.setValue(0), False)
 
         thread_toss.apply_async(job)
 
@@ -1483,15 +1494,15 @@ class Transactor:
 
             # ■■■■■ get the realtime data ■■■■■
 
-            with self.root.collector.datalocks[1]:
-                before_chunk = self.root.collector.realtime_data_chunks[-2].copy()
-                current_chunk = self.root.collector.realtime_data_chunks[-1].copy()
+            with core.window.collector.datalocks[1]:
+                before_chunk = core.window.collector.realtime_data_chunks[-2].copy()
+                current_chunk = core.window.collector.realtime_data_chunks[-1].copy()
             realtime_data = np.concatenate((before_chunk, current_chunk))
             realtime_data = realtime_data[-10000:]
 
             # ■■■■■ make indicators ■■■■■
 
-            indicators_script = self.root.strategist.indicators_script
+            indicators_script = core.window.strategist.indicators_script
             compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
             observed_data = process_toss.apply(digitize.do, realtime_data)
@@ -1507,7 +1518,7 @@ class Transactor:
 
             current_observed_data = observed_data.to_records()[-1]
             current_indicators = indicators.to_records()[-1]
-            decision_script = self.root.strategist.decision_script
+            decision_script = core.window.strategist.decision_script
             compiled_decision_script = compile(decision_script, "<string>", "exec")
 
             decision, scribbles = process_toss.apply(
@@ -1552,9 +1563,9 @@ class Transactor:
         strategy = self.automation_settings["strategy"]
 
         if strategy == 0:
-            strategy_details = self.root.strategist.details
+            strategy_details = core.window.strategist.details
         else:
-            for strategy_tuple in self.root.strategy_tuples:
+            for strategy_tuple in core.window.strategy_tuples:
                 if strategy_tuple[0] == strategy:
                     strategy_details = strategy_tuple[2]
 
@@ -1580,19 +1591,19 @@ class Transactor:
                 if not is_cycle_done:
                     new_value = int(passed_time / timedelta(seconds=10) * 1000)
                 else:
-                    before_value = self.root.undertake(
-                        lambda: self.root.progressBar_2.value(), True
+                    before_value = core.window.undertake(
+                        lambda: core.window.progressBar_2.value(), True
                     )
                     remaining = 1000 - before_value
                     new_value = before_value + math.ceil(remaining * 0.2)
 
                 def job(new_value=new_value):
-                    self.root.progressBar_2.setValue(new_value)
+                    core.window.progressBar_2.setValue(new_value)
 
-                self.root.undertake(job, False)
+                core.window.undertake(job, False)
                 time.sleep(0.01)
 
-            self.root.undertake(lambda: self.root.progressBar_2.setValue(0), False)
+            core.window.undertake(lambda: core.window.progressBar_2.setValue(0), False)
 
         thread_toss.apply_async(job)
 
@@ -1604,16 +1615,16 @@ class Transactor:
 
         # ■■■■■ check if the data exists ■■■■■
 
-        with self.root.collector.datalocks[0]:
-            if len(self.root.collector.candle_data) == 0:
+        with core.window.collector.datalocks[0]:
+            if len(core.window.collector.candle_data) == 0:
                 # case when the app is executed for the first time
                 return
 
         # ■■■■■ wait for the latest data to be added ■■■■■
 
         for _ in range(50):
-            with self.root.collector.datalocks[0]:
-                last_index = self.root.collector.candle_data.index[-1]
+            with core.window.collector.datalocks[0]:
+                last_index = core.window.collector.candle_data.index[-1]
                 if last_index == before_moment:
                     break
             time.sleep(0.1)
@@ -1622,8 +1633,8 @@ class Transactor:
 
         count_start_time = current_moment - timedelta(hours=24)
 
-        with self.root.collector.datalocks[0]:
-            df = self.root.collector.candle_data
+        with core.window.collector.datalocks[0]:
+            df = core.window.collector.candle_data
             cumulated_moments = len(df[count_start_time:].dropna())
         needed_moments = 24 * 60 * 60 / 10
         ratio = cumulated_moments / needed_moments
@@ -1634,13 +1645,13 @@ class Transactor:
         # ■■■■■ get the candle data ■■■■■
 
         slice_from = datetime.now(timezone.utc) - timedelta(days=7)
-        with self.root.collector.datalocks[0]:
-            df = self.root.collector.candle_data
+        with core.window.collector.datalocks[0]:
+            df = core.window.collector.candle_data
             partial_candle_data = df[slice_from:].copy()
 
         # ■■■■■ make decision ■■■■■
 
-        indicators_script = self.root.strategist.indicators_script
+        indicators_script = core.window.strategist.indicators_script
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
         indicators = process_toss.apply(
@@ -1652,7 +1663,7 @@ class Transactor:
 
         current_observed_data = partial_candle_data.to_records()[-1]
         current_indicators = indicators.to_records()[-1]
-        decision_script = self.root.strategist.decision_script
+        decision_script = core.window.strategist.decision_script
         compiled_decision_script = compile(decision_script, "<string>", "exec")
 
         decision, scribbles = process_toss.apply(
@@ -1680,33 +1691,35 @@ class Transactor:
     def display_day_range(self, *args, **kwargs):
         range_start = (datetime.now(timezone.utc) - timedelta(hours=24)).timestamp()
         range_end = datetime.now(timezone.utc).timestamp()
-        widget = self.root.plot_widget
+        widget = core.window.plot_widget
 
         def job(range_start=range_start, range_end=range_end):
             widget.setXRange(range_start, range_end)
 
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
     def open_testnet_exchange(self, *args, **kwargs):
         symbol = self.viewing_symbol
         webbrowser.open(f"https://testnet.binancefuture.com/en/futures/{symbol}")
 
     def match_graph_range(self, *args, **kwargs):
-        range_start = self.root.undertake(
-            lambda: self.root.plot_widget_2.getAxis("bottom").range[0], True
+        range_start = core.window.undertake(
+            lambda: core.window.plot_widget_2.getAxis("bottom").range[0], True
         )
-        range_end = self.root.undertake(
-            lambda: self.root.plot_widget_2.getAxis("bottom").range[1], True
+        range_end = core.window.undertake(
+            lambda: core.window.plot_widget_2.getAxis("bottom").range[1], True
         )
-        widget = self.root.plot_widget
+        widget = core.window.plot_widget
 
         def job(range_start=range_start, range_end=range_end):
             widget.setXRange(range_start, range_end, padding=0)
 
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
     def update_mode_settings(self, *args, **kwargs):
-        desired_leverage = self.root.undertake(lambda: self.root.spinBox.value(), True)
+        desired_leverage = core.window.undertake(
+            lambda: core.window.spinBox.value(), True
+        )
         self.mode_settings["desired_leverage"] = desired_leverage
 
         # ■■■■■ save ■■■■■
@@ -2110,8 +2123,8 @@ class Transactor:
             if symbol not in decision.keys():
                 continue
 
-            with self.root.collector.datalocks[2]:
-                ar = self.root.collector.aggregate_trades[-10000:].copy()
+            with core.window.collector.datalocks[2]:
+                ar = core.window.collector.aggregate_trades[-10000:].copy()
             temp_ar = ar[str((symbol, "Price"))]
             temp_ar = temp_ar[temp_ar != 0]
             current_price = float(temp_ar[-1])
@@ -2401,10 +2414,10 @@ class Transactor:
         if not self.should_draw_frequently:
             return
 
-        widget = self.root.plot_widget
+        widget = core.window.plot_widget
         axis = widget.getAxis("bottom")
 
-        before_range = self.root.undertake(lambda: axis.range, True)
+        before_range = core.window.undertake(lambda: axis.range, True)
         range_start = before_range[0]
         range_end = before_range[1]
 
@@ -2414,4 +2427,4 @@ class Transactor:
         def job():
             widget.setXRange(range_start + 10, range_end + 10, padding=0)
 
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)

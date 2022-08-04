@@ -8,7 +8,6 @@ import urllib
 import math
 import multiprocessing
 
-
 from PySide6 import QtGui, QtWidgets, QtCore
 import pandas as pd
 import pyqtgraph
@@ -996,11 +995,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ workers ■■■■■
 
-        self.collector = Collector(self)
-        self.transactor = Transactor(self)
-        self.simulator = Simulator(self)
-        self.strategist = Strategiest(self)
-        self.manager = Manager(self)
+        self.collector = Collector()
+        self.transactor = Transactor()
+        self.simulator = Simulator()
+        self.strategist = Strategiest()
+        self.manager = Manager()
 
         # ■■■■■ prepare logging ■■■■■
 

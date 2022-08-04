@@ -3,6 +3,7 @@ import getmac
 
 from PySide6 import QtWidgets, QtCore, QtGui
 
+from module import core
 from module.instrument.api_requester import ApiRequester
 from module.instrument.api_request_error import ApiRequestError
 from module.recipe import standardize
@@ -12,7 +13,7 @@ from module.recipe import outsource
 class LicenseArea(QtWidgets.QScrollArea):
     done_event = threading.Event()
 
-    def __init__(self, root):
+    def __init__(self):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
@@ -113,7 +114,7 @@ class LicenseArea(QtWidgets.QScrollArea):
         # function for checking license key
         def job(*args):
             widget = key_input
-            license_key = root.undertake(lambda w=widget: w.text(), True)
+            license_key = core.window.undertake(lambda w=widget: w.text(), True)
             try:
                 payload = {
                     "licenseKey": license_key,
@@ -129,7 +130,7 @@ class LicenseArea(QtWidgets.QScrollArea):
                     ["확인"],
                     False,
                 ]
-                root.ask(question)
+                core.window.ask(question)
 
         # card structure
         card = QtWidgets.QGroupBox()

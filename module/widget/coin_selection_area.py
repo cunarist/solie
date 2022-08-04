@@ -3,6 +3,7 @@ import urllib
 
 from PySide6 import QtWidgets, QtCore, QtGui
 
+from module import core
 from module import thread_toss
 from module.instrument.api_requester import ApiRequester
 from module.recipe import standardize
@@ -12,7 +13,7 @@ from module.recipe import outsource
 class CoinSelectionArea(QtWidgets.QScrollArea):
     done_event = threading.Event()
 
-    def __init__(self, root):
+    def __init__(self):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
@@ -75,7 +76,7 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
             basics = {}
             selected_symbols = []
             for symbol, checkbox in symbol_checkboxes.items():
-                is_checked = root.undertake(lambda: checkbox.isChecked(), True)
+                is_checked = core.window.undertake(lambda: checkbox.isChecked(), True)
                 if is_checked:
                     selected_symbols.append(symbol)
             if 1 <= len(selected_symbols) <= 10:
@@ -89,7 +90,7 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
                     ["확인"],
                     False,
                 ]
-                root.ask(question)
+                core.window.ask(question)
             if is_symbol_count_ok:
                 question = [
                     "이대로 결정하시겠어요?",
@@ -97,7 +98,7 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
                     ["아니오", "예"],
                     False,
                 ]
-                answer = root.ask(question)
+                answer = core.window.ask(question)
                 if answer in (0, 1):
                     return
                 standardize.apply_basics(basics)
@@ -261,6 +262,6 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
                 def job(icon_label=icon_label, pixmap=pixmap):
                     icon_label.setPixmap(pixmap)
 
-                root.undertake(job, False)
+                core.window.undertake(job, False)
 
         thread_toss.apply_async(job)

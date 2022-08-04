@@ -12,6 +12,7 @@ import webbrowser
 import timesetter
 import getmac
 
+from module import core
 from module import process_toss
 from module import thread_toss
 from module.instrument.api_requester import ApiRequester
@@ -24,11 +25,7 @@ from module.recipe import remember_task_durations
 
 
 class Manager:
-    def __init__(self, root):
-        # ■■■■■ the basic ■■■■■
-
-        self.root = root
-
+    def __init__(self):
         # ■■■■■ for data management ■■■■■
 
         self.workerpath = standardize.get_datapath() + "/manager"
@@ -54,70 +51,70 @@ class Manager:
                 script = file.read()
         else:
             script = ""
-        self.root.undertake(
-            lambda s=script: self.root.plainTextEdit.setPlainText(s), False
+        core.window.undertake(
+            lambda s=script: core.window.plainTextEdit.setPlainText(s), False
         )
 
         # ■■■■■ default executions ■■■■■
 
-        self.root.initialize_functions.append(
+        core.window.initialize_functions.append(
             lambda: self.check_binance_limits(),
         )
-        self.root.initialize_functions.append(
+        core.window.initialize_functions.append(
             lambda: self.occupy_license_key(),
         )
 
         # ■■■■■ repetitive schedules ■■■■■
 
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.check_online_status,
             trigger="cron",
             second="*",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.display_system_status,
             trigger="cron",
             second="*",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.display_internal_status,
             trigger="cron",
             second="*",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.match_system_time,
             trigger="cron",
             minute="*/10",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.check_license_key,
             trigger="cron",
             minute="*/10",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.prepare_update,
             trigger="cron",
             minute="*/10",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.check_binance_limits,
             trigger="cron",
             hour="*",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.occupy_license_key,
             trigger="cron",
             hour="*",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.notify_update,
             trigger="cron",
             hour="*",
@@ -141,9 +138,9 @@ class Manager:
 
     def deselect_log_output(self, *args, **kwargs):
         def job():
-            self.root.listWidget.clearSelection()
+            core.window.listWidget.clearSelection()
 
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
     def add_log_output(self, *args, **kwargs):
         # get the data
@@ -172,7 +169,9 @@ class Manager:
         log_output = "\n".join(output_lines)
 
         # add to log list
-        self.root.undertake(lambda l=log_output: self.root.listWidget.addItem(l), False)
+        core.window.undertake(
+            lambda l=log_output: core.window.listWidget.addItem(l), False
+        )
 
         # save to file
         task_start_time = datetime.now(timezone.utc)
@@ -198,7 +197,7 @@ class Manager:
                 text = f"{process_name} (PID {process_id}): {thread_count}"
                 texts.append(text)
             text = "\n".join(texts)
-            self.root.undertake(lambda t=text: self.root.label_12.setText(t), False)
+            core.window.undertake(lambda t=text: core.window.label_12.setText(t), False)
 
             texts = []
             texts.append("한계치")
@@ -225,7 +224,7 @@ class Manager:
                     texts.append(text)
 
             text = "\n".join(texts)
-            self.root.undertake(lambda t=text: self.root.label_32.setText(t), False)
+            core.window.undertake(lambda t=text: core.window.label_32.setText(t), False)
 
             texts = []
 
@@ -245,12 +244,12 @@ class Manager:
                     texts.append(text)
 
             text = "\n\n".join(texts)
-            self.root.undertake(lambda t=text: self.root.label_33.setText(t), False)
+            core.window.undertake(lambda t=text: core.window.label_33.setText(t), False)
 
-            block_sizes = self.root.collector.aggtrade_candle_sizes
+            block_sizes = core.window.collector.aggtrade_candle_sizes
             lines = (f"{symbol} {count}" for (symbol, count) in block_sizes.items())
             text = "\n".join(lines)
-            self.root.undertake(lambda t=text: self.root.label_36.setText(t), False)
+            core.window.undertake(lambda t=text: core.window.label_36.setText(t), False)
 
             thread_names = [thread.name for thread in threading.enumerate()]
             row_size = 2
@@ -260,7 +259,7 @@ class Manager:
             ]
             lines = [" ".join(chunk) for chunk in chunked]
             text = "\n".join(lines)
-            self.root.undertake(lambda t=text: self.root.label_35.setText(t), False)
+            core.window.undertake(lambda t=text: core.window.label_35.setText(t), False)
 
         for _ in range(10):
             job()
@@ -273,8 +272,8 @@ class Manager:
         return variable_3
 
     def run_script(self, *args, **kwargs):
-        widget = self.root.plainTextEdit
-        script_text = self.root.undertake(lambda w=widget: w.toPlainText(), True)
+        widget = core.window.plainTextEdit
+        script_text = core.window.undertake(lambda w=widget: w.toPlainText(), True)
         if "# long live cunarist" not in script_text:
             question = [
                 "코드 실행 조건이 충족되지 않았습니다.",
@@ -282,12 +281,12 @@ class Manager:
                 ["확인"],
                 False,
             ]
-            self.root.ask(question)
+            core.window.ask(question)
             return
         filepath = self.workerpath + "/python_script.txt"
         with open(filepath, "w", encoding="utf8") as file:
             file.write(script_text)
-        namespace = {"root": self.root, "logger": logging.getLogger("solsol")}
+        namespace = {"window": core.window, "logger": logging.getLogger("solsol")}
         exec(script_text, namespace)
 
     def check_online_status(self, *args, **kwargs):
@@ -333,7 +332,7 @@ class Manager:
         text += "핑 " + simply_format.fixed_float(ping, 5) + "초"
         text += "  ⦁  "
         text += "서버와의 시차 " + difference_string + "초"
-        self.root.undertake(lambda t=text: self.root.gauge.setText(t), False)
+        core.window.undertake(lambda t=text: core.window.gauge.setText(t), False)
 
     def open_sample_ask_popup(self, *args, **kwargs):
         question = [
@@ -342,7 +341,7 @@ class Manager:
             ["로마", "서울", "뉴욕"],
             False,
         ]
-        answer = self.root.ask(question)
+        answer = core.window.ask(question)
 
         text = f"You chose answer {answer} from the test popup"
         logger = logging.getLogger("solsol")
@@ -384,15 +383,15 @@ class Manager:
             ["아니오", "예"],
             False,
         ]
-        answer = self.root.ask(question)
+        answer = core.window.ask(question)
 
         if answer in (0, 1):
             return
 
         os.remove("./note/datapath.txt")
 
-        self.root.should_confirm_closing = False
-        self.root.undertake(self.root.close, False)
+        core.window.should_confirm_closing = False
+        core.window.undertake(core.window.close, False)
 
     def show_version(self, *args, **kwargs):
         with open("./resource/version.txt", mode="r", encoding="utf8") as file:
@@ -404,7 +403,7 @@ class Manager:
             ["확인"],
             False,
         ]
-        self.root.ask(question)
+        core.window.ask(question)
 
     def show_license_key(self, *args, **kwargs):
         with open("./note/license_key.txt", mode="r", encoding="utf8") as file:
@@ -416,7 +415,7 @@ class Manager:
             ["확인"],
             False,
         ]
-        self.root.ask(question)
+        core.window.ask(question)
 
     def occupy_license_key(self, *args, **kwargs):
         license_key = standardize.get_license_key()
@@ -469,11 +468,11 @@ class Manager:
 
         def job():
             time.sleep(wait_time)
-            self.root.should_confirm_closing = False
-            self.root.undertake(self.root.close, False)
+            core.window.should_confirm_closing = False
+            core.window.undertake(core.window.close, False)
 
         thread_toss.apply_async(job)
-        self.root.ask(question)
+        core.window.ask(question)
 
     def prepare_update(self, *args, **kwargs):
         find_goodies.prepare()
@@ -491,15 +490,15 @@ class Manager:
                 ["확인"],
                 False,
             ]
-            self.root.ask(question)
+            core.window.ask(question)
 
     def open_documentation(self, *args, **kwargs):
         webbrowser.open("https://cunarist.com/solsol")
 
     def toggle_board_availability(self, *args, **kwargs):
-        is_enabled = self.root.undertake(lambda: self.root.board.isEnabled(), True)
+        is_enabled = core.window.undertake(lambda: core.window.board.isEnabled(), True)
         if is_enabled:
-            self.root.undertake(lambda: self.root.board.setEnabled(False), False)
+            core.window.undertake(lambda: core.window.board.setEnabled(False), False)
         else:
             question = [
                 "보드 잠금을 해제하시겠어요?",
@@ -507,7 +506,7 @@ class Manager:
                 ["아니오", "예"],
                 False,
             ]
-            answer = self.root.ask(question)
+            answer = core.window.ask(question)
             if answer in (0, 1):
                 return
-            self.root.undertake(lambda: self.root.board.setEnabled(True), False)
+            core.window.undertake(lambda: core.window.board.setEnabled(True), False)

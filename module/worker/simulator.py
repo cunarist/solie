@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 from scipy.signal import find_peaks
 
+from module import core
 from module import process_toss
 from module import thread_toss
 from module.recipe import simulate_unit
@@ -23,11 +24,7 @@ from module.recipe import standardize
 
 
 class Simulator:
-    def __init__(self, root):
-        # ■■■■■ the basic ■■■■■
-
-        self.root = root
-
+    def __init__(self):
         # ■■■■■ for data management ■■■■■
 
         self.workerpath = standardize.get_datapath() + "/simulator"
@@ -116,26 +113,26 @@ class Simulator:
         )
 
         text = "아무 전략도 그려져 있지 않음"
-        self.root.undertake(lambda t=text: self.root.label_19.setText(t), False)
+        core.window.undertake(lambda t=text: core.window.label_19.setText(t), False)
 
         # ■■■■■ default executions ■■■■■
 
-        self.root.initialize_functions.append(
+        core.window.initialize_functions.append(
             lambda: self.display_lines(),
         )
-        self.root.initialize_functions.append(
+        core.window.initialize_functions.append(
             lambda: self.display_year_range(),
         )
 
         # ■■■■■ repetitive schedules ■■■■■
 
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.display_available_years,
             trigger="cron",
             second="*",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.display_lines,
             trigger="cron",
             hour="*",
@@ -157,30 +154,30 @@ class Simulator:
 
     def update_viewing_symbol(self, *args, **kwargs):
         def job():
-            return self.root.comboBox_6.currentText()
+            return core.window.comboBox_6.currentText()
 
-        alias = self.root.undertake(job, True)
-        symbol = self.root.alias_to_symbol[alias]
+        alias = core.window.undertake(job, True)
+        symbol = core.window.alias_to_symbol[alias]
         self.viewing_symbol = symbol
 
         self.display_lines()
 
     def update_calculation_settings(self, *args, **kwargs):
-        text = self.root.undertake(lambda: self.root.comboBox_5.currentText(), True)
+        text = core.window.undertake(lambda: core.window.comboBox_5.currentText(), True)
         from_year = self.calculation_settings["year"]
         to_year = int(text)
         self.calculation_settings["year"] = to_year
         if from_year != to_year:
             self.display_year_range()
 
-        index = self.root.undertake(lambda: self.root.comboBox.currentIndex(), True)
-        strategy = self.root.strategy_tuples[index][0]
+        index = core.window.undertake(lambda: core.window.comboBox.currentIndex(), True)
+        strategy = core.window.strategy_tuples[index][0]
         self.calculation_settings["strategy"] = strategy
 
         if strategy == 0:
-            strategy_details = self.root.strategist.details
+            strategy_details = core.window.strategist.details
         else:
-            for strategy_tuple in self.root.strategy_tuples:
+            for strategy_tuple in core.window.strategy_tuples:
                 if strategy_tuple[0] == strategy:
                     strategy_details = strategy_tuple[2]
         is_working_strategy = strategy_details[0]
@@ -192,19 +189,19 @@ class Simulator:
                 ["확인"],
                 False,
             ]
-            self.root.ask(question)
+            core.window.ask(question)
 
         self.display_lines()
 
     def update_presentation_settings(self, *args, **kwargs):
-        widget = self.root.spinBox_2
-        input_value = self.root.undertake(lambda w=widget: w.value(), True)
+        widget = core.window.spinBox_2
+        input_value = core.window.undertake(lambda w=widget: w.value(), True)
         self.presentation_settings["leverage"] = input_value
-        widget = self.root.doubleSpinBox
-        input_value = self.root.undertake(lambda w=widget: w.value(), True)
+        widget = core.window.doubleSpinBox
+        input_value = core.window.undertake(lambda w=widget: w.value(), True)
         self.presentation_settings["taker_fee"] = input_value
-        widget = self.root.doubleSpinBox_2
-        input_value = self.root.undertake(lambda w=widget: w.value(), True)
+        widget = core.window.doubleSpinBox_2
+        input_value = core.window.undertake(lambda w=widget: w.value(), True)
         self.presentation_settings["maker_fee"] = input_value
         self.present()
 
@@ -233,8 +230,8 @@ class Simulator:
 
         # ■■■■■ check if the data exists ■■■■■
 
-        with self.root.collector.datalocks[0]:
-            if len(self.root.collector.candle_data) == 0:
+        with core.window.collector.datalocks[0]:
+            if len(core.window.collector.candle_data) == 0:
                 return
 
         # ■■■■■ wait for the latest data to be added ■■■■■
@@ -247,8 +244,8 @@ class Simulator:
             for _ in range(50):
                 if stop_flag.find(task_name, task_id):
                     return
-                with self.root.collector.datalocks[0]:
-                    last_index = self.root.collector.candle_data.index[-1]
+                with core.window.collector.datalocks[0]:
+                    last_index = core.window.collector.candle_data.index[-1]
                     if last_index == before_moment:
                         break
                 time.sleep(0.1)
@@ -259,21 +256,21 @@ class Simulator:
         strategy = self.calculation_settings["strategy"]
 
         if strategy == 0:
-            strategy_details = self.root.strategist.details
+            strategy_details = core.window.strategist.details
         else:
-            for strategy_tuple in self.root.strategy_tuples:
+            for strategy_tuple in core.window.strategy_tuples:
                 if strategy_tuple[0] == strategy:
                     strategy_details = strategy_tuple[2]
         is_fast_strategy = strategy_details[3]
 
         # ■■■■■ get light data ■■■■■
 
-        with self.root.collector.datalocks[1]:
-            before_chunk = self.root.collector.realtime_data_chunks[-2].copy()
-            current_chunk = self.root.collector.realtime_data_chunks[-1].copy()
+        with core.window.collector.datalocks[1]:
+            before_chunk = core.window.collector.realtime_data_chunks[-2].copy()
+            current_chunk = core.window.collector.realtime_data_chunks[-1].copy()
         realtime_data = np.concatenate((before_chunk, current_chunk))
-        with self.root.collector.datalocks[2]:
-            aggregate_trades = self.root.collector.aggregate_trades.copy()
+        with core.window.collector.datalocks[2]:
+            aggregate_trades = core.window.collector.aggregate_trades.copy()
 
         with self.datalocks[0]:
             unrealized_changes = self.unrealized_changes.copy()
@@ -288,14 +285,14 @@ class Simulator:
         mask = data_y != 0
         data_y = data_y[mask]
         data_x = data_x[mask]
-        widget = self.root.simulation_lines["mark_price"]
+        widget = core.window.simulation_lines["mark_price"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # last price
         data_x = aggregate_trades["index"].astype(np.int64) / 10**9
@@ -303,14 +300,14 @@ class Simulator:
         mask = data_y != 0
         data_y = data_y[mask]
         data_x = data_x[mask]
-        widget = self.root.simulation_lines["last_price"]
+        widget = core.window.simulation_lines["last_price"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # last trade volume
         index_ar = aggregate_trades["index"].astype(np.int64) / 10**9
@@ -324,14 +321,14 @@ class Simulator:
         nan_ar[:] = np.nan
         data_x = np.repeat(index_ar, 3)
         data_y = np.stack([nan_ar, zero_ar, value_ar], axis=1).reshape(-1)
-        widget = self.root.simulation_lines["last_volume"]
+        widget = core.window.simulation_lines["last_volume"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # book tickers
         data_x = realtime_data["index"].astype(np.int64) / 10**9
@@ -339,28 +336,28 @@ class Simulator:
         mask = data_y != 0
         data_y = data_y[mask]
         data_x = data_x[mask]
-        widget = self.root.simulation_lines["book_tickers"][0]
+        widget = core.window.simulation_lines["book_tickers"][0]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         data_x = realtime_data["index"].astype(np.int64) / 10**9
         data_y = realtime_data[str((symbol, "Best Ask Price"))]
         mask = data_y != 0
         data_y = data_y[mask]
         data_x = data_x[mask]
-        widget = self.root.simulation_lines["book_tickers"][1]
+        widget = core.window.simulation_lines["book_tickers"][1]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # open orders
         boundaries = [
@@ -370,25 +367,25 @@ class Simulator:
         ]
         first_moment = self.account_state["observed_until"] - timedelta(hours=12)
         last_moment = self.account_state["observed_until"] + timedelta(hours=12)
-        for turn, widget in enumerate(self.root.simulation_lines["boundaries"]):
+        for turn, widget in enumerate(core.window.simulation_lines["boundaries"]):
             if turn < len(boundaries):
                 boundary = boundaries[turn]
                 data_x = np.linspace(
                     first_moment.timestamp(), last_moment.timestamp(), num=1000
                 )
                 data_y = np.linspace(boundary, boundary, num=1000)
-                widget = self.root.simulation_lines["boundaries"][turn]
+                widget = core.window.simulation_lines["boundaries"][turn]
 
                 def job(widget=widget, data_x=data_x, data_y=data_y):
                     widget.setData(data_x, data_y)
 
                 if stop_flag.find(task_name, task_id):
                     return
-                self.root.undertake(job, False)
+                core.window.undertake(job, False)
             else:
                 if stop_flag.find(task_name, task_id):
                     return
-                self.root.undertake(lambda w=widget: w.clear(), False)
+                core.window.undertake(lambda w=widget: w.clear(), False)
 
         # entry price
         entry_price = self.account_state["positions"][symbol]["entry_price"]
@@ -402,14 +399,14 @@ class Simulator:
         else:
             data_x = []
             data_y = []
-        widget = self.root.simulation_lines["entry_price"]
+        widget = core.window.simulation_lines["entry_price"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # ■■■■■ record task duration ■■■■■
 
@@ -434,8 +431,8 @@ class Simulator:
                 index=pd.DatetimeIndex([], tz="UTC"),
             )
         else:
-            with self.root.collector.datalocks[0]:
-                candle_data = self.root.collector.candle_data.copy()
+            with core.window.collector.datalocks[0]:
+                candle_data = core.window.collector.candle_data.copy()
 
         # ■■■■■ maniuplate heavy data ■■■■■
 
@@ -469,7 +466,7 @@ class Simulator:
 
         # ■■■■■ make indicators ■■■■■
 
-        indicators_script = self.root.strategist.indicators_script
+        indicators_script = core.window.strategist.indicators_script
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
         if is_fast_strategy:
@@ -495,7 +492,7 @@ class Simulator:
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         if not is_fast_strategy:
             data_x += 5
-        line_list = self.root.simulation_lines["price_indicators"]
+        line_list = core.window.simulation_lines["price_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
                 column_name = df.columns[turn]
@@ -513,11 +510,11 @@ class Simulator:
 
                 if stop_flag.find(task_name, task_id):
                     return
-                self.root.undertake(job, False)
+                core.window.undertake(job, False)
             else:
                 if stop_flag.find(task_name, task_id):
                     return
-                self.root.undertake(lambda w=widget: w.clear(), False)
+                core.window.undertake(lambda w=widget: w.clear(), False)
 
         # price movement
         index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
@@ -558,14 +555,14 @@ class Simulator:
             ],
             axis=1,
         ).reshape(-1)
-        widget = self.root.simulation_lines["price_up"]
+        widget = core.window.simulation_lines["price_up"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         data_x = np.stack(
             [
@@ -595,46 +592,46 @@ class Simulator:
             ],
             axis=1,
         ).reshape(-1)
-        widget = self.root.simulation_lines["price_down"]
+        widget = core.window.simulation_lines["price_down"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # wobbles
         sr = candle_data[(symbol, "High")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.root.simulation_lines["wobbles"][0]
+        widget = core.window.simulation_lines["wobbles"][0]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         sr = candle_data[(symbol, "Low")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.root.simulation_lines["wobbles"][1]
+        widget = core.window.simulation_lines["wobbles"][1]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # trade volume indicators
         df = indicators[symbol]["Volume"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         if not is_fast_strategy:
             data_x += 5
-        line_list = self.root.simulation_lines["volume_indicators"]
+        line_list = core.window.simulation_lines["volume_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
                 column_name = df.columns[turn]
@@ -652,32 +649,32 @@ class Simulator:
 
                 if stop_flag.find(task_name, task_id):
                     return
-                self.root.undertake(job, False)
+                core.window.undertake(job, False)
             else:
                 if stop_flag.find(task_name, task_id):
                     return
-                self.root.undertake(lambda w=widget: w.clear(), False)
+                core.window.undertake(lambda w=widget: w.clear(), False)
 
         # trade volume
         sr = candle_data[(symbol, "Volume")]
         sr = sr.fillna(value=0)
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.root.simulation_lines["volume"]
+        widget = core.window.simulation_lines["volume"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # abstract indicators
         df = indicators[symbol]["Abstract"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         if not is_fast_strategy:
             data_x += 5
-        line_list = self.root.simulation_lines["abstract_indicators"]
+        line_list = core.window.simulation_lines["abstract_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
                 column_name = df.columns[turn]
@@ -695,23 +692,23 @@ class Simulator:
 
                 if stop_flag.find(task_name, task_id):
                     return
-                self.root.undertake(job, False)
+                core.window.undertake(job, False)
             else:
                 if stop_flag.find(task_name, task_id):
                     return
-                self.root.undertake(lambda w=widget: w.clear(), False)
+                core.window.undertake(lambda w=widget: w.clear(), False)
 
         # asset
         data_x = asset_record["Result Asset"].index.to_numpy(dtype=np.int64) / 10**9
         data_y = asset_record["Result Asset"].to_numpy(dtype=np.float32)
-        widget = self.root.simulation_lines["asset"]
+        widget = core.window.simulation_lines["asset"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # asset with unrealized profit
         if len(asset_record) >= 2:
@@ -720,14 +717,14 @@ class Simulator:
         sr = sr * (1 + unrealized_changes_sr)
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9 + 5
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.root.simulation_lines["asset_with_unrealized_profit"]
+        widget = core.window.simulation_lines["asset_with_unrealized_profit"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # buy and sell
         df = asset_record.loc[asset_record["Symbol"] == symbol]
@@ -735,28 +732,28 @@ class Simulator:
         sr = df["Fill Price"]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.root.simulation_lines["sell"]
+        widget = core.window.simulation_lines["sell"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         df = asset_record.loc[asset_record["Symbol"] == symbol]
         df = df[df["Side"] == "buy"]
         sr = df["Fill Price"]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.root.simulation_lines["buy"]
+        widget = core.window.simulation_lines["buy"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
         # ■■■■■ record task duration ■■■■■
 
@@ -799,25 +796,25 @@ class Simulator:
         self.present()
 
     def display_available_years(self, *args, **kwargs):
-        with self.root.collector.datalocks[0]:
-            years_sr = self.root.collector.candle_data.index.year.drop_duplicates()
+        with core.window.collector.datalocks[0]:
+            years_sr = core.window.collector.candle_data.index.year.drop_duplicates()
         years = years_sr.tolist()
         years.sort(reverse=True)
         years = [str(year) for year in years]
 
         def job():
-            widget = self.root.comboBox_5
+            widget = core.window.comboBox_5
             return [int(widget.itemText(i)) for i in range(widget.count())]
 
-        choices = self.root.undertake(job, True)
+        choices = core.window.undertake(job, True)
         choices.sort(reverse=True)
         choices = [str(choice) for choice in choices]
 
         if years != choices:
             # if it's changed
-            widget = self.root.comboBox_5
-            self.root.undertake(lambda w=widget: w.clear(), False)
-            self.root.undertake(lambda w=widget, y=years: w.addItems(y), False)
+            widget = core.window.comboBox_5
+            core.window.undertake(lambda w=widget: w.clear(), False)
+            core.window.undertake(lambda w=widget, y=years: w.addItems(y), False)
 
     def simulate_only_visible(self, *args, **kwargs):
         self.calculate(only_visible=True)
@@ -827,8 +824,8 @@ class Simulator:
 
         symbol = self.viewing_symbol
 
-        range_start = self.root.undertake(
-            lambda: self.root.plot_widget_2.getAxis("bottom").range[0], True
+        range_start = core.window.undertake(
+            lambda: core.window.plot_widget_2.getAxis("bottom").range[0], True
         )
         range_start = max(range_start, 0)
         range_start = datetime.fromtimestamp(range_start, tz=timezone.utc)
@@ -836,8 +833,8 @@ class Simulator:
         if stop_flag.find("display_simulation_range_information", task_id):
             return
 
-        range_end = self.root.undertake(
-            lambda: self.root.plot_widget_2.getAxis("bottom").range[1], True
+        range_end = core.window.undertake(
+            lambda: core.window.plot_widget_2.getAxis("bottom").range[1], True
         )
         if range_end < 0:
             # case when pyqtgraph passed negative value because it's too big
@@ -900,11 +897,11 @@ class Simulator:
         if stop_flag.find("display_simulation_range_information", task_id):
             return
 
-        range_down = self.root.undertake(
-            lambda: self.root.plot_widget_2.getAxis("left").range[0], True
+        range_down = core.window.undertake(
+            lambda: core.window.plot_widget_2.getAxis("left").range[0], True
         )
-        range_up = self.root.undertake(
-            lambda: self.root.plot_widget_2.getAxis("left").range[1], True
+        range_up = core.window.undertake(
+            lambda: core.window.plot_widget_2.getAxis("left").range[1], True
         )
         range_height = round((1 - range_down / range_up) * 100, 2)
 
@@ -920,16 +917,20 @@ class Simulator:
         text += f"누적 실현 수익률 {round(symbol_yield,4)}/{round(total_yield,4)}%"
         text += "  ⦁  "
         text += f"최저 미실현 수익률 {round(min_unrealized_change*100,2)}%"
-        self.root.undertake(lambda t=text: self.root.label_13.setText(t), False)
+        core.window.undertake(lambda t=text: core.window.label_13.setText(t), False)
 
     def set_minimum_view_range(self, *args, **kwargs):
         def job():
-            range_down = self.root.plot_widget_2.getAxis("left").range[0]
-            self.root.plot_widget_2.plotItem.vb.setLimits(minYRange=range_down * 0.005)
-            range_down = self.root.plot_widget_3.getAxis("left").range[0]
-            self.root.plot_widget_3.plotItem.vb.setLimits(minYRange=range_down * 0.005)
+            range_down = core.window.plot_widget_2.getAxis("left").range[0]
+            core.window.plot_widget_2.plotItem.vb.setLimits(
+                minYRange=range_down * 0.005
+            )
+            range_down = core.window.plot_widget_3.getAxis("left").range[0]
+            core.window.plot_widget_3.plotItem.vb.setLimits(
+                minYRange=range_down * 0.005
+            )
 
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
     def calculate(self, *args, **kwargs):
         task_id = stop_flag.make("calculate_simulation")
@@ -942,45 +943,49 @@ class Simulator:
         def job():
             while True:
                 if stop_flag.find("calculate_simulation", task_id):
-                    widget = self.root.progressBar_4
-                    self.root.undertake(lambda w=widget: w.setValue(0), False)
-                    widget = self.root.progressBar
-                    self.root.undertake(lambda w=widget: w.setValue(0), False)
+                    widget = core.window.progressBar_4
+                    core.window.undertake(lambda w=widget: w.setValue(0), False)
+                    widget = core.window.progressBar
+                    core.window.undertake(lambda w=widget: w.setValue(0), False)
                     return
                 else:
                     if prepare_step == 6 and calculate_step == 1000:
                         is_progressbar_filled = True
-                        progressbar_value = self.root.undertake(
-                            lambda: self.root.progressBar_4.value(), True
+                        progressbar_value = core.window.undertake(
+                            lambda: core.window.progressBar_4.value(), True
                         )
                         if progressbar_value < 1000:
                             is_progressbar_filled = False
-                        progressbar_value = self.root.undertake(
-                            lambda: self.root.progressBar.value(), True
+                        progressbar_value = core.window.undertake(
+                            lambda: core.window.progressBar.value(), True
                         )
                         if progressbar_value < 1000:
                             is_progressbar_filled = False
                         if is_progressbar_filled:
                             time.sleep(0.1)
-                            widget = self.root.progressBar_4
-                            self.root.undertake(lambda w=widget: w.setValue(0), False)
-                            widget = self.root.progressBar
-                            self.root.undertake(lambda w=widget: w.setValue(0), False)
+                            widget = core.window.progressBar_4
+                            core.window.undertake(lambda w=widget: w.setValue(0), False)
+                            widget = core.window.progressBar
+                            core.window.undertake(lambda w=widget: w.setValue(0), False)
                             return
-                    widget = self.root.progressBar_4
-                    before_value = self.root.undertake(lambda w=widget: w.value(), True)
+                    widget = core.window.progressBar_4
+                    before_value = core.window.undertake(
+                        lambda w=widget: w.value(), True
+                    )
                     if before_value < 1000:
                         remaining = math.ceil(1000 / 6 * prepare_step) - before_value
                         new_value = before_value + math.ceil(remaining * 0.2)
-                        self.root.undertake(
+                        core.window.undertake(
                             lambda w=widget, v=new_value: w.setValue(v), False
                         )
-                    widget = self.root.progressBar
-                    before_value = self.root.undertake(lambda w=widget: w.value(), True)
+                    widget = core.window.progressBar
+                    before_value = core.window.undertake(
+                        lambda w=widget: w.value(), True
+                    )
                     if before_value < 1000:
                         remaining = calculate_step - before_value
                         new_value = before_value + math.ceil(remaining * 0.2)
-                        self.root.undertake(
+                        core.window.undertake(
                             lambda w=widget, v=new_value: w.setValue(v), False
                         )
                     time.sleep(0.01)
@@ -1009,9 +1014,9 @@ class Simulator:
         )
 
         if strategy == 0:
-            strategy_details = self.root.strategist.details
+            strategy_details = core.window.strategist.details
         else:
-            for strategy_tuple in self.root.strategy_tuples:
+            for strategy_tuple in core.window.strategy_tuples:
                 if strategy_tuple[0] == strategy:
                     strategy_details = strategy_tuple[2]
         is_working_strategy = strategy_details[0]
@@ -1027,7 +1032,7 @@ class Simulator:
                 ["확인"],
                 False,
             ]
-            self.root.ask(question)
+            core.window.ask(question)
             return
 
         prepare_step = 2
@@ -1036,15 +1041,15 @@ class Simulator:
 
         if is_fast_strategy:
             # get all
-            with self.root.collector.datalocks[1]:
-                original_chunks = self.root.collector.realtime_data_chunks
+            with core.window.collector.datalocks[1]:
+                original_chunks = core.window.collector.realtime_data_chunks
                 realtime_data_chunks = copy.deepcopy(original_chunks)
             ar = np.concatenate(realtime_data_chunks)
             year_observed_data = process_toss.apply(digitize.do, ar)
         else:
             # get only year range
-            with self.root.collector.datalocks[0]:
-                df = self.root.collector.candle_data
+            with core.window.collector.datalocks[0]:
+                df = core.window.collector.candle_data
                 year_observed_data = df[df.index.year == year].copy()
             # slice until last hour
             slice_until = year_observed_data.index[-1] + timedelta(seconds=10)
@@ -1112,15 +1117,15 @@ class Simulator:
             previous_account_state = blank_account_state.copy()
             previous_virtual_state = blank_virtual_state.copy()
 
-            range_start = self.root.undertake(
-                lambda: self.root.plot_widget_2.getAxis("bottom").range[0], True
+            range_start = core.window.undertake(
+                lambda: core.window.plot_widget_2.getAxis("bottom").range[0], True
             )
             range_start = datetime.fromtimestamp(range_start, tz=timezone.utc)
             range_start = range_start.replace(microsecond=0)
             range_start = range_start - timedelta(seconds=range_start.second % 10)
 
-            range_end = self.root.undertake(
-                lambda: self.root.plot_widget_2.getAxis("bottom").range[1], True
+            range_end = core.window.undertake(
+                lambda: core.window.plot_widget_2.getAxis("bottom").range[1], True
             )
             range_end = datetime.fromtimestamp(range_end, tz=timezone.utc)
             range_end = range_end.replace(microsecond=0)
@@ -1166,8 +1171,8 @@ class Simulator:
         # ■■■■■ prepare per unit data ■■■■■
 
         if should_calculate:
-            decision_script = self.root.strategist.decision_script
-            indicators_script = self.root.strategist.indicators_script
+            decision_script = core.window.strategist.decision_script
+            indicators_script = core.window.strategist.indicators_script
             compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
             slice_from = calculate_from - timedelta(days=7)
@@ -1350,9 +1355,9 @@ class Simulator:
         else:
             strategy = self.about_viewing["strategy"]
             if strategy == 0:
-                strategy_details = self.root.strategist.details
+                strategy_details = core.window.strategist.details
             else:
-                for strategy_tuple in self.root.strategy_tuples:
+                for strategy_tuple in core.window.strategy_tuples:
                     if strategy_tuple[0] == strategy:
                         strategy_details = strategy_tuple[2]
             should_parallalize = strategy_details[1]
@@ -1437,7 +1442,7 @@ class Simulator:
 
         if self.about_viewing is None:
             text = "아무 전략도 그려져 있지 않음"
-            self.root.undertake(lambda t=text: self.root.label_19.setText(t), False)
+            core.window.undertake(lambda t=text: core.window.label_19.setText(t), False)
         else:
             year = self.about_viewing["year"]
             strategy = self.about_viewing["strategy"]
@@ -1445,7 +1450,7 @@ class Simulator:
             text += f"범위 {year}년"
             text += "  ⦁  "
             text += f"전략 {strategy}번"
-            self.root.undertake(lambda t=text: self.root.label_19.setText(t), False)
+            core.window.undertake(lambda t=text: core.window.label_19.setText(t), False)
 
     def display_year_range(self, *args, **kwargs):
         range_start = datetime(
@@ -1462,12 +1467,12 @@ class Simulator:
             tzinfo=timezone.utc,
         )
         range_end = range_end.timestamp()
-        widget = self.root.plot_widget_2
+        widget = core.window.plot_widget_2
 
         def job(range_start=range_start, range_end=range_end):
             widget.setXRange(range_start, range_end)
 
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
     def delete_calculation_data(self, *args, **kwargs):
         year = self.calculation_settings["year"]
@@ -1507,7 +1512,7 @@ class Simulator:
                 ["확인"],
                 False,
             ]
-            self.root.ask(question)
+            core.window.ask(question)
             return
         else:
             question = [
@@ -1517,7 +1522,7 @@ class Simulator:
                 ["취소", "삭제"],
                 False,
             ]
-            answer = self.root.ask(question)
+            answer = core.window.ask(question)
             if answer in (0, 1):
                 return
 
@@ -1578,22 +1583,22 @@ class Simulator:
                 ["확인"],
                 False,
             ]
-            self.root.ask(question)
+            core.window.ask(question)
             return
 
     def match_graph_range(self, *args, **kwargs):
-        range_start = self.root.undertake(
-            lambda: self.root.plot_widget.getAxis("bottom").range[0], True
+        range_start = core.window.undertake(
+            lambda: core.window.plot_widget.getAxis("bottom").range[0], True
         )
-        range_end = self.root.undertake(
-            lambda: self.root.plot_widget.getAxis("bottom").range[1], True
+        range_end = core.window.undertake(
+            lambda: core.window.plot_widget.getAxis("bottom").range[1], True
         )
-        widget = self.root.plot_widget_2
+        widget = core.window.plot_widget_2
 
         def job(range_start=range_start, range_end=range_end):
             widget.setXRange(range_start, range_end, padding=0)
 
-        self.root.undertake(job, False)
+        core.window.undertake(job, False)
 
     def stop_calculation(self, *args, **kwargs):
         stop_flag.make("calculate_simulation")
@@ -1609,7 +1614,7 @@ class Simulator:
                 ["확인"],
                 False,
             ]
-            self.root.ask(question)
+            core.window.ask(question)
         else:
             text_lines = [
                 str(index) + " " + str(round(peak_value * 100, 2)) + "%"
@@ -1621,7 +1626,7 @@ class Simulator:
                 ["확인"],
                 False,
             ]
-            self.root.ask(question)
+            core.window.ask(question)
 
     def toggle_combined_draw(self, *args, **kwargs):
         is_checked = args[0]

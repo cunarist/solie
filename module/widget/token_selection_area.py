@@ -3,6 +3,7 @@ import urllib
 
 from PySide6 import QtWidgets, QtCore, QtGui
 
+from module import core
 from module import thread_toss
 from module.instrument.api_requester import ApiRequester
 from module.recipe import standardize
@@ -12,7 +13,7 @@ from module.recipe import outsource
 class TokenSelectionArea(QtWidgets.QScrollArea):
     done_event = threading.Event()
 
-    def __init__(self, root):
+    def __init__(self):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
@@ -57,7 +58,7 @@ class TokenSelectionArea(QtWidgets.QScrollArea):
             basics = {}
             selected_tokens = []
             for symbol, radiobox in token_radioboxes.items():
-                is_selected = root.undertake(lambda: radiobox.isChecked(), True)
+                is_selected = core.window.undertake(lambda: radiobox.isChecked(), True)
                 if is_selected:
                     selected_tokens.append(symbol)
             if len(selected_tokens) == 1:
@@ -71,7 +72,7 @@ class TokenSelectionArea(QtWidgets.QScrollArea):
                     ["확인"],
                     False,
                 ]
-                root.ask(question)
+                core.window.ask(question)
             if is_symbol_count_ok:
                 question = [
                     "이대로 결정하시겠어요?",
@@ -79,7 +80,7 @@ class TokenSelectionArea(QtWidgets.QScrollArea):
                     ["아니오", "예"],
                     False,
                 ]
-                answer = root.ask(question)
+                answer = core.window.ask(question)
                 if answer in (0, 1):
                     return
                 standardize.apply_basics(basics)
@@ -253,6 +254,6 @@ class TokenSelectionArea(QtWidgets.QScrollArea):
                 def job(icon_label=icon_label, pixmap=pixmap):
                     icon_label.setPixmap(pixmap)
 
-                root.undertake(job, False)
+                core.window.undertake(job, False)
 
         thread_toss.apply_async(job)

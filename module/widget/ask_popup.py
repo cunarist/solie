@@ -8,7 +8,6 @@ from module.widget.ask_popup_content import AskPopupContent
 
 
 class AskPopup(QtWidgets.QWidget):
-
     done_event = threading.Event()
 
     def showEvent(self, event):  # noqa:N802
@@ -21,16 +20,15 @@ class AskPopup(QtWidgets.QWidget):
             self.setGeometry(source.rect())
         return super().eventFilter(source, event)
 
-    def __init__(self, root, question):
-
+    def __init__(self, parent, question):
         # ■■■■■ the basic ■■■■■
 
-        super().__init__(root)
+        super().__init__(parent)
 
         # ■■■■■ set properties ■■■■■
 
         # needed for filling the window when resized
-        root.installEventFilter(self)
+        parent.installEventFilter(self)
 
         # ■■■■■ in case other ask popup exists ■■■■■
 

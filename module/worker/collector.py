@@ -12,6 +12,7 @@ import logging
 import pandas as pd
 import numpy as np
 
+from module import core
 from module import process_toss
 from module import thread_toss
 from module.instrument.api_requester import ApiRequester
@@ -28,11 +29,7 @@ from module.recipe import remember_task_durations
 
 
 class Collector:
-    def __init__(self, root):
-        # ■■■■■ the basic ■■■■■
-
-        self.root = root
-
+    def __init__(self):
         # ■■■■■ for data management ■■■■■
 
         self.workerpath = standardize.get_datapath() + "/collector"
@@ -106,46 +103,46 @@ class Collector:
 
         # ■■■■■ default executions ■■■■■
 
-        self.root.initialize_functions.append(
+        core.window.initialize_functions.append(
             lambda: self.get_exchange_information(),
         )
-        self.root.finalize_functions.append(
+        core.window.finalize_functions.append(
             lambda: self.save_candle_data(),
         )
 
         # ■■■■■ repetitive schedules ■■■■■
 
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.display_information,
             trigger="cron",
             second="*",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.fill_candle_data_holes,
             trigger="cron",
             second="*/10",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.add_candle_data,
             trigger="cron",
             second="*/10",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.organize_everything,
             trigger="cron",
             minute="*",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.get_exchange_information,
             trigger="cron",
             minute="*",
             executor="thread_pool_executor",
         )
-        self.root.scheduler.add_job(
+        core.window.scheduler.add_job(
             self.save_candle_data,
             trigger="cron",
             hour="*",
@@ -349,8 +346,8 @@ class Collector:
                 price_precision = price_precisions[symbol]
                 latest_price = temp_ar[-1]
                 text = "＄" + str(round(latest_price, price_precision))
-                widget = self.root.price_labels[symbol]
-                self.root.undertake(lambda w=widget, t=text: w.setText(t), False)
+                widget = core.window.price_labels[symbol]
+                core.window.undertake(lambda w=widget, t=text: w.setText(t), False)
 
         # bottom information
         current_moment = datetime.now(timezone.utc).replace(microsecond=0)
@@ -393,7 +390,7 @@ class Collector:
         text += "  ⦁  "
         text += f"실시간 데이터 길이 {written_length_text}"
 
-        self.root.undertake(lambda t=text: self.root.label_6.setText(t), False)
+        core.window.undertake(lambda t=text: core.window.label_6.setText(t), False)
 
     def open_binance_data_page(self, *args, **kwargs):
         webbrowser.open("https://www.binance.com/en/landing/data")
@@ -472,7 +469,7 @@ class Collector:
             ["2020년부터 작년까지", "올해 첫 달부터 지난 달까지", "이번 달", "어제와 그저께"],
             True,
         ]
-        answer = self.root.ask(question)
+        answer = core.window.ask(question)
         if answer in (0,):
             return
 
@@ -557,27 +554,29 @@ class Collector:
         def job():
             while True:
                 if stop_flag.find("download_fill_candle_data", task_id):
-                    widget = self.root.progressBar_3
-                    self.root.undertake(lambda w=widget: w.setValue(0), False)
+                    widget = core.window.progressBar_3
+                    core.window.undertake(lambda w=widget: w.setValue(0), False)
                     return
                 else:
                     if done_steps == total_steps:
-                        progressbar_value = self.root.undertake(
-                            lambda: self.root.progressBar_3.value(), True
+                        progressbar_value = core.window.undertake(
+                            lambda: core.window.progressBar_3.value(), True
                         )
                         if progressbar_value == 1000:
                             time.sleep(0.1)
-                            widget = self.root.progressBar_3
-                            self.root.undertake(lambda w=widget: w.setValue(0), False)
+                            widget = core.window.progressBar_3
+                            core.window.undertake(lambda w=widget: w.setValue(0), False)
                             return
-                    widget = self.root.progressBar_3
-                    before_value = self.root.undertake(lambda w=widget: w.value(), True)
+                    widget = core.window.progressBar_3
+                    before_value = core.window.undertake(
+                        lambda w=widget: w.value(), True
+                    )
                     if before_value < 1000:
                         remaining = (
                             math.ceil(1000 / total_steps * done_steps) - before_value
                         )
                         new_value = before_value + math.ceil(remaining * 0.2)
-                        self.root.undertake(
+                        core.window.undertake(
                             lambda w=widget, v=new_value: w.setValue(v), False
                         )
                     time.sleep(0.01)
@@ -642,8 +641,8 @@ class Collector:
 
         # ■■■■■ display to graphs ■■■■■
 
-        self.root.transactor.display_lines()
-        self.root.simulator.display_lines()
+        core.window.transactor.display_lines()
+        core.window.simulator.display_lines()
 
     def add_book_tickers(self, *args, **kwargs):
         received = kwargs.get("received")
