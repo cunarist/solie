@@ -24,7 +24,7 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>../resource/image_logo.png</normaloff>../resource/image_logo.png</iconset>
+    <normaloff>./resource/image_logo.png</normaloff>./resource/image_logo.png</iconset>
   </property>
   <property name="styleSheet">
    <string notr="true">QPushButton, QComboBox, QLineEdit, QCheckBox, QSpinBox, QDoubleSpinBox {
@@ -281,7 +281,7 @@ AskPopupContent {
           <property name="orientation">
            <enum>Qt::Vertical</enum>
           </property>
-          <widget class="QWidget" name="layoutWidget">
+          <widget class="QWidget" name="horizontalLayoutWidget_1">
            <layout class="QHBoxLayout" name="horizontalLayout_7"/>
           </widget>
           <widget class="QWidget" name="horizontalLayoutWidget">
@@ -679,7 +679,7 @@ AskPopupContent {
           <property name="orientation">
            <enum>Qt::Vertical</enum>
           </property>
-          <widget class="QWidget" name="layoutWidget">
+          <widget class="QWidget" name="horizontalLayoutWidget_7">
            <layout class="QHBoxLayout" name="horizontalLayout"/>
           </widget>
           <widget class="QWidget" name="horizontalLayoutWidget_2">
@@ -1392,7 +1392,7 @@ AskPopupContent {
                      </size>
                     </property>
                     <property name="pixmap">
-                     <pixmap>../resource/image_logo.png</pixmap>
+                     <pixmap>./resource/image_logo.png</pixmap>
                     </property>
                     <property name="scaledContents">
                      <bool>true</bool>
@@ -1414,7 +1414,7 @@ AskPopupContent {
                      </size>
                     </property>
                     <property name="pixmap">
-                     <pixmap>../resource/text_logo.png</pixmap>
+                     <pixmap>./resource/text_logo.png</pixmap>
                     </property>
                     <property name="scaledContents">
                      <bool>true</bool>

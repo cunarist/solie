@@ -21,7 +21,7 @@ packages_to_complete = [
     "pandas",
     "scipy",
     # pip
-    "pyqt6",
+    "PySide6",
     "pyqtgraph",
     "requests",
     "apscheduler",

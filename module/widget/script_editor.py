@@ -1,4 +1,4 @@
-from PyQt6 import QtWidgets, QtGui, QtCore
+from PySide6 import QtWidgets, QtGui, QtCore
 from yapf.yapflib.yapf_api import FormatCode
 from yapf.yapflib.errors import YapfError
 

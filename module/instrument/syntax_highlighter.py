@@ -1,4 +1,4 @@
-from PyQt6 import QtGui
+from PySide6 import QtGui
 from pygments import lex, lexers
 
 

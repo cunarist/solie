@@ -1,4 +1,4 @@
-from PyQt6 import QtWidgets, QtGui, QtCore
+from PySide6 import QtWidgets, QtGui, QtCore
 
 
 class GuideFrame(QtWidgets.QFrame):

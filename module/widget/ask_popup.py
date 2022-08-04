@@ -1,6 +1,6 @@
 import threading
 
-from PyQt6 import QtWidgets, QtCore, QtGui
+from PySide6 import QtWidgets, QtCore, QtGui
 
 from module.widget.ask_popup_content import AskPopupContent
 
@@ -131,7 +131,7 @@ class AskPopup(QtWidgets.QWidget):
         for turn, option in enumerate(question[2]):
             option_button = QtWidgets.QPushButton(option, content_box)
 
-            def job(_, answer=turn + 1):
+            def job(answer=turn + 1, *args, **kwargs):
                 self.answer = answer
                 self.done_event.set()
 

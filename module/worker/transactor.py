@@ -12,7 +12,6 @@ import logging
 
 import pandas as pd
 import numpy as np
-from PyQt6 import QtCore
 
 from module.instrument.api_requester import ApiRequester
 from module.instrument.api_streamer import ApiStreamer
@@ -1386,8 +1385,8 @@ class Transactor:
         remember_task_durations.add(task_name, duration)
 
     def toggle_frequent_draw(self, *args, **kwargs):
-        state = args[0]
-        if state == QtCore.Qt.CheckState.Checked.value:
+        is_checked = args[0]
+        if is_checked:
             self.should_draw_frequently = True
         else:
             self.should_draw_frequently = False

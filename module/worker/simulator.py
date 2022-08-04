@@ -11,7 +11,6 @@ import copy
 import pandas as pd
 import numpy as np
 from scipy.signal import find_peaks
-from PyQt6 import QtCore
 
 from module.recipe import simulate_unit
 from module.recipe import make_indicators
@@ -1642,8 +1641,8 @@ class Simulator:
             self.root.ask(question)
 
     def toggle_combined_draw(self, *args, **kwargs):
-        state = args[0]
-        if state == QtCore.Qt.CheckState.Checked.value:
+        is_checked = args[0]
+        if is_checked:
             self.should_draw_combined = True
         else:
             self.should_draw_combined = False

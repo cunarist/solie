@@ -9,7 +9,7 @@ dependencies:
   - pandas=1.4.1
   - scipy=1.8.0
   - pip:
-      - pyqt6==6.3.0
+      - pyside6==6.3.0
       - pyqtgraph==0.12.4
       - requests==2.27.1
       - apscheduler==3.9.1
@@ -23,7 +23,6 @@ dependencies:
       - black
       - pyarmor
       - pyinstaller
-      - pyside6
       - flake8
       - pep8-naming
       - flake8-variables-names

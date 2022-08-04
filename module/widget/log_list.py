@@ -1,4 +1,4 @@
-from PyQt6 import QtWidgets, QtGui
+from PySide6 import QtWidgets, QtGui
 
 
 class LogList(QtWidgets.QListWidget):

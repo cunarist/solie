@@ -1,7 +1,7 @@
 import threading
 import getmac
 
-from PyQt6 import QtWidgets, QtCore, QtGui
+from PySide6 import QtWidgets, QtCore, QtGui
 
 from module.instrument.api_requester import ApiRequester
 from module.instrument.api_request_error import ApiRequestError
@@ -10,11 +10,9 @@ from module.recipe import outsource
 
 
 class LicenseArea(QtWidgets.QScrollArea):
-
     done_event = threading.Event()
 
     def __init__(self, root):
-
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
@@ -104,34 +102,11 @@ class LicenseArea(QtWidgets.QScrollArea):
         # input
         this_layout = QtWidgets.QHBoxLayout()
         card_layout.addLayout(this_layout)
-        spacer = QtWidgets.QSpacerItem(
-            0,
-            0,
-            QtWidgets.QSizePolicy.Policy.Expanding,
-            QtWidgets.QSizePolicy.Policy.Minimum,
-        )
-        this_layout.addItem(spacer)
         key_input = QtWidgets.QLineEdit()
         key_input.setFixedWidth(360)
         key_input.setMaxLength(32)
         key_input.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         this_layout.addWidget(key_input)
-        spacer = QtWidgets.QSpacerItem(
-            0,
-            0,
-            QtWidgets.QSizePolicy.Policy.Expanding,
-            QtWidgets.QSizePolicy.Policy.Minimum,
-        )
-        this_layout.addItem(spacer)
-
-        # spacing
-        spacer = QtWidgets.QSpacerItem(
-            0,
-            0,
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Expanding,
-        )
-        card_layout.addItem(spacer)
 
         # ■■■■■ a card ■■■■■
 

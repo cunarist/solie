@@ -1,7 +1,7 @@
 import threading
 import urllib
 
-from PyQt6 import QtWidgets, QtCore, QtGui
+from PySide6 import QtWidgets, QtCore, QtGui
 
 from module.instrument.api_requester import ApiRequester
 from module.recipe import standardize

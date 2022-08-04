@@ -8,7 +8,8 @@ import urllib
 import math
 import multiprocessing
 
-from PyQt6 import QtGui, QtWidgets, QtCore
+
+from PySide6 import QtGui, QtWidgets, QtCore
 import pandas as pd
 import pyqtgraph
 from apscheduler.schedulers.background import BlockingScheduler
@@ -1090,7 +1091,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             job = self.transactor.update_automation_settings
             outsource.do(self.comboBox_2.activated, job)
             job = self.transactor.update_automation_settings
-            outsource.do(self.checkBox.stateChanged, job)
+            outsource.do(self.checkBox.toggled, job)
             job = self.simulator.calculate
             outsource.do(self.pushButton_3.clicked, job)
             job = self.manager.open_datapath
@@ -1112,9 +1113,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             job = self.manager.run_script
             outsource.do(self.pushButton.clicked, job)
             job = self.transactor.toggle_frequent_draw
-            outsource.do(self.checkBox_2.stateChanged, job)
+            outsource.do(self.checkBox_2.toggled, job)
             job = self.simulator.toggle_combined_draw
-            outsource.do(self.checkBox_3.stateChanged, job)
+            outsource.do(self.checkBox_3.toggled, job)
             job = self.transactor.display_day_range
             outsource.do(self.pushButton_14.clicked, job)
             job = self.simulator.display_year_range
