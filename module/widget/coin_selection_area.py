@@ -3,18 +3,16 @@ import urllib
 
 from PySide6 import QtWidgets, QtCore, QtGui
 
+from module import thread_toss
 from module.instrument.api_requester import ApiRequester
 from module.recipe import standardize
 from module.recipe import outsource
-from module.recipe import thread_toss
 
 
 class CoinSelectionArea(QtWidgets.QScrollArea):
-
     done_event = threading.Event()
 
     def __init__(self, root):
-
         # ■■■■■ the basic ■■■■■
 
         super().__init__()

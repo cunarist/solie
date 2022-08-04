@@ -12,19 +12,18 @@ import pandas as pd
 import numpy as np
 from scipy.signal import find_peaks
 
+from module import process_toss
+from module import thread_toss
 from module.recipe import simulate_unit
 from module.recipe import make_indicators
 from module.recipe import stop_flag
 from module.recipe import check_internet
 from module.recipe import digitize
-from module.recipe import process_toss
-from module.recipe import thread_toss
 from module.recipe import standardize
 
 
 class Simulator:
     def __init__(self, root):
-
         # ■■■■■ the basic ■■■■■
 
         self.root = root
@@ -167,7 +166,6 @@ class Simulator:
         self.display_lines()
 
     def update_calculation_settings(self, *args, **kwargs):
-
         text = self.root.undertake(lambda: self.root.comboBox_5.currentText(), True)
         from_year = self.calculation_settings["year"]
         to_year = int(text)
@@ -211,7 +209,6 @@ class Simulator:
         self.present()
 
     def display_lines(self, *args, **kwargs):
-
         # ■■■■■ start the task ■■■■■
 
         periodic = kwargs.get("periodic", False)
@@ -766,7 +763,6 @@ class Simulator:
         pass
 
     def erase(self, *args, **kwargs):
-
         self.raw_account_state = {
             "observed_until": datetime.now(timezone.utc),
             "wallet_balance": 1,
@@ -803,7 +799,6 @@ class Simulator:
         self.present()
 
     def display_available_years(self, *args, **kwargs):
-
         with self.root.collector.datalocks[0]:
             years_sr = self.root.collector.candle_data.index.year.drop_duplicates()
         years = years_sr.tolist()
@@ -828,7 +823,6 @@ class Simulator:
         self.calculate(only_visible=True)
 
     def display_range_information(self, *args, **kwargs):
-
         task_id = stop_flag.make("display_simulation_range_information")
 
         symbol = self.viewing_symbol
@@ -938,7 +932,6 @@ class Simulator:
         self.root.undertake(job, False)
 
     def calculate(self, *args, **kwargs):
-
         task_id = stop_flag.make("calculate_simulation")
 
         only_visible = kwargs.get("only_visible", False)
@@ -1173,7 +1166,6 @@ class Simulator:
         # ■■■■■ prepare per unit data ■■■■■
 
         if should_calculate:
-
             decision_script = self.root.strategist.decision_script
             indicators_script = self.root.strategist.indicators_script
             compiled_indicators_script = compile(indicators_script, "<string>", "exec")
@@ -1189,7 +1181,6 @@ class Simulator:
             )
 
             if should_parallalize:
-
                 needed_candle_data = year_observed_data[calculate_from:calculate_until]
                 if is_fast_strategy:
                     frequency = timedelta(minutes=unit_length)
@@ -1244,7 +1235,6 @@ class Simulator:
                     input_data.append(dataset)
 
             else:
-
                 communication_manager = multiprocessing.Manager()
                 progress_list = communication_manager.list([0])
 
@@ -1272,7 +1262,6 @@ class Simulator:
         # ■■■■■ calculate ■■■■■
 
         if should_calculate:
-
             map_result = process_toss.map_async(simulate_unit.do, input_data)
 
             total_seconds = (calculate_until - calculate_from).total_seconds()
@@ -1293,7 +1282,6 @@ class Simulator:
         # ■■■■■ get calculation result ■■■■■
 
         if should_calculate:
-
             asset_record = previous_asset_record
             for month_ouput_data in output_data:
                 month_asset_record = month_ouput_data["unit_asset_record"]
@@ -1317,7 +1305,6 @@ class Simulator:
             virtual_state = output_data[-1]["unit_virtual_state"]
 
         else:
-
             asset_record = previous_asset_record
             unrealized_changes = previous_unrealized_changes
             scribbles = previous_scribbles
@@ -1335,7 +1322,6 @@ class Simulator:
         # ■■■■■ save if properly calculated ■■■■■
 
         if not only_visible and should_calculate:
-
             asset_record.to_pickle(asset_record_filepath)
             unrealized_changes.to_pickle(unrealized_changes_filepath)
             with open(scribbles_filepath, "wb") as file:
@@ -1346,7 +1332,6 @@ class Simulator:
                 pickle.dump(virtual_state, file)
 
     def present(self, *args, **kwargs):
-
         maker_fee = self.presentation_settings["maker_fee"]
         taker_fee = self.presentation_settings["taker_fee"]
         leverage = self.presentation_settings["leverage"]
@@ -1395,7 +1380,6 @@ class Simulator:
 
         unit_asset_changes_list = []
         for turn in range(unit_count):
-
             unit_asset_record = unit_asset_record_list[turn]
 
             # leverage
@@ -1561,7 +1545,6 @@ class Simulator:
         self.erase()
 
     def draw(self, *args, **kwargs):
-
         year = self.calculation_settings["year"]
         strategy = self.calculation_settings["strategy"]
 

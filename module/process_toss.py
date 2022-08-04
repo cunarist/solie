@@ -5,7 +5,7 @@ import time
 
 import dill
 
-from module.recipe import thread_toss
+from module import thread_toss
 
 _COMMUNICATION_MANAGER = None
 _THREAD_COUNTS = None

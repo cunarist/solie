@@ -1,4 +1,4 @@
-from module.recipe import thread_toss
+from module import thread_toss
 
 
 def do(signal, target_function):

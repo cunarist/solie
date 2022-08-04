@@ -12,20 +12,19 @@ import webbrowser
 import timesetter
 import getmac
 
+from module import process_toss
+from module import thread_toss
 from module.instrument.api_requester import ApiRequester
 from module.instrument.api_request_error import ApiRequestError
 from module.recipe import simply_format
 from module.recipe import check_internet
-from module.recipe import process_toss
 from module.recipe import standardize
-from module.recipe import thread_toss
 from module.recipe import find_goodies
 from module.recipe import remember_task_durations
 
 
 class Manager:
     def __init__(self, root):
-
         # ■■■■■ the basic ■■■■■
 
         self.root = root
@@ -292,7 +291,6 @@ class Manager:
         exec(script_text, namespace)
 
     def check_online_status(self, *args, **kwargs):
-
         if not check_internet.connected():
             return
 
@@ -314,7 +312,6 @@ class Manager:
         self.online_status["server_time_differences"].append(time_difference)
 
     def display_system_status(self, *args, **kwargs):
-
         time = datetime.now(timezone.utc).replace(microsecond=0)
         internet_connected = check_internet.connected()
         ping = self.online_status["ping"]
@@ -362,7 +359,6 @@ class Manager:
         server_time_differences.append(0)
 
     def check_binance_limits(self, *args, **kwargs):
-
         if not check_internet.connected():
             return
 
@@ -381,7 +377,6 @@ class Manager:
             self.binance_limits[limit_name] = limit_value
 
     def reset_datapath(self, *args, **kwargs):
-
         question = [
             "정말 데이터 저장 폴더를 바꾸시겠어요?",
             "데이터 저장 폴더를 바꾸기 위해서 쏠쏠이 꺼집니다. 다음에 쏠쏠을 켤 때에 데이터 저장 폴더를 다시 고르게 됩니다. 기존 데이터"
@@ -400,7 +395,6 @@ class Manager:
         self.root.undertake(self.root.close, False)
 
     def show_version(self, *args, **kwargs):
-
         with open("./resource/version.txt", mode="r", encoding="utf8") as file:
             version = file.read()
 
@@ -413,7 +407,6 @@ class Manager:
         self.root.ask(question)
 
     def show_license_key(self, *args, **kwargs):
-
         with open("./note/license_key.txt", mode="r", encoding="utf8") as file:
             license_key = file.read()
 
@@ -426,7 +419,6 @@ class Manager:
         self.root.ask(question)
 
     def occupy_license_key(self, *args, **kwargs):
-
         license_key = standardize.get_license_key()
         payload = {
             "licenseKey": license_key,
@@ -435,7 +427,6 @@ class Manager:
         self.api_requester.cunarist("PUT", "/api/solsol/key-mac-pair", payload)
 
     def check_license_key(self, *args, **kwargs):
-
         is_occupying_key = True
         is_key_valid = True
 
@@ -485,11 +476,9 @@ class Manager:
         self.root.ask(question)
 
     def prepare_update(self, *args, **kwargs):
-
         find_goodies.prepare()
 
     def notify_update(self, *args, **kwargs):
-
         run_duration = datetime.now(timezone.utc) - self.executed_time
         did_run_long = run_duration > timedelta(hours=12)
 

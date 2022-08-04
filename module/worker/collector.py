@@ -12,13 +12,13 @@ import logging
 import pandas as pd
 import numpy as np
 
+from module import process_toss
+from module import thread_toss
 from module.instrument.api_requester import ApiRequester
 from module.instrument.api_streamer import ApiStreamer
 from module.recipe import simply_format
 from module.recipe import stop_flag
 from module.recipe import check_internet
-from module.recipe import process_toss
-from module.recipe import thread_toss
 from module.recipe import standardize
 from module.recipe import download_aggtrade_data
 from module.recipe import combine_candle_datas
@@ -29,7 +29,6 @@ from module.recipe import remember_task_durations
 
 class Collector:
     def __init__(self, root):
-
         # ■■■■■ the basic ■■■■■
 
         self.root = root
@@ -184,7 +183,6 @@ class Collector:
         check_internet.add_disconnected_functions(disconnected_functions)
 
     def get_exchange_information(self, *args, **kwargs):
-
         if not check_internet.connected():
             return
 
@@ -230,7 +228,6 @@ class Collector:
             self.exchange_state["quantity_precisions"][symbol] = quantity_precision
 
     def fill_candle_data_holes(self, *args, **kwargs):
-
         # ■■■■■ check internet connection ■■■■■
 
         if not check_internet.connected():
@@ -254,9 +251,7 @@ class Collector:
 
         target_symbols = standardize.get_basics()["target_symbols"]
         while len(full_symbols) < len(target_symbols) and request_count < 10:
-
             for symbol in target_symbols:
-
                 if symbol in full_symbols:
                     continue
 
@@ -333,7 +328,6 @@ class Collector:
             self.candle_data = candle_data
 
     def display_information(self, *args, **kwargs):
-
         with self.datalocks[0]:
             if len(self.candle_data) == 0:
                 # when the app is executed for the first time
@@ -349,7 +343,6 @@ class Collector:
         price_precisions = self.exchange_state["price_precisions"]
 
         for symbol in standardize.get_basics()["target_symbols"]:
-
             temp_ar = ar[str((symbol, "Price"))]
             temp_ar = temp_ar[temp_ar != 0]
             if len(temp_ar) > 0:
@@ -406,7 +399,6 @@ class Collector:
         webbrowser.open("https://www.binance.com/en/landing/data")
 
     def save_candle_data(self, *args, **kwargs):
-
         # ■■■■■ default values ■■■■■
 
         current_year = datetime.now(timezone.utc).year
@@ -459,7 +451,6 @@ class Collector:
                 pass
 
     def save_all_years_history(self, *args, **kwargs):
-
         with self.datalocks[0]:
             years_sr = self.candle_data.index.year.drop_duplicates()
         years = years_sr.tolist()
@@ -472,7 +463,6 @@ class Collector:
             year_df.to_pickle(filepath)
 
     def download_fill_candle_data(self, *args, **kwargs):
-
         # ■■■■■ ask filling type ■■■■■
 
         question = [
@@ -610,7 +600,6 @@ class Collector:
             combined_df = self.candle_data.iloc[0:0].copy()
 
         def job(target_tuple_chunk):
-
             nonlocal done_steps
             nonlocal combined_df
 
@@ -636,7 +625,6 @@ class Collector:
         # ■■■■■ combine ■■■■■
 
         with self.datalocks[0]:
-
             df = process_toss.apply(
                 combine_candle_datas.do, combined_df, self.candle_data
             )
@@ -713,7 +701,6 @@ class Collector:
         remember_task_durations.add("add_aggregate_trades", duration)
 
     def organize_everything(self, *args, **kwargs):
-
         start_time = datetime.now(timezone.utc)
 
         with self.datalocks[0]:
@@ -738,12 +725,10 @@ class Collector:
         remember_task_durations.add("organize_everything", duration)
 
     def clear_aggregate_trades(self, *args, **kwargs):
-
         with self.datalocks[2]:
             self.aggregate_trades = self.aggregate_trades[0:0].copy()
 
     def add_candle_data(self, *args, **kwargs):
-
         current_moment = datetime.now(timezone.utc).replace(microsecond=0)
         current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
         before_moment = current_moment - timedelta(seconds=10)
@@ -770,7 +755,6 @@ class Collector:
         new_datas = {}
 
         for symbol in standardize.get_basics()["target_symbols"]:
-
             block_start_timestamp = before_moment.timestamp()
             block_end_timestamp = current_moment.timestamp()
 
@@ -805,7 +789,6 @@ class Collector:
             new_datas[(symbol, "Volume")] = sum_volume
 
         with self.datalocks[0]:
-
             for column_name, new_data_value in new_datas.items():
                 self.candle_data.loc[before_moment, column_name] = new_data_value
 
@@ -813,5 +796,4 @@ class Collector:
         remember_task_durations.add("add_candle_data", duration)
 
     def stop_filling_candle_data(self, *args, **kwargs):
-
         stop_flag.make("download_fill_candle_data")

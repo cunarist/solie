@@ -4,7 +4,7 @@ import logging
 
 import websocket
 
-from module.recipe import thread_toss
+from module import thread_toss
 
 
 class ApiStreamer:
@@ -14,7 +14,6 @@ class ApiStreamer:
     _is_active = True
 
     def __init__(self, url, when_received):
-
         self._instances.append(self)
 
         self._url = url

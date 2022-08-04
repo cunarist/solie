@@ -14,6 +14,8 @@ import pandas as pd
 import pyqtgraph
 from apscheduler.schedulers.background import BlockingScheduler
 
+from module import process_toss
+from module import thread_toss
 from module.user_interface import Ui_MainWindow
 from module.worker.manager import Manager
 from module.worker.collector import Collector
@@ -29,8 +31,6 @@ from module.instrument.api_requester import ApiRequester
 from module.instrument.log_handler import LogHandler
 from module.recipe import outsource
 from module.recipe import check_internet
-from module.recipe import process_toss
-from module.recipe import thread_toss
 from module.recipe import standardize
 from module.recipe import find_goodies
 from module.recipe import examine_data_files
@@ -44,17 +44,14 @@ from module.widget.symbol_box import SymbolBox
 
 class Window(QtWidgets.QMainWindow, Ui_MainWindow):
     def closeEvent(self, event):  # noqa:N802
-
         event.ignore()
 
         def job():
-
             if not self.should_finalize:
                 self.closeEvent = lambda e: e.accept()
                 self.undertake(self.close, True)
 
             if self.should_confirm_closing:
-
                 question = [
                     "정말 종료하시겠어요?",
                     "쏠쏠을 켜 두지 않으면 실시간 데이터 기록이 되지 않습니다. 종료를 선택하면 데이터를 저장하고 통신을 닫는 마무리"
@@ -114,7 +111,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         thread_toss.apply_async(job)
 
     def __init__(self):
-
         super().__init__()
         self.setupUi(self)
 
@@ -144,7 +140,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         thread_toss.apply_async(self.boot)
 
     def boot(self):
-
         # ■■■■■ start monitoring the internet ■■■■■
 
         check_internet.start_monitoring()
@@ -164,7 +159,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ check license key ■■■■■
 
         if standardize.get_license_key() is None:
-
             license_area = None
 
             # add temporary widget
@@ -186,7 +180,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ check data folder ■■■■■
 
         if standardize.get_datapath() is None:
-
             datapath = ""
 
             def job():
@@ -222,7 +215,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ check basics ■■■■■
 
         if "asset_token" not in standardize.get_basics().keys():
-
             token_selection_area = None
 
             # add temporary widget
@@ -242,7 +234,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.undertake(job, True)
 
         if "target_symbols" not in standardize.get_basics().keys():
-
             coin_selection_area = None
 
             # add temporary widget
@@ -685,7 +676,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.undertake(job, True)
 
         def job():
-
             self.plot_widget_2 = pyqtgraph.PlotWidget()
             self.plot_widget_3 = pyqtgraph.PlotWidget()
             self.plot_widget_5 = pyqtgraph.PlotWidget()
@@ -1028,7 +1018,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ connect events to functions ■■■■■
 
         def job():
-
             # 게이지
             job = self.manager.toggle_board_availability
             outsource.do(self.gauge.clicked, job)
@@ -1184,7 +1173,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
     # takes function and run it on the main thread
     def undertake(self, job, wait_return, called_remotely=False, holder=None):
-
         if not called_remotely:
             holder = [threading.Event(), None]
             telephone = Telephone()
@@ -1201,7 +1189,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
     # show an ask popup and blocks the stack
     def ask(self, question):
-
         ask_popup = None
 
         def job():

@@ -13,6 +13,8 @@ import logging
 import pandas as pd
 import numpy as np
 
+from module import process_toss
+from module import thread_toss
 from module.instrument.api_requester import ApiRequester
 from module.instrument.api_streamer import ApiStreamer
 from module.instrument.api_request_error import ApiRequestError
@@ -22,15 +24,12 @@ from module.recipe import ball
 from module.recipe import stop_flag
 from module.recipe import check_internet
 from module.recipe import digitize
-from module.recipe import process_toss
-from module.recipe import thread_toss
 from module.recipe import standardize
 from module.recipe import remember_task_durations
 
 
 class Transactor:
     def __init__(self, root):
-
         # ■■■■■ the basic ■■■■■
 
         self.root = root
@@ -313,7 +312,6 @@ class Transactor:
             pickle.dump(self.scribbles, file)
 
     def update_user_data_stream(self, *args, **kwargs):
-
         if not check_internet.connected():
             return
 
@@ -339,7 +337,6 @@ class Transactor:
         api_streamer.update_url(url)
 
     def listen_to_account(self, *args, **kwargs):
-
         received = kwargs["received"]
 
         # ■■■■■ default values ■■■■■
@@ -353,14 +350,12 @@ class Transactor:
         # ■■■■■ do the task according to event type ■■■■■
 
         if event_type == "listenKeyExpired":
-
             text = "Binance user data stream listen key got expired"
             logger = logging.getLogger("solsol")
             logger.warning(text)
             self.update_user_data_stream()
 
         if event_type == "ACCOUNT_UPDATE":
-
             about_update = received["a"]
             about_assets = about_update["B"]
             about_positions = about_update["P"]
@@ -368,7 +363,6 @@ class Transactor:
             asset_token = standardize.get_basics()["asset_token"]
 
             if asset_token in [about_asset["a"] for about_asset in about_assets]:
-
                 for about_asset in about_assets:
                     asset_name = about_asset["a"]
                     if asset_name == asset_token:
@@ -378,7 +372,6 @@ class Transactor:
                 self.wallet_balance_state = wallet_balance
 
             if "BOTH" in [about_position["ps"] for about_position in about_positions]:
-
                 for about_position in about_positions:
                     position_side = about_position["ps"]
                     if position_side == "BOTH":
@@ -407,7 +400,6 @@ class Transactor:
                 self.account_state["positions"][symbol]["update_time"] = event_time
 
         if event_type == "ORDER_TRADE_UPDATE":
-
             about_update = received["o"]
 
             target_symbols = standardize.get_basics()["target_symbols"]
@@ -440,13 +432,11 @@ class Transactor:
 
             # when the order is removed
             if order_status not in ("NEW", "PARTIALLY_FILLED"):
-
                 if order_id in self.account_state["open_orders"][symbol].keys():
                     self.account_state["open_orders"][symbol].pop(order_id)
 
             # when the order is left or created
             if order_status in ("NEW", "PARTIALLY_FILLED"):
-
                 if order_type == "STOP_MARKET":
                     if close_position:
                         if side == "BUY":
@@ -512,7 +502,6 @@ class Transactor:
 
             # when the order is filled
             if execution_type == "TRADE":
-
                 net_profit = realized_profit - commission
                 added_notional = last_filled_price * last_filled_quantity
                 added_margin = added_notional / leverage
@@ -612,7 +601,6 @@ class Transactor:
         self.update_user_data_stream()
 
     def update_automation_settings(self, *args, **kwargs):
-
         # ■■■■■ get information about strategy ■■■■■
 
         index = self.root.undertake(lambda: self.root.comboBox_2.currentIndex(), True)
@@ -643,7 +631,6 @@ class Transactor:
         is_checked = self.root.undertake(lambda: self.root.checkBox.isChecked(), True)
 
         if is_checked:
-
             if strategy == 0:
                 question = [
                     "나만의 전략이 선택되어 있습니다.",
@@ -702,7 +689,6 @@ class Transactor:
             self.automation_settings["should_transact"] = True
 
         else:
-
             self.automation_settings["should_transact"] = False
 
         # ■■■■■ save ■■■■■
@@ -713,7 +699,6 @@ class Transactor:
             json.dump(self.automation_settings, file, indent=4)
 
     def display_range_information(self, *args, **kwargs):
-
         task_id = stop_flag.make("display_transaction_range_information")
 
         symbol = self.viewing_symbol
@@ -823,7 +808,6 @@ class Transactor:
         self.root.undertake(job, False)
 
     def display_lines(self, *args, **kwargs):
-
         # ■■■■■ start the task ■■■■■
 
         periodic = kwargs.get("periodic", False)
@@ -1405,7 +1389,6 @@ class Transactor:
         self.display_range_information()
 
     def display_asset_information(self, *args, **kwargs):
-
         # ■■■■■ is it the recent information? ■■■■■
 
         time_passed = datetime.now(timezone.utc) - self.account_state["observed_until"]
@@ -1448,7 +1431,6 @@ class Transactor:
         self.root.undertake(lambda t=text: self.root.label_16.setText(t), False)
 
     def transact_fast(self, *args, **kwargs):
-
         # stop if it's not connected to the internet
         if not check_internet.connected():
             return
@@ -1489,7 +1471,6 @@ class Transactor:
         thread_toss.apply_async(job)
 
         def job():
-
             # ■■■■■ task start time ■■■■■
 
             task_start_time = datetime.now(timezone.utc)
@@ -1556,7 +1537,6 @@ class Transactor:
             time.sleep(0.1)
 
     def transact_slow(self, *args, **kwargs):
-
         # ■■■■■ stop if internet connection is not present ■■■■
 
         if not check_internet.connected():
@@ -1726,7 +1706,6 @@ class Transactor:
         self.root.undertake(job, False)
 
     def update_mode_settings(self, *args, **kwargs):
-
         desired_leverage = self.root.undertake(lambda: self.root.spinBox.value(), True)
         self.mode_settings["desired_leverage"] = desired_leverage
 
@@ -1738,7 +1717,6 @@ class Transactor:
             json.dump(self.mode_settings, file, indent=4)
 
     def watch_binance(self, *args, **kwargs):
-
         # ■■■■■ check internet connection ■■■■■
 
         if not check_internet.connected():
@@ -1870,7 +1848,6 @@ class Transactor:
             open_orders[symbol] = {}
 
         for symbol in standardize.get_basics()["target_symbols"]:
-
             for about_position in about_account["positions"]:
                 if about_position["symbol"] == symbol:
                     break
@@ -1878,7 +1855,6 @@ class Transactor:
             leverage = int(about_position["leverage"])
 
             for about_open_order in about_open_orders[symbol]:
-
                 order_id = about_open_order["orderId"]
                 order_type = about_open_order["type"]
 
@@ -1958,7 +1934,6 @@ class Transactor:
         # ■■■■■ update hidden state ■■■■■
 
         for symbol in standardize.get_basics()["target_symbols"]:
-
             for about_position in about_account["positions"]:
                 if about_position["symbol"] == symbol:
                     break
@@ -2033,7 +2008,6 @@ class Transactor:
                 leverage = int(about_position["leverage"])
 
                 if leverage != self.mode_settings["desired_leverage"]:
-
                     timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
                     payload = {
                         "symbol": symbol,
@@ -2049,7 +2023,6 @@ class Transactor:
             thread_toss.map(job, standardize.get_basics()["target_symbols"])
 
             def job(symbol):
-
                 for about_position in about_account["positions"]:
                     if about_position["symbol"] == symbol:
                         break
@@ -2058,7 +2031,6 @@ class Transactor:
                 notional = float(about_position["notional"])
 
                 if isolated:
-
                     # close position if exists
                     if notional != 0:
                         decision = {
@@ -2112,7 +2084,6 @@ class Transactor:
                 pass
 
     def place_order(self, *args, **kwargs):
-
         task_start_time = datetime.now(timezone.utc)
 
         decision = args[0]
@@ -2136,7 +2107,6 @@ class Transactor:
         new_orders = []
 
         for symbol in standardize.get_basics()["target_symbols"]:
-
             if symbol not in decision.keys():
                 continue
 
@@ -2339,7 +2309,6 @@ class Transactor:
         # ■■■■■ actually place orders ■■■■■
 
         for new_order in new_orders:
-
             payload = new_order
 
             def job(payload=payload):
@@ -2359,7 +2328,6 @@ class Transactor:
             thread_toss.apply_async(job)
 
         for cancelorder in cancel_orders:
-
             payload = cancelorder
 
             def job(payload=payload):
@@ -2387,7 +2355,6 @@ class Transactor:
         self.place_order(decision)
 
     def cancel_conflicting_orders(self, *args, **kwargs):
-
         if not self.automation_settings["should_transact"]:
             return
 
@@ -2412,7 +2379,6 @@ class Transactor:
                             conflicting_order_tuples.append((symbol, order_id))
 
         for conflicting_order_tuple in conflicting_order_tuples:
-
             payload = {
                 "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                 "symbol": conflicting_order_tuple[0],
@@ -2432,7 +2398,6 @@ class Transactor:
             thread_toss.apply_async(job)
 
     def move_view_range(self, *args, **kwargs):
-
         if not self.should_draw_frequently:
             return
 

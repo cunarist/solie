@@ -6,13 +6,12 @@ import talib
 import pandas as pd
 import numpy as np
 
+from module import thread_toss
 from module.recipe import level_constant
-from module.recipe import thread_toss
 from module.recipe import standardize
 
 
 def do(observed_data, strategy, compiled_custom_script):
-
     # ■■■■■ interpolate nans ■■■■■
 
     observed_data = observed_data.interpolate()
@@ -42,13 +41,11 @@ def do(observed_data, strategy, compiled_custom_script):
     # ■■■■■ make individual indicators ■■■■■
 
     def job(symbol):
-
         with observed_data_lock:
             if symbol not in observed_data.columns.get_level_values(0):
                 return
 
         if strategy == 0:
-
             namespace = {
                 "talib": talib,
                 "pd": pd,
@@ -68,7 +65,6 @@ def do(observed_data, strategy, compiled_custom_script):
             pass
 
         elif strategy == 57:
-
             with observed_data_lock:
                 sr = observed_data[(symbol, "Close")].copy()
 
@@ -79,7 +75,6 @@ def do(observed_data, strategy, compiled_custom_script):
             new_indicators[(symbol, "Price", "Combined SMA-")] = moving_average * 0.99
 
         elif strategy == 61:
-
             with observed_data_lock:
                 sr = observed_data[(symbol, "Close")].copy()
 
@@ -95,7 +90,6 @@ def do(observed_data, strategy, compiled_custom_script):
                 ] = new_indicators[(symbol, "Price", "SMA 360")] * (1 - 0.015 * level)
 
         elif strategy == 64:
-
             with observed_data_lock:
                 sr = observed_data[(symbol, "Close")].copy()
 
@@ -115,7 +109,6 @@ def do(observed_data, strategy, compiled_custom_script):
                 )
 
         elif strategy == 65:
-
             with observed_data_lock:
                 sr = observed_data[(symbol, "Close")].copy()
 
@@ -126,7 +119,6 @@ def do(observed_data, strategy, compiled_custom_script):
             new_indicators[(symbol, "Price", "SMA 20 .01.10-")] = sma_sr * (1 - 0.001)
 
         elif strategy == 89:
-
             with observed_data_lock:
                 sr = observed_data[(symbol, "Close")].copy()
 
@@ -134,7 +126,6 @@ def do(observed_data, strategy, compiled_custom_script):
             new_indicators[(symbol, "Price", "SMA 11520")] = sma_sr
 
         elif strategy == 93:
-
             with observed_data_lock:
                 sr = observed_data[(symbol, "Close")].copy()
 
@@ -147,7 +138,6 @@ def do(observed_data, strategy, compiled_custom_script):
                 )
 
         elif strategy == 95:
-
             with observed_data_lock:
                 sr = observed_data[(symbol, "Close")].copy()
 
@@ -159,7 +149,6 @@ def do(observed_data, strategy, compiled_custom_script):
             new_indicators[(symbol, "Price", "BBANDS 120-")] = bbands_down
 
         elif strategy == 98:
-
             with observed_data_lock:
                 sr = observed_data[(symbol, "Close")].copy()
 
@@ -168,7 +157,6 @@ def do(observed_data, strategy, compiled_custom_script):
             new_indicators[(symbol, "Price", "SMA 11520")] = moving_average
 
         elif strategy == 100:
-
             with observed_data_lock:
                 sr = observed_data[(symbol, "Close")].copy()
 
@@ -180,7 +168,6 @@ def do(observed_data, strategy, compiled_custom_script):
                 new_indicators[(symbol, "Price", f"SMA {name}")] = sma_sr
 
         elif strategy == 107:
-
             with observed_data_lock:
                 sr = observed_data[(symbol, "Volume")].copy()
             volume_sma = talib.SMA(sr, 24 * 60 * 60 / 10) * 10
@@ -188,7 +175,6 @@ def do(observed_data, strategy, compiled_custom_script):
             new_indicators[(symbol, "Volume", "SMA (#666666)")] = volume_sma
 
         elif strategy == 110:
-
             border = 0.5  # percent
 
             with observed_data_lock:
