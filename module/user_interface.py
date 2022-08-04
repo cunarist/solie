@@ -1023,165 +1023,6 @@ class Ui_MainWindow(object):
         self.verticalLayout_9.addWidget(self.groupBox_7)
 
         self.tabWidget.addTab(self.tab_4, "")
-        self.tab_7 = QWidget()
-        self.tab_7.setObjectName(u"tab_7")
-        self.verticalLayout_7 = QVBoxLayout(self.tab_7)
-        self.verticalLayout_7.setObjectName(u"verticalLayout_7")
-        self.gridLayout = QGridLayout()
-        self.gridLayout.setObjectName(u"gridLayout")
-        self.scrollArea_6 = QScrollArea(self.tab_7)
-        self.scrollArea_6.setObjectName(u"scrollArea_6")
-        self.scrollArea_6.setWidgetResizable(True)
-        self.scrollAreaWidgetContents_6 = QWidget()
-        self.scrollAreaWidgetContents_6.setObjectName(u"scrollAreaWidgetContents_6")
-        self.scrollAreaWidgetContents_6.setGeometry(QRect(0, 0, 81, 34))
-        self.gridLayout_6 = QGridLayout(self.scrollAreaWidgetContents_6)
-        self.gridLayout_6.setObjectName(u"gridLayout_6")
-        self.label_33 = QLabel(self.scrollAreaWidgetContents_6)
-        self.label_33.setObjectName(u"label_33")
-        self.label_33.setAlignment(Qt.AlignCenter)
-
-        self.gridLayout_6.addWidget(self.label_33, 0, 0, 1, 1)
-
-        self.scrollArea_6.setWidget(self.scrollAreaWidgetContents_6)
-
-        self.gridLayout.addWidget(self.scrollArea_6, 1, 2, 1, 1)
-
-        self.scrollArea_4 = QScrollArea(self.tab_7)
-        self.scrollArea_4.setObjectName(u"scrollArea_4")
-        self.scrollArea_4.setWidgetResizable(True)
-        self.scrollAreaWidgetContents_4 = QWidget()
-        self.scrollAreaWidgetContents_4.setObjectName(u"scrollAreaWidgetContents_4")
-        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 81, 34))
-        self.gridLayout_7 = QGridLayout(self.scrollAreaWidgetContents_4)
-        self.gridLayout_7.setObjectName(u"gridLayout_7")
-        self.label_35 = QLabel(self.scrollAreaWidgetContents_4)
-        self.label_35.setObjectName(u"label_35")
-        self.label_35.setAlignment(Qt.AlignCenter)
-
-        self.gridLayout_7.addWidget(self.label_35, 0, 0, 1, 1)
-
-        self.scrollArea_4.setWidget(self.scrollAreaWidgetContents_4)
-
-        self.gridLayout.addWidget(self.scrollArea_4, 3, 1, 1, 1)
-
-        self.scrollArea = QScrollArea(self.tab_7)
-        self.scrollArea.setObjectName(u"scrollArea")
-        self.scrollArea.setWidgetResizable(True)
-        self.scrollAreaWidgetContents = QWidget()
-        self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 81, 34))
-        self.gridLayout_4 = QGridLayout(self.scrollAreaWidgetContents)
-        self.gridLayout_4.setObjectName(u"gridLayout_4")
-        self.label_12 = QLabel(self.scrollAreaWidgetContents)
-        self.label_12.setObjectName(u"label_12")
-        self.label_12.setAlignment(Qt.AlignCenter)
-
-        self.gridLayout_4.addWidget(self.label_12, 0, 0, 1, 1)
-
-        self.scrollArea.setWidget(self.scrollAreaWidgetContents)
-
-        self.gridLayout.addWidget(self.scrollArea, 1, 0, 1, 1)
-
-        self.scrollArea_5 = QScrollArea(self.tab_7)
-        self.scrollArea_5.setObjectName(u"scrollArea_5")
-        self.scrollArea_5.setWidgetResizable(True)
-        self.scrollAreaWidgetContents_5 = QWidget()
-        self.scrollAreaWidgetContents_5.setObjectName(u"scrollAreaWidgetContents_5")
-        self.scrollAreaWidgetContents_5.setGeometry(QRect(0, 0, 81, 34))
-        self.gridLayout_8 = QGridLayout(self.scrollAreaWidgetContents_5)
-        self.gridLayout_8.setObjectName(u"gridLayout_8")
-        self.label_36 = QLabel(self.scrollAreaWidgetContents_5)
-        self.label_36.setObjectName(u"label_36")
-        self.label_36.setAlignment(Qt.AlignCenter)
-
-        self.gridLayout_8.addWidget(self.label_36, 0, 0, 1, 1)
-
-        self.scrollArea_5.setWidget(self.scrollAreaWidgetContents_5)
-
-        self.gridLayout.addWidget(self.scrollArea_5, 3, 0, 1, 1)
-
-        self.scrollArea_3 = QScrollArea(self.tab_7)
-        self.scrollArea_3.setObjectName(u"scrollArea_3")
-        self.scrollArea_3.setWidgetResizable(True)
-        self.scrollAreaWidgetContents_3 = QWidget()
-        self.scrollAreaWidgetContents_3.setObjectName(u"scrollAreaWidgetContents_3")
-        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 81, 34))
-        self.gridLayout_5 = QGridLayout(self.scrollAreaWidgetContents_3)
-        self.gridLayout_5.setObjectName(u"gridLayout_5")
-        self.label_32 = QLabel(self.scrollAreaWidgetContents_3)
-        self.label_32.setObjectName(u"label_32")
-        self.label_32.setAlignment(Qt.AlignCenter)
-
-        self.gridLayout_5.addWidget(self.label_32, 0, 0, 1, 1)
-
-        self.scrollArea_3.setWidget(self.scrollAreaWidgetContents_3)
-
-        self.gridLayout.addWidget(self.scrollArea_3, 1, 1, 1, 1)
-
-        self.scrollArea_7 = QScrollArea(self.tab_7)
-        self.scrollArea_7.setObjectName(u"scrollArea_7")
-        self.scrollArea_7.setWidgetResizable(True)
-        self.scrollAreaWidgetContents_7 = QWidget()
-        self.scrollAreaWidgetContents_7.setObjectName(u"scrollAreaWidgetContents_7")
-        self.scrollAreaWidgetContents_7.setGeometry(QRect(0, 0, 81, 34))
-        self.gridLayout_9 = QGridLayout(self.scrollAreaWidgetContents_7)
-        self.gridLayout_9.setObjectName(u"gridLayout_9")
-        self.label_34 = QLabel(self.scrollAreaWidgetContents_7)
-        self.label_34.setObjectName(u"label_34")
-        self.label_34.setAlignment(Qt.AlignCenter)
-
-        self.gridLayout_9.addWidget(self.label_34, 0, 0, 1, 1)
-
-        self.scrollArea_7.setWidget(self.scrollAreaWidgetContents_7)
-
-        self.gridLayout.addWidget(self.scrollArea_7, 3, 2, 1, 1)
-
-        self.label_37 = QLabel(self.tab_7)
-        self.label_37.setObjectName(u"label_37")
-        self.label_37.setAlignment(Qt.AlignCenter)
-
-        self.gridLayout.addWidget(self.label_37, 0, 0, 1, 1)
-
-        self.label_38 = QLabel(self.tab_7)
-        self.label_38.setObjectName(u"label_38")
-        self.label_38.setAlignment(Qt.AlignCenter)
-
-        self.gridLayout.addWidget(self.label_38, 2, 0, 1, 1)
-
-        self.label_39 = QLabel(self.tab_7)
-        self.label_39.setObjectName(u"label_39")
-        self.label_39.setAlignment(Qt.AlignCenter)
-
-        self.gridLayout.addWidget(self.label_39, 2, 1, 1, 1)
-
-        self.label_40 = QLabel(self.tab_7)
-        self.label_40.setObjectName(u"label_40")
-        self.label_40.setAlignment(Qt.AlignCenter)
-
-        self.gridLayout.addWidget(self.label_40, 2, 2, 1, 1)
-
-        self.label_41 = QLabel(self.tab_7)
-        self.label_41.setObjectName(u"label_41")
-        self.label_41.setAlignment(Qt.AlignCenter)
-
-        self.gridLayout.addWidget(self.label_41, 0, 2, 1, 1)
-
-        self.label_42 = QLabel(self.tab_7)
-        self.label_42.setObjectName(u"label_42")
-        self.label_42.setAlignment(Qt.AlignCenter)
-
-        self.gridLayout.addWidget(self.label_42, 0, 1, 1, 1)
-
-        self.gridLayout.setRowStretch(1, 1)
-        self.gridLayout.setRowStretch(3, 1)
-        self.gridLayout.setColumnStretch(0, 1)
-        self.gridLayout.setColumnStretch(1, 1)
-        self.gridLayout.setColumnStretch(2, 1)
-
-        self.verticalLayout_7.addLayout(self.gridLayout)
-
-        self.tabWidget.addTab(self.tab_7, "")
         self.tab_6 = QWidget()
         self.tab_6.setObjectName(u"tab_6")
         self.verticalLayout_8 = QVBoxLayout(self.tab_6)
@@ -1257,6 +1098,165 @@ class Ui_MainWindow(object):
         self.verticalLayout_8.addWidget(self.groupBox_18)
 
         self.tabWidget.addTab(self.tab_6, "")
+        self.tab_7 = QWidget()
+        self.tab_7.setObjectName(u"tab_7")
+        self.verticalLayout_7 = QVBoxLayout(self.tab_7)
+        self.verticalLayout_7.setObjectName(u"verticalLayout_7")
+        self.gridLayout = QGridLayout()
+        self.gridLayout.setObjectName(u"gridLayout")
+        self.scrollArea_6 = QScrollArea(self.tab_7)
+        self.scrollArea_6.setObjectName(u"scrollArea_6")
+        self.scrollArea_6.setWidgetResizable(True)
+        self.scrollAreaWidgetContents_6 = QWidget()
+        self.scrollAreaWidgetContents_6.setObjectName(u"scrollAreaWidgetContents_6")
+        self.scrollAreaWidgetContents_6.setGeometry(QRect(0, 0, 398, 262))
+        self.gridLayout_6 = QGridLayout(self.scrollAreaWidgetContents_6)
+        self.gridLayout_6.setObjectName(u"gridLayout_6")
+        self.label_33 = QLabel(self.scrollAreaWidgetContents_6)
+        self.label_33.setObjectName(u"label_33")
+        self.label_33.setAlignment(Qt.AlignCenter)
+
+        self.gridLayout_6.addWidget(self.label_33, 0, 0, 1, 1)
+
+        self.scrollArea_6.setWidget(self.scrollAreaWidgetContents_6)
+
+        self.gridLayout.addWidget(self.scrollArea_6, 1, 2, 1, 1)
+
+        self.scrollArea_4 = QScrollArea(self.tab_7)
+        self.scrollArea_4.setObjectName(u"scrollArea_4")
+        self.scrollArea_4.setWidgetResizable(True)
+        self.scrollAreaWidgetContents_4 = QWidget()
+        self.scrollAreaWidgetContents_4.setObjectName(u"scrollAreaWidgetContents_4")
+        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 398, 262))
+        self.gridLayout_7 = QGridLayout(self.scrollAreaWidgetContents_4)
+        self.gridLayout_7.setObjectName(u"gridLayout_7")
+        self.label_35 = QLabel(self.scrollAreaWidgetContents_4)
+        self.label_35.setObjectName(u"label_35")
+        self.label_35.setAlignment(Qt.AlignCenter)
+
+        self.gridLayout_7.addWidget(self.label_35, 0, 0, 1, 1)
+
+        self.scrollArea_4.setWidget(self.scrollAreaWidgetContents_4)
+
+        self.gridLayout.addWidget(self.scrollArea_4, 3, 1, 1, 1)
+
+        self.scrollArea = QScrollArea(self.tab_7)
+        self.scrollArea.setObjectName(u"scrollArea")
+        self.scrollArea.setWidgetResizable(True)
+        self.scrollAreaWidgetContents = QWidget()
+        self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 398, 262))
+        self.gridLayout_4 = QGridLayout(self.scrollAreaWidgetContents)
+        self.gridLayout_4.setObjectName(u"gridLayout_4")
+        self.label_12 = QLabel(self.scrollAreaWidgetContents)
+        self.label_12.setObjectName(u"label_12")
+        self.label_12.setAlignment(Qt.AlignCenter)
+
+        self.gridLayout_4.addWidget(self.label_12, 0, 0, 1, 1)
+
+        self.scrollArea.setWidget(self.scrollAreaWidgetContents)
+
+        self.gridLayout.addWidget(self.scrollArea, 1, 0, 1, 1)
+
+        self.scrollArea_5 = QScrollArea(self.tab_7)
+        self.scrollArea_5.setObjectName(u"scrollArea_5")
+        self.scrollArea_5.setWidgetResizable(True)
+        self.scrollAreaWidgetContents_5 = QWidget()
+        self.scrollAreaWidgetContents_5.setObjectName(u"scrollAreaWidgetContents_5")
+        self.scrollAreaWidgetContents_5.setGeometry(QRect(0, 0, 398, 262))
+        self.gridLayout_8 = QGridLayout(self.scrollAreaWidgetContents_5)
+        self.gridLayout_8.setObjectName(u"gridLayout_8")
+        self.label_36 = QLabel(self.scrollAreaWidgetContents_5)
+        self.label_36.setObjectName(u"label_36")
+        self.label_36.setAlignment(Qt.AlignCenter)
+
+        self.gridLayout_8.addWidget(self.label_36, 0, 0, 1, 1)
+
+        self.scrollArea_5.setWidget(self.scrollAreaWidgetContents_5)
+
+        self.gridLayout.addWidget(self.scrollArea_5, 3, 0, 1, 1)
+
+        self.scrollArea_3 = QScrollArea(self.tab_7)
+        self.scrollArea_3.setObjectName(u"scrollArea_3")
+        self.scrollArea_3.setWidgetResizable(True)
+        self.scrollAreaWidgetContents_3 = QWidget()
+        self.scrollAreaWidgetContents_3.setObjectName(u"scrollAreaWidgetContents_3")
+        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 398, 262))
+        self.gridLayout_5 = QGridLayout(self.scrollAreaWidgetContents_3)
+        self.gridLayout_5.setObjectName(u"gridLayout_5")
+        self.label_32 = QLabel(self.scrollAreaWidgetContents_3)
+        self.label_32.setObjectName(u"label_32")
+        self.label_32.setAlignment(Qt.AlignCenter)
+
+        self.gridLayout_5.addWidget(self.label_32, 0, 0, 1, 1)
+
+        self.scrollArea_3.setWidget(self.scrollAreaWidgetContents_3)
+
+        self.gridLayout.addWidget(self.scrollArea_3, 1, 1, 1, 1)
+
+        self.scrollArea_7 = QScrollArea(self.tab_7)
+        self.scrollArea_7.setObjectName(u"scrollArea_7")
+        self.scrollArea_7.setWidgetResizable(True)
+        self.scrollAreaWidgetContents_7 = QWidget()
+        self.scrollAreaWidgetContents_7.setObjectName(u"scrollAreaWidgetContents_7")
+        self.scrollAreaWidgetContents_7.setGeometry(QRect(0, 0, 398, 262))
+        self.gridLayout_9 = QGridLayout(self.scrollAreaWidgetContents_7)
+        self.gridLayout_9.setObjectName(u"gridLayout_9")
+        self.label_34 = QLabel(self.scrollAreaWidgetContents_7)
+        self.label_34.setObjectName(u"label_34")
+        self.label_34.setAlignment(Qt.AlignCenter)
+
+        self.gridLayout_9.addWidget(self.label_34, 0, 0, 1, 1)
+
+        self.scrollArea_7.setWidget(self.scrollAreaWidgetContents_7)
+
+        self.gridLayout.addWidget(self.scrollArea_7, 3, 2, 1, 1)
+
+        self.label_37 = QLabel(self.tab_7)
+        self.label_37.setObjectName(u"label_37")
+        self.label_37.setAlignment(Qt.AlignCenter)
+
+        self.gridLayout.addWidget(self.label_37, 0, 0, 1, 1)
+
+        self.label_38 = QLabel(self.tab_7)
+        self.label_38.setObjectName(u"label_38")
+        self.label_38.setAlignment(Qt.AlignCenter)
+
+        self.gridLayout.addWidget(self.label_38, 2, 0, 1, 1)
+
+        self.label_39 = QLabel(self.tab_7)
+        self.label_39.setObjectName(u"label_39")
+        self.label_39.setAlignment(Qt.AlignCenter)
+
+        self.gridLayout.addWidget(self.label_39, 2, 1, 1, 1)
+
+        self.label_40 = QLabel(self.tab_7)
+        self.label_40.setObjectName(u"label_40")
+        self.label_40.setAlignment(Qt.AlignCenter)
+
+        self.gridLayout.addWidget(self.label_40, 2, 2, 1, 1)
+
+        self.label_41 = QLabel(self.tab_7)
+        self.label_41.setObjectName(u"label_41")
+        self.label_41.setAlignment(Qt.AlignCenter)
+
+        self.gridLayout.addWidget(self.label_41, 0, 2, 1, 1)
+
+        self.label_42 = QLabel(self.tab_7)
+        self.label_42.setObjectName(u"label_42")
+        self.label_42.setAlignment(Qt.AlignCenter)
+
+        self.gridLayout.addWidget(self.label_42, 0, 1, 1, 1)
+
+        self.gridLayout.setRowStretch(1, 1)
+        self.gridLayout.setRowStretch(3, 1)
+        self.gridLayout.setColumnStretch(0, 1)
+        self.gridLayout.setColumnStretch(1, 1)
+        self.gridLayout.setColumnStretch(2, 1)
+
+        self.verticalLayout_7.addLayout(self.gridLayout)
+
+        self.tabWidget.addTab(self.tab_7, "")
         self.tab_8 = QWidget()
         self.tab_8.setObjectName(u"tab_8")
         self.horizontalLayout_32 = QHBoxLayout(self.tab_8)
@@ -1354,6 +1354,11 @@ class Ui_MainWindow(object):
         self.pushButton_22.setText(QCoreApplication.translate("MainWindow", u"\ubc14\uafb8\uae30", None))
         self.pushButton_10.setText(QCoreApplication.translate("MainWindow", u"\u2630", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), QCoreApplication.translate("MainWindow", u"\uae30\ubcf8", None))
+        self.label_24.setText(QCoreApplication.translate("MainWindow", u"\ud30c\uc774\uc36c \uc2a4\ud06c\ub9bd\ud2b8", None))
+        self.label_25.setText(QCoreApplication.translate("MainWindow", u"\ub85c\uadf8 \ucd9c\ub825", None))
+        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"\ucf54\ub4dc \uc2e4\ud589\ud558\uae30", None))
+        self.pushButton_6.setText(QCoreApplication.translate("MainWindow", u"\uc120\ud0dd \ud574\uc81c\ud558\uae30", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_6), QCoreApplication.translate("MainWindow", u"\ub514\ubc84\uac70", None))
         self.label_33.setText("")
         self.label_35.setText("")
         self.label_12.setText("")
@@ -1367,11 +1372,6 @@ class Ui_MainWindow(object):
         self.label_41.setText(QCoreApplication.translate("MainWindow", u"\uc131\ub2a5\uacfc \uc9c1\uacb0\ub41c \uc791\uc5c5\uc5d0 \uac78\ub9b0 \uc2dc\uac04", None))
         self.label_42.setText(QCoreApplication.translate("MainWindow", u"\ubc14\uc774\ub0b8\uc2a4 API \uc694\uccad\uc758 \ud55c\uacc4\uce58\uc640 \uc0ac\uc6a9\ub7c9", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_7), QCoreApplication.translate("MainWindow", u"\uc0c1\ud0dc", None))
-        self.label_24.setText(QCoreApplication.translate("MainWindow", u"\ud30c\uc774\uc36c \uc2a4\ud06c\ub9bd\ud2b8", None))
-        self.label_25.setText(QCoreApplication.translate("MainWindow", u"\ub85c\uadf8 \ucd9c\ub825", None))
-        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"\ucf54\ub4dc \uc2e4\ud589\ud558\uae30", None))
-        self.pushButton_6.setText(QCoreApplication.translate("MainWindow", u"\uc120\ud0dd \ud574\uc81c\ud558\uae30", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_6), QCoreApplication.translate("MainWindow", u"\ub514\ubc84\uac70", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_8), QCoreApplication.translate("MainWindow", u"\ub77c\uc774\uc13c\uc2a4", None))
         self.board.setTabText(self.board.indexOf(self.tab_2), QCoreApplication.translate("MainWindow", u"\uad00\ub9ac", None))
     # retranslateUi
