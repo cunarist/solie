@@ -925,17 +925,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             (0, "직접 짜는 나만의 전략"),
             (1, "10초마다 느리게 랜덤으로 주문 넣기", [True, True, 7, False]),
             (2, "0.1초마다 빠르게 랜덤으로 주문 넣기", [True, True, 7, True]),
-            (57, "급등락 직후를 바라보기", [False, True, 30, False]),
-            (61, "한걸음 한걸음", [False, True, 30, False]),
-            (64, "평균 단가로 격차 넘기", [False, True, 30, False]),
-            (65, "단순무식한 샌드위치", [True, True, 30, False]),
-            (89, "거꾸로 크게 쌓기", [True, False, 30, False]),
-            (93, "모두가 한곳을 바라볼 때", [False, True, 30, False]),
-            (95, "더 느리게 닿지 않는 곳으로", [True, False, 30, False]),
-            (98, "지금의 기울기", [False, True, 30, False]),
-            (100, "아빠 일어나", [True, True, 30, False]),
-            (107, "거래량이 늘어난 순간 확 낚아채기", [True, True, 30, False]),
-            (110, "심해와 하늘에서 조심스레 보물 찾기", [True, True, 30, False]),
+            (3, "쏠쏠 기본 제공 전략", [True, True, 30, False]),
         ]
 
         red_pixmap = QtGui.QPixmap()
@@ -946,7 +936,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         green_pixmap.load("./resource/icon/traffic_light_green.png")
 
         for strategy_tuple in self.strategy_tuples:
-            text = f"{strategy_tuple[0]} - {strategy_tuple[1]}"
+            text = strategy_tuple[1]
 
             traffic_light_icon = QtGui.QIcon()
             if strategy_tuple[0] == 0:
