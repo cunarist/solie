@@ -8,6 +8,8 @@ import urllib
 import math
 import multiprocessing
 import pkg_resources
+from importlib import metadata
+import webbrowser
 
 from PySide6 import QtGui, QtWidgets, QtCore
 import pandas as pd
@@ -476,18 +478,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         def job():
             packages = pkg_resources.working_set
             for package in sorted(packages, key=lambda x: str(x).lower()):
-                # get datas
-                try:
-                    lines = package.get_metadata_lines("METADATA")
-                except FileNotFoundError:
-                    lines = package.get_metadata_lines("PKG-INFO")
+                project_name = package.project_name
+                about = metadata.metadata(project_name)
 
-                license_text = "(Licence not found)"
-                for line in lines:
-                    if line.startswith("License:"):
-                        license_text = line[9:]
-
-                text = str(package) + ": " + license_text
+                text = str(project_name)
+                text += ": " + str(about["License"])
 
                 # card structure
                 card = QtWidgets.QGroupBox()
@@ -497,6 +492,22 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                     alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
                 )
                 card_layout.addWidget(license_label)
+                spacer = QtWidgets.QSpacerItem(
+                    0,
+                    0,
+                    QtWidgets.QSizePolicy.Policy.Expanding,
+                    QtWidgets.QSizePolicy.Policy.Minimum,
+                )
+                card_layout.addItem(spacer)
+
+                def job():
+                    webbrowser.open(str(about["Home-page"]))
+
+                if about["Home-page"] is not None:
+                    link_button = QtWidgets.QPushButton(str(about["Home-page"]), card)
+                    outsource.do(link_button.clicked, job)
+                    card_layout.addWidget(link_button)
+
                 self.verticalLayout_15.addWidget(card)
 
         self.undertake(job, True)
