@@ -163,7 +163,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             # add temporary widget
             def job():
                 nonlocal license_area
-                license_area = LicenseArea(self)
+                license_area = LicenseArea()
                 self.centralWidget().layout().addWidget(license_area)
 
             self.undertake(job, True)
@@ -219,7 +219,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             # add temporary widget
             def job():
                 nonlocal token_selection_area
-                token_selection_area = TokenSelectionArea(self)
+                token_selection_area = TokenSelectionArea()
                 self.centralWidget().layout().addWidget(token_selection_area)
 
             self.undertake(job, True)
@@ -238,7 +238,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             # add temporary widget
             def job():
                 nonlocal coin_selection_area
-                coin_selection_area = CoinSelectionArea(self)
+                coin_selection_area = CoinSelectionArea()
                 self.centralWidget().layout().addWidget(coin_selection_area)
 
             self.undertake(job, True)

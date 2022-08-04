@@ -128,7 +128,7 @@ class TokenSelectionArea(QtWidgets.QScrollArea):
         # ■■■■■ a card ■■■■■
 
         # card structure
-        card = QtWidgets.QGroupBox(objectName="card")
+        card = QtWidgets.QGroupBox()
         card.setFixedWidth(720)
         card_layout = QtWidgets.QVBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
@@ -215,7 +215,7 @@ class TokenSelectionArea(QtWidgets.QScrollArea):
         # ■■■■■ a card ■■■■■
 
         # card structure
-        card = QtWidgets.QGroupBox(objectName="card")
+        card = QtWidgets.QGroupBox()
         card.setFixedWidth(720)
         card_layout = QtWidgets.QHBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
