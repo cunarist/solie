@@ -24,7 +24,7 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>./resource/image_logo.png</normaloff>./resource/image_logo.png</iconset>
+    <normaloff>resource/image_logo.png</normaloff>resource/image_logo.png</iconset>
   </property>
   <property name="styleSheet">
    <string notr="true">QPushButton, QComboBox, QLineEdit, QCheckBox, QSpinBox, QDoubleSpinBox {
@@ -1392,7 +1392,7 @@ AskPopupContent {
                      </size>
                     </property>
                     <property name="pixmap">
-                     <pixmap>./resource/image_logo.png</pixmap>
+                     <pixmap>resource/image_logo.png</pixmap>
                     </property>
                     <property name="scaledContents">
                      <bool>true</bool>
@@ -1414,7 +1414,7 @@ AskPopupContent {
                      </size>
                     </property>
                     <property name="pixmap">
-                     <pixmap>./resource/text_logo.png</pixmap>
+                     <pixmap>resource/text_logo.png</pixmap>
                     </property>
                     <property name="scaledContents">
                      <bool>true</bool>
@@ -1949,6 +1949,35 @@ AskPopupContent {
                 </layout>
                </item>
               </layout>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="tab_8">
+           <attribute name="title">
+            <string>라이센스</string>
+           </attribute>
+           <layout class="QHBoxLayout" name="horizontalLayout_32">
+            <item>
+             <widget class="QScrollArea" name="scrollArea_2">
+              <property name="widgetResizable">
+               <bool>true</bool>
+              </property>
+              <widget class="QWidget" name="scrollAreaWidgetContents_2">
+               <property name="geometry">
+                <rect>
+                 <x>0</x>
+                 <y>0</y>
+                 <width>1212</width>
+                 <height>578</height>
+                </rect>
+               </property>
+               <layout class="QHBoxLayout" name="horizontalLayout_33">
+                <item>
+                 <layout class="QVBoxLayout" name="verticalLayout_15"/>
+                </item>
+               </layout>
+              </widget>
              </widget>
             </item>
            </layout>

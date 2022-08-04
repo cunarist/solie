@@ -36,7 +36,7 @@ class Ui_MainWindow(object):
         font = QFont()
         MainWindow.setFont(font)
         icon = QIcon()
-        icon.addFile(u"./resource/image_logo.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon.addFile(u"resource/image_logo.png", QSize(), QIcon.Normal, QIcon.Off)
         MainWindow.setWindowIcon(icon)
         MainWindow.setStyleSheet(u"QPushButton, QComboBox, QLineEdit, QCheckBox, QSpinBox, QDoubleSpinBox {\n"
 "	height: 1.8em;\n"
@@ -898,7 +898,7 @@ class Ui_MainWindow(object):
         self.label_5.setObjectName(u"label_5")
         self.label_5.setMinimumSize(QSize(80, 80))
         self.label_5.setMaximumSize(QSize(80, 80))
-        self.label_5.setPixmap(QPixmap(u"./resource/image_logo.png"))
+        self.label_5.setPixmap(QPixmap(u"resource/image_logo.png"))
         self.label_5.setScaledContents(True)
 
         self.horizontalLayout_13.addWidget(self.label_5)
@@ -907,7 +907,7 @@ class Ui_MainWindow(object):
         self.label_9.setObjectName(u"label_9")
         self.label_9.setMinimumSize(QSize(320, 80))
         self.label_9.setMaximumSize(QSize(320, 80))
-        self.label_9.setPixmap(QPixmap(u"./resource/text_logo.png"))
+        self.label_9.setPixmap(QPixmap(u"resource/text_logo.png"))
         self.label_9.setScaledContents(True)
 
         self.horizontalLayout_13.addWidget(self.label_9)
@@ -1257,6 +1257,28 @@ class Ui_MainWindow(object):
         self.verticalLayout_8.addWidget(self.groupBox_18)
 
         self.tabWidget.addTab(self.tab_6, "")
+        self.tab_8 = QWidget()
+        self.tab_8.setObjectName(u"tab_8")
+        self.horizontalLayout_32 = QHBoxLayout(self.tab_8)
+        self.horizontalLayout_32.setObjectName(u"horizontalLayout_32")
+        self.scrollArea_2 = QScrollArea(self.tab_8)
+        self.scrollArea_2.setObjectName(u"scrollArea_2")
+        self.scrollArea_2.setWidgetResizable(True)
+        self.scrollAreaWidgetContents_2 = QWidget()
+        self.scrollAreaWidgetContents_2.setObjectName(u"scrollAreaWidgetContents_2")
+        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 1212, 578))
+        self.horizontalLayout_33 = QHBoxLayout(self.scrollAreaWidgetContents_2)
+        self.horizontalLayout_33.setObjectName(u"horizontalLayout_33")
+        self.verticalLayout_15 = QVBoxLayout()
+        self.verticalLayout_15.setObjectName(u"verticalLayout_15")
+
+        self.horizontalLayout_33.addLayout(self.verticalLayout_15)
+
+        self.scrollArea_2.setWidget(self.scrollAreaWidgetContents_2)
+
+        self.horizontalLayout_32.addWidget(self.scrollArea_2)
+
+        self.tabWidget.addTab(self.tab_8, "")
 
         self.verticalLayout.addWidget(self.tabWidget)
 
@@ -1350,6 +1372,7 @@ class Ui_MainWindow(object):
         self.pushButton.setText(QCoreApplication.translate("MainWindow", u"\ucf54\ub4dc \uc2e4\ud589\ud558\uae30", None))
         self.pushButton_6.setText(QCoreApplication.translate("MainWindow", u"\uc120\ud0dd \ud574\uc81c\ud558\uae30", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_6), QCoreApplication.translate("MainWindow", u"\ub514\ubc84\uac70", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_8), QCoreApplication.translate("MainWindow", u"\ub77c\uc774\uc13c\uc2a4", None))
         self.board.setTabText(self.board.indexOf(self.tab_2), QCoreApplication.translate("MainWindow", u"\uad00\ub9ac", None))
     # retranslateUi
 

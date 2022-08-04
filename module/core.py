@@ -7,6 +7,7 @@ import pathlib
 import urllib
 import math
 import multiprocessing
+import pkg_resources
 
 from PySide6 import QtGui, QtWidgets, QtCore
 import pandas as pd
@@ -467,6 +468,36 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 QtWidgets.QSizePolicy.Policy.Minimum,
             )
             self.horizontalLayout_17.addItem(spacer)
+
+        self.undertake(job, True)
+
+        # ■■■■■ show package licenses ■■■■■
+
+        def job():
+            packages = pkg_resources.working_set
+            for package in sorted(packages, key=lambda x: str(x).lower()):
+                # get datas
+                try:
+                    lines = package.get_metadata_lines("METADATA")
+                except FileNotFoundError:
+                    lines = package.get_metadata_lines("PKG-INFO")
+
+                license_text = "(Licence not found)"
+                for line in lines:
+                    if line.startswith("License:"):
+                        license_text = line[9:]
+
+                text = str(package) + ": " + license_text
+
+                # card structure
+                card = QtWidgets.QGroupBox()
+                card_layout = QtWidgets.QHBoxLayout(card)
+                license_label = QtWidgets.QLabel(
+                    text,
+                    alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
+                )
+                card_layout.addWidget(license_label)
+                self.verticalLayout_15.addWidget(card)
 
         self.undertake(job, True)
 
