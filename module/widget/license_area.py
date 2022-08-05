@@ -56,7 +56,7 @@ class LicenseArea(QtWidgets.QScrollArea):
 
         # title
         main_text = QtWidgets.QLabel(
-            "쏠쏠 라이센스 키를 입력하세요.",
+            "Enter Solsol license key.",
             alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
         )
         main_text_font = QtGui.QFont()
@@ -74,7 +74,7 @@ class LicenseArea(QtWidgets.QScrollArea):
 
         # explanation
         detail_text = QtWidgets.QLabel(
-            "정확히 입력해야 합니다.",
+            "Make sure there are no typos.",
             alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
         )
         detail_text.setWordWrap(True)
@@ -125,9 +125,9 @@ class LicenseArea(QtWidgets.QScrollArea):
                 self.done_event.set()
             except ApiRequestError:
                 question = [
-                    "유효한 라이센스 키가 아닙니다.",
-                    "정확한 라이센스 키를 입력해야 합니다.",
-                    ["확인"],
+                    "License key not valid",
+                    "You have to provide a valid license key.",
+                    ["Okay"],
                     False,
                 ]
                 core.window.ask(question)
@@ -140,7 +140,7 @@ class LicenseArea(QtWidgets.QScrollArea):
         cards_layout.addWidget(card)
 
         # confirm button
-        confirm_button = QtWidgets.QPushButton("확인", card)
+        confirm_button = QtWidgets.QPushButton("Okay", card)
         outsource.do(confirm_button.clicked, job)
         confirm_button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,

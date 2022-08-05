@@ -19,7 +19,6 @@ def get_status():
 
 
 def prepare():
-
     global LATEST_VERSION
     global PREPARED_VERSION
     global IS_PREPARED
@@ -36,7 +35,6 @@ def prepare():
         current_version = file.read()
 
     if IS_PREPARED:
-
         temp_folder = tempfile.gettempdir()
 
         if platform.system() == "Windows":
@@ -52,7 +50,6 @@ def prepare():
             PREPARED_VERSION = "0.0"
 
     if compare_versions.do(LATEST_VERSION, current_version):
-
         if not compare_versions.do(LATEST_VERSION, PREPARED_VERSION):
             return
 
@@ -86,7 +83,7 @@ def prepare():
         with open(filepath, mode="wb") as file:
             file.write(download_data)
 
-        text = "업데이트 설치 파일을 다운로드해서 준비했습니다."
+        text = "Downloaded update installer."
         logger = logging.getLogger("solsol")
         logger.info(text)
 
@@ -95,9 +92,7 @@ def prepare():
 
 
 def apply():
-
     if IS_PREPARED:
-
         if platform.system() == "Windows":
             temp_folder = tempfile.gettempdir()
             filepath = temp_folder + "/SolsolWindowsSetup.exe"

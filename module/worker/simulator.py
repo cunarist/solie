@@ -34,7 +34,7 @@ class Simulator:
         # ■■■■■ remember and display ■■■■■
 
         self.viewing_symbol = standardize.get_basics()["target_symbols"][0]
-        self.should_draw_combined = False
+        self.should_draw_all_years = False
 
         self.about_viewing = None
 
@@ -112,7 +112,7 @@ class Simulator:
             index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32
         )
 
-        text = "아무 전략도 그려져 있지 않음"
+        text = "No strategy drawn"
         core.window.undertake(lambda t=text: core.window.label_19.setText(t), False)
 
         # ■■■■■ default executions ■■■■■
@@ -184,9 +184,9 @@ class Simulator:
 
         if not is_working_strategy:
             question = [
-                "사용 가능 전략이 아닙니다.",
-                "이 전략으로는 시뮬레이션 계산을 할 수 없습니다.",
-                ["확인"],
+                "Strategy not available",
+                "Calculation is not available with this strategy.",
+                ["Okay"],
                 False,
             ]
             core.window.ask(question)
@@ -443,7 +443,7 @@ class Simulator:
         slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
         slice_until -= timedelta(seconds=1)
 
-        if not self.should_draw_combined:
+        if not self.should_draw_all_years:
             mask = candle_data.index.year == year
             candle_data = candle_data[mask]
         candle_data = candle_data[:slice_until][[symbol]]
@@ -851,7 +851,7 @@ class Simulator:
         range_days = range_length.days
         range_hours, remains = divmod(range_length.seconds, 3600)
         range_minutes, remains = divmod(remains, 60)
-        range_length_text = f"{range_days}일 {range_hours}시간 {range_minutes}분"
+        range_length_text = f"{range_days}d {range_hours}h {range_minutes}s"
 
         if stop_flag.find("display_simulation_range_information", task_id):
             return
@@ -906,17 +906,20 @@ class Simulator:
         range_height = round((1 - range_down / range_up) * 100, 2)
 
         text = ""
-        text += f"보이는 범위 {range_length_text}"
+        text += f"Visible time range {range_length_text}"
         text += "  ⦁  "
-        text += f"보이는 가격대 {range_height}%"
+        text += f"Visible price range {range_height}%"
         text += "  ⦁  "
-        text += f"거래 횟수 {symbol_change_count}/{total_change_count}"
+        text += f"Transaction count {symbol_change_count}/{total_change_count}"
         text += "  ⦁  "
-        text += f"거래량 {round(symbol_margin_ratio,4)}/{round(total_margin_ratio,4)}회분"
+        text += (
+            "Transaction amount"
+            f" ×{round(symbol_margin_ratio,4)}/{round(total_margin_ratio,4)}"
+        )
         text += "  ⦁  "
-        text += f"누적 실현 수익률 {round(symbol_yield,4)}/{round(total_yield,4)}%"
+        text += f"Total realized profit {round(symbol_yield,4)}/{round(total_yield,4)}%"
         text += "  ⦁  "
-        text += f"최저 미실현 수익률 {round(min_unrealized_change*100,2)}%"
+        text += f"Lowest unrealized profit {round(min_unrealized_change*100,2)}%"
         core.window.undertake(lambda t=text: core.window.label_13.setText(t), False)
 
     def set_minimum_view_range(self, *args, **kwargs):
@@ -1027,9 +1030,9 @@ class Simulator:
         if not is_working_strategy:
             stop_flag.make("calculate_simulation")
             question = [
-                "사용 가능 전략이 아닙니다.",
-                "다른 전략을 선택하세요.",
-                ["확인"],
+                "Strategy not available",
+                "Choose a different one.",
+                ["Okay"],
                 False,
             ]
             core.window.ask(question)
@@ -1441,15 +1444,15 @@ class Simulator:
         self.display_range_information()
 
         if self.about_viewing is None:
-            text = "아무 전략도 그려져 있지 않음"
+            text = "No strategy drawn"
             core.window.undertake(lambda t=text: core.window.label_19.setText(t), False)
         else:
             year = self.about_viewing["year"]
             strategy = self.about_viewing["strategy"]
             text = ""
-            text += f"범위 {year}년"
+            text += f"Target year {year}"
             text += "  ⦁  "
-            text += f"전략 {strategy}번"
+            text += f"Strategy number {strategy}"
             core.window.undertake(lambda t=text: core.window.label_19.setText(t), False)
 
     def display_year_range(self, *args, **kwargs):
@@ -1507,19 +1510,21 @@ class Simulator:
 
         if not does_file_exist:
             question = [
-                f"{year}년의 {strategy}번 전략 계산 데이터는 없습니다.",
-                "계산하기 버튼을 누른다면 해당 연도의 처음부터 계산하게 됩니다.",
-                ["확인"],
+                f"No calculation data on year {year} with strategy number {strategy}.",
+                "You should calculate first.",
+                ["Okay"],
                 False,
             ]
             core.window.ask(question)
             return
         else:
             question = [
-                f"{year}년의 {strategy}번 전략 계산 데이터를 삭제하시겠어요?",
-                "삭제하고 나서 이 조합의 시뮬레이션을 다시 보려면 해당 연도 전체를 다시 계산해야 합니다. 다른 조합의 계산 데이터는 영향을"
-                " 받지 않습니다.",
-                ["취소", "삭제"],
+                f"Are you sure you want to delete calculation data on year {year} with"
+                f" strategy number {strategy}?",
+                "If you do, you should perform the calculation again to see the"
+                " prediction of the strategy. Calculation data of other combinations"
+                " does not get affected.",
+                ["Cancel", "Delete"],
                 False,
             ]
             answer = core.window.ask(question)
@@ -1578,9 +1583,9 @@ class Simulator:
             self.present()
         except FileNotFoundError:
             question = [
-                f"{year}년의 {strategy}번 전략 계산 데이터는 없습니다.",
-                "계산을 먼저 해야 그릴 수 있습니다.",
-                ["확인"],
+                f"No calculation data on year {year} with strategy number {strategy}.",
+                "You should calculate first.",
+                ["Okay"],
                 False,
             ]
             core.window.ask(question)
@@ -1609,9 +1614,10 @@ class Simulator:
         peak_sr = peak_sr.sort_values().iloc[:12]
         if len(peak_sr) < 12:
             question = [
-                "계산 데이터가 너무 짧거나 없습니다.",
-                "유의미한 최저 미실현 수익률 목록을 알아낼 수 없습니다.",
-                ["확인"],
+                "Calculation data is either missing or too short",
+                "Cannot get the list of meaningful spots with lowest unrealized"
+                " profit.",
+                ["Okay"],
                 False,
             ]
             core.window.ask(question)
@@ -1621,9 +1627,9 @@ class Simulator:
                 for index, peak_value in peak_sr.iteritems()
             ]
             question = [
-                "최저 미실현 수익률을 기록한 지점들입니다.",
+                "Spots with lowest unrealized profit",
                 "\n".join(text_lines),
-                ["확인"],
+                ["Okay"],
                 False,
             ]
             core.window.ask(question)
@@ -1631,7 +1637,7 @@ class Simulator:
     def toggle_combined_draw(self, *args, **kwargs):
         is_checked = args[0]
         if is_checked:
-            self.should_draw_combined = True
+            self.should_draw_all_years = True
         else:
-            self.should_draw_combined = False
+            self.should_draw_all_years = False
         self.display_lines()

@@ -85,17 +85,18 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
             else:
                 is_symbol_count_ok = False
                 question = [
-                    "적절한 개수의 심볼을 선택하세요.",
-                    "1개 이상 10개 이하의 심볼을 선택해야 합니다.",
-                    ["확인"],
+                    "Select proper number of symbols",
+                    "You can select a minimum of 1 and a maximum of 10.",
+                    ["Okay"],
                     False,
                 ]
                 core.window.ask(question)
             if is_symbol_count_ok:
                 question = [
-                    "이대로 결정하시겠어요?",
-                    "정한 이후 데이터 저장 폴더를 바꾸기 전까지는 변경할 수 없습니다.",
-                    ["아니오", "예"],
+                    "Okay to proceed?",
+                    "You cannot change your selections unless you make a new data"
+                    " folder.",
+                    ["No", "Yes"],
                     False,
                 ]
                 answer = core.window.ask(question)
@@ -137,7 +138,7 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
 
         # title
         main_text = QtWidgets.QLabel(
-            "사용할 코인을 선택하세요.",
+            "Choose cryptos",
             alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
         )
         main_text_font = QtGui.QFont()
@@ -155,7 +156,8 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
 
         # explanation
         detail_text = QtWidgets.QLabel(
-            "바이낸스에서 사용 가능한 모든 코인입니다.\n최소 1개, 최대 10개를 선택할 수 있습니다.",
+            "These are all available cryptos on Biancne.\nYou can select a minimum of 1"
+            " and a maximum of 10.",
             alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
         )
         detail_text.setWordWrap(True)
@@ -229,7 +231,7 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
         cards_layout.addWidget(card)
 
         # confirm button
-        confirm_button = QtWidgets.QPushButton("결정", card)
+        confirm_button = QtWidgets.QPushButton("Okay", card)
         outsource.do(confirm_button.clicked, job)
         confirm_button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,

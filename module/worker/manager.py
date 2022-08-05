@@ -193,14 +193,14 @@ class Manager:
             texts = []
             for process_id, thread_count in process_toss.get_thread_counts().items():
                 is_parent_process = process_id == parent_process_id
-                process_name = "부모 프로세스" if is_parent_process else "자식 프로세스"
+                process_name = "Main process" if is_parent_process else "Child process"
                 text = f"{process_name} (PID {process_id}): {thread_count}"
                 texts.append(text)
             text = "\n".join(texts)
             core.window.undertake(lambda t=text: core.window.label_12.setText(t), False)
 
             texts = []
-            texts.append("한계치")
+            texts.append("Limits")
             for limit_type, limit_value in self.binance_limits.items():
                 text = f"{limit_type}: {limit_value}"
                 texts.append(text)
@@ -208,7 +208,7 @@ class Manager:
             used_rates = self.api_requester.used_rates["real"]
             if len(used_rates) > 0:
                 texts.append("")
-                texts.append("정식 서버 사용량")
+                texts.append("Real server usage")
                 for used_type, used_tuple in used_rates.items():
                     time_string = used_tuple[1].strftime("%m-%d %H:%M:%S")
                     text = f"{used_type}: {used_tuple[0]}({time_string})"
@@ -217,7 +217,7 @@ class Manager:
             used_rates = self.api_requester.used_rates["testnet"]
             if len(used_rates) > 0:
                 texts.append("")
-                texts.append("테스트넷 서버 사용량")
+                texts.append("Testnet server usage")
                 for used_type, used_tuple in used_rates.items():
                     time_string = used_tuple[1].strftime("%m-%d %H:%M:%S")
                     text = f"{used_type}: {used_tuple[0]}({time_string})"
@@ -234,13 +234,13 @@ class Manager:
                     text = data_name
                     text += "\n"
                     data_value = sum(deque_data) / len(deque_data)
-                    text += f"평균 {simply_format.fixed_float(data_value,6)}초 "
+                    text += f"Average {simply_format.fixed_float(data_value,6)}s "
                     data_value = statistics.median(deque_data)
-                    text += f"중앙 {simply_format.fixed_float(data_value,6)}초 "
+                    text += f"Middle {simply_format.fixed_float(data_value,6)}s "
                     data_value = max(deque_data)
-                    text += f"최대 {simply_format.fixed_float(data_value,6)}초 "
+                    text += f"Maximum {simply_format.fixed_float(data_value,6)}s "
                     data_value = min(deque_data)
-                    text += f"최소 {simply_format.fixed_float(data_value,6)}초 "
+                    text += f"Minimum {simply_format.fixed_float(data_value,6)}s "
                     texts.append(text)
 
             text = "\n\n".join(texts)
@@ -276,9 +276,9 @@ class Manager:
         script_text = core.window.undertake(lambda w=widget: w.toPlainText(), True)
         if "# long live cunarist" not in script_text:
             question = [
-                "코드 실행 조건이 충족되지 않았습니다.",
-                "조건을 먼저 충족시킨 후에 코드를 실행할 수 있습니다.",
-                ["확인"],
+                "Execution condition is not fulfilled",
+                "Fulfill the condition first to run the script",
+                ["Okay"],
                 False,
             ]
             core.window.ask(question)
@@ -325,20 +325,24 @@ class Manager:
         )
 
         text = ""
-        text += "현재 시각 " + str(time)
+        text += "Current time " + str(time)
         text += "  ⦁  "
-        text += "인터넷에 연결됨" if internet_connected else "인터넷에 연결되어 있지 않음"
+        text += (
+            "Connected to the internet"
+            if internet_connected
+            else "Not connected to the internet"
+        )
         text += "  ⦁  "
-        text += "핑 " + simply_format.fixed_float(ping, 5) + "초"
+        text += "Ping " + simply_format.fixed_float(ping, 5) + "s"
         text += "  ⦁  "
-        text += "서버와의 시차 " + difference_string + "초"
+        text += "Time difference with server" + difference_string + "s"
         core.window.undertake(lambda t=text: core.window.gauge.setText(t), False)
 
     def open_sample_ask_popup(self, *args, **kwargs):
         question = [
-            "이탈리아의 수도는 어디일까요?",
-            "아무 기능이 없는 코드 시험용 질문입니다.",
-            ["로마", "서울", "뉴욕"],
+            "Where is the capital of italy?",
+            "This is a question solely for testing purposes.",
+            ["Rome", "Seoul", "New York"],
             False,
         ]
         answer = core.window.ask(question)
@@ -377,10 +381,10 @@ class Manager:
 
     def reset_datapath(self, *args, **kwargs):
         question = [
-            "정말 데이터 저장 폴더를 바꾸시겠어요?",
-            "데이터 저장 폴더를 바꾸기 위해서 쏠쏠이 꺼집니다. 다음에 쏠쏠을 켤 때에 데이터 저장 폴더를 다시 고르게 됩니다. 기존 데이터"
-            " 저장 폴더는 사라지지 않고 그대로 남습니다.",
-            ["아니오", "예"],
+            "Are you sure you want to change the data folder?",
+            "Solsol will shut down shortly. You will get to choose the new data folder"
+            " when you start Solsol again. Previous data folder does not get deleted.",
+            ["No", "Yes"],
             False,
         ]
         answer = core.window.ask(question)
@@ -398,9 +402,9 @@ class Manager:
             version = file.read()
 
         question = [
-            "현재 버전입니다.",
+            "Current Solsol version",
             version,
-            ["확인"],
+            ["Okay"],
             False,
         ]
         core.window.ask(question)
@@ -410,9 +414,9 @@ class Manager:
             license_key = file.read()
 
         question = [
-            "현재 라이센스 키입니다.",
+            "Solsol license key",
             license_key,
-            ["확인"],
+            ["Okay"],
             False,
         ]
         core.window.ask(question)
@@ -451,16 +455,16 @@ class Manager:
 
         if not is_key_valid:
             question = [
-                "라이센스 키가 유효하지 않습니다.",
-                f"쏠쏠이 {exit_time}에 종료됩니다.",
-                ["확인"],
+                "License key not valid",
+                f"Solsol will shut down at {exit_time}",
+                ["Okay"],
                 False,
             ]
         elif not is_occupying_key:
             question = [
-                "라이센스 키가 다른 컴퓨터에서 사용되고 있습니다.",
-                f"쏠쏠이 {exit_time}에 종료됩니다.",
-                ["확인"],
+                "License key is being used by another computer",
+                f"Solsol will shut down at {exit_time}",
+                ["Okay"],
                 False,
             ]
 
@@ -485,9 +489,10 @@ class Manager:
 
         if is_prepared and did_run_long:
             question = [
-                "업데이트가 준비되었습니다.",
-                "쏠쏠을 종료하고 잠시 기다렸다 다시 켜세요. 그 사이에 업데이트가 자동으로 적용됩니다.",
-                ["확인"],
+                "Update is ready",
+                "Shut down Solsol and wait for a while. Update will be automatically"
+                " installed.",
+                ["Okay"],
                 False,
             ]
             core.window.ask(question)
@@ -501,9 +506,9 @@ class Manager:
             core.window.undertake(lambda: core.window.board.setEnabled(False), False)
         else:
             question = [
-                "보드 잠금을 해제하시겠어요?",
-                "잠금을 해제하면 보드를 다시 조작할 수 있게 됩니다.",
-                ["아니오", "예"],
+                "Unlock the board?",
+                "You will be able to manipulate the board again.",
+                ["No", "Yes"],
                 False,
             ]
             answer = core.window.ask(question)

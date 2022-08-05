@@ -67,17 +67,17 @@ class TokenSelectionArea(QtWidgets.QScrollArea):
             else:
                 is_symbol_count_ok = False
                 question = [
-                    "선택하세요.",
-                    "아무것도 선택되어 있지 않습니다.",
-                    ["확인"],
+                    "Nothing selected",
+                    "Choose one of the tokens.",
+                    ["Okay"],
                     False,
                 ]
                 core.window.ask(question)
             if is_symbol_count_ok:
                 question = [
-                    "이대로 결정하시겠어요?",
-                    "이 토큰에 기반한 바이낸스 선물 시장을 사용하게 됩니다.",
-                    ["아니오", "예"],
+                    "Okay to proceed?",
+                    "Solsol will treat this token as your asset.",
+                    ["No", "Yes"],
                     False,
                 ]
                 answer = core.window.ask(question)
@@ -136,7 +136,7 @@ class TokenSelectionArea(QtWidgets.QScrollArea):
 
         # title
         main_text = QtWidgets.QLabel(
-            "자산 저장에 사용할 토큰을 선택하세요.",
+            "Select token to treat as your asset.",
             alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
         )
         main_text_font = QtGui.QFont()
@@ -154,7 +154,7 @@ class TokenSelectionArea(QtWidgets.QScrollArea):
 
         # explanation
         detail_text = QtWidgets.QLabel(
-            "바이낸스 선물 시장에서 사용 가능한 자산 저장 토큰입니다.",
+            "These are all available tokens on Binance.",
             alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
         )
         detail_text.setWordWrap(True)
@@ -200,7 +200,7 @@ class TokenSelectionArea(QtWidgets.QScrollArea):
             icon_label.setMargin(5)
             this_layout.addWidget(icon_label)
             token_icon_labels[token] = icon_label
-            text = f"{token} ({number_of_markets[token]}개 코인 거래 가능)"
+            text = f"{token} ({number_of_markets[token]} cryptos available)"
             text_label = QtWidgets.QLabel(text, card)
             this_layout.addWidget(text_label)
             spacer = QtWidgets.QSpacerItem(
@@ -222,7 +222,7 @@ class TokenSelectionArea(QtWidgets.QScrollArea):
         cards_layout.addWidget(card)
 
         # confirm button
-        confirm_button = QtWidgets.QPushButton("결정", card)
+        confirm_button = QtWidgets.QPushButton("Okay", card)
         outsource.do(confirm_button.clicked, job)
         confirm_button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,

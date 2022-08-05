@@ -383,12 +383,12 @@ class Collector:
         range_days = written_length.days
         range_hours, remains = divmod(written_length.seconds, 3600)
         range_minutes, remains = divmod(remains, 60)
-        written_length_text = f"{range_days}일 {range_hours}시간 {range_minutes}분"
+        written_length_text = f"{range_days}d {range_hours}h {range_minutes}m"
 
         text = ""
-        text += f"지난 24시간 캔들 데이터 누적률 {round(ratio * 100, 2)}%"
+        text += f"24h candle data accumulation rate {round(ratio * 100, 2)}%"
         text += "  ⦁  "
-        text += f"실시간 데이터 길이 {written_length_text}"
+        text += f"Realtime data length {written_length_text}"
 
         core.window.undertake(lambda t=text: core.window.label_6.setText(t), False)
 
@@ -463,10 +463,16 @@ class Collector:
         # ■■■■■ ask filling type ■■■■■
 
         question = [
-            "캔들 데이터를 얼마나 채우시겠어요?",
-            "바이낸스가 제공하는 과거 데이터를 받아 캔들 데이터로 기록합니다. 더 많은 양을 채울수록 더 오래 걸립니다. 며칠 분량은 몇 분 안에"
-            " 채워지지만, 몇 년 분량은 채워지는 데에 수십 분에서 몇 시간이 걸릴 수 있습니다.",
-            ["2020년부터 작년까지", "올해 첫 달부터 지난 달까지", "이번 달", "어제와 그저께"],
+            "Choose the range to fill",
+            "Solsol will fill the candle data with historical data provided by Binacne."
+            " The more you fill, the longer it takes. Amount of a few days only takes"
+            " few minutes while amount of a few years can take hours.",
+            [
+                "From 2020 to last year",
+                "From first month of this year to last month",
+                "This month",
+                "Yesterday and the day before yesterday",
+            ],
             True,
         ]
         answer = core.window.ask(question)

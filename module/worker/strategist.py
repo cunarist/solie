@@ -195,9 +195,9 @@ class Strategiest:
         core.window.undertake(job, False)
 
         question = [
-            "샘플 전략으로 채웠습니다.",
-            "아직 저장되지는 않았습니다. 원하실 때 저장하세요.",
-            ["확인"],
+            "Sample strategy applied",
+            "It is not yet saved. Do it as you want.",
+            ["Okay"],
             False,
         ]
         core.window.ask(question)

@@ -622,9 +622,9 @@ class Transactor:
 
         if not is_working_strategy:
             question = [
-                "사용 가능 전략이 아닙니다.",
-                "이 전략으로는 자동 주문을 켜도 아무 일도 일어나지 않습니다.",
-                ["확인"],
+                "Strategy not available",
+                "Nothing happends with this strategy.",
+                ["Okay"],
                 False,
             ]
             core.window.ask(question)
@@ -638,23 +638,15 @@ class Transactor:
         )
 
         if is_checked:
-            if strategy == 0:
+            if strategy in (1, 2):
                 question = [
-                    "나만의 전략이 선택되어 있습니다.",
-                    "직접 만든 전략을 사용하기 전에 스크립트가 잘 짜였는지 확인하세요. 만약 나만의 전략 스크립트가 비어 있다면 아무 일도"
-                    " 일어나지 않습니다.",
-                    ["확인"],
-                    False,
-                ]
-                core.window.ask(question)
-
-            elif strategy in (1, 2):
-                question = [
-                    "랜덤 주문 전략이 선택되어 있습니다.",
-                    "랜덤 주문 전략이 켜진 상태로 자동 주문을 켜 놓으면 아무 시장에서 총 자산의 1/10000만큼씩 의미 없는"
-                    " 거래를 반복하게 됩니다. 이 전략은 자동 주문 코드가 잘 작동하는지 확인하기 위한 용도로 만들어졌습니다. 오랫동안 켜"
-                    " 놓으면 수수료가 많이 발생하니 조심하세요.",
-                    ["확인"],
+                    "Random strategy selected",
+                    "If you turn on auto transaction with the random strategy on, you"
+                    " will repeat meaningless trades for 1/10000 of your total assets"
+                    " in all markets. This strategy is designed to ensure that your"
+                    " auto-order code works well. Be careful as you will pay a lot of"
+                    " fees if you leave it on for a long time.",
+                    ["Okay"],
                     False,
                 ]
                 core.window.ask(question)
@@ -685,10 +677,12 @@ class Transactor:
 
                 if is_insufficient:
                     question = [
-                        "데이터 누적률이 100%가 아닙니다.",
-                        "저속 전략에서 자동 주문이 작동하려면 캔들 데이터의 지난 24시간 누적률이 100%여야 합니다. 자동 주문이"
-                        " 켜져 있더라도 지난 24시간 누적률이 100%가 될 때까지는 아무 일도 일어나지 않습니다.",
-                        ["확인"],
+                        "Cumulation rate is not 100%",
+                        "For auto transaction to work with slow strategy, the past 24"
+                        " hour accumulation rate of candle data must be 100%. Even if"
+                        " auto transaction is turned on, nothing happens until the"
+                        " cumulation rate reaches 100%.",
+                        ["Okay"],
                         False,
                     ]
                     core.window.ask(question)
@@ -737,7 +731,7 @@ class Transactor:
         range_days = range_length.days
         range_hours, remains = divmod(range_length.seconds, 3600)
         range_minutes, remains = divmod(remains, 60)
-        range_length_text = f"{range_days}일 {range_hours}시간 {range_minutes}분"
+        range_length_text = f"{range_days}d {range_hours}h {range_minutes}s"
 
         if stop_flag.find("display_transaction_range_information", task_id):
             return
@@ -792,17 +786,20 @@ class Transactor:
         range_height = round((1 - range_down / range_up) * 100, 2)
 
         text = ""
-        text += f"보이는 범위 {range_length_text}"
+        text += f"Visible time range {range_length_text}"
         text += "  ⦁  "
-        text += f"보이는 가격대 {range_height}%"
+        text += f"Visible price range {range_height}%"
         text += "  ⦁  "
-        text += f"거래 횟수 {symbol_change_count}/{total_change_count}"
+        text += f"Transaction count {symbol_change_count}/{total_change_count}"
         text += "  ⦁  "
-        text += f"거래량 {round(symbol_margin_ratio,4)}/{round(total_margin_ratio,4)}회분"
+        text += (
+            "Transaction amount"
+            f" ×{round(symbol_margin_ratio,4)}/{round(total_margin_ratio,4)}"
+        )
         text += "  ⦁  "
-        text += f"누적 실현 수익률 {round(symbol_yield,4)}/{round(total_yield,4)}%"
+        text += f"Total realized profit {round(symbol_yield,4)}/{round(total_yield,4)}%"
         text += "  ⦁  "
-        text += f"최저 미실현 수익률 {round(min_unrealized_change*100,2)}%"
+        text += f"Lowest unrealized profit {round(min_unrealized_change*100,2)}%"
         core.window.undertake(lambda t=text: core.window.label_8.setText(t), False)
 
     def set_minimum_view_range(self, *args, **kwargs):
@@ -1402,7 +1399,10 @@ class Transactor:
 
         time_passed = datetime.now(timezone.utc) - self.account_state["observed_until"]
         if time_passed > timedelta(seconds=30):
-            text = "키 또는 바이낸스 서버 연결에 문제가 있어 바이낸스 계정의 최신 정보를 알아내지 못함"
+            text = (
+                "Couldn't get the latest info on your Binance account due to a problem"
+                " with your key or connection to the Binance server."
+            )
             core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
             return
 
@@ -1411,11 +1411,11 @@ class Transactor:
         price_precision = self.exchange_state["price_precisions"][self.viewing_symbol]
         position = self.account_state["positions"][self.viewing_symbol]
         if position["direction"] == "long":
-            direction_text = "매수"
+            direction_text = "long"
         elif position["direction"] == "short":
-            direction_text = "매도"
+            direction_text = "short"
         else:
-            direction_text = "없음"
+            direction_text = "none"
         margin_sum = 0
         for each_position in self.account_state["positions"].values():
             margin_sum += each_position["margin"]
@@ -1427,15 +1427,15 @@ class Transactor:
                 total_profit = 0
 
         text = ""
-        text += f"총 자산 ＄{round(self.account_state['wallet_balance'],4)}"
+        text += f"Total asset ＄{round(self.account_state['wallet_balance'],4)}"
         text += "  ⦁  "
-        text += f"투입 자산 ＄{round(position['margin'], 4)}/{round(margin_sum,4)}"
+        text += f"Investment ＄{round(position['margin'], 4)}/{round(margin_sum,4)}"
         text += "  ⦁  "
-        text += f"방향 {direction_text}"
+        text += f"Direction {direction_text}"
         text += "  ⦁  "
-        text += f"평균 단가 ＄{round(position['entry_price'],price_precision)}"
+        text += f"Entry price ＄{round(position['entry_price'],price_precision)}"
         text += "  ⦁  "
-        text += f"자동 수익 ＄{round(total_profit,4)}"
+        text += f"Automated revenue ＄{round(total_profit,4)}"
 
         core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
 

@@ -55,10 +55,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
             if self.should_confirm_closing:
                 question = [
-                    "정말 종료하시겠어요?",
-                    "쏠쏠을 켜 두지 않으면 실시간 데이터 기록이 되지 않습니다. 종료를 선택하면 데이터를 저장하고 통신을 닫는 마무리"
-                    " 절차가 수행됩니다.",
-                    ["취소", "종료"],
+                    "Really quit?",
+                    "If Solsol is not turned on, data collection gets stopped as well."
+                    " Solsol will proceed to finalizations such as closing network"
+                    " connections and saving data.",
+                    ["Cancel", "Shut down"],
                     False,
                 ]
                 answer = self.ask(question)
@@ -78,7 +79,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             def job():
                 nonlocal guide_frame
                 guide_frame = GuideFrame(1)
-                guide_frame.announce("마무리하는 중입니다.")
+                guide_frame.announce("Finalizing...")
                 self.centralWidget().layout().addWidget(guide_frame)
 
             self.undertake(job, True)
@@ -86,7 +87,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             def job():
                 while True:
                     if done_steps == total_steps:
-                        text = "마무리가 완료되었습니다."
+                        text = "Finalization completed."
                         self.undertake(lambda t=text: guide_frame.announce(t), True)
                         time.sleep(1)
                         process_toss.terminate_pool()
@@ -150,9 +151,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         while not check_internet.connected():
             question = [
-                "인터넷에 연결되어 있지 않습니다.",
-                "쏠쏠이 켜지려면 인터넷 연결이 반드시 필요합니다.",
-                ["확인"],
+                "No internet connection",
+                "Internet connection is necessary for Solsol to start up.",
+                ["Okay"],
                 False,
             ]
             self.ask(question)
@@ -188,7 +189,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 nonlocal datapath
                 file_dialog = QtWidgets.QFileDialog
                 default_path = str(pathlib.Path.home())
-                title_bar_text = "데이터 저장 폴더"
+                title_bar_text = "Data folder"
                 datapath = str(
                     file_dialog.getExistingDirectory(
                         self,
@@ -199,9 +200,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
             while datapath == "":
                 question = [
-                    "데이터 저장 폴더를 선택하세요.",
-                    "앞으로 쏠쏠이 생성하는 모든 데이터는 지금 선택되는 폴더 안에 담기게 됩니다.",
-                    ["확인"],
+                    "Select your data folder",
+                    "All the data that Solsol produces will go in this folder.",
+                    ["Okay"],
                     False,
                 ]
                 self.ask(question)
@@ -261,7 +262,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         def job():
             nonlocal guide_frame
             guide_frame = GuideFrame(2)
-            guide_frame.announce("로딩 중입니다.")
+            guide_frame.announce("Loading...")
             self.centralWidget().layout().addWidget(guide_frame)
 
         self.undertake(job, True)
@@ -924,10 +925,10 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # usability / is parallel calculation / divided unit length / is fast strategy
         self.strategy_tuples = [
-            (0, "직접 짜는 나만의 전략"),
-            (1, "10초마다 느리게 랜덤으로 주문 넣기", [True, True, 7, False]),
-            (2, "0.1초마다 빠르게 랜덤으로 주문 넣기", [True, True, 7, True]),
-            (3, "쏠쏠 기본 제공 전략", [True, True, 30, False]),
+            (0, "Custom strategy"),
+            (1, "Make random orders slowly (10s)", [True, True, 7, False]),
+            (2, "Make random orders fastly (0.1s)", [True, True, 7, True]),
+            (3, "Solsol default strategy", [True, True, 30, False]),
         ]
 
         red_pixmap = QtGui.QPixmap()
@@ -960,61 +961,61 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         def job():
             action_menu = QtWidgets.QMenu(self)
             self.collector_actions = []
-            text = "캔들 데이터 저장하기"
+            text = "Save candle data"
             self.collector_actions.append(action_menu.addAction(text))
-            text = "모든 연도의 캔들 데이터 저장하기"
+            text = "Save every year's candle data"
             self.collector_actions.append(action_menu.addAction(text))
-            text = "바이낸스 과거 시장 데이터 페이지 열기"
+            text = "Open binance historical data webpage"
             self.collector_actions.append(action_menu.addAction(text))
-            text = "캔들 데이터를 채우는 작업 멈추기"
+            text = "Stop filling candle data"
             self.collector_actions.append(action_menu.addAction(text))
             self.pushButton_13.setMenu(action_menu)
 
             action_menu = QtWidgets.QMenu(self)
             self.transactor_actions = []
-            text = "바이낸스 거래소 열기"
+            text = "Open binance exchange"
             self.transactor_actions.append(action_menu.addAction(text))
-            text = "바이낸스 선물 지갑 열기"
+            text = "Open binance testnet exchange"
             self.transactor_actions.append(action_menu.addAction(text))
-            text = "바이낸스 키 관리 페이지 열기"
+            text = "Open binance wallet"
             self.transactor_actions.append(action_menu.addAction(text))
-            text = "바이낸스 테스트넷 거래소 열기"
+            text = "Open binance API management webpage"
             self.transactor_actions.append(action_menu.addAction(text))
-            text = "해당 시장의 모든 열린 주문 취소하기"
+            text = "Cancel all open orders on this symbol"
             self.transactor_actions.append(action_menu.addAction(text))
-            text = "시뮬레이션 그래프와 같은 범위 보기"
+            text = "Display same range as simulation graph"
             self.transactor_actions.append(action_menu.addAction(text))
             self.pushButton_12.setMenu(action_menu)
 
             action_menu = QtWidgets.QMenu(self)
             self.simulator_actions = []
-            text = "보이는 범위만 임시로 계산하기"
+            text = "Calculate temporarily only visible range"
             self.simulator_actions.append(action_menu.addAction(text))
-            text = "계산 멈추기"
+            text = "Stop calculation"
             self.simulator_actions.append(action_menu.addAction(text))
-            text = "최저 미실현 수익률 지점들 찾기"
+            text = "Find spots with lowest unrealized profit"
             self.simulator_actions.append(action_menu.addAction(text))
-            text = "자동 주문 그래프와 같은 범위 보기"
+            text = "Display same range as transaction graph"
             self.simulator_actions.append(action_menu.addAction(text))
             self.pushButton_11.setMenu(action_menu)
 
             action_menu = QtWidgets.QMenu(self)
             self.strategist_actions = []
-            text = "샘플 전략으로 채우기"
+            text = "Apply sample strategy"
             self.strategist_actions.append(action_menu.addAction(text))
             self.pushButton_9.setMenu(action_menu)
 
             action_menu = QtWidgets.QMenu(self)
             self.manager_actions = []
-            text = "일부러 작은 오류 발생시키기"
+            text = "Make a small error on purpose"
             self.manager_actions.append(action_menu.addAction(text))
-            text = "시험용 팝업 보이기"
+            text = "Show test popup"
             self.manager_actions.append(action_menu.addAction(text))
-            text = "시스템 시각을 바이낸스 서버에 맞추기"
+            text = "Match system time with binance server"
             self.manager_actions.append(action_menu.addAction(text))
-            text = "현재 버전 보기"
+            text = "Show current Solsol version"
             self.manager_actions.append(action_menu.addAction(text))
-            text = "현재 라이센스 키 보기"
+            text = "Show Solsol license key"
             self.manager_actions.append(action_menu.addAction(text))
             self.pushButton_10.setMenu(action_menu)
 
@@ -1051,11 +1052,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ connect events to functions ■■■■■
 
         def job():
-            # 게이지
+            # gauge
             job = self.manager.toggle_board_availability
             outsource.do(self.gauge.clicked, job)
 
-            # 액션
+            # actions
             job = self.collector.save_candle_data
             outsource.do(self.collector_actions[0].triggered, job)
             job = self.collector.save_all_years_history
@@ -1097,7 +1098,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             job = self.manager.show_license_key
             outsource.do(self.manager_actions[4].triggered, job)
 
-            # 특수 위젯
+            # special widgets
             job = self.transactor.display_range_information
             outsource.do(self.plot_widget.sigRangeChanged, job)
             job = self.transactor.set_minimum_view_range
@@ -1107,7 +1108,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             job = self.simulator.set_minimum_view_range
             outsource.do(self.plot_widget_2.sigRangeChanged, job)
 
-            # 일반 위젯
+            # normal widgets
             job = self.simulator.update_calculation_settings
             outsource.do(self.comboBox.activated, job)
             job = self.transactor.update_automation_settings
@@ -1172,7 +1173,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ initialize functions ■■■■■
 
         def job():
-            guide_frame.announce("초기 실행 중입니다.")
+            guide_frame.announce("Initializing...")
 
         self.undertake(job, True)
 
