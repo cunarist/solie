@@ -91,7 +91,6 @@ class Transactor:
                     core.window.undertake(
                         lambda i=index: core.window.comboBox_2.setCurrentIndex(i), False
                     )
-
         except FileNotFoundError:
             self.automation_settings = {
                 "strategy": 0,
