@@ -767,12 +767,10 @@ class Transactor:
         if stop_flag.find("display_transaction_range_information", task_id):
             return
 
-        range_down = core.window.undertake(
-            lambda: core.window.plot_widget.getAxis("left").range[0], True
-        )
-        range_up = core.window.undertake(
-            lambda: core.window.plot_widget.getAxis("left").range[1], True
-        )
+        widget = core.window.plot_widget.getAxis("left")
+        view_range = core.window.undertake(lambda w=widget: w.range, True)
+        range_down = view_range[0]
+        range_up = view_range[1]
         range_height = round((1 - range_down / range_up) * 100, 2)
 
         text = ""
@@ -782,10 +780,8 @@ class Transactor:
         text += "  ⦁  "
         text += f"Transaction count {symbol_change_count}/{total_change_count}"
         text += "  ⦁  "
-        text += (
-            "Transaction amount"
-            f" ×{round(symbol_margin_ratio,4)}/{round(total_margin_ratio,4)}"
-        )
+        text += "Transaction amount"
+        text += f" ×{round(symbol_margin_ratio,4)}/{round(total_margin_ratio,4)}"
         text += "  ⦁  "
         text += f"Total realized profit {round(symbol_yield,4)}/{round(total_yield,4)}%"
         text += "  ⦁  "
@@ -794,12 +790,12 @@ class Transactor:
 
     def set_minimum_view_range(self, *args, **kwargs):
         def job():
-            range_down = core.window.plot_widget.getAxis("left").range[0]
-            core.window.plot_widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)
-            range_down = core.window.plot_widget_1.getAxis("left").range[0]
-            core.window.plot_widget_1.plotItem.vb.setLimits(
-                minYRange=range_down * 0.005
-            )
+            widget = core.window.plot_widget
+            range_down = widget.getAxis("left").range[0]
+            widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)
+            widget = core.window.plot_widget_1
+            range_down = widget.getAxis("left").range[0]
+            widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)
 
         core.window.undertake(job, False)
 

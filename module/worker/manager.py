@@ -328,11 +328,10 @@ class Manager:
         text = ""
         text += "Current time " + str(time)
         text += "  ⦁  "
-        text += (
-            "Connected to the internet"
-            if internet_connected
-            else "Not connected to the internet"
-        )
+        if internet_connected:
+            text += "Connected to the internet"
+        else:
+            text += "Not connected to the internet"
         text += "  ⦁  "
         text += "Ping " + simply_format.fixed_float(ping, 5) + "s"
         text += "  ⦁  "
