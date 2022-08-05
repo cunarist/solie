@@ -16,7 +16,7 @@ datas.append(("./resource", "./resource"))
 
 packages_to_complete = [
     "talib",
-    "pyqgraph",
+    "pyqtgraph",
     "timesetter",
     "pygments",
     "yapf",
