@@ -77,10 +77,13 @@ def do(datapath):
         pass
 
     # 4.0: solsol default strategy now has code number 2
-    filepath = datapath + "transactor/automation_settings.json"
-    with open(filepath, "r", encoding="utf8") as file:
-        automation_settings = json.load(file)
-    if automation_settings["strategy"] == 110:
-        automation_settings["strategy"] = 2
-    with open(filepath, "w", encoding="utf8") as file:
-        json.dump(automation_settings, file, indent=4)
+    try:
+        filepath = datapath + "/transactor/automation_settings.json"
+        with open(filepath, "r", encoding="utf8") as file:
+            automation_settings = json.load(file)
+        if automation_settings["strategy"] == 110:
+            automation_settings["strategy"] = 2
+        with open(filepath, "w", encoding="utf8") as file:
+            json.dump(automation_settings, file, indent=4)
+    except FileNotFoundError:
+        pass
