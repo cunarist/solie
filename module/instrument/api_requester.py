@@ -11,7 +11,6 @@ from module.instrument.api_request_error import ApiRequestError
 
 
 class ApiRequester:
-
     used_rates = {"real": {}, "testnet": {}}
     _session_count = 16
     _sessions = [requests.Session() for _ in range(_session_count)]
@@ -25,7 +24,6 @@ class ApiRequester:
         }
 
     def _request(self, http_method, parameters):
-
         attempt = 0
         while True:
             slot = attempt % self._session_count
@@ -49,7 +47,6 @@ class ApiRequester:
         self.keys.update(keys)
 
     def binance(self, http_method, path, payload={}):
-
         server = self.keys["server"]
 
         query_string = urlencode(payload)
@@ -99,7 +96,6 @@ class ApiRequester:
         return response
 
     def coinstats(self, http_method, path, payload={}):
-
         query_string = urlencode(payload)
         # replace single quote to double quote
         query_string = query_string.replace("%27", "%22")
@@ -111,21 +107,7 @@ class ApiRequester:
 
         return response
 
-    def github(self, http_method, path, payload={}):
-
-        query_string = urlencode(payload)
-        # replace single quote to double quote
-        query_string = query_string.replace("%27", "%22")
-
-        url = "https://api.github.com" + path + "?" + query_string
-        parameters = {"url": url}
-        raw_response = self._request(http_method, parameters)
-        response = raw_response.json()
-
-        return response
-
     def cunarist(self, http_method, path, payload={}):
-
         query_string = urlencode(payload)
         # replace single quote to double quote
         query_string = query_string.replace("%27", "%22")
