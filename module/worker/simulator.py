@@ -217,7 +217,9 @@ class Simulator:
 
         task_id = stop_flag.make(task_name)
 
-        # ■■■■■ check frequent drawing ■■■■■
+        # ■■■■■ check drawing mode ■■■■■
+
+        should_draw_all_years = self.should_draw_all_years
 
         if frequent:
             pass
@@ -402,19 +404,24 @@ class Simulator:
         if only_light_lines:
             return
 
-        # ■■■■■ get heavy data ■■■■■
+        # ■■■■■ set range of heavy data ■■■■■
 
-        year = self.calculation_settings["year"]
-        slice_until = datetime.now(timezone.utc)
-        slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
-        slice_until -= timedelta(seconds=1)
+        if should_draw_all_years:
+            slice_from = datetime.fromtimestamp(0, tz=timezone.utc)
+            slice_until = datetime.now(timezone.utc)
+            slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
+        else:
+            current_year = datetime.now(timezone.utc).year
+            slice_from = datetime(current_year, 1, 1, tzinfo=timezone.utc)
+            slice_until = datetime.now(timezone.utc)
+            slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
+        get_from = slice_from - timedelta(days=7)
+
+        # ■■■■■ get heavy data ■■■■■
 
         with core.window.collector.datalocks[0]:
             candle_data = core.window.collector.candle_data
-            if not self.should_draw_all_years:
-                mask = candle_data.index.year == year
-                candle_data = candle_data[mask]
-            candle_data = candle_data[:slice_until][[symbol]]
+            candle_data = candle_data[get_from:slice_until][[symbol]]
             candle_data = candle_data.copy()
         with self.datalocks[0]:
             unrealized_changes = self.unrealized_changes.copy()
@@ -424,6 +431,12 @@ class Simulator:
                 last_asset = asset_record.iloc[-1]["Result Asset"]
             else:
                 last_asset = None
+            before_record = asset_record[:slice_from]
+            asset_record = asset_record[slice_from:]
+            if len(before_record) > 0:
+                before_asset = before_record.iloc[-1]["Result Asset"]
+            else:
+                before_asset = None
             asset_record = asset_record.copy()
 
         # ■■■■■ make indicators ■■■■■
@@ -438,6 +451,11 @@ class Simulator:
             compiled_custom_script=compiled_indicators_script,
         )
 
+        # ■■■■■ range cut ■■■■■
+
+        candle_data = candle_data[slice_from:]
+        indicators = indicators[slice_from:]
+
         # ■■■■■ maniuplate heavy data ■■■■■
 
         # add the right end
@@ -450,8 +468,16 @@ class Simulator:
 
         if last_asset is not None:
             observed_until = self.account_state["observed_until"]
-            asset_record.loc[observed_until, "Cause"] = "other"
-            asset_record.loc[observed_until, "Result Asset"] = last_asset
+            if len(asset_record) == 0 or asset_record.index[-1] < observed_until:
+                asset_record.loc[observed_until, "Cause"] = "other"
+                asset_record.loc[observed_until, "Result Asset"] = last_asset
+                asset_record = asset_record.sort_index()
+
+        # add the left end
+
+        if before_asset is not None:
+            asset_record.loc[slice_from, "Cause"] = "other"
+            asset_record.loc[slice_from, "Result Asset"] = before_asset
             asset_record = asset_record.sort_index()
 
         # ■■■■■ draw heavy lines ■■■■■

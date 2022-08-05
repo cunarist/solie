@@ -818,7 +818,7 @@ class Transactor:
 
         task_id = stop_flag.make(task_name)
 
-        # ■■■■■ check frequent drawing ■■■■■
+        # ■■■■■ check drawing mode ■■■■■
 
         should_draw_frequently = self.should_draw_frequently
 
@@ -1008,20 +1008,22 @@ class Transactor:
         if only_light_lines:
             return
 
-        # ■■■■■ get heavy data ■■■■■
+        # ■■■■■ set range of heavy data ■■■■■
 
-        year = datetime.now(timezone.utc).year
-        slice_from = datetime.now(timezone.utc)
-        slice_from -= timedelta(hours=24)
+        if should_draw_frequently:
+            slice_from = datetime.now(timezone.utc) - timedelta(hours=24)
+            slice_until = datetime.now(timezone.utc)
+        else:
+            current_year = datetime.now(timezone.utc).year
+            slice_from = datetime(current_year, 1, 1, tzinfo=timezone.utc)
+            slice_until = datetime.now(timezone.utc)
+        get_from = slice_from - timedelta(days=7)
+
+        # ■■■■■ get heavy data ■■■■■
 
         with core.window.collector.datalocks[0]:
             candle_data = core.window.collector.candle_data
-            if should_draw_frequently:
-                get_from = slice_from - timedelta(days=7)
-                candle_data = candle_data[get_from:][[symbol]]
-            else:
-                mask = candle_data.index.year == year
-                candle_data = candle_data[mask][[symbol]]
+            candle_data = candle_data[get_from:slice_until][[symbol]]
             candle_data = candle_data.copy()
         with self.datalocks[0]:
             unrealized_changes = self.unrealized_changes.copy()
@@ -1031,13 +1033,8 @@ class Transactor:
                 last_asset = asset_record.iloc[-1]["Result Asset"]
             else:
                 last_asset = None
-            if should_draw_frequently:
-                before_record = asset_record[:slice_from]
-                asset_record = asset_record[slice_from:]
-            else:
-                mask = asset_record.index.year == year
-                before_record = asset_record[~mask]
-                asset_record = asset_record[mask]
+            before_record = asset_record[:slice_from]
+            asset_record = asset_record[slice_from:]
             if len(before_record) > 0:
                 before_asset = before_record.iloc[-1]["Result Asset"]
             else:
@@ -1056,13 +1053,12 @@ class Transactor:
             compiled_custom_script=compiled_indicators_script,
         )
 
+        # ■■■■■ range cut ■■■■■
+
+        candle_data = candle_data[slice_from:]
+        indicators = indicators[slice_from:]
+
         # ■■■■■ maniuplate heavy data ■■■■■
-
-        # range cut
-
-        if should_draw_frequently:
-            candle_data = candle_data[slice_from:]
-            indicators = indicators[slice_from:]
 
         # add the right end
 
@@ -1081,7 +1077,7 @@ class Transactor:
 
         # add the left end
 
-        if should_draw_frequently and before_asset is not None:
+        if before_asset is not None:
             asset_record.loc[slice_from, "Cause"] = "other"
             asset_record.loc[slice_from, "Result Asset"] = before_asset
             asset_record = asset_record.sort_index()
