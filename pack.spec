@@ -31,6 +31,7 @@ packages_to_complete = [
     "dill",
     "getmac",
     "yapf",
+    "tendo",
 ]
 for package in packages_to_complete:
     new_lists = hooks.collect_all(package)

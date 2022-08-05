@@ -15,6 +15,7 @@ from PySide6 import QtGui, QtWidgets, QtCore
 import pandas as pd
 import pyqtgraph
 from apscheduler.schedulers.background import BlockingScheduler
+from tendo import singleton
 
 from module import process_toss
 from module import thread_toss
@@ -1243,6 +1244,12 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
 # ■■■■■ prerequisites ■■■■■
 
+# prevent multiple app instances running together
+try:
+    instance = singleton.SingleInstance()
+except singleton.SingleInstanceException:
+    sys.exit()
+# make pyinstaller executable work with multiprocessing
 multiprocessing.freeze_support()
 
 # ■■■■■ app ■■■■■
