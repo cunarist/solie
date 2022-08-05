@@ -110,7 +110,7 @@ class Simulator:
             index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32
         )
 
-        text = "No strategy drawn"
+        text = "Nothing drawn"
         core.window.undertake(lambda t=text: core.window.label_19.setText(t), False)
 
         # ■■■■■ default executions ■■■■■
@@ -415,6 +415,7 @@ class Simulator:
             slice_from = datetime(current_year, 1, 1, tzinfo=timezone.utc)
             slice_until = datetime.now(timezone.utc)
             slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
+        slice_until -= timedelta(seconds=1)
         get_from = slice_from - timedelta(days=7)
 
         # ■■■■■ get heavy data ■■■■■
@@ -995,19 +996,12 @@ class Simulator:
         year = self.calculation_settings["year"]
         strategy = self.calculation_settings["strategy"]
 
-        asset_record_filepath = (
-            f"{self.workerpath}/{strategy}_{year}_asset_record.pickle"
-        )
-        unrealized_changes_filepath = (
-            f"{self.workerpath}/{strategy}_{year}_unrealized_changes.pickle"
-        )
-        scribbles_filepath = f"{self.workerpath}/{strategy}_{year}_scribbles.pickle"
-        account_state_filepath = (
-            f"{self.workerpath}/{strategy}_{year}_account_state.pickle"
-        )
-        virtual_state_filepath = (
-            f"{self.workerpath}/{strategy}_{year}_virtual_state.pickle"
-        )
+        path_start = f"{self.workerpath}/{strategy}_{year}"
+        asset_record_filepath = path_start + "_asset_record.pickle"
+        unrealized_changes_filepath = path_start + "_unrealized_changes.pickle"
+        scribbles_filepath = path_start + "_scribbles.pickle"
+        account_state_filepath = path_start + "_account_state.pickle"
+        virtual_state_filepath = path_start + "_virtual_state.pickle"
 
         if strategy == 0:
             strategy_details = core.window.strategist.details
@@ -1032,17 +1026,23 @@ class Simulator:
 
         prepare_step = 2
 
-        # ■■■■■ candle data of the year ■■■■■
+        # ■■■■■ get datas ■■■■■
+
+        # set range
+        slice_from = datetime(year, 1, 1, tzinfo=timezone.utc)
+        if year == datetime.now(timezone.utc).year:
+            slice_until = datetime.now(timezone.utc)
+            slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
+        else:
+            slice_until = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+        slice_until -= timedelta(seconds=1)
+        get_from = slice_from - timedelta(days=7)
 
         # get only year range
         with core.window.collector.datalocks[0]:
             df = core.window.collector.candle_data
-            year_candle_data = df[df.index.year == year].copy()
-        # slice until last hour
-        slice_until = year_candle_data.index[-1] + timedelta(seconds=10)
-        slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
-        slice_until -= timedelta(seconds=1)
-        year_candle_data = year_candle_data[:slice_until]
+            year_candle_data = df[get_from:slice_until].copy()
+
         # interpolate
         year_candle_data = year_candle_data.interpolate()
 
@@ -1104,31 +1104,21 @@ class Simulator:
             previous_account_state = blank_account_state.copy()
             previous_virtual_state = blank_virtual_state.copy()
 
-            range_start = core.window.undertake(
-                lambda: core.window.plot_widget_2.getAxis("bottom").range[0], True
-            )
-            range_start = datetime.fromtimestamp(range_start, tz=timezone.utc)
-            range_start = range_start.replace(microsecond=0)
-            range_start = range_start - timedelta(seconds=range_start.second % 10)
+            widget = core.window.plot_widget_2.getAxis("bottom")
+            view_range = core.window.undertake(lambda w=widget: w.range, True)
+            view_start = datetime.fromtimestamp(view_range[0], tz=timezone.utc)
+            view_end = datetime.fromtimestamp(view_range[1], tz=timezone.utc)
 
-            range_end = core.window.undertake(
-                lambda: core.window.plot_widget_2.getAxis("bottom").range[1], True
-            )
-            range_end = datetime.fromtimestamp(range_end, tz=timezone.utc)
-            range_end = range_end.replace(microsecond=0)
-            range_end = range_end - timedelta(seconds=range_end.second % 10)
-            range_end += timedelta(seconds=10)
-
-            calculate_from = max(range_start, year_candle_data.index[0])
-            calculate_until = min(range_end, year_candle_data.index[-1])
+            calculate_from = max(view_start, slice_from)
+            calculate_until = min(view_end, slice_until)
 
         else:
             # when calculating properly
             try:
-                previous_asset_record = pd.read_pickle(asset_record_filepath)
-                previous_unrealized_changes = pd.read_pickle(
-                    unrealized_changes_filepath
-                )
+                filepath = asset_record_filepath
+                previous_asset_record = pd.read_pickle(filepath)
+                filepath = unrealized_changes_filepath
+                previous_unrealized_changes = pd.read_pickle(filepath)
                 with open(scribbles_filepath, "rb") as file:
                     previous_scribbles = pickle.load(file)
                 with open(account_state_filepath, "rb") as file:
@@ -1137,7 +1127,7 @@ class Simulator:
                     previous_virtual_state = pickle.load(file)
 
                 calculate_from = previous_account_state["observed_until"]
-                calculate_until = year_candle_data.index[-1]
+                calculate_until = slice_until
             except FileNotFoundError:
                 previous_asset_record = blank_asset_record.copy()
                 previous_unrealized_changes = blank_unrealized_changes.copy()
@@ -1145,8 +1135,8 @@ class Simulator:
                 previous_account_state = blank_account_state.copy()
                 previous_virtual_state = blank_virtual_state.copy()
 
-                calculate_from = year_candle_data.index[0]
-                calculate_until = year_candle_data.index[-1]
+                calculate_from = slice_from
+                calculate_until = slice_until
 
         should_calculate = calculate_from < calculate_until
         if len(previous_asset_record) == 0:
@@ -1162,18 +1152,21 @@ class Simulator:
             indicators_script = core.window.strategist.indicators_script
             compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
-            slice_from = calculate_from - timedelta(days=7)
             # a little more data for generation
-            slice_to = calculate_until
+            provide_from = calculate_from - timedelta(days=7)
             year_indicators = process_toss.apply(
                 make_indicators.do,
-                candle_data=year_candle_data[slice_from:slice_to],
+                candle_data=year_candle_data[provide_from:calculate_until],
                 strategy=strategy,
                 compiled_custom_script=compiled_indicators_script,
             )
 
+            # range cut
+            needed_candle_data = year_candle_data[calculate_from:calculate_until]
+            needed_index = needed_candle_data.index
+            needed_indicators = year_indicators.reindex(needed_index)
+
             if should_parallalize:
-                needed_candle_data = year_candle_data[calculate_from:calculate_until]
                 division = timedelta(days=unit_length)
                 unit_candle_data_list = [
                     unit_candle_data
@@ -1188,15 +1181,15 @@ class Simulator:
 
                 input_data = []
                 for turn, unit_candle_data in enumerate(unit_candle_data_list):
-                    base_index = unit_candle_data.index
-                    unit_indicators = year_indicators.reindex(base_index)
-                    get_from = base_index[0]
-                    get_to = base_index[-1] + timedelta(seconds=10)
-                    unit_asset_record = previous_asset_record[get_from:get_to]
-                    unit_unrealized_changes = previous_unrealized_changes[
-                        get_from:get_to
-                    ]
-                    if get_from < calculate_from <= get_to:
+                    unit_index = unit_candle_data.index
+                    unit_indicators = needed_indicators.reindex(unit_index)
+                    unit_asset_record = previous_asset_record.iloc[0:0]
+                    unit_unrealized_changes = previous_unrealized_changes.iloc[0:0]
+                    first_timestamp = unit_index[0].timestamp()
+                    division_seconds = unit_length * 24 * 60 * 60
+                    if turn == 0 and first_timestamp % division_seconds != 0:
+                        # when this is the firstmost unit of calculation
+                        # and also unit calculation was partially done before
                         unit_scribbles = previous_scribbles
                         unit_account_state = previous_account_state
                         unit_virtual_state = previous_virtual_state
@@ -1209,6 +1202,7 @@ class Simulator:
                         "progress_list": progress_list,
                         "target_progress": turn,
                         "strategy": strategy,
+                        "calculation_index": unit_index,
                         "unit_candle_data": unit_candle_data,
                         "unit_indicators": unit_indicators,
                         "unit_asset_record": unit_asset_record,
@@ -1216,8 +1210,6 @@ class Simulator:
                         "unit_scribbles": unit_scribbles,
                         "unit_account_state": unit_account_state,
                         "unit_virtual_state": unit_virtual_state,
-                        "calculate_from": calculate_from,
-                        "calculate_until": calculate_until,
                         "decision_script": decision_script,
                     }
                     input_data.append(dataset)
@@ -1231,15 +1223,14 @@ class Simulator:
                     "progress_list": progress_list,
                     "target_progress": 0,
                     "strategy": strategy,
-                    "unit_candle_data": year_candle_data,
-                    "unit_indicators": year_indicators,
+                    "calculation_index": needed_index,
+                    "unit_candle_data": needed_candle_data,
+                    "unit_indicators": needed_indicators,
                     "unit_asset_record": previous_asset_record,
                     "unit_unrealized_changes": previous_unrealized_changes,
                     "unit_scribbles": previous_scribbles,
                     "unit_account_state": previous_account_state,
                     "unit_virtual_state": previous_virtual_state,
-                    "calculate_from": calculate_from,
-                    "calculate_until": calculate_until,
                     "decision_script": decision_script,
                 }
                 input_data.append(dataset)
@@ -1417,7 +1408,7 @@ class Simulator:
         self.display_range_information()
 
         if self.about_viewing is None:
-            text = "No strategy drawn"
+            text = "Nothing drawn"
             core.window.undertake(lambda t=text: core.window.label_19.setText(t), False)
         else:
             year = self.about_viewing["year"]
@@ -1454,19 +1445,12 @@ class Simulator:
         year = self.calculation_settings["year"]
         strategy = self.calculation_settings["strategy"]
 
-        asset_record_filepath = (
-            f"{self.workerpath}/{strategy}_{year}_asset_record.pickle"
-        )
-        unrealized_changes_filepath = (
-            f"{self.workerpath}/{strategy}_{year}_unrealized_changes.pickle"
-        )
-        scribbles_filepath = f"{self.workerpath}/{strategy}_{year}_scribbles.pickle"
-        account_state_filepath = (
-            f"{self.workerpath}/{strategy}_{year}_account_state.pickle"
-        )
-        virtual_state_filepath = (
-            f"{self.workerpath}/{strategy}_{year}_virtual_state.pickle"
-        )
+        path_start = f"{self.workerpath}/{strategy}_{year}"
+        asset_record_filepath = path_start + "_asset_record.pickle"
+        unrealized_changes_filepath = path_start + "_unrealized_changes.pickle"
+        scribbles_filepath = path_start + "_scribbles.pickle"
+        account_state_filepath = path_start + "_account_state.pickle"
+        virtual_state_filepath = path_start + "_virtual_state.pickle"
 
         does_file_exist = False
 
@@ -1531,16 +1515,11 @@ class Simulator:
         year = self.calculation_settings["year"]
         strategy = self.calculation_settings["strategy"]
 
-        asset_record_filepath = (
-            f"{self.workerpath}/{strategy}_{year}_asset_record.pickle"
-        )
-        unrealized_changes_filepath = (
-            f"{self.workerpath}/{strategy}_{year}_unrealized_changes.pickle"
-        )
-        scribbles_filepath = f"{self.workerpath}/{strategy}_{year}_scribbles.pickle"
-        account_state_filepath = (
-            f"{self.workerpath}/{strategy}_{year}_account_state.pickle"
-        )
+        path_start = f"{self.workerpath}/{strategy}_{year}"
+        asset_record_filepath = path_start + "_asset_record.pickle"
+        unrealized_changes_filepath = path_start + "_unrealized_changes.pickle"
+        scribbles_filepath = path_start + "_scribbles.pickle"
+        account_state_filepath = path_start + "_account_state.pickle"
 
         try:
             with self.datalocks[0]:

@@ -21,6 +21,7 @@ def do(dataset):
     progress_list = dataset["progress_list"]
     target_progress = dataset["target_progress"]
     strategy = dataset["strategy"]
+    calculation_index = dataset["calculation_index"]
     unit_candle_data = dataset["unit_candle_data"]
     unit_indicators = dataset["unit_indicators"]
     unit_asset_record = dataset["unit_asset_record"]
@@ -28,18 +29,15 @@ def do(dataset):
     unit_scribbles = dataset["unit_scribbles"]
     unit_account_state = dataset["unit_account_state"]
     unit_virtual_state = dataset["unit_virtual_state"]
-    calculate_from = dataset["calculate_from"]
-    calculate_until = dataset["calculate_until"]
     decision_script = dataset["decision_script"]
 
     # ■■■■■ basic values ■■■■■
 
     decision_lag = 3000  # milliseconds
-    target_moments = unit_candle_data[calculate_from:calculate_until].index
 
     # ■■■■■ return blank data if there's nothing to calculate ■■■■■
 
-    if len(target_moments) == 0:
+    if len(calculation_index) == 0:
         dataset = {
             "unit_asset_record": unit_asset_record,
             "unit_unrealized_changes": unit_unrealized_changes,
@@ -52,25 +50,20 @@ def do(dataset):
 
     # ■■■■■ convert to numpy objects for fast calculation ■■■■■
 
-    target_moments_ar = target_moments.to_numpy()  # inside are datetime objects
-
-    sliced_candle_data = unit_candle_data[calculate_from:calculate_until]
-    candle_data_ar = sliced_candle_data.to_records()
-
-    sliced_indicators = unit_indicators[calculate_from:calculate_until]
-    indicators_ar = sliced_indicators.to_records()
-
+    calculation_index_ar = calculation_index.to_numpy()  # inside are datetime objects
+    candle_data_ar = unit_candle_data.to_records()
+    indicators_ar = unit_indicators.to_records()
     asset_record_ar = unit_asset_record.to_records()
     unit_unrealized_changes_ar = unit_unrealized_changes.to_frame().to_records()
 
     # ■■■■■ actual loop calculation ■■■■■
 
-    target_moments_length = len(target_moments_ar)
+    calculation_index_length = len(calculation_index_ar)
     compiled_decision_script = compile(decision_script, "<string>", "exec")
     target_symbols = standardize.get_basics()["target_symbols"]
 
-    for cycle in range(target_moments_length):
-        before_moment = target_moments_ar[cycle]
+    for cycle in range(calculation_index_length):
+        before_moment = calculation_index_ar[cycle]
         current_moment = before_moment + timedelta(seconds=10)
 
         for symbol in target_symbols:
@@ -499,7 +492,7 @@ def do(dataset):
         # ■■■■■ report the progress in seconds ■■■■■
 
         progress_list[target_progress] = max(
-            (current_moment - target_moments[0]).total_seconds(), 0
+            (current_moment - calculation_index[0]).total_seconds(), 0
         )
 
     # ■■■■■ convert back numpy objects to pandas objects ■■■■■

@@ -1016,6 +1016,7 @@ class Transactor:
             current_year = datetime.now(timezone.utc).year
             slice_from = datetime(current_year, 1, 1, tzinfo=timezone.utc)
             slice_until = datetime.now(timezone.utc)
+        slice_until -= timedelta(seconds=1)
         get_from = slice_from - timedelta(days=7)
 
         # ■■■■■ get heavy data ■■■■■
