@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 
 
 def do(datapath):
-
     # 1.1.2: changed type of realtime_data_chunks from list to deque
     try:
         filepath = datapath + "/collector/realtime_data_chunks.pickle"
@@ -76,3 +75,12 @@ def do(datapath):
 
     except FileNotFoundError:
         pass
+
+    # 4.0: solsol default strategy now has code number 2
+    filepath = datapath + "transactor/automation_settings.json"
+    with open(filepath, "r", encoding="utf8") as file:
+        automation_settings = json.load(file)
+    if automation_settings["strategy"] == 110:
+        automation_settings["strategy"] = 2
+    with open(filepath, "w", encoding="utf8") as file:
+        json.dump(automation_settings, file, indent=4)
