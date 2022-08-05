@@ -820,8 +820,10 @@ class Transactor:
 
         # ■■■■■ check frequent drawing ■■■■■
 
+        should_draw_frequently = self.should_draw_frequently
+
         if frequent:
-            if not self.should_draw_frequently:
+            if not should_draw_frequently:
                 return
 
         # ■■■■■ check if the data exists ■■■■■
@@ -863,9 +865,6 @@ class Transactor:
         realtime_data = np.concatenate((before_chunk, current_chunk))
         with core.window.collector.datalocks[2]:
             aggregate_trades = core.window.collector.aggregate_trades.copy()
-
-        with self.datalocks[0]:
-            unrealized_changes = self.unrealized_changes.copy()
 
         # ■■■■■ draw light lines ■■■■■
 
@@ -1017,19 +1016,31 @@ class Transactor:
 
         with core.window.collector.datalocks[0]:
             candle_data = core.window.collector.candle_data
-            if self.should_draw_frequently:
+            if should_draw_frequently:
                 candle_data = candle_data[slice_from:][[symbol]]
             else:
                 mask = candle_data.index.year == year
                 candle_data = candle_data[mask][[symbol]]
             candle_data = candle_data.copy()
+        with self.datalocks[0]:
+            unrealized_changes = self.unrealized_changes.copy()
         with self.datalocks[1]:
             asset_record = self.asset_record
-            if self.should_draw_frequently:
+            if len(asset_record) > 0:
+                last_asset = asset_record.iloc[-1]["Result Asset"]
+            else:
+                last_asset = None
+            if should_draw_frequently:
+                before_record = asset_record[:slice_from]
                 asset_record = asset_record[slice_from:]
             else:
                 mask = asset_record.index.year == year
+                before_record = asset_record[~mask]
                 asset_record = asset_record[mask]
+            if len(before_record) > 0:
+                before_asset = before_record.iloc[-1]["Result Asset"]
+            else:
+                before_asset = None
             asset_record = asset_record.copy()
 
         # ■■■■■ maniuplate heavy data ■■■■■
@@ -1043,11 +1054,16 @@ class Transactor:
             candle_data = candle_data.reindex(new_index)
 
         observed_until = self.account_state["observed_until"]
-        if len(asset_record) > 0:
-            final_index = asset_record.index[-1]
-            final_asset = asset_record.loc[final_index, "Result Asset"]
+        if last_asset is not None:
             asset_record.loc[observed_until, "Cause"] = "other"
-            asset_record.loc[observed_until, "Result Asset"] = final_asset
+            asset_record.loc[observed_until, "Result Asset"] = last_asset
+            asset_record = asset_record.sort_index()
+
+        # add the left end
+
+        if should_draw_frequently and before_asset is not None:
+            asset_record.loc[slice_from, "Cause"] = "other"
+            asset_record.loc[slice_from, "Result Asset"] = before_asset
             asset_record = asset_record.sort_index()
 
         # ■■■■■ make indicators ■■■■■
@@ -1285,8 +1301,9 @@ class Transactor:
         core.window.undertake(job, False)
 
         # asset with unrealized profit
-        if len(asset_record["Result Asset"]) >= 2:
-            sr = asset_record["Result Asset"].resample("10S").ffill()
+        sr = asset_record["Result Asset"]
+        if len(sr) >= 2:
+            sr = sr.resample("10S").ffill()
         unrealized_changes_sr = unrealized_changes.reindex(sr.index)
         sr = sr * (1 + unrealized_changes_sr)
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9 + 5

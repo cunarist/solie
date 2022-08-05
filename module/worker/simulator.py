@@ -262,9 +262,6 @@ class Simulator:
         with core.window.collector.datalocks[2]:
             aggregate_trades = core.window.collector.aggregate_trades.copy()
 
-        with self.datalocks[0]:
-            unrealized_changes = self.unrealized_changes.copy()
-
         # ■■■■■ draw light lines ■■■■■
 
         # mark price
@@ -419,8 +416,15 @@ class Simulator:
                 candle_data = candle_data[mask]
             candle_data = candle_data[:slice_until][[symbol]]
             candle_data = candle_data.copy()
+        with self.datalocks[0]:
+            unrealized_changes = self.unrealized_changes.copy()
         with self.datalocks[1]:
-            asset_record = self.asset_record.copy()
+            asset_record = self.asset_record
+            if len(asset_record) > 0:
+                last_asset = asset_record.iloc[-1]["Result Asset"]
+            else:
+                last_asset = None
+            asset_record = asset_record.copy()
 
         # ■■■■■ maniuplate heavy data ■■■■■
 
@@ -433,11 +437,8 @@ class Simulator:
             candle_data = candle_data.reindex(new_index)
 
         observed_until = self.account_state["observed_until"]
-        if len(asset_record) > 0:
-            final_index = asset_record.index[-1]
-            final_asset = asset_record.loc[final_index, "Result Asset"]
-            asset_record.loc[observed_until, "Cause"] = "other"
-            asset_record.loc[observed_until, "Result Asset"] = final_asset
+        if last_asset is not None:
+            asset_record.loc[observed_until, "Result Asset"] = last_asset
             asset_record = asset_record.sort_index()
 
         # ■■■■■ make indicators ■■■■■
@@ -675,8 +676,9 @@ class Simulator:
         core.window.undertake(job, False)
 
         # asset with unrealized profit
-        if len(asset_record) >= 2:
-            sr = asset_record["Result Asset"].resample("10S").ffill()
+        sr = asset_record["Result Asset"]
+        if len(sr) >= 2:
+            sr = sr.resample("10S").ffill()
         unrealized_changes_sr = unrealized_changes.reindex(sr.index)
         sr = sr * (1 + unrealized_changes_sr)
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9 + 5
