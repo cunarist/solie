@@ -780,7 +780,10 @@ class Collector:
                 with self.datalocks[0]:
                     df = self.candle_data
                     inspect_sr = df.iloc[-60:][(symbol, "Close")].copy()
-                last_price = inspect_sr.dropna().tolist()[-1]
+                inspect_sr = inspect_sr.dropna()
+                if len(inspect_sr) == 0:
+                    return
+                last_price = inspect_sr.tolist()[-1]
                 open_price = last_price
                 high_price = last_price
                 low_price = last_price
