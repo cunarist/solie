@@ -631,13 +631,13 @@ class Transactor:
         )
 
         if is_checked:
-            if strategy in (1, 2):
+            if strategy == 1:
                 question = [
                     "Random strategy selected",
                     "If you turn on auto transaction with the random strategy on, you"
                     " will repeat meaningless trades for 1/10000 of your total assets"
-                    " in all markets. This strategy is designed to ensure that your"
-                    " auto-order code works well. Be careful as you will pay a lot of"
+                    " in all markets. This strategy was designed to test if auto"
+                    " transaction code works well. Be careful as you will pay a lot of"
                     " fees if you leave it on for a long time.",
                     ["Okay"],
                     False,
