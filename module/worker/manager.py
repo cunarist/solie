@@ -237,10 +237,11 @@ class Manager:
                     text += f"Average {simply_format.fixed_float(data_value,6)}s "
                     data_value = statistics.median(deque_data)
                     text += f"Middle {simply_format.fixed_float(data_value,6)}s "
-                    data_value = max(deque_data)
-                    text += f"Maximum {simply_format.fixed_float(data_value,6)}s "
+                    text += "\n"
                     data_value = min(deque_data)
                     text += f"Minimum {simply_format.fixed_float(data_value,6)}s "
+                    data_value = max(deque_data)
+                    text += f"Maximum {simply_format.fixed_float(data_value,6)}s "
                     texts.append(text)
 
             text = "\n\n".join(texts)
@@ -335,7 +336,7 @@ class Manager:
         text += "  ⦁  "
         text += "Ping " + simply_format.fixed_float(ping, 5) + "s"
         text += "  ⦁  "
-        text += "Time difference with server" + difference_string + "s"
+        text += "Time difference with server " + difference_string + "s"
         core.window.undertake(lambda t=text: core.window.gauge.setText(t), False)
 
     def open_sample_ask_popup(self, *args, **kwargs):
