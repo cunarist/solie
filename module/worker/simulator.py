@@ -1291,18 +1291,18 @@ class Simulator:
 
         if should_calculate:
             asset_record = previous_asset_record
-            for month_ouput_data in output_data:
-                month_asset_record = month_ouput_data["unit_asset_record"]
-                concat_data = [asset_record, month_asset_record]
+            for unit_ouput_data in output_data:
+                unit_asset_record = unit_ouput_data["unit_asset_record"]
+                concat_data = [asset_record, unit_asset_record]
                 asset_record = pd.concat(concat_data)
             mask = ~asset_record.index.duplicated()
             asset_record = asset_record[mask]
             asset_record = asset_record.sort_index()
 
             unrealized_changes = previous_unrealized_changes
-            for month_ouput_data in output_data:
-                month_unrealized_changes = month_ouput_data["unit_unrealized_changes"]
-                concat_data = [unrealized_changes, month_unrealized_changes]
+            for unit_ouput_data in output_data:
+                unit_unrealized_changes = unit_ouput_data["unit_unrealized_changes"]
+                concat_data = [unrealized_changes, unit_unrealized_changes]
                 unrealized_changes = pd.concat(concat_data)
             mask = ~unrealized_changes.index.duplicated()
             unrealized_changes = unrealized_changes[mask]
@@ -1374,12 +1374,8 @@ class Simulator:
                 frequency = timedelta(minutes=unit_length)
             else:
                 frequency = timedelta(days=unit_length)
-            unit_asset_record_list = [
-                unit_asset_record.dropna()
-                for _, unit_asset_record in asset_record.groupby(
-                    pd.Grouper(freq=frequency, origin="epoch")
-                )
-            ]
+            grouped = asset_record.groupby(pd.Grouper(freq=frequency, origin="epoch"))
+            unit_asset_record_list = [r.dropna() for _, r in grouped]
             unit_count = len(unit_asset_record_list)
 
         else:
@@ -1391,10 +1387,11 @@ class Simulator:
             unit_asset_record = unit_asset_record_list[turn]
 
             # leverage
-            unit_asset_shifts = unit_asset_record["Result Asset"].diff()
+            unit_result_asset_sr = unit_asset_record["Result Asset"]
+            unit_asset_shifts = unit_result_asset_sr.diff()
             if len(unit_asset_shifts) > 0:
                 unit_asset_shifts.iloc[0] = 0
-            lazy_unit_result_asset = unit_asset_record["Result Asset"].shift(periods=1)
+            lazy_unit_result_asset = unit_result_asset_sr.shift(periods=1)
             if len(lazy_unit_result_asset) > 0:
                 lazy_unit_result_asset.iloc[0] = 1
             unit_asset_changes_by_leverage = (
@@ -1402,27 +1399,28 @@ class Simulator:
             )
 
             # fee
-            month_fees = unit_asset_record["Role"].copy()
-            month_fees[month_fees == "maker"] = maker_fee
-            month_fees[month_fees == "taker"] = taker_fee
-            month_fees = month_fees.astype(np.float32)
-            month_margin_ratios = unit_asset_record["Margin Ratio"]
-            month_asset_changes_by_fee = (
-                1 - (month_fees / 100) * month_margin_ratios * leverage
+            unit_fees = unit_asset_record["Role"].copy()
+            unit_fees[unit_fees == "maker"] = maker_fee
+            unit_fees[unit_fees == "taker"] = taker_fee
+            unit_fees = unit_fees.astype(np.float32)
+            unit_margin_ratios = unit_asset_record["Margin Ratio"]
+            unit_asset_changes_by_fee = (
+                1 - (unit_fees / 100) * unit_margin_ratios * leverage
             )
 
             # altogether
-            month_asset_changes = (
-                unit_asset_changes_by_leverage * month_asset_changes_by_fee
+            unit_asset_changes = (
+                unit_asset_changes_by_leverage * unit_asset_changes_by_fee
             )
-            unit_asset_changes_list.append(month_asset_changes)
-
-        year_asset_changes = pd.concat(unit_asset_changes_list).sort_index()
-
-        if len(year_asset_changes) > 0:
-            year_asset_changes.iloc[0] = float(1)
+            unit_asset_changes_list.append(unit_asset_changes)
 
         unrealized_changes = unrealized_changes * leverage
+
+        year_asset_changes = pd.concat(unit_asset_changes_list).sort_index()
+        if len(year_asset_changes) > 0:
+            year_asset_changes.iloc[0] = float(1)
+        asset_record = asset_record.reindex(year_asset_changes.index)
+        asset_record["Result Asset"] = year_asset_changes.cumprod()
 
         presentation_asset_record = asset_record.copy()
         presentation_unrealized_changes = unrealized_changes.copy()
