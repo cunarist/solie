@@ -398,8 +398,7 @@ class Manager:
         core.window.undertake(core.window.close, False)
 
     def show_version(self, *args, **kwargs):
-        with open("./resource/version.txt", mode="r", encoding="utf8") as file:
-            version = file.read()
+        version = find_goodies.get_version()
 
         question = [
             "Current Solsol version",
@@ -485,7 +484,7 @@ class Manager:
         run_duration = datetime.now(timezone.utc) - self.executed_time
         did_run_long = run_duration > timedelta(hours=12)
 
-        is_prepared = find_goodies.get_status()
+        is_prepared = find_goodies.get_updater_status()
 
         if is_prepared and did_run_long:
             question = [

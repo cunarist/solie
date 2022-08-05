@@ -9,12 +9,17 @@ from module.instrument.api_requester import ApiRequester
 from module.recipe import compare_versions
 from module.recipe import check_internet
 
+CURRENT_VERSION = "3.15"
 LATEST_VERSION = "0.0"
 PREPARED_VERSION = "0.0"
 IS_PREPARED = False
 
 
-def get_status():
+def get_version():
+    return CURRENT_VERSION
+
+
+def get_updater_status():
     return IS_PREPARED
 
 
@@ -31,9 +36,6 @@ def prepare():
     response = api_requester.cunarist("GET", "/api/solsol/latest-information", payload)
     LATEST_VERSION = response["value"]
 
-    with open("./resource/version.txt", mode="r", encoding="utf8") as file:
-        current_version = file.read()
-
     if IS_PREPARED:
         temp_folder = tempfile.gettempdir()
 
@@ -49,7 +51,7 @@ def prepare():
             IS_PREPARED = False
             PREPARED_VERSION = "0.0"
 
-    if compare_versions.do(LATEST_VERSION, current_version):
+    if compare_versions.do(LATEST_VERSION, CURRENT_VERSION):
         if not compare_versions.do(LATEST_VERSION, PREPARED_VERSION):
             return
 
