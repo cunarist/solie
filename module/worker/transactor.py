@@ -44,7 +44,7 @@ class Transactor:
         self.should_draw_frequently = True
 
         self.account_state = {
-            "observed_until": datetime.now(timezone.utc) - timedelta(days=7),
+            "observed_until": datetime.now(timezone.utc),
             "wallet_balance": 1,
             "positions": {},
             "open_orders": {},
@@ -54,7 +54,7 @@ class Transactor:
                 "margin": 0,
                 "direction": "none",
                 "entry_price": 0,
-                "update_time": datetime.now(timezone.utc) - timedelta(days=7),
+                "update_time": datetime.fromtimestamp(0, tz=timezone.utc),
             }
             self.account_state["open_orders"][symbol] = {}
 
@@ -1017,7 +1017,8 @@ class Transactor:
         with core.window.collector.datalocks[0]:
             candle_data = core.window.collector.candle_data
             if should_draw_frequently:
-                candle_data = candle_data[slice_from:][[symbol]]
+                get_from = slice_from - timedelta(days=7)
+                candle_data = candle_data[get_from:][[symbol]]
             else:
                 mask = candle_data.index.year == year
                 candle_data = candle_data[mask][[symbol]]
@@ -1043,29 +1044,6 @@ class Transactor:
                 before_asset = None
             asset_record = asset_record.copy()
 
-        # ■■■■■ maniuplate heavy data ■■■■■
-
-        # add the right end
-
-        if len(candle_data) > 0:
-            last_written_moment = candle_data.index[-1]
-            new_moment = last_written_moment + timedelta(seconds=10)
-            new_index = candle_data.index.union([new_moment])
-            candle_data = candle_data.reindex(new_index)
-
-        observed_until = self.account_state["observed_until"]
-        if last_asset is not None:
-            asset_record.loc[observed_until, "Cause"] = "other"
-            asset_record.loc[observed_until, "Result Asset"] = last_asset
-            asset_record = asset_record.sort_index()
-
-        # add the left end
-
-        if should_draw_frequently and before_asset is not None:
-            asset_record.loc[slice_from, "Cause"] = "other"
-            asset_record.loc[slice_from, "Result Asset"] = before_asset
-            asset_record = asset_record.sort_index()
-
         # ■■■■■ make indicators ■■■■■
 
         indicators_script = core.window.strategist.indicators_script
@@ -1077,6 +1055,36 @@ class Transactor:
             strategy=strategy,
             compiled_custom_script=compiled_indicators_script,
         )
+
+        # ■■■■■ maniuplate heavy data ■■■■■
+
+        # range cut
+
+        if should_draw_frequently:
+            candle_data = candle_data[slice_from:]
+            indicators = indicators[slice_from:]
+
+        # add the right end
+
+        if len(candle_data) > 0:
+            last_written_moment = candle_data.index[-1]
+            new_moment = last_written_moment + timedelta(seconds=10)
+            new_index = candle_data.index.union([new_moment])
+            candle_data = candle_data.reindex(new_index)
+
+        if last_asset is not None:
+            observed_until = self.account_state["observed_until"]
+            if len(asset_record) == 0 or asset_record.index[-1] < observed_until:
+                asset_record.loc[observed_until, "Cause"] = "other"
+                asset_record.loc[observed_until, "Result Asset"] = last_asset
+                asset_record = asset_record.sort_index()
+
+        # add the left end
+
+        if should_draw_frequently and before_asset is not None:
+            asset_record.loc[slice_from, "Cause"] = "other"
+            asset_record.loc[slice_from, "Result Asset"] = before_asset
+            asset_record = asset_record.sort_index()
 
         # ■■■■■ draw heavy lines ■■■■■
 

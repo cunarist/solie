@@ -426,21 +426,6 @@ class Simulator:
                 last_asset = None
             asset_record = asset_record.copy()
 
-        # ■■■■■ maniuplate heavy data ■■■■■
-
-        # add the right end
-
-        if len(candle_data) > 0:
-            last_written_moment = candle_data.index[-1]
-            new_moment = last_written_moment + timedelta(seconds=10)
-            new_index = candle_data.index.union([new_moment])
-            candle_data = candle_data.reindex(new_index)
-
-        observed_until = self.account_state["observed_until"]
-        if last_asset is not None:
-            asset_record.loc[observed_until, "Result Asset"] = last_asset
-            asset_record = asset_record.sort_index()
-
         # ■■■■■ make indicators ■■■■■
 
         indicators_script = core.window.strategist.indicators_script
@@ -452,6 +437,22 @@ class Simulator:
             strategy=strategy,
             compiled_custom_script=compiled_indicators_script,
         )
+
+        # ■■■■■ maniuplate heavy data ■■■■■
+
+        # add the right end
+
+        if len(candle_data) > 0:
+            last_written_moment = candle_data.index[-1]
+            new_moment = last_written_moment + timedelta(seconds=10)
+            new_index = candle_data.index.union([new_moment])
+            candle_data = candle_data.reindex(new_index)
+
+        if last_asset is not None:
+            observed_until = self.account_state["observed_until"]
+            asset_record.loc[observed_until, "Cause"] = "other"
+            asset_record.loc[observed_until, "Result Asset"] = last_asset
+            asset_record = asset_record.sort_index()
 
         # ■■■■■ draw heavy lines ■■■■■
 
