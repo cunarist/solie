@@ -56,7 +56,7 @@ class LicenseArea(QtWidgets.QScrollArea):
 
         # title
         main_text = QtWidgets.QLabel(
-            "Enter Solsol license key.",
+            "Enter Solsol license key",
             alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
         )
         main_text_font = QtGui.QFont()

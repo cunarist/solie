@@ -136,7 +136,7 @@ class TokenSelectionArea(QtWidgets.QScrollArea):
 
         # title
         main_text = QtWidgets.QLabel(
-            "Choose a token to treat as your asset.",
+            "Choose a token to treat as your asset",
             alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
         )
         main_text_font = QtGui.QFont()
