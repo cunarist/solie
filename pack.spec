@@ -15,21 +15,10 @@ datas.append(("./resource", "./resource"))
 # ■■■■■ packages to complete ■■■■■
 
 packages_to_complete = [
-    # conda
     "talib",
-    "numpy",
-    "pandas",
-    "scipy",
-    # pip
-    "PySide6",
-    "pyqtgraph",
-    "requests",
-    "apscheduler",
+    "pyqgraph",
     "timesetter",
-    "websocket",
     "pygments",
-    "dill",
-    "getmac",
     "yapf",
 ]
 for package in packages_to_complete:
