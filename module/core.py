@@ -200,7 +200,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
             while datapath == "":
                 question = [
-                    "Select your data folder",
+                    "Choose your data folder",
                     "All the data that Solsol produces will go in this folder.",
                     ["Okay"],
                     False,
