@@ -464,7 +464,7 @@ class Collector:
 
         question = [
             "Choose the range to fill",
-            "Solsol will fill the candle data with historical data provided by Binacne."
+            "Solsol will fill the candle data with historical data provided by Binance."
             " The more you fill, the longer it takes. Amount of a few days only takes"
             " few minutes while amount of a few years can take hours.",
             [
