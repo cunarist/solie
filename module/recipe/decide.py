@@ -7,7 +7,7 @@ from module.recipe import standardize
 
 def choose(
     current_moment,
-    current_observed_data,
+    current_candle_data,
     current_indicators,
     strategy,
     account_state,
@@ -32,7 +32,7 @@ def choose(
             "math": math,
             "target_symbols": target_symbols,
             "current_moment": current_moment,
-            "current_observed_data": current_observed_data,
+            "current_candle_data": current_candle_data,
             "current_indicators": current_indicators,
             "account_state": account_state,
             "scribbles": scribbles,
@@ -45,7 +45,7 @@ def choose(
         for symbol in target_symbols:
             split_ratio = 0.0001
 
-            current_price = current_observed_data[str((symbol, "Close"))]
+            current_price = current_candle_data[str((symbol, "Close"))]
 
             wallet_balance = account_state["wallet_balance"]
             direction = account_state["positions"][symbol]["direction"]
@@ -53,15 +53,11 @@ def choose(
             target_symbols = target_symbols
             # too little volatility on testnet markets except these symbols
             asset_token = standardize.get_basics()["asset_token"]
-            prefer_symbols = ("BTC" + asset_token, "ETH" + asset_token)
-            intersection = [
-                target_symbol
-                for target_symbol in target_symbols
-                if symbol in prefer_symbols
-            ]
-            should_filter = len(intersection) > 0
+            prefer_symbol = "BTC" + asset_token
+            if prefer_symbol in target_symbols:
+                should_filter = True
 
-            if should_filter and symbol not in prefer_symbols:
+            if should_filter and symbol != prefer_symbol:
                 continue
 
             if direction == "none":
@@ -112,28 +108,6 @@ def choose(
 
     elif strategy == 2:
         for symbol in target_symbols:
-            split_ratio = 0.0001
-
-            wallet_balance = account_state["wallet_balance"]
-            direction = account_state["positions"][symbol]["direction"]
-
-            asset_token = standardize.get_basics()["asset_token"]
-            if symbol in ("BTC" + asset_token, "ETH" + asset_token):
-                # too little volatility on testnet markets except these symbols
-                if direction == "none":
-                    if random.random() < 0.5:
-                        decision[symbol]["now_buy"] = {
-                            "margin": split_ratio * wallet_balance,
-                        }
-                    else:
-                        decision[symbol]["now_sell"] = {
-                            "margin": split_ratio * wallet_balance,
-                        }
-                else:
-                    decision[symbol]["now_close"] = {}
-
-    elif strategy == 3:
-        for symbol in target_symbols:
             symbols_count = len(target_symbols)
             acquire_ratio = 0.8 / symbols_count / (80 * 60 / 10)  # ratio
             release_ratio = 0.8 / symbols_count / (20 * 60 / 10)  # ratio
@@ -142,7 +116,7 @@ def choose(
             release_condition = 0.5  # percent
             max_hold_time = 80  # minutes
 
-            current_price = current_observed_data[str((symbol, "Close"))]
+            current_price = current_candle_data[str((symbol, "Close"))]
 
             margin = account_state["positions"][symbol]["margin"]
             wallet_balance = account_state["wallet_balance"]

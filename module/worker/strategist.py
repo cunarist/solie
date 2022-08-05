@@ -62,20 +62,6 @@ class Strategiest:
             lambda d=details: core.window.spinBox_3.setValue(d[2]),
             False,
         )
-        if details[3]:
-            core.window.undertake(
-                lambda: core.window.radioButton_11.setChecked(False), False
-            )
-            core.window.undertake(
-                lambda: core.window.radioButton_12.setChecked(True), False
-            )
-        else:
-            core.window.undertake(
-                lambda: core.window.radioButton_11.setChecked(True), False
-            )
-            core.window.undertake(
-                lambda: core.window.radioButton_12.setChecked(False), False
-            )
 
         # ■■■■■ default executions ■■■■■
 
@@ -120,12 +106,11 @@ class Strategiest:
                 core.window.checkBox_6.isChecked(),
                 core.window.checkBox_7.isChecked(),
                 core.window.spinBox_3.value(),
-                core.window.radioButton_12.isChecked(),
             )
 
         retuned = core.window.undertake(job, True)
 
-        details = [retuned[0], retuned[1], retuned[2], retuned[3]]
+        details = [retuned[0], retuned[1], retuned[2]]
         with open(filepath, "w", encoding="utf8") as file:
             json.dump(details, file, indent=4)
         self.details = details
@@ -154,12 +139,6 @@ class Strategiest:
             core.window.checkBox_6.setChecked(details[0])
             core.window.checkBox_7.setChecked(details[1])
             core.window.spinBox_3.setValue(details[2])
-            if details[3]:
-                core.window.radioButton_11.setChecked(False)
-                core.window.radioButton_12.setChecked(True)
-            else:
-                core.window.radioButton_11.setChecked(True)
-                core.window.radioButton_12.setChecked(False)
 
         core.window.undertake(job, False)
 
@@ -189,8 +168,6 @@ class Strategiest:
             core.window.checkBox_6.setChecked(True)
             core.window.checkBox_7.setChecked(True)
             core.window.spinBox_3.setValue(30)
-            core.window.radioButton_11.setChecked(True)
-            core.window.radioButton_12.setChecked(False)
 
         core.window.undertake(job, False)
 

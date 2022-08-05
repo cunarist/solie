@@ -19,9 +19,9 @@ from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication
     QComboBox, QDoubleSpinBox, QFrame, QGridLayout,
     QGroupBox, QHBoxLayout, QLabel, QLineEdit,
     QListWidgetItem, QMainWindow, QPlainTextEdit, QProgressBar,
-    QPushButton, QRadioButton, QScrollArea, QSizePolicy,
-    QSpacerItem, QSpinBox, QSplitter, QTabWidget,
-    QVBoxLayout, QWidget)
+    QPushButton, QScrollArea, QSizePolicy, QSpacerItem,
+    QSpinBox, QSplitter, QTabWidget, QVBoxLayout,
+    QWidget)
 
 from module.widget.gauge import Gauge
 from module.widget.log_list import LogList
@@ -812,24 +812,6 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_26.addWidget(self.checkBox_7)
 
-        self.line_9 = QFrame(self.groupBox_17)
-        self.line_9.setObjectName(u"line_9")
-        self.line_9.setFrameShape(QFrame.VLine)
-        self.line_9.setFrameShadow(QFrame.Sunken)
-
-        self.horizontalLayout_26.addWidget(self.line_9)
-
-        self.radioButton_11 = QRadioButton(self.groupBox_17)
-        self.radioButton_11.setObjectName(u"radioButton_11")
-        self.radioButton_11.setChecked(True)
-
-        self.horizontalLayout_26.addWidget(self.radioButton_11)
-
-        self.radioButton_12 = QRadioButton(self.groupBox_17)
-        self.radioButton_12.setObjectName(u"radioButton_12")
-
-        self.horizontalLayout_26.addWidget(self.radioButton_12)
-
         self.line_7 = QFrame(self.groupBox_17)
         self.line_7.setObjectName(u"line_7")
         self.line_7.setFrameShape(QFrame.VLine)
@@ -1109,7 +1091,7 @@ class Ui_MainWindow(object):
         self.scrollArea_6.setWidgetResizable(True)
         self.scrollAreaWidgetContents_6 = QWidget()
         self.scrollAreaWidgetContents_6.setObjectName(u"scrollAreaWidgetContents_6")
-        self.scrollAreaWidgetContents_6.setGeometry(QRect(0, 0, 398, 262))
+        self.scrollAreaWidgetContents_6.setGeometry(QRect(0, 0, 81, 34))
         self.gridLayout_6 = QGridLayout(self.scrollAreaWidgetContents_6)
         self.gridLayout_6.setObjectName(u"gridLayout_6")
         self.label_33 = QLabel(self.scrollAreaWidgetContents_6)
@@ -1127,7 +1109,7 @@ class Ui_MainWindow(object):
         self.scrollArea_4.setWidgetResizable(True)
         self.scrollAreaWidgetContents_4 = QWidget()
         self.scrollAreaWidgetContents_4.setObjectName(u"scrollAreaWidgetContents_4")
-        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 398, 262))
+        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 81, 34))
         self.gridLayout_7 = QGridLayout(self.scrollAreaWidgetContents_4)
         self.gridLayout_7.setObjectName(u"gridLayout_7")
         self.label_35 = QLabel(self.scrollAreaWidgetContents_4)
@@ -1145,7 +1127,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 398, 262))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 81, 34))
         self.gridLayout_4 = QGridLayout(self.scrollAreaWidgetContents)
         self.gridLayout_4.setObjectName(u"gridLayout_4")
         self.label_12 = QLabel(self.scrollAreaWidgetContents)
@@ -1163,7 +1145,7 @@ class Ui_MainWindow(object):
         self.scrollArea_5.setWidgetResizable(True)
         self.scrollAreaWidgetContents_5 = QWidget()
         self.scrollAreaWidgetContents_5.setObjectName(u"scrollAreaWidgetContents_5")
-        self.scrollAreaWidgetContents_5.setGeometry(QRect(0, 0, 398, 262))
+        self.scrollAreaWidgetContents_5.setGeometry(QRect(0, 0, 81, 34))
         self.gridLayout_8 = QGridLayout(self.scrollAreaWidgetContents_5)
         self.gridLayout_8.setObjectName(u"gridLayout_8")
         self.label_36 = QLabel(self.scrollAreaWidgetContents_5)
@@ -1181,7 +1163,7 @@ class Ui_MainWindow(object):
         self.scrollArea_3.setWidgetResizable(True)
         self.scrollAreaWidgetContents_3 = QWidget()
         self.scrollAreaWidgetContents_3.setObjectName(u"scrollAreaWidgetContents_3")
-        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 398, 262))
+        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 81, 34))
         self.gridLayout_5 = QGridLayout(self.scrollAreaWidgetContents_3)
         self.gridLayout_5.setObjectName(u"gridLayout_5")
         self.label_32 = QLabel(self.scrollAreaWidgetContents_3)
@@ -1199,7 +1181,7 @@ class Ui_MainWindow(object):
         self.scrollArea_7.setWidgetResizable(True)
         self.scrollAreaWidgetContents_7 = QWidget()
         self.scrollAreaWidgetContents_7.setObjectName(u"scrollAreaWidgetContents_7")
-        self.scrollAreaWidgetContents_7.setGeometry(QRect(0, 0, 398, 262))
+        self.scrollAreaWidgetContents_7.setGeometry(QRect(0, 0, 81, 34))
         self.gridLayout_9 = QGridLayout(self.scrollAreaWidgetContents_7)
         self.gridLayout_9.setObjectName(u"gridLayout_9")
         self.label_34 = QLabel(self.scrollAreaWidgetContents_7)
@@ -1266,7 +1248,7 @@ class Ui_MainWindow(object):
         self.scrollArea_2.setWidgetResizable(True)
         self.scrollAreaWidgetContents_2 = QWidget()
         self.scrollAreaWidgetContents_2.setObjectName(u"scrollAreaWidgetContents_2")
-        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 1212, 578))
+        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 80, 20))
         self.horizontalLayout_33 = QHBoxLayout(self.scrollAreaWidgetContents_2)
         self.horizontalLayout_33.setObjectName(u"horizontalLayout_33")
         self.verticalLayout_15 = QVBoxLayout()
@@ -1342,8 +1324,6 @@ class Ui_MainWindow(object):
         self.label_43.setText(QCoreApplication.translate("MainWindow", u"Divison unit", None))
         self.spinBox_3.setSuffix(QCoreApplication.translate("MainWindow", u"d", None))
         self.checkBox_7.setText(QCoreApplication.translate("MainWindow", u"Parallelized simulation", None))
-        self.radioButton_11.setText(QCoreApplication.translate("MainWindow", u"Slow (10s)", None))
-        self.radioButton_12.setText(QCoreApplication.translate("MainWindow", u"Fast(0.1s)", None))
         self.pushButton_19.setText(QCoreApplication.translate("MainWindow", u"Revert", None))
         self.pushButton_20.setText(QCoreApplication.translate("MainWindow", u"Save", None))
         self.pushButton_9.setText(QCoreApplication.translate("MainWindow", u"\u2630", None))

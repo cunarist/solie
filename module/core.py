@@ -923,12 +923,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ intergrated strategies ■■■■■
 
-        # usability / is parallel calculation / divided unit length / is fast strategy
+        # usability / is parallel calculation / divided unit length
         self.strategy_tuples = [
             (0, "Custom strategy"),
-            (1, "Make random orders slowly (10s)", [True, True, 7, False]),
-            (2, "Make random orders fastly (0.1s)", [True, True, 7, True]),
-            (3, "Solsol default strategy", [True, True, 30, False]),
+            (1, "Make random orders", [True, True, 7]),
+            (2, "Solsol default strategy", [True, True, 30]),
         ]
 
         red_pixmap = QtGui.QPixmap()
@@ -939,18 +938,18 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         green_pixmap.load("./resource/icon/traffic_light_green.png")
 
         for strategy_tuple in self.strategy_tuples:
-            text = strategy_tuple[1]
+            strategy_number = strategy_tuple[0]
+            strategy_name = strategy_tuple[1]
 
             traffic_light_icon = QtGui.QIcon()
-            if strategy_tuple[0] == 0:
+            if strategy_number == 0:
                 traffic_light_icon.addPixmap(yellow_pixmap)
-            else:
-                if strategy_tuple[2][0]:
-                    traffic_light_icon.addPixmap(green_pixmap)
-                else:
-                    traffic_light_icon.addPixmap(red_pixmap)
+            elif strategy_number == 1:
+                traffic_light_icon.addPixmap(red_pixmap)
+            elif strategy_number == 2:
+                traffic_light_icon.addPixmap(green_pixmap)
 
-            def job(text=text):
+            def job(text=strategy_name):
                 self.comboBox.addItem(traffic_light_icon, text)
                 self.comboBox_2.addItem(traffic_light_icon, text)
 
@@ -1067,11 +1066,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             outsource.do(self.collector_actions[3].triggered, job)
             job = self.transactor.open_exchange
             outsource.do(self.transactor_actions[0].triggered, job)
-            job = self.transactor.open_futures_wallet_page
-            outsource.do(self.transactor_actions[1].triggered, job)
-            job = self.transactor.open_api_management_page
-            outsource.do(self.transactor_actions[2].triggered, job)
             job = self.transactor.open_testnet_exchange
+            outsource.do(self.transactor_actions[1].triggered, job)
+            job = self.transactor.open_futures_wallet_page
+            outsource.do(self.transactor_actions[2].triggered, job)
+            job = self.transactor.open_api_management_page
             outsource.do(self.transactor_actions[3].triggered, job)
             job = self.transactor.cancel_symbol_orders
             outsource.do(self.transactor_actions[4].triggered, job)

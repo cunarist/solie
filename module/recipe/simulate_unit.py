@@ -12,7 +12,6 @@ from module.recipe import standardize
 
 
 def do(dataset):
-
     # leverage is treated as 1
     # fee is treated as 0
     # because those are going to be applied at the presentation phase
@@ -22,8 +21,7 @@ def do(dataset):
     progress_list = dataset["progress_list"]
     target_progress = dataset["target_progress"]
     strategy = dataset["strategy"]
-    is_fast_strategy = dataset["is_fast_strategy"]
-    unit_observed_data = dataset["unit_observed_data"]
+    unit_candle_data = dataset["unit_candle_data"]
     unit_indicators = dataset["unit_indicators"]
     unit_asset_record = dataset["unit_asset_record"]
     unit_unrealized_changes = dataset["unit_unrealized_changes"]
@@ -36,13 +34,12 @@ def do(dataset):
 
     # ■■■■■ basic values ■■■■■
 
-    decision_lag = 60 if is_fast_strategy else 3000  # milliseconds
-    target_moments = unit_observed_data[calculate_from:calculate_until].index
+    decision_lag = 3000  # milliseconds
+    target_moments = unit_candle_data[calculate_from:calculate_until].index
 
     # ■■■■■ return blank data if there's nothing to calculate ■■■■■
 
     if len(target_moments) == 0:
-
         dataset = {
             "unit_asset_record": unit_asset_record,
             "unit_unrealized_changes": unit_unrealized_changes,
@@ -57,8 +54,8 @@ def do(dataset):
 
     target_moments_ar = target_moments.to_numpy()  # inside are datetime objects
 
-    sliced_observed_data = unit_observed_data[calculate_from:calculate_until]
-    observed_data_ar = sliced_observed_data.to_records()
+    sliced_candle_data = unit_candle_data[calculate_from:calculate_until]
+    candle_data_ar = sliced_candle_data.to_records()
 
     sliced_indicators = unit_indicators[calculate_from:calculate_until]
     indicators_ar = sliced_indicators.to_records()
@@ -73,38 +70,23 @@ def do(dataset):
     target_symbols = standardize.get_basics()["target_symbols"]
 
     for cycle in range(target_moments_length):
-
         before_moment = target_moments_ar[cycle]
-        if is_fast_strategy:
-            current_moment = before_moment + timedelta(milliseconds=100)
-        else:
-            current_moment = before_moment + timedelta(seconds=10)
+        current_moment = before_moment + timedelta(seconds=10)
 
         for symbol in target_symbols:
-
             # ■■■■■ basic variables ■■■■■
 
-            if is_fast_strategy:
-                column_key = str((symbol, "Best Bid Price"))
-                best_bid_price = observed_data_ar[cycle][column_key]
-                column_key = str((symbol, "Best Ask Price"))
-                best_ask_price = observed_data_ar[cycle][column_key]
-                middle_price = (best_ask_price + best_bid_price) / 2
-                if math.isnan(best_bid_price) or math.isnan(best_ask_price):
-                    continue
-            else:
-                open_price = observed_data_ar[cycle][str((symbol, "Open"))]
-                close_price = observed_data_ar[cycle][str((symbol, "Close"))]
-                if math.isnan(open_price) or math.isnan(close_price):
-                    continue
+            open_price = candle_data_ar[cycle][str((symbol, "Open"))]
+            close_price = candle_data_ar[cycle][str((symbol, "Close"))]
+            if math.isnan(open_price) or math.isnan(close_price):
+                continue
 
             would_trade_happen = False
             did_found_new_trade = False
 
             # ■■■■■ check if any order would be filled ■■■■■
 
-            if not is_fast_strategy:
-                price_speed = (close_price - open_price) / 10
+            price_speed = (close_price - open_price) / 10
             is_margin_negative = False
             is_margin_nan = False
 
@@ -123,10 +105,7 @@ def do(dataset):
                 would_trade_happen = True
                 command = unit_virtual_state["placements"][symbol]["now_close"]
                 role = "taker"
-                if is_fast_strategy:
-                    fill_price = middle_price
-                else:
-                    fill_price = open_price + price_speed * (decision_lag / 1000)
+                fill_price = open_price + price_speed * (decision_lag / 1000)
                 amount_shift = -unit_virtual_state["locations"][symbol]["amount"]
                 unit_virtual_state["placements"][symbol].pop("now_close")
 
@@ -134,10 +113,7 @@ def do(dataset):
                 would_trade_happen = True
                 command = unit_virtual_state["placements"][symbol]["now_buy"]
                 role = "taker"
-                if is_fast_strategy:
-                    fill_price = best_bid_price
-                else:
-                    fill_price = open_price + price_speed * (decision_lag / 1000)
+                fill_price = open_price + price_speed * (decision_lag / 1000)
                 fill_margin = command["margin"]
                 if fill_margin < 0:
                     is_margin_negative = True
@@ -150,10 +126,7 @@ def do(dataset):
                 would_trade_happen = True
                 command = unit_virtual_state["placements"][symbol]["now_sell"]
                 role = "taker"
-                if is_fast_strategy:
-                    fill_price = best_ask_price
-                else:
-                    fill_price = open_price + price_speed * (decision_lag / 1000)
+                fill_price = open_price + price_speed * (decision_lag / 1000)
                 fill_margin = command["margin"]
                 if fill_margin < 0:
                     is_margin_negative = True
@@ -164,16 +137,12 @@ def do(dataset):
 
             # conditional placements
             if "later_up_close" in unit_virtual_state["placements"][symbol]:
-
                 command = unit_virtual_state["placements"][symbol]["later_up_close"]
                 boundary = command["boundary"]
 
-                if is_fast_strategy:
-                    did_cross = boundary < middle_price
-                else:
-                    wobble_high = observed_data_ar[cycle][str((symbol, "High"))]
-                    wobble_low = observed_data_ar[cycle][str((symbol, "Low"))]
-                    did_cross = wobble_low < boundary < wobble_high
+                wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
+                wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
+                did_cross = wobble_low < boundary < wobble_high
 
                 if did_cross:
                     would_trade_happen = True
@@ -183,16 +152,12 @@ def do(dataset):
                     unit_virtual_state["placements"][symbol].pop("later_up_close")
 
             if "later_down_close" in unit_virtual_state["placements"][symbol]:
-
                 command = unit_virtual_state["placements"][symbol]["later_down_close"]
                 boundary = command["boundary"]
 
-                if is_fast_strategy:
-                    did_cross = boundary > middle_price
-                else:
-                    wobble_high = observed_data_ar[cycle][str((symbol, "High"))]
-                    wobble_low = observed_data_ar[cycle][str((symbol, "Low"))]
-                    did_cross = wobble_low < boundary < wobble_high
+                wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
+                wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
+                did_cross = wobble_low < boundary < wobble_high
 
                 if did_cross:
                     would_trade_happen = True
@@ -202,16 +167,12 @@ def do(dataset):
                     unit_virtual_state["placements"][symbol].pop("later_down_close")
 
             if "later_up_buy" in unit_virtual_state["placements"][symbol]:
-
                 command = unit_virtual_state["placements"][symbol]["later_up_buy"]
                 boundary = command["boundary"]
 
-                if is_fast_strategy:
-                    did_cross = boundary < middle_price
-                else:
-                    wobble_high = observed_data_ar[cycle][str((symbol, "High"))]
-                    wobble_low = observed_data_ar[cycle][str((symbol, "Low"))]
-                    did_cross = wobble_low < boundary < wobble_high
+                wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
+                wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
+                did_cross = wobble_low < boundary < wobble_high
 
                 if did_cross:
                     would_trade_happen = True
@@ -226,16 +187,12 @@ def do(dataset):
                     unit_virtual_state["placements"][symbol].pop("later_up_buy")
 
             if "later_down_buy" in unit_virtual_state["placements"][symbol]:
-
                 command = unit_virtual_state["placements"][symbol]["later_down_buy"]
                 boundary = command["boundary"]
 
-                if is_fast_strategy:
-                    did_cross = boundary > middle_price
-                else:
-                    wobble_high = observed_data_ar[cycle][str((symbol, "High"))]
-                    wobble_low = observed_data_ar[cycle][str((symbol, "Low"))]
-                    did_cross = wobble_low < boundary < wobble_high
+                wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
+                wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
+                did_cross = wobble_low < boundary < wobble_high
 
                 if did_cross:
                     would_trade_happen = True
@@ -250,16 +207,12 @@ def do(dataset):
                     unit_virtual_state["placements"][symbol].pop("later_down_buy")
 
             if "later_up_sell" in unit_virtual_state["placements"][symbol]:
-
                 command = unit_virtual_state["placements"][symbol]["later_up_sell"]
                 boundary = command["boundary"]
 
-                if is_fast_strategy:
-                    did_cross = boundary < middle_price
-                else:
-                    wobble_high = observed_data_ar[cycle][str((symbol, "High"))]
-                    wobble_low = observed_data_ar[cycle][str((symbol, "Low"))]
-                    did_cross = wobble_low < boundary < wobble_high
+                wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
+                wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
+                did_cross = wobble_low < boundary < wobble_high
 
                 if did_cross:
                     would_trade_happen = True
@@ -274,16 +227,12 @@ def do(dataset):
                     unit_virtual_state["placements"][symbol].pop("later_up_sell")
 
             if "later_down_sell" in unit_virtual_state["placements"][symbol]:
-
                 command = unit_virtual_state["placements"][symbol]["later_down_sell"]
                 boundary = command["boundary"]
 
-                if is_fast_strategy:
-                    did_cross = boundary > middle_price
-                else:
-                    wobble_high = observed_data_ar[cycle][str((symbol, "High"))]
-                    wobble_low = observed_data_ar[cycle][str((symbol, "Low"))]
-                    did_cross = wobble_low < boundary < wobble_high
+                wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
+                wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
+                did_cross = wobble_low < boundary < wobble_high
 
                 if did_cross:
                     would_trade_happen = True
@@ -298,16 +247,12 @@ def do(dataset):
                     unit_virtual_state["placements"][symbol].pop("later_down_sell")
 
             if "book_buy" in unit_virtual_state["placements"][symbol]:
-
                 command = unit_virtual_state["placements"][symbol]["book_buy"]
                 boundary = command["boundary"]
 
-                if is_fast_strategy:
-                    did_cross = boundary > middle_price
-                else:
-                    wobble_high = observed_data_ar[cycle][str((symbol, "High"))]
-                    wobble_low = observed_data_ar[cycle][str((symbol, "Low"))]
-                    did_cross = wobble_low < boundary < wobble_high
+                wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
+                wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
+                did_cross = wobble_low < boundary < wobble_high
 
                 if did_cross:
                     would_trade_happen = True
@@ -322,16 +267,12 @@ def do(dataset):
                     unit_virtual_state["placements"][symbol].pop("book_buy")
 
             if "book_sell" in unit_virtual_state["placements"][symbol]:
-
                 command = unit_virtual_state["placements"][symbol]["book_sell"]
                 boundary = command["boundary"]
 
-                if is_fast_strategy:
-                    did_cross = boundary < middle_price
-                else:
-                    wobble_high = observed_data_ar[cycle][str((symbol, "High"))]
-                    wobble_low = observed_data_ar[cycle][str((symbol, "Low"))]
-                    did_cross = wobble_low < boundary < wobble_high
+                wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
+                wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
+                did_cross = wobble_low < boundary < wobble_high
 
                 if did_cross:
                     would_trade_happen = True
@@ -361,7 +302,6 @@ def do(dataset):
             # ■■■■■ mimic the real world phenomenon ■■■■■
 
             if would_trade_happen:
-
                 symbol_location = unit_virtual_state["locations"][symbol]
                 before_entry_price = symbol_location["entry_price"]
                 before_amount = symbol_location["amount"]
@@ -458,7 +398,6 @@ def do(dataset):
             # ■■■■■ record (symbol dependent) ■■■■■
 
             if did_found_new_trade:
-
                 fill_time = before_moment + timedelta(milliseconds=decision_lag)
                 fill_time = np.datetime64(fill_time)
                 while fill_time in asset_record_ar["index"]:
@@ -468,15 +407,8 @@ def do(dataset):
                 for symbol_key, location in unit_virtual_state["locations"].items():
                     if location["amount"] == 0:
                         continue
-                    if is_fast_strategy:
-                        column_key = str((symbol_key, "Best Bid Price"))
-                        best_bid_price = observed_data_ar[cycle][column_key]
-                        column_key = str((symbol_key, "Best Ask Price"))
-                        best_ask_price = observed_data_ar[cycle][column_key]
-                        symbol_price = (best_ask_price + best_bid_price) / 2
-                    else:
-                        column_key = str((symbol_key, "Close"))
-                        symbol_price = observed_data_ar[cycle][column_key]
+                    column_key = str((symbol_key, "Close"))
+                    symbol_price = candle_data_ar[cycle][column_key]
                     if math.isnan(symbol_price):
                         continue
                     current_margin = abs(location["amount"]) * location["entry_price"]
@@ -487,10 +419,7 @@ def do(dataset):
                 elif amount_shift < 0:
                     side = "sell"
 
-                if is_fast_strategy:
-                    margin_ratio = abs(amount_shift) * middle_price / wallet_balance
-                else:
-                    margin_ratio = abs(amount_shift) * open_price / wallet_balance
+                margin_ratio = abs(amount_shift) * open_price / wallet_balance
 
                 order_id = random.randint(10**18, 10**19 - 1)
 
@@ -516,36 +445,22 @@ def do(dataset):
         for symbol_key, location in unit_virtual_state["locations"].items():
             if location["amount"] == 0:
                 continue
-            if is_fast_strategy:
-                column_key = str((symbol_key, "Best Bid Price"))
-                best_bid_price = observed_data_ar[cycle][column_key]
-                column_key = str((symbol_key, "Best Ask Price"))
-                best_ask_price = observed_data_ar[cycle][column_key]
-                symbol_price = (best_ask_price + best_bid_price) / 2
-            else:
-                symbol_price = observed_data_ar[cycle][str((symbol_key, "Close"))]
+            symbol_price = candle_data_ar[cycle][str((symbol_key, "Close"))]
             if math.isnan(symbol_price):
                 continue
             current_margin = abs(location["amount"]) * location["entry_price"]
             wallet_balance += current_margin
-            if is_fast_strategy:
-                column_key = str((symbol_key, "Best Bid Price"))
-                best_bid_price = observed_data_ar[cycle][column_key]
-                column_key = str((symbol_key, "Best Ask Price"))
-                best_ask_price = observed_data_ar[cycle][column_key]
-                extreme_price = (best_ask_price + best_bid_price) / 2
+            # assume that mark price doesn't wobble more than 5%
+            key_open_price = candle_data_ar[cycle][str((symbol_key, "Open"))]
+            key_close_price = candle_data_ar[cycle][str((symbol_key, "Close"))]
+            if location["amount"] < 0:
+                basic_price = max(key_open_price, key_close_price) * 1.05
+                key_high_price = candle_data_ar[cycle][str((symbol_key, "High"))]
+                extreme_price = min(basic_price, key_high_price)
             else:
-                # assume that mark price doesn't wobble more than 5%
-                key_open_price = observed_data_ar[cycle][str((symbol_key, "Open"))]
-                key_close_price = observed_data_ar[cycle][str((symbol_key, "Close"))]
-                if location["amount"] < 0:
-                    basic_price = max(key_open_price, key_close_price) * 1.05
-                    key_high_price = observed_data_ar[cycle][str((symbol_key, "High"))]
-                    extreme_price = min(basic_price, key_high_price)
-                else:
-                    basic_price = min(key_open_price, key_close_price) * 0.95
-                    key_low_price = observed_data_ar[cycle][str((symbol_key, "Low"))]
-                    extreme_price = max(basic_price, key_low_price)
+                basic_price = min(key_open_price, key_close_price) * 0.95
+                key_low_price = candle_data_ar[cycle][str((symbol_key, "Low"))]
+                extreme_price = max(basic_price, key_low_price)
             price_difference = extreme_price - location["entry_price"]
             unrealized_profit += price_difference * location["amount"]
         unrealized_change = unrealized_profit / wallet_balance
@@ -564,11 +479,11 @@ def do(dataset):
 
         # ■■■■■ make decision and place order ■■■■■
 
-        current_observed_data = observed_data_ar[cycle]
+        current_candle_data = candle_data_ar[cycle]
         current_indicators = indicators_ar[cycle]
         decision, unit_scribbles = decide.choose(
             current_moment=current_moment,
-            current_observed_data=current_observed_data,
+            current_candle_data=current_candle_data,
             current_indicators=current_indicators,
             strategy=strategy,
             account_state=copy.deepcopy(unit_account_state),
@@ -601,9 +516,6 @@ def do(dataset):
         unit_unrealized_changes.index, utc=True
     )
     unit_unrealized_changes = unit_unrealized_changes["0"]
-
-    if is_fast_strategy:
-        unit_unrealized_changes = unit_unrealized_changes.resample("10s").ffill()
 
     # ■■■■■ return calculated data ■■■■■
 

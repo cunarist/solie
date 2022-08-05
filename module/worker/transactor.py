@@ -24,7 +24,6 @@ from module.recipe import make_indicators
 from module.recipe import ball
 from module.recipe import stop_flag
 from module.recipe import check_internet
-from module.recipe import digitize
 from module.recipe import standardize
 from module.recipe import remember_task_durations
 
@@ -227,12 +226,6 @@ class Transactor:
             executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
-            self.transact_fast,
-            trigger="cron",
-            second="*",
-            executor="thread_pool_executor",
-        )
-        core.window.scheduler.add_job(
             self.cancel_conflicting_orders,
             trigger="cron",
             second="*",
@@ -252,7 +245,7 @@ class Transactor:
             executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
-            self.transact_slow,
+            self.perform_transaction,
             trigger="cron",
             second="*/10",
             executor="thread_pool_executor",
@@ -657,35 +650,33 @@ class Transactor:
                 for strategy_tuple in core.window.strategy_tuples:
                     if strategy_tuple[0] == strategy:
                         strategy_details = strategy_tuple[2]
-            is_fast_strategy = strategy_details[3]
 
-            if not is_fast_strategy:
-                current_moment = datetime.now(timezone.utc).replace(microsecond=0)
-                current_moment = current_moment - timedelta(
-                    seconds=current_moment.second % 10
-                )
-                count_start_time = current_moment - timedelta(hours=24)
-                with core.window.collector.datalocks[0]:
-                    df = core.window.collector.candle_data
-                    cumulated_moments = len(df[count_start_time:].dropna())
-                needed_moments = 24 * 60 * 60 / 10
-                ratio = cumulated_moments / needed_moments
-                if ratio < 1:
-                    is_insufficient = True
-                else:
-                    is_insufficient = False
+            current_moment = datetime.now(timezone.utc).replace(microsecond=0)
+            current_moment = current_moment - timedelta(
+                seconds=current_moment.second % 10
+            )
+            count_start_time = current_moment - timedelta(hours=24)
+            with core.window.collector.datalocks[0]:
+                df = core.window.collector.candle_data
+                cumulated_moments = len(df[count_start_time:].dropna())
+            needed_moments = 24 * 60 * 60 / 10
+            ratio = cumulated_moments / needed_moments
+            if ratio < 1:
+                is_insufficient = True
+            else:
+                is_insufficient = False
 
-                if is_insufficient:
-                    question = [
-                        "Cumulation rate is not 100%",
-                        "For auto transaction to work with slow strategy, the past 24"
-                        " hour accumulation rate of candle data must be 100%. Even if"
-                        " auto transaction is turned on, nothing happens until the"
-                        " cumulation rate reaches 100%.",
-                        ["Okay"],
-                        False,
-                    ]
-                    core.window.ask(question)
+            if is_insufficient:
+                question = [
+                    "Cumulation rate is not 100%",
+                    "For auto transaction to work, the past 24"
+                    " hour accumulation rate of candle data must be 100%. Even if"
+                    " auto transaction is turned on, nothing happens until the"
+                    " cumulation rate reaches 100%.",
+                    ["Okay"],
+                    False,
+                ]
+                core.window.ask(question)
 
             self.automation_settings["should_transact"] = True
 
@@ -864,14 +855,6 @@ class Transactor:
         symbol = self.viewing_symbol
         strategy = self.automation_settings["strategy"]
 
-        if strategy == 0:
-            strategy_details = core.window.strategist.details
-        else:
-            for strategy_tuple in core.window.strategy_tuples:
-                if strategy_tuple[0] == strategy:
-                    strategy_details = strategy_tuple[2]
-        is_fast_strategy = strategy_details[3]
-
         # ■■■■■ get light data ■■■■■
 
         with core.window.collector.datalocks[1]:
@@ -1030,20 +1013,8 @@ class Transactor:
 
         # ■■■■■ get heavy data ■■■■■
 
-        if is_fast_strategy:
-            candle_data = pd.DataFrame(
-                columns=pd.MultiIndex.from_product(
-                    [
-                        standardize.get_basics()["target_symbols"],
-                        ("Open", "High", "Low", "Close", "Volume"),
-                    ]
-                ),
-                dtype=np.float32,
-                index=pd.DatetimeIndex([], tz="UTC"),
-            )
-        else:
-            with core.window.collector.datalocks[0]:
-                candle_data = core.window.collector.candle_data.copy()
+        with core.window.collector.datalocks[0]:
+            candle_data = core.window.collector.candle_data.copy()
 
         # ■■■■■ maniuplate heavy data ■■■■■
 
@@ -1083,29 +1054,19 @@ class Transactor:
         indicators_script = core.window.strategist.indicators_script
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
-        if is_fast_strategy:
-            observed_data = process_toss.apply(digitize.do, realtime_data)
-            indicators = process_toss.apply(
-                make_indicators.do,
-                observed_data=observed_data,
-                strategy=strategy,
-                compiled_custom_script=compiled_indicators_script,
-            )
-        else:
-            indicators = process_toss.apply(
-                make_indicators.do,
-                observed_data=candle_data,
-                strategy=strategy,
-                compiled_custom_script=compiled_indicators_script,
-            )
+        indicators = process_toss.apply(
+            make_indicators.do,
+            candle_data=candle_data,
+            strategy=strategy,
+            compiled_custom_script=compiled_indicators_script,
+        )
 
         # ■■■■■ draw heavy lines ■■■■■
 
         # price indicators
         df = indicators[symbol]["Price"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-        if not is_fast_strategy:
-            data_x += 5
+        data_x += 5
         line_list = core.window.transaction_lines["price_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
@@ -1243,8 +1204,7 @@ class Transactor:
         # trade volume indicators
         df = indicators[symbol]["Volume"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-        if not is_fast_strategy:
-            data_x += 5
+        data_x += 5
         line_list = core.window.transaction_lines["volume_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
@@ -1286,8 +1246,7 @@ class Transactor:
         # abstract indicators
         df = indicators[symbol]["Abstract"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-        if not is_fast_strategy:
-            data_x += 5
+        data_x += 5
         line_list = core.window.transaction_lines["abstract_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
@@ -1439,115 +1398,7 @@ class Transactor:
 
         core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
 
-    def transact_fast(self, *args, **kwargs):
-        # stop if it's not connected to the internet
-        if not check_internet.connected():
-            return
-
-        # stop if the automation is turned off
-        if not self.automation_settings["should_transact"]:
-            return
-
-        # get strategy details
-        strategy = self.automation_settings["strategy"]
-
-        if strategy == 0:
-            strategy_details = core.window.strategist.details
-        else:
-            for strategy_tuple in core.window.strategy_tuples:
-                if strategy_tuple[0] == strategy:
-                    strategy_details = strategy_tuple[2]
-
-        # determine if should keep on going
-        is_fast_strategy = strategy_details[3]
-        if not is_fast_strategy:
-            return
-
-        is_working_strategy = strategy_details[0]
-        if not is_working_strategy:
-            return
-
-        # play the progress bar
-        def job():
-            start_time = datetime.now(timezone.utc)
-            core.window.undertake(
-                lambda: core.window.progressBar_2.setValue(1000), False
-            )
-            passed_time = timedelta(seconds=0)
-            while passed_time < timedelta(milliseconds=500):
-                passed_time = datetime.now(timezone.utc) - start_time
-                time.sleep(0.01)
-            core.window.undertake(lambda: core.window.progressBar_2.setValue(0), False)
-
-        thread_toss.apply_async(job)
-
-        def job():
-            # ■■■■■ task start time ■■■■■
-
-            task_start_time = datetime.now(timezone.utc)
-
-            # ■■■■■ moment ■■■■■
-
-            current_time = datetime.now(timezone.utc)
-            moment_timestamp = ball.floor(current_time.timestamp(), 1)
-            current_moment = datetime.fromtimestamp(moment_timestamp, tz=timezone.utc)
-
-            # ■■■■■ get the realtime data ■■■■■
-
-            with core.window.collector.datalocks[1]:
-                before_chunk = core.window.collector.realtime_data_chunks[-2].copy()
-                current_chunk = core.window.collector.realtime_data_chunks[-1].copy()
-            realtime_data = np.concatenate((before_chunk, current_chunk))
-            realtime_data = realtime_data[-10000:]
-
-            # ■■■■■ make indicators ■■■■■
-
-            indicators_script = core.window.strategist.indicators_script
-            compiled_indicators_script = compile(indicators_script, "<string>", "exec")
-
-            observed_data = process_toss.apply(digitize.do, realtime_data)
-            observed_data = observed_data.iloc[-3600 * 10 :]  # recent one hour
-            indicators = process_toss.apply(
-                make_indicators.do,
-                observed_data=observed_data,
-                strategy=strategy,
-                compiled_custom_script=compiled_indicators_script,
-            )
-
-            # ■■■■■ make decision ■■■■■
-
-            current_observed_data = observed_data.to_records()[-1]
-            current_indicators = indicators.to_records()[-1]
-            decision_script = core.window.strategist.decision_script
-            compiled_decision_script = compile(decision_script, "<string>", "exec")
-
-            decision, scribbles = process_toss.apply(
-                decide.choose,
-                current_moment=current_moment,
-                current_observed_data=current_observed_data,
-                current_indicators=current_indicators,
-                strategy=strategy,
-                account_state=copy.deepcopy(self.account_state),
-                scribbles=self.scribbles,
-                compiled_custom_script=compiled_decision_script,
-            )
-            self.scribbles = scribbles
-
-            # ■■■■■ record task duration ■■■■■
-
-            duration = datetime.now(timezone.utc) - task_start_time
-            duration = duration.total_seconds()
-            remember_task_durations.add("decide_transacting_fast", duration)
-
-            # ■■■■■ place order ■■■■■
-
-            self.place_order(decision)
-
-        for _ in range(10):
-            thread_toss.apply_async(job)
-            time.sleep(0.1)
-
-    def transact_slow(self, *args, **kwargs):
+    def perform_transaction(self, *args, **kwargs):
         # ■■■■■ stop if internet connection is not present ■■■■
 
         if not check_internet.connected():
@@ -1570,10 +1421,6 @@ class Transactor:
                     strategy_details = strategy_tuple[2]
 
         # ■■■■■ determine if should keep on going ■■■■■
-
-        is_fast_strategy = strategy_details[3]
-        if is_fast_strategy:
-            return
 
         is_working_strategy = strategy_details[0]
         if not is_working_strategy:
@@ -1656,12 +1503,12 @@ class Transactor:
 
         indicators = process_toss.apply(
             make_indicators.do,
-            observed_data=partial_candle_data,
+            candle_data=partial_candle_data,
             strategy=strategy,
             compiled_custom_script=compiled_indicators_script,
         )
 
-        current_observed_data = partial_candle_data.to_records()[-1]
+        current_candle_data = partial_candle_data.to_records()[-1]
         current_indicators = indicators.to_records()[-1]
         decision_script = core.window.strategist.decision_script
         compiled_decision_script = compile(decision_script, "<string>", "exec")
@@ -1669,7 +1516,7 @@ class Transactor:
         decision, scribbles = process_toss.apply(
             decide.choose,
             current_moment=current_moment,
-            current_observed_data=current_observed_data,
+            current_candle_data=current_candle_data,
             current_indicators=current_indicators,
             strategy=strategy,
             account_state=copy.deepcopy(self.account_state),
@@ -1682,7 +1529,7 @@ class Transactor:
 
         is_cycle_done = True
         duration = (datetime.now(timezone.utc) - current_moment).total_seconds()
-        remember_task_durations.add("decide_transacting_slow", duration)
+        remember_task_durations.add("perform_transaction", duration)
 
         # ■■■■■ place order ■■■■■
 

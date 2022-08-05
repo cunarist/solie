@@ -10,26 +10,26 @@ from module import thread_toss
 from module.recipe import standardize
 
 
-def do(observed_data, strategy, compiled_custom_script):
+def do(candle_data, strategy, compiled_custom_script):
     # ■■■■■ interpolate nans ■■■■■
 
-    observed_data = observed_data.interpolate()
+    candle_data = candle_data.interpolate()
 
     # ■■■■■ make dummy row to avoid talib error with all nan series ■■■■■
 
-    last_index = observed_data.index[-1]
-    observed_data.loc[last_index + timedelta(seconds=1)] = 0
+    last_index = candle_data.index[-1]
+    candle_data.loc[last_index + timedelta(seconds=1)] = 0
 
     # ■■■■■ basic values ■■■■■
 
-    observed_data_lock = threading.Lock()
+    candle_data_lock = threading.Lock()
     blank_columns = itertools.product(
         standardize.get_basics()["target_symbols"],
         ("Price", "Volume", "Abstract"),
         ("Blank",),
     )
     new_indicators = {}
-    base_index = observed_data.index
+    base_index = candle_data.index
     for blank_column in blank_columns:
         new_indicators[blank_column] = pd.Series(
             np.nan,
@@ -40,8 +40,8 @@ def do(observed_data, strategy, compiled_custom_script):
     # ■■■■■ make individual indicators ■■■■■
 
     def job(symbol):
-        with observed_data_lock:
-            if symbol not in observed_data.columns.get_level_values(0):
+        with candle_data_lock:
+            if symbol not in candle_data.columns.get_level_values(0):
                 return
 
         if strategy == 0:
@@ -50,8 +50,8 @@ def do(observed_data, strategy, compiled_custom_script):
                 "pd": pd,
                 "np": np,
                 "symbol": symbol,
-                "observed_data": observed_data,
-                "observed_data_lock": observed_data_lock,
+                "candle_data": candle_data,
+                "candle_data_lock": candle_data_lock,
                 "new_indicators": new_indicators,
             }
 
@@ -61,13 +61,10 @@ def do(observed_data, strategy, compiled_custom_script):
             pass
 
         elif strategy == 2:
-            pass
-
-        elif strategy == 3:
             border = 0.5  # percent
 
-            with observed_data_lock:
-                close = observed_data[(symbol, "Close")].copy()
+            with candle_data_lock:
+                close = candle_data[(symbol, "Close")].copy()
 
             dimensions = [1, 4, 16, 64]
 
@@ -87,8 +84,8 @@ def do(observed_data, strategy, compiled_custom_script):
             diff_sum = diff.rolling(int(600 / 10)).sum() / 6  # percent*minute
             new_indicators[(symbol, "Abstract", "Diff Sum (#BB00FF)")] = diff_sum
 
-            with observed_data_lock:
-                volume = observed_data[(symbol, "Volume")].copy()
+            with candle_data_lock:
+                volume = candle_data[(symbol, "Volume")].copy()
 
             fast_volume_sma = talib.SMA(volume, 10 * 60 / 10)
             slow_volume_sma = talib.SMA(volume, 360 * 60 / 10)

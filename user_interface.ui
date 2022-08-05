@@ -1252,30 +1252,6 @@ AskPopupContent {
               </widget>
              </item>
              <item>
-              <widget class="Line" name="line_9">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QRadioButton" name="radioButton_11">
-               <property name="text">
-                <string>Slow (10s)</string>
-               </property>
-               <property name="checked">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QRadioButton" name="radioButton_12">
-               <property name="text">
-                <string>Fast(0.1s)</string>
-               </property>
-              </widget>
-             </item>
-             <item>
               <widget class="Line" name="line_7">
                <property name="orientation">
                 <enum>Qt::Vertical</enum>
@@ -1725,8 +1701,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_6">
@@ -1754,8 +1730,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_7">
@@ -1783,8 +1759,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_4">
@@ -1812,8 +1788,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_8">
@@ -1841,8 +1817,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_5">
@@ -1870,8 +1846,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_9">
@@ -1968,8 +1944,8 @@ AskPopupContent {
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>1212</width>
-                 <height>578</height>
+                 <width>80</width>
+                 <height>20</height>
                 </rect>
                </property>
                <layout class="QHBoxLayout" name="horizontalLayout_33">

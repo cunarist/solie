@@ -1,7 +1,7 @@
-# get observed data
-with observed_data_lock:
-    close_sr = observed_data[(symbol, "Close")].copy()
-    volume_sr = observed_data[(symbol, "Volume")].copy()
+# get candle data
+with candle_data_lock:
+    close_sr = candle_data[(symbol, "Close")].copy()
+    volume_sr = candle_data[(symbol, "Volume")].copy()
 
 # price scale indicators
 price_sma_one = talib.SMA(close_sr, 180)

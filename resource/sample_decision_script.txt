@@ -2,7 +2,7 @@ for symbol in target_symbols:
 
     acquire_ratio = 0.8 / len(target_symbols)  # distribute by symbols count
 
-    current_price = current_observed_data[str((symbol, "Close"))]
+    current_price = current_candle_data[str((symbol, "Close"))]
 
     indicator_key = str((symbol, "Price", "SMA One (#00BBFF)"))
     price_sma_one = current_indicators[indicator_key]

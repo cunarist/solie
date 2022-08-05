@@ -6,7 +6,6 @@ import os
 import time
 import re
 import pickle
-import copy
 
 import pandas as pd
 import numpy as np
@@ -19,7 +18,6 @@ from module.recipe import simulate_unit
 from module.recipe import make_indicators
 from module.recipe import stop_flag
 from module.recipe import check_internet
-from module.recipe import digitize
 from module.recipe import standardize
 
 
@@ -255,14 +253,6 @@ class Simulator:
         symbol = self.viewing_symbol
         strategy = self.calculation_settings["strategy"]
 
-        if strategy == 0:
-            strategy_details = core.window.strategist.details
-        else:
-            for strategy_tuple in core.window.strategy_tuples:
-                if strategy_tuple[0] == strategy:
-                    strategy_details = strategy_tuple[2]
-        is_fast_strategy = strategy_details[3]
-
         # ■■■■■ get light data ■■■■■
 
         with core.window.collector.datalocks[1]:
@@ -419,20 +409,8 @@ class Simulator:
 
         # ■■■■■ get heavy data ■■■■■
 
-        if is_fast_strategy:
-            candle_data = pd.DataFrame(
-                columns=pd.MultiIndex.from_product(
-                    [
-                        standardize.get_basics()["target_symbols"],
-                        ("Open", "High", "Low", "Close", "Volume"),
-                    ]
-                ),
-                dtype=np.float32,
-                index=pd.DatetimeIndex([], tz="UTC"),
-            )
-        else:
-            with core.window.collector.datalocks[0]:
-                candle_data = core.window.collector.candle_data.copy()
+        with core.window.collector.datalocks[0]:
+            candle_data = core.window.collector.candle_data.copy()
 
         # ■■■■■ maniuplate heavy data ■■■■■
 
@@ -469,29 +447,19 @@ class Simulator:
         indicators_script = core.window.strategist.indicators_script
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
-        if is_fast_strategy:
-            observed_data = process_toss.apply(digitize.do, realtime_data)
-            indicators = process_toss.apply(
-                make_indicators.do,
-                observed_data=observed_data,
-                strategy=strategy,
-                compiled_custom_script=compiled_indicators_script,
-            )
-        else:
-            indicators = process_toss.apply(
-                make_indicators.do,
-                observed_data=candle_data,
-                strategy=strategy,
-                compiled_custom_script=compiled_indicators_script,
-            )
+        indicators = process_toss.apply(
+            make_indicators.do,
+            candle_data=candle_data,
+            strategy=strategy,
+            compiled_custom_script=compiled_indicators_script,
+        )
 
         # ■■■■■ draw heavy lines ■■■■■
 
         # price indicators
         df = indicators[symbol]["Price"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-        if not is_fast_strategy:
-            data_x += 5
+        data_x += 5
         line_list = core.window.simulation_lines["price_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
@@ -629,8 +597,7 @@ class Simulator:
         # trade volume indicators
         df = indicators[symbol]["Volume"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-        if not is_fast_strategy:
-            data_x += 5
+        data_x += 5
         line_list = core.window.simulation_lines["volume_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
@@ -672,8 +639,7 @@ class Simulator:
         # abstract indicators
         df = indicators[symbol]["Abstract"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-        if not is_fast_strategy:
-            data_x += 5
+        data_x += 5
         line_list = core.window.simulation_lines["abstract_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
@@ -1025,7 +991,6 @@ class Simulator:
         is_working_strategy = strategy_details[0]
         should_parallalize = strategy_details[1]
         unit_length = strategy_details[2]
-        is_fast_strategy = strategy_details[3]
 
         if not is_working_strategy:
             stop_flag.make("calculate_simulation")
@@ -1040,27 +1005,19 @@ class Simulator:
 
         prepare_step = 2
 
-        # ■■■■■ observed data of the year ■■■■■
+        # ■■■■■ candle data of the year ■■■■■
 
-        if is_fast_strategy:
-            # get all
-            with core.window.collector.datalocks[1]:
-                original_chunks = core.window.collector.realtime_data_chunks
-                realtime_data_chunks = copy.deepcopy(original_chunks)
-            ar = np.concatenate(realtime_data_chunks)
-            year_observed_data = process_toss.apply(digitize.do, ar)
-        else:
-            # get only year range
-            with core.window.collector.datalocks[0]:
-                df = core.window.collector.candle_data
-                year_observed_data = df[df.index.year == year].copy()
-            # slice until last hour
-            slice_until = year_observed_data.index[-1] + timedelta(seconds=10)
-            slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
-            slice_until -= timedelta(seconds=1)
-            year_observed_data = year_observed_data[:slice_until]
-            # interpolate
-            year_observed_data = year_observed_data.interpolate()
+        # get only year range
+        with core.window.collector.datalocks[0]:
+            df = core.window.collector.candle_data
+            year_candle_data = df[df.index.year == year].copy()
+        # slice until last hour
+        slice_until = year_candle_data.index[-1] + timedelta(seconds=10)
+        slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
+        slice_until -= timedelta(seconds=1)
+        year_candle_data = year_candle_data[:slice_until]
+        # interpolate
+        year_candle_data = year_candle_data.interpolate()
 
         prepare_step = 3
 
@@ -1135,8 +1092,8 @@ class Simulator:
             range_end = range_end - timedelta(seconds=range_end.second % 10)
             range_end += timedelta(seconds=10)
 
-            calculate_from = max(range_start, year_observed_data.index[0])
-            calculate_until = min(range_end, year_observed_data.index[-1])
+            calculate_from = max(range_start, year_candle_data.index[0])
+            calculate_until = min(range_end, year_candle_data.index[-1])
 
         else:
             # when calculating properly
@@ -1153,7 +1110,7 @@ class Simulator:
                     previous_virtual_state = pickle.load(file)
 
                 calculate_from = previous_account_state["observed_until"]
-                calculate_until = year_observed_data.index[-1]
+                calculate_until = year_candle_data.index[-1]
             except FileNotFoundError:
                 previous_asset_record = blank_asset_record.copy()
                 previous_unrealized_changes = blank_unrealized_changes.copy()
@@ -1161,8 +1118,8 @@ class Simulator:
                 previous_account_state = blank_account_state.copy()
                 previous_virtual_state = blank_virtual_state.copy()
 
-                calculate_from = year_observed_data.index[0]
-                calculate_until = year_observed_data.index[-1]
+                calculate_from = year_candle_data.index[0]
+                calculate_until = year_candle_data.index[-1]
 
         should_calculate = calculate_from < calculate_until
         if len(previous_asset_record) == 0:
@@ -1183,31 +1140,28 @@ class Simulator:
             slice_to = calculate_until
             year_indicators = process_toss.apply(
                 make_indicators.do,
-                observed_data=year_observed_data[slice_from:slice_to],
+                candle_data=year_candle_data[slice_from:slice_to],
                 strategy=strategy,
                 compiled_custom_script=compiled_indicators_script,
             )
 
             if should_parallalize:
-                needed_candle_data = year_observed_data[calculate_from:calculate_until]
-                if is_fast_strategy:
-                    frequency = timedelta(minutes=unit_length)
-                else:
-                    frequency = timedelta(days=unit_length)
-                unit_observed_data_list = [
-                    unit_observed_data
-                    for _, unit_observed_data in needed_candle_data.groupby(
-                        pd.Grouper(freq=frequency, origin="epoch")
+                needed_candle_data = year_candle_data[calculate_from:calculate_until]
+                division = timedelta(days=unit_length)
+                unit_candle_data_list = [
+                    unit_candle_data
+                    for _, unit_candle_data in needed_candle_data.groupby(
+                        pd.Grouper(freq=division, origin="epoch")
                     )
                 ]
 
                 communication_manager = multiprocessing.Manager()
-                unit_count = len(unit_observed_data_list)
+                unit_count = len(unit_candle_data_list)
                 progress_list = communication_manager.list([0] * unit_count)
 
                 input_data = []
-                for turn, unit_observed_data in enumerate(unit_observed_data_list):
-                    base_index = unit_observed_data.index
+                for turn, unit_candle_data in enumerate(unit_candle_data_list):
+                    base_index = unit_candle_data.index
                     unit_indicators = year_indicators.reindex(base_index)
                     get_from = base_index[0]
                     get_to = base_index[-1] + timedelta(seconds=10)
@@ -1228,8 +1182,7 @@ class Simulator:
                         "progress_list": progress_list,
                         "target_progress": turn,
                         "strategy": strategy,
-                        "is_fast_strategy": is_fast_strategy,
-                        "unit_observed_data": unit_observed_data,
+                        "unit_candle_data": unit_candle_data,
                         "unit_indicators": unit_indicators,
                         "unit_asset_record": unit_asset_record,
                         "unit_unrealized_changes": unit_unrealized_changes,
@@ -1251,8 +1204,7 @@ class Simulator:
                     "progress_list": progress_list,
                     "target_progress": 0,
                     "strategy": strategy,
-                    "is_fast_strategy": is_fast_strategy,
-                    "unit_observed_data": year_observed_data,
+                    "unit_candle_data": year_candle_data,
                     "unit_indicators": year_indicators,
                     "unit_asset_record": previous_asset_record,
                     "unit_unrealized_changes": previous_unrealized_changes,
@@ -1365,16 +1317,12 @@ class Simulator:
                         strategy_details = strategy_tuple[2]
             should_parallalize = strategy_details[1]
             unit_length = strategy_details[2]
-            is_fast_strategy = strategy_details[3]
 
         # ■■■■■ apply other factors to the asset trace ■■■■
 
         if should_parallalize:
-            if is_fast_strategy:
-                frequency = timedelta(minutes=unit_length)
-            else:
-                frequency = timedelta(days=unit_length)
-            grouped = asset_record.groupby(pd.Grouper(freq=frequency, origin="epoch"))
+            division = timedelta(days=unit_length)
+            grouped = asset_record.groupby(pd.Grouper(freq=division, origin="epoch"))
             unit_asset_record_list = [r.dropna() for _, r in grouped]
             unit_count = len(unit_asset_record_list)
 
@@ -1508,7 +1456,7 @@ class Simulator:
 
         if not does_file_exist:
             question = [
-                f"No calculation data on year {year} with strategy number {strategy}.",
+                f"No calculation data on year {year} with strategy number {strategy}",
                 "You should calculate first.",
                 ["Okay"],
                 False,
@@ -1581,7 +1529,7 @@ class Simulator:
             self.present()
         except FileNotFoundError:
             question = [
-                f"No calculation data on year {year} with strategy number {strategy}.",
+                f"No calculation data on year {year} with strategy number {strategy}",
                 "You should calculate first.",
                 ["Okay"],
                 False,
