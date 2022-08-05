@@ -824,10 +824,6 @@ class Transactor:
             if not self.should_draw_frequently:
                 return
 
-        # ■■■■■ get ready for task duration measurement ■■■■■
-
-        task_start_time = datetime.now(timezone.utc)
-
         # ■■■■■ check if the data exists ■■■■■
 
         with core.window.collector.datalocks[0]:
@@ -850,6 +846,10 @@ class Transactor:
                         break
                 time.sleep(0.1)
 
+        # ■■■■■ get ready for task duration measurement ■■■■■
+
+        task_start_time = datetime.now(timezone.utc)
+
         # ■■■■■ check things ■■■■■
 
         symbol = self.viewing_symbol
@@ -866,8 +866,6 @@ class Transactor:
 
         with self.datalocks[0]:
             unrealized_changes = self.unrealized_changes.copy()
-        with self.datalocks[1]:
-            asset_record = self.asset_record.copy()
 
         # ■■■■■ draw light lines ■■■■■
 
@@ -1013,25 +1011,28 @@ class Transactor:
 
         # ■■■■■ get heavy data ■■■■■
 
-        with core.window.collector.datalocks[0]:
-            candle_data = core.window.collector.candle_data.copy()
-
-        # ■■■■■ maniuplate heavy data ■■■■■
-
-        # range cut
-
+        year = datetime.now(timezone.utc).year
         slice_from = datetime.now(timezone.utc)
         slice_from -= timedelta(hours=24)
-        year = datetime.now(timezone.utc).year
 
-        if self.should_draw_frequently:
-            candle_data = candle_data[slice_from:][[symbol]]
-            asset_record = asset_record[slice_from:]
-        else:
-            mask = candle_data.index.year == year
-            candle_data = candle_data[mask][[symbol]]
-            mask = asset_record.index.year == year
-            asset_record = asset_record[mask]
+        with core.window.collector.datalocks[0]:
+            candle_data = core.window.collector.candle_data
+            if self.should_draw_frequently:
+                candle_data = candle_data[slice_from:][[symbol]]
+            else:
+                mask = candle_data.index.year == year
+                candle_data = candle_data[mask][[symbol]]
+            candle_data = candle_data.copy()
+        with self.datalocks[1]:
+            asset_record = self.asset_record
+            if self.should_draw_frequently:
+                asset_record = asset_record[slice_from:]
+            else:
+                mask = asset_record.index.year == year
+                asset_record = asset_record[mask]
+            asset_record = asset_record.copy()
+
+        # ■■■■■ maniuplate heavy data ■■■■■
 
         # add the right end
 

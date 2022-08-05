@@ -222,10 +222,6 @@ class Simulator:
         if frequent:
             pass
 
-        # ■■■■■ get ready for task duration measurement ■■■■■
-
-        pass
-
         # ■■■■■ check if the data exists ■■■■■
 
         with core.window.collector.datalocks[0]:
@@ -248,6 +244,10 @@ class Simulator:
                         break
                 time.sleep(0.1)
 
+        # ■■■■■ get ready for task duration measurement ■■■■■
+
+        pass
+
         # ■■■■■ check things ■■■■■
 
         symbol = self.viewing_symbol
@@ -264,8 +264,6 @@ class Simulator:
 
         with self.datalocks[0]:
             unrealized_changes = self.unrealized_changes.copy()
-        with self.datalocks[1]:
-            asset_record = self.asset_record.copy()
 
         # ■■■■■ draw light lines ■■■■■
 
@@ -409,22 +407,22 @@ class Simulator:
 
         # ■■■■■ get heavy data ■■■■■
 
-        with core.window.collector.datalocks[0]:
-            candle_data = core.window.collector.candle_data.copy()
-
-        # ■■■■■ maniuplate heavy data ■■■■■
-
-        # range cut
-
         year = self.calculation_settings["year"]
         slice_until = datetime.now(timezone.utc)
         slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
         slice_until -= timedelta(seconds=1)
 
-        if not self.should_draw_all_years:
-            mask = candle_data.index.year == year
-            candle_data = candle_data[mask]
-        candle_data = candle_data[:slice_until][[symbol]]
+        with core.window.collector.datalocks[0]:
+            candle_data = core.window.collector.candle_data
+            if not self.should_draw_all_years:
+                mask = candle_data.index.year == year
+                candle_data = candle_data[mask]
+            candle_data = candle_data[:slice_until][[symbol]]
+            candle_data = candle_data.copy()
+        with self.datalocks[1]:
+            asset_record = self.asset_record.copy()
+
+        # ■■■■■ maniuplate heavy data ■■■■■
 
         # add the right end
 
