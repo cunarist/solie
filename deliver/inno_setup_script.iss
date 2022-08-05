@@ -4,7 +4,7 @@
 #define MyAppName "Solsol"
 #define MyAppVersion "4.0"
 #define MyAppPublisher "Cunarist"
-#define MyAppURL "https://github.com/cunarist/solsol"
+#define MyAppURL "https://cunarist.com/solsol"
 #define MyAppExeName "Solsol.exe"
 
 [Setup]
