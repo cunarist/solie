@@ -9,7 +9,7 @@ from module.instrument.api_requester import ApiRequester
 from module.recipe import compare_versions
 from module.recipe import check_internet
 
-CURRENT_VERSION = "4.2"
+CURRENT_VERSION = "4.3"
 LATEST_VERSION = "0.0"
 PREPARED_VERSION = "0.0"
 IS_PREPARED = False
