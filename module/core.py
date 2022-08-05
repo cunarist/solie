@@ -87,7 +87,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             def job():
                 while True:
                     if done_steps == total_steps:
-                        text = "Finalization completed."
+                        text = "Finalization done"
                         self.undertake(lambda t=text: guide_frame.announce(t), True)
                         time.sleep(1)
                         process_toss.terminate_pool()
