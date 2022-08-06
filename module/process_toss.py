@@ -2,6 +2,7 @@ import multiprocessing
 import logging
 import threading
 import time
+import os
 
 import dill
 
@@ -49,16 +50,14 @@ def start_pool():
     global _thread_counts
     global _pool
     global _pool_process_count
-    cpu_count = multiprocessing.cpu_count()
-    pool_process_count = int(cpu_count / 2)
+    _pool_process_count = os.cpu_count()
     _communication_manager = multiprocessing.Manager()
     _thread_counts = _communication_manager.dict()
     _pool = multiprocessing.Pool(
-        pool_process_count,
+        _pool_process_count,
         initializer=_start_sharing_thread_count,
         initargs=(_thread_counts,),
     )
-    _pool_process_count = pool_process_count
     _start_sharing_thread_count(_thread_counts)
 
 
