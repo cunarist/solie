@@ -7,10 +7,10 @@ import dill
 
 from module import thread_toss
 
-_COMMUNICATION_MANAGER = None
-_THREAD_COUNTS = None
-_POOL = None
-_POOL_PROCESS_COUNT = 0
+_communication_manager = None
+_thread_counts = None
+_pool = None
+_pool_process_count = 0
 
 
 def _error_callback(error):
@@ -45,48 +45,48 @@ def _process_iterable_item(payload):
 
 
 def start_pool():
-    global _COMMUNICATION_MANAGER
-    global _THREAD_COUNTS
-    global _POOL
-    global _POOL_PROCESS_COUNT
+    global _communication_manager
+    global _thread_counts
+    global _pool
+    global _pool_process_count
     cpu_count = multiprocessing.cpu_count()
     pool_process_count = int(cpu_count / 2)
-    _COMMUNICATION_MANAGER = multiprocessing.Manager()
-    _THREAD_COUNTS = _COMMUNICATION_MANAGER.dict()
-    _POOL = multiprocessing.Pool(
+    _communication_manager = multiprocessing.Manager()
+    _thread_counts = _communication_manager.dict()
+    _pool = multiprocessing.Pool(
         pool_process_count,
         initializer=_start_sharing_thread_count,
-        initargs=(_THREAD_COUNTS,),
+        initargs=(_thread_counts,),
     )
-    _POOL_PROCESS_COUNT = pool_process_count
-    _start_sharing_thread_count(_THREAD_COUNTS)
+    _pool_process_count = pool_process_count
+    _start_sharing_thread_count(_thread_counts)
 
 
 def terminate_pool():
-    _POOL.terminate()
-    _POOL.join()
+    _pool.terminate()
+    _pool.join()
 
 
 def get_thread_counts():
     return_dictionary = {}
-    for process_id, thread_count in _THREAD_COUNTS.items():
+    for process_id, thread_count in _thread_counts.items():
         return_dictionary[process_id] = thread_count
     return return_dictionary
 
 
 def get_pool_process_count():
-    return _POOL_PROCESS_COUNT
+    return _pool_process_count
 
 
 def apply(function, *args, **kwargs):
     payload = dill.dumps((function, args, kwargs))
-    returned = _POOL.apply(_process_arguments, (payload,))
+    returned = _pool.apply(_process_arguments, (payload,))
     return returned
 
 
 def apply_async(function, *args, **kwargs):
     payload = dill.dumps((function, args, kwargs))
-    returned = _POOL.apply_async(
+    returned = _pool.apply_async(
         _process_arguments,
         (payload,),
         error_callback=_error_callback,
@@ -96,13 +96,13 @@ def apply_async(function, *args, **kwargs):
 
 def map(function, iterable):
     wrapper = [dill.dumps((function, item)) for item in iterable]
-    returned = _POOL.map(_process_iterable_item, wrapper)
+    returned = _pool.map(_process_iterable_item, wrapper)
     return returned
 
 
 def map_async(function, iterable):
     wrapper = [dill.dumps((function, item)) for item in iterable]
-    returned = _POOL.map_async(
+    returned = _pool.map_async(
         _process_iterable_item,
         wrapper,
         error_callback=_error_callback,
