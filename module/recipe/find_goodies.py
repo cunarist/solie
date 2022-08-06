@@ -10,9 +10,14 @@ from module.instrument.api_requester import ApiRequester
 from module.recipe import compare_versions
 from module.recipe import check_internet
 
-_latest_version = "0.0"
-_prepared_version = "0.0"
-_is_prepared = False
+CURRENT_VERSION = "4.4"
+LATEST_VERSION = "0.0"
+PREPARED_VERSION = "0.0"
+IS_PREPARED = False
+
+
+def get_version():
+    return CURRENT_VERSION
 
 
 def get_updater_status():
