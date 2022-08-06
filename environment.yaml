@@ -32,3 +32,6 @@ dependencies:
       - flake8-comprehensions
       - flake8-use-fstring
       - pygount
+      - pip-licenses
+      - pipdeptree
+      - pyyaml

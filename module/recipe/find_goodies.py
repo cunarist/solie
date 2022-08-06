@@ -5,18 +5,14 @@ import subprocess
 import os
 import logging
 
+from module import introduction
 from module.instrument.api_requester import ApiRequester
 from module.recipe import compare_versions
 from module.recipe import check_internet
 
-CURRENT_VERSION = "4.3"
 _latest_version = "0.0"
 _prepared_version = "0.0"
 _is_prepared = False
-
-
-def get_version():
-    return CURRENT_VERSION
 
 
 def get_updater_status():
@@ -51,7 +47,7 @@ def prepare():
             _is_prepared = False
             _prepared_version = "0.0"
 
-    if compare_versions.do(_latest_version, CURRENT_VERSION):
+    if compare_versions.do(_latest_version, introduction.CURRENT_VERSION):
         if not compare_versions.do(_latest_version, _prepared_version):
             return
 

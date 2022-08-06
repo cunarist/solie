@@ -12,6 +12,7 @@ import webbrowser
 import timesetter
 import getmac
 
+from module import introduction
 from module import core
 from module import process_toss
 from module import thread_toss
@@ -398,7 +399,7 @@ class Manager:
         core.window.undertake(core.window.close, False)
 
     def show_version(self, *args, **kwargs):
-        version = find_goodies.get_version()
+        version = introduction.get_version()
 
         question = [
             "Current Solsol version",

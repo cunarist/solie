@@ -6,8 +6,6 @@ import logging
 import pathlib
 import urllib
 import math
-import pkg_resources
-from importlib import metadata
 import webbrowser
 
 from PySide6 import QtGui, QtWidgets, QtCore
@@ -15,6 +13,7 @@ import pandas as pd
 import pyqtgraph
 from apscheduler.schedulers.background import BlockingScheduler
 
+from module import introduction
 from module import process_toss
 from module import thread_toss
 from module.user_interface import Ui_MainWindow
@@ -476,16 +475,19 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ show package licenses ■■■■■
 
         def job():
-            packages = pkg_resources.working_set
-            for package in sorted(packages, key=lambda x: str(x).lower()):
-                project_name = package.project_name
-                about = metadata.metadata(project_name)
+            for dependency in introduction.DEPENDENCIES:
+                dependency_name = dependency[0]
+                dependency_version = dependency[1]
+                dependency_license = dependency[2]
+                dependency_url = dependency[3]
 
-                text = project_name
-                text += ": " + str(about["License"])
+                text = dependency_name
+                text += f" ({dependency_version})"
+                text += f" - {dependency_license}"
 
                 # card structure
                 card = QtWidgets.QGroupBox()
+                card.setFixedHeight(72)
                 card_layout = QtWidgets.QHBoxLayout(card)
                 license_label = QtWidgets.QLabel(
                     text,
@@ -500,17 +502,24 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 )
                 card_layout.addItem(spacer)
 
-                def job(homepage=str(about["Home-page"])):
-                    webbrowser.open(homepage)
+                def job(dependency_url=dependency_url):
+                    webbrowser.open(dependency_url)
 
-                if about["Home-page"] is not None:
-                    homepage = about["Home-page"]
-                    if homepage.startswith("http"):
-                        link_button = QtWidgets.QPushButton(homepage, card)
-                        outsource.do(link_button.clicked, job)
-                        card_layout.addWidget(link_button)
+                if dependency_url.startswith("http"):
+                    text = dependency_url
+                    link_button = QtWidgets.QPushButton(text, card)
+                    outsource.do(link_button.clicked, job)
+                    card_layout.addWidget(link_button)
 
                 self.verticalLayout_15.addWidget(card)
+
+            spacer = QtWidgets.QSpacerItem(
+                0,
+                0,
+                QtWidgets.QSizePolicy.Policy.Minimum,
+                QtWidgets.QSizePolicy.Policy.Expanding,
+            )
+            self.verticalLayout_15.addItem(spacer)
 
         self.undertake(job, True)
 
