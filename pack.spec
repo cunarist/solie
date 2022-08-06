@@ -20,6 +20,7 @@ packages_to_complete = [
     "timesetter",
     "pygments",
     "yapf",
+    "tendo",
 ]
 for package in packages_to_complete:
     new_lists = hooks.collect_all(package)
