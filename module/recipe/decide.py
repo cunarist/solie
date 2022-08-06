@@ -56,6 +56,8 @@ def choose(
             prefer_symbol = "BTC" + asset_token
             if prefer_symbol in target_symbols:
                 should_filter = True
+            else:
+                should_filter = False
 
             if should_filter and symbol != prefer_symbol:
                 continue
