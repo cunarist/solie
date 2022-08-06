@@ -1461,8 +1461,9 @@ class Simulator:
 
         if not does_file_exist:
             question = [
-                f"No calculation data on year {year} with strategy number {strategy}",
-                "You should calculate first.",
+                "No calculation data on this combination",
+                f"You should calculate first on year {year} with strategy number"
+                f" {strategy}.",
                 ["Okay"],
                 False,
             ]
@@ -1470,11 +1471,11 @@ class Simulator:
             return
         else:
             question = [
-                f"Are you sure you want to delete calculation data on year {year} with"
-                f" strategy number {strategy}?",
+                "Are you sure you want to delete calculation data on this combination?",
                 "If you do, you should perform the calculation again to see the"
-                " prediction of the strategy. Calculation data of other combinations"
-                " does not get affected.",
+                f" prediction on year {year} with strategy number"
+                f" {strategy}. Calculation data of other combinations does not get"
+                " affected.",
                 ["Cancel", "Delete"],
                 False,
             ]
@@ -1529,8 +1530,9 @@ class Simulator:
             self.present()
         except FileNotFoundError:
             question = [
-                f"No calculation data on year {year} with strategy number {strategy}",
-                "You should calculate first.",
+                "No calculation data on this combination",
+                f"You should calculate first on year {year} with strategy number"
+                f" {strategy}.",
                 ["Okay"],
                 False,
             ]
