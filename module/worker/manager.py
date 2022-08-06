@@ -399,7 +399,7 @@ class Manager:
         core.window.undertake(core.window.close, False)
 
     def show_version(self, *args, **kwargs):
-        version = introduction.get_version()
+        version = introduction.CURRENT_VERSION
 
         question = [
             "Current Solsol version",
