@@ -1,18 +1,18 @@
-_LAST_TASK_ID = 0
-_FLAGS = {}
+_last_task_id = 0
+_flags = {}
 
 
 def make(task_name):
-    global _LAST_TASK_ID
-    new_task_id = _LAST_TASK_ID + 1
-    _FLAGS[task_name] = new_task_id
-    _LAST_TASK_ID = new_task_id
+    global _last_task_id
+    new_task_id = _last_task_id + 1
+    _flags[task_name] = new_task_id
+    _last_task_id = new_task_id
     return new_task_id
 
 
 def find(task_name, current_task_id):
-    if task_name in _FLAGS.keys():
-        if _FLAGS[task_name] > current_task_id:
+    if task_name in _flags.keys():
+        if _flags[task_name] > current_task_id:
             return True
         else:
             return False

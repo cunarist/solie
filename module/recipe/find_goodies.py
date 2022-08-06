@@ -10,9 +10,9 @@ from module.recipe import compare_versions
 from module.recipe import check_internet
 
 CURRENT_VERSION = "4.3"
-LATEST_VERSION = "0.0"
-PREPARED_VERSION = "0.0"
-IS_PREPARED = False
+_latest_version = "0.0"
+_prepared_version = "0.0"
+_is_prepared = False
 
 
 def get_version():
@@ -20,13 +20,13 @@ def get_version():
 
 
 def get_updater_status():
-    return IS_PREPARED
+    return _is_prepared
 
 
 def prepare():
-    global LATEST_VERSION
-    global PREPARED_VERSION
-    global IS_PREPARED
+    global _latest_version
+    global _prepared_version
+    global _is_prepared
 
     if not check_internet.connected():
         return
@@ -34,9 +34,9 @@ def prepare():
     api_requester = ApiRequester()
     payload = {"id": "version"}
     response = api_requester.cunarist("GET", "/api/solsol/latest-information", payload)
-    LATEST_VERSION = response["value"]
+    _latest_version = response["value"]
 
-    if IS_PREPARED:
+    if _is_prepared:
         temp_folder = tempfile.gettempdir()
 
         if platform.system() == "Windows":
@@ -48,11 +48,11 @@ def prepare():
 
         if not os.path.isfile(filepath):
             # when temp directory is cleaned up for some reason...
-            IS_PREPARED = False
-            PREPARED_VERSION = "0.0"
+            _is_prepared = False
+            _prepared_version = "0.0"
 
-    if compare_versions.do(LATEST_VERSION, CURRENT_VERSION):
-        if not compare_versions.do(LATEST_VERSION, PREPARED_VERSION):
+    if compare_versions.do(_latest_version, CURRENT_VERSION):
+        if not compare_versions.do(_latest_version, _prepared_version):
             return
 
         platform_system = platform.system()
@@ -89,12 +89,12 @@ def prepare():
         logger = logging.getLogger("solsol")
         logger.info(text)
 
-        PREPARED_VERSION = LATEST_VERSION
-        IS_PREPARED = True
+        _prepared_version = _latest_version
+        _is_prepared = True
 
 
 def apply():
-    if IS_PREPARED:
+    if _is_prepared:
         if platform.system() == "Windows":
             temp_folder = tempfile.gettempdir()
             filepath = temp_folder + "/SolsolWindowsSetup.exe"

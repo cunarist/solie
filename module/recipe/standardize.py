@@ -3,69 +3,69 @@ import copy
 import json
 from datetime import datetime, timezone
 
-_LICENSE_KEY = None
-_DATAPATH = None
-_BASICS = {}
+_license_key = None
+_datapath = None
+_basics = {}
 
 
 def load():
-    global _LICENSE_KEY
-    global _DATAPATH
-    global _BASICS
+    global _license_key
+    global _datapath
+    global _basics
 
     if os.path.isfile("./note/license_key.txt"):
         with open("./note/license_key.txt", "r", encoding="utf8") as file:
-            _LICENSE_KEY = file.read()
+            _license_key = file.read()
 
     if os.path.isfile("./note/datapath.txt"):
         with open("./note/datapath.txt", "r", encoding="utf8") as file:
             datapath = file.read()
             if os.path.isdir(datapath):
-                _DATAPATH = datapath
+                _datapath = datapath
 
-    if _DATAPATH is not None:
-        if os.path.isfile(f"{_DATAPATH}/basics.json"):
-            with open(f"{_DATAPATH}/basics.json", "r", encoding="utf8") as file:
-                _BASICS = json.load(file)
+    if _datapath is not None:
+        if os.path.isfile(f"{_datapath}/basics.json"):
+            with open(f"{_datapath}/basics.json", "r", encoding="utf8") as file:
+                _basics = json.load(file)
 
 
 load()
 
 
 def get_license_key():
-    return _LICENSE_KEY
+    return _license_key
 
 
 def set_license_key(license_key):
-    global _LICENSE_KEY
-    _LICENSE_KEY = license_key
+    global _license_key
+    _license_key = license_key
     os.makedirs(os.path.dirname("./note/license_key.txt"), exist_ok=True)
     with open("./note/license_key.txt", "w", encoding="utf8") as file:
         file.write(license_key)
 
 
 def get_datapath():
-    return _DATAPATH
+    return _datapath
 
 
 def set_datapath(datapath):
-    global _DATAPATH
-    _DATAPATH = datapath
+    global _datapath
+    _datapath = datapath
     os.makedirs(os.path.dirname("./note/datapath.txt"), exist_ok=True)
     with open("./note/datapath.txt", "w", encoding="utf8") as file:
         file.write(datapath)
 
 
 def get_basics():
-    return copy.deepcopy(_BASICS)
+    return copy.deepcopy(_basics)
 
 
 def apply_basics(basics):
-    global _BASICS
+    global _basics
     basics = copy.deepcopy(basics)
-    basics = {**basics, **_BASICS}
+    basics = {**basics, **_basics}
     basics["modified_timestamp"] = int(datetime.now(timezone.utc).timestamp())
-    _BASICS = basics
-    os.makedirs(os.path.dirname(f"{_DATAPATH}/basics.json"), exist_ok=True)
-    with open(f"{_DATAPATH}/basics.json", "w", encoding="utf8") as file:
+    _basics = basics
+    os.makedirs(os.path.dirname(f"{_datapath}/basics.json"), exist_ok=True)
+    with open(f"{_datapath}/basics.json", "w", encoding="utf8") as file:
         json.dump(basics, file, indent=4)
