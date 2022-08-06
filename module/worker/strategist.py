@@ -173,7 +173,7 @@ class Strategiest:
 
         question = [
             "Sample strategy applied",
-            "It is not yet saved. Do it as you want.",
+            "It is not yet saved. Use it as you want.",
             ["Okay"],
             False,
         ]
