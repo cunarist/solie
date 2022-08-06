@@ -411,10 +411,13 @@ class Simulator:
             slice_until = datetime.now(timezone.utc)
             slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
         else:
-            current_year = datetime.now(timezone.utc).year
-            slice_from = datetime(current_year, 1, 1, tzinfo=timezone.utc)
-            slice_until = datetime.now(timezone.utc)
-            slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
+            year = self.calculation_settings["year"]
+            slice_from = datetime(year, 1, 1, tzinfo=timezone.utc)
+            if year == datetime.now(timezone.utc).year:
+                slice_until = datetime.now(timezone.utc)
+                slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
+            else:
+                slice_until = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
         slice_until -= timedelta(seconds=1)
         get_from = slice_from - timedelta(days=7)
 
