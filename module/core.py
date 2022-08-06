@@ -6,7 +6,6 @@ import logging
 import pathlib
 import urllib
 import math
-import multiprocessing
 import pkg_resources
 from importlib import metadata
 import webbrowser
@@ -1241,30 +1240,31 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         return ask_popup.answer
 
 
-# ■■■■■ prerequisites ■■■■■
+window = None
 
-# make pyinstaller executable work with multiprocessing
-multiprocessing.freeze_support()
 
-# ■■■■■ app ■■■■■
+def bring_to_life():
+    global window
 
-app = QtWidgets.QApplication(sys.argv)
+    # ■■■■■ app ■■■■■
 
-# ■■■■■ theme ■■■■■
+    app = QtWidgets.QApplication(sys.argv)
 
-# this part should be done after creating the app and before creating the window
-QtGui.QFontDatabase.addApplicationFont("./resource/consolas.ttf")
-QtGui.QFontDatabase.addApplicationFont("./resource/noto_sans_kr.otf")
-default_font = QtGui.QFont("Noto Sans KR", 9)
+    # ■■■■■ theme ■■■■■
 
-app.setStyle("Fusion")
-app.setFont(default_font)
+    # this part should be done after creating the app and before creating the window
+    QtGui.QFontDatabase.addApplicationFont("./resource/consolas.ttf")
+    QtGui.QFontDatabase.addApplicationFont("./resource/noto_sans_kr.otf")
+    default_font = QtGui.QFont("Noto Sans KR", 9)
 
-# ■■■■■ window ■■■■■
+    app.setStyle("Fusion")
+    app.setFont(default_font)
 
-window = Window()
+    # ■■■■■ window ■■■■■
 
-# ■■■■■ show ■■■■■
+    window = Window()
 
-window.show()
-sys.exit(getattr(app, "exec")())
+    # ■■■■■ show ■■■■■
+
+    window.show()
+    sys.exit(getattr(app, "exec")())

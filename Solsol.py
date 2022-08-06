@@ -1,2 +1,11 @@
+import multiprocessing
+
+from module import core
+
+
 if __name__ == "__main__":
-    from module import core  # type:ignore # noqa:F401
+    # make pyinstaller executable work with multiprocessing
+    multiprocessing.freeze_support()
+
+    # create app
+    core.bring_to_life()
