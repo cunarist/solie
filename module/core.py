@@ -1263,8 +1263,8 @@ def bring_to_life():
 
     # this part should be done after creating the app and before creating the window
     QtGui.QFontDatabase.addApplicationFont("./resource/consolas.ttf")
-    QtGui.QFontDatabase.addApplicationFont("./resource/noto_sans_kr.otf")
-    default_font = QtGui.QFont("Noto Sans KR", 9)
+    QtGui.QFontDatabase.addApplicationFont("./resource/notosans_regular.ttf")
+    default_font = QtGui.QFont("Noto Sans", 9)
 
     app.setStyle("Fusion")
     app.setFont(default_font)
