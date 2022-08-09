@@ -24,7 +24,7 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>resource/image_logo.png</normaloff>resource/image_logo.png</iconset>
+    <normaloff>resource/product_icon_solsol.png</normaloff>resource/product_icon_solsol.png</iconset>
   </property>
   <property name="styleSheet">
    <string notr="true">QPushButton, QComboBox, QLineEdit, QCheckBox, QSpinBox, QDoubleSpinBox {
@@ -1368,7 +1368,7 @@ AskPopupContent {
                      </size>
                     </property>
                     <property name="pixmap">
-                     <pixmap>resource/image_logo.png</pixmap>
+                     <pixmap>resource/product_icon_solsol.png</pixmap>
                     </property>
                     <property name="scaledContents">
                      <bool>true</bool>
@@ -1390,7 +1390,7 @@ AskPopupContent {
                      </size>
                     </property>
                     <property name="pixmap">
-                     <pixmap>resource/text_logo.png</pixmap>
+                     <pixmap>resource/product_text_solsol.png</pixmap>
                     </property>
                     <property name="scaledContents">
                      <bool>true</bool>

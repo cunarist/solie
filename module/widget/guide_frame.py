@@ -2,15 +2,13 @@ from PySide6 import QtWidgets, QtGui, QtCore
 
 
 class GuideFrame(QtWidgets.QFrame):
-
-    with open("./resource/image_logo.png", mode="rb") as file:
+    with open("./resource/product_icon_solsol.png", mode="rb") as file:
         image_logo_data = file.read()
 
-    with open("./resource/text_logo.png", mode="rb") as file:
+    with open("./resource/product_text_solsol.png", mode="rb") as file:
         text_logo_data = file.read()
 
     def __init__(self, total_steps=0):
-
         super().__init__()
 
         self.done_steps = 0

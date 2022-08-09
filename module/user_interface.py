@@ -36,7 +36,7 @@ class Ui_MainWindow(object):
         font = QFont()
         MainWindow.setFont(font)
         icon = QIcon()
-        icon.addFile(u"resource/image_logo.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon.addFile(u"resource/product_icon_solsol.png", QSize(), QIcon.Normal, QIcon.Off)
         MainWindow.setWindowIcon(icon)
         MainWindow.setStyleSheet(u"QPushButton, QComboBox, QLineEdit, QCheckBox, QSpinBox, QDoubleSpinBox {\n"
 "	height: 1.8em;\n"
@@ -880,7 +880,7 @@ class Ui_MainWindow(object):
         self.label_5.setObjectName(u"label_5")
         self.label_5.setMinimumSize(QSize(80, 80))
         self.label_5.setMaximumSize(QSize(80, 80))
-        self.label_5.setPixmap(QPixmap(u"resource/image_logo.png"))
+        self.label_5.setPixmap(QPixmap(u"resource/product_icon_solsol.png"))
         self.label_5.setScaledContents(True)
 
         self.horizontalLayout_13.addWidget(self.label_5)
@@ -889,7 +889,7 @@ class Ui_MainWindow(object):
         self.label_9.setObjectName(u"label_9")
         self.label_9.setMinimumSize(QSize(320, 80))
         self.label_9.setMaximumSize(QSize(320, 80))
-        self.label_9.setPixmap(QPixmap(u"resource/text_logo.png"))
+        self.label_9.setPixmap(QPixmap(u"resource/product_text_solsol.png"))
         self.label_9.setScaledContents(True)
 
         self.horizontalLayout_13.addWidget(self.label_9)
