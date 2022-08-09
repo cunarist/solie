@@ -14,7 +14,7 @@ from scipy.signal import find_peaks
 from module import core
 from module import process_toss
 from module import thread_toss
-from module.recipe import simulate_unit
+from module.recipe import simulate_chunk
 from module.recipe import make_indicators
 from module.recipe import stop_flag
 from module.recipe import check_internet
@@ -1008,7 +1008,7 @@ class Simulator:
                     strategy_details = strategy_tuple[2]
         is_working_strategy = strategy_details[0]
         should_parallalize = strategy_details[1]
-        unit_length = strategy_details[2]
+        chunk_length = strategy_details[2]
 
         if not is_working_strategy:
             stop_flag.make("calculate_simulation")
@@ -1093,7 +1093,7 @@ class Simulator:
         prepare_step = 4
 
         if only_visible:
-            # when calculating only visible range
+            # when calculating only on visible range
 
             previous_asset_record = blank_asset_record.copy()
             previous_unrealized_changes = blank_unrealized_changes.copy()
@@ -1142,7 +1142,7 @@ class Simulator:
 
         prepare_step = 5
 
-        # ■■■■■ prepare per unit data ■■■■■
+        # ■■■■■ prepare per chunk data ■■■■■
 
         if should_calculate:
             decision_script = core.window.strategist.decision_script
@@ -1164,49 +1164,49 @@ class Simulator:
             needed_indicators = year_indicators.reindex(needed_index)
 
             if should_parallalize:
-                division = timedelta(days=unit_length)
-                unit_candle_data_list = [
-                    unit_candle_data
-                    for _, unit_candle_data in needed_candle_data.groupby(
+                division = timedelta(days=chunk_length)
+                chunk_candle_data_list = [
+                    chunk_candle_data
+                    for _, chunk_candle_data in needed_candle_data.groupby(
                         pd.Grouper(freq=division, origin="epoch")
                     )
                 ]
 
                 communication_manager = multiprocessing.Manager()
-                unit_count = len(unit_candle_data_list)
-                progress_list = communication_manager.list([0] * unit_count)
+                chunk_count = len(chunk_candle_data_list)
+                progress_list = communication_manager.list([0] * chunk_count)
 
                 input_data = []
-                for turn, unit_candle_data in enumerate(unit_candle_data_list):
-                    unit_index = unit_candle_data.index
-                    unit_indicators = needed_indicators.reindex(unit_index)
-                    unit_asset_record = previous_asset_record.iloc[0:0]
-                    unit_unrealized_changes = previous_unrealized_changes.iloc[0:0]
-                    first_timestamp = unit_index[0].timestamp()
-                    division_seconds = unit_length * 24 * 60 * 60
+                for turn, chunk_candle_data in enumerate(chunk_candle_data_list):
+                    chunk_index = chunk_candle_data.index
+                    chunk_indicators = needed_indicators.reindex(chunk_index)
+                    chunk_asset_record = previous_asset_record.iloc[0:0]
+                    chunk_unrealized_changes = previous_unrealized_changes.iloc[0:0]
+                    first_timestamp = chunk_index[0].timestamp()
+                    division_seconds = chunk_length * 24 * 60 * 60
                     if turn == 0 and first_timestamp % division_seconds != 0:
-                        # when this is the firstmost unit of calculation
-                        # and also unit calculation was partially done before
-                        unit_scribbles = previous_scribbles
-                        unit_account_state = previous_account_state
-                        unit_virtual_state = previous_virtual_state
+                        # when this is the firstmost chunk of calculation
+                        # and also chunk calculation was partially done before
+                        chunk_scribbles = previous_scribbles
+                        chunk_account_state = previous_account_state
+                        chunk_virtual_state = previous_virtual_state
                     else:
-                        unit_scribbles = blank_scribbles
-                        unit_account_state = blank_account_state
-                        unit_virtual_state = blank_virtual_state
+                        chunk_scribbles = blank_scribbles
+                        chunk_account_state = blank_account_state
+                        chunk_virtual_state = blank_virtual_state
 
                     dataset = {
                         "progress_list": progress_list,
                         "target_progress": turn,
                         "strategy": strategy,
-                        "calculation_index": unit_index,
-                        "unit_candle_data": unit_candle_data,
-                        "unit_indicators": unit_indicators,
-                        "unit_asset_record": unit_asset_record,
-                        "unit_unrealized_changes": unit_unrealized_changes,
-                        "unit_scribbles": unit_scribbles,
-                        "unit_account_state": unit_account_state,
-                        "unit_virtual_state": unit_virtual_state,
+                        "calculation_index": chunk_index,
+                        "chunk_candle_data": chunk_candle_data,
+                        "chunk_indicators": chunk_indicators,
+                        "chunk_asset_record": chunk_asset_record,
+                        "chunk_unrealized_changes": chunk_unrealized_changes,
+                        "chunk_scribbles": chunk_scribbles,
+                        "chunk_account_state": chunk_account_state,
+                        "chunk_virtual_state": chunk_virtual_state,
                         "decision_script": decision_script,
                     }
                     input_data.append(dataset)
@@ -1221,13 +1221,13 @@ class Simulator:
                     "target_progress": 0,
                     "strategy": strategy,
                     "calculation_index": needed_index,
-                    "unit_candle_data": needed_candle_data,
-                    "unit_indicators": needed_indicators,
-                    "unit_asset_record": previous_asset_record,
-                    "unit_unrealized_changes": previous_unrealized_changes,
-                    "unit_scribbles": previous_scribbles,
-                    "unit_account_state": previous_account_state,
-                    "unit_virtual_state": previous_virtual_state,
+                    "chunk_candle_data": needed_candle_data,
+                    "chunk_indicators": needed_indicators,
+                    "chunk_asset_record": previous_asset_record,
+                    "chunk_unrealized_changes": previous_unrealized_changes,
+                    "chunk_scribbles": previous_scribbles,
+                    "chunk_account_state": previous_account_state,
+                    "chunk_virtual_state": previous_virtual_state,
                     "decision_script": decision_script,
                 }
                 input_data.append(dataset)
@@ -1237,7 +1237,7 @@ class Simulator:
         # ■■■■■ calculate ■■■■■
 
         if should_calculate:
-            map_result = process_toss.map_async(simulate_unit.do, input_data)
+            map_result = process_toss.map_async(simulate_chunk.do, input_data)
 
             total_seconds = (calculate_until - calculate_from).total_seconds()
             while True:
@@ -1258,26 +1258,26 @@ class Simulator:
 
         if should_calculate:
             asset_record = previous_asset_record
-            for unit_ouput_data in output_data:
-                unit_asset_record = unit_ouput_data["unit_asset_record"]
-                concat_data = [asset_record, unit_asset_record]
+            for chunk_ouput_data in output_data:
+                chunk_asset_record = chunk_ouput_data["chunk_asset_record"]
+                concat_data = [asset_record, chunk_asset_record]
                 asset_record = pd.concat(concat_data)
             mask = ~asset_record.index.duplicated()
             asset_record = asset_record[mask]
             asset_record = asset_record.sort_index()
 
             unrealized_changes = previous_unrealized_changes
-            for unit_ouput_data in output_data:
-                unit_unrealized_changes = unit_ouput_data["unit_unrealized_changes"]
-                concat_data = [unrealized_changes, unit_unrealized_changes]
+            for chunk_ouput_data in output_data:
+                chunk_unrealized_changes = chunk_ouput_data["chunk_unrealized_changes"]
+                concat_data = [unrealized_changes, chunk_unrealized_changes]
                 unrealized_changes = pd.concat(concat_data)
             mask = ~unrealized_changes.index.duplicated()
             unrealized_changes = unrealized_changes[mask]
             unrealized_changes = unrealized_changes.sort_index()
 
-            scribbles = output_data[-1]["unit_scribbles"]
-            account_state = output_data[-1]["unit_account_state"]
-            virtual_state = output_data[-1]["unit_virtual_state"]
+            scribbles = output_data[-1]["chunk_scribbles"]
+            account_state = output_data[-1]["chunk_account_state"]
+            virtual_state = output_data[-1]["chunk_virtual_state"]
 
         else:
             asset_record = previous_asset_record
@@ -1321,7 +1321,7 @@ class Simulator:
 
         if self.about_viewing is None:
             should_parallalize = False
-            unit_length = 0
+            chunk_length = 0
         else:
             strategy = self.about_viewing["strategy"]
             if strategy == 0:
@@ -1331,55 +1331,55 @@ class Simulator:
                     if strategy_tuple[0] == strategy:
                         strategy_details = strategy_tuple[2]
             should_parallalize = strategy_details[1]
-            unit_length = strategy_details[2]
+            chunk_length = strategy_details[2]
 
         # ■■■■■ apply other factors to the asset trace ■■■■
 
         if should_parallalize:
-            division = timedelta(days=unit_length)
+            division = timedelta(days=chunk_length)
             grouped = asset_record.groupby(pd.Grouper(freq=division, origin="epoch"))
-            unit_asset_record_list = [r.dropna() for _, r in grouped]
-            unit_count = len(unit_asset_record_list)
+            chunk_asset_record_list = [r.dropna() for _, r in grouped]
+            chunk_count = len(chunk_asset_record_list)
 
         else:
-            unit_asset_record_list = [asset_record]
-            unit_count = 1
+            chunk_asset_record_list = [asset_record]
+            chunk_count = 1
 
-        unit_asset_changes_list = []
-        for turn in range(unit_count):
-            unit_asset_record = unit_asset_record_list[turn]
+        chunk_asset_changes_list = []
+        for turn in range(chunk_count):
+            chunk_asset_record = chunk_asset_record_list[turn]
 
             # leverage
-            unit_result_asset_sr = unit_asset_record["Result Asset"]
-            unit_asset_shifts = unit_result_asset_sr.diff()
-            if len(unit_asset_shifts) > 0:
-                unit_asset_shifts.iloc[0] = 0
-            lazy_unit_result_asset = unit_result_asset_sr.shift(periods=1)
-            if len(lazy_unit_result_asset) > 0:
-                lazy_unit_result_asset.iloc[0] = 1
-            unit_asset_changes_by_leverage = (
-                1 + unit_asset_shifts / lazy_unit_result_asset * leverage
+            chunk_result_asset_sr = chunk_asset_record["Result Asset"]
+            chunk_asset_shifts = chunk_result_asset_sr.diff()
+            if len(chunk_asset_shifts) > 0:
+                chunk_asset_shifts.iloc[0] = 0
+            lazy_chunk_result_asset = chunk_result_asset_sr.shift(periods=1)
+            if len(lazy_chunk_result_asset) > 0:
+                lazy_chunk_result_asset.iloc[0] = 1
+            chunk_asset_changes_by_leverage = (
+                1 + chunk_asset_shifts / lazy_chunk_result_asset * leverage
             )
 
             # fee
-            unit_fees = unit_asset_record["Role"].copy()
-            unit_fees[unit_fees == "maker"] = maker_fee
-            unit_fees[unit_fees == "taker"] = taker_fee
-            unit_fees = unit_fees.astype(np.float32)
-            unit_margin_ratios = unit_asset_record["Margin Ratio"]
-            unit_asset_changes_by_fee = (
-                1 - (unit_fees / 100) * unit_margin_ratios * leverage
+            chunk_fees = chunk_asset_record["Role"].copy()
+            chunk_fees[chunk_fees == "maker"] = maker_fee
+            chunk_fees[chunk_fees == "taker"] = taker_fee
+            chunk_fees = chunk_fees.astype(np.float32)
+            chunk_margin_ratios = chunk_asset_record["Margin Ratio"]
+            chunk_asset_changes_by_fee = (
+                1 - (chunk_fees / 100) * chunk_margin_ratios * leverage
             )
 
             # altogether
-            unit_asset_changes = (
-                unit_asset_changes_by_leverage * unit_asset_changes_by_fee
+            chunk_asset_changes = (
+                chunk_asset_changes_by_leverage * chunk_asset_changes_by_fee
             )
-            unit_asset_changes_list.append(unit_asset_changes)
+            chunk_asset_changes_list.append(chunk_asset_changes)
 
         unrealized_changes = unrealized_changes * leverage
 
-        year_asset_changes = pd.concat(unit_asset_changes_list).sort_index()
+        year_asset_changes = pd.concat(chunk_asset_changes_list).sort_index()
         if len(year_asset_changes) > 0:
             year_asset_changes.iloc[0] = float(1)
         asset_record = asset_record.reindex(year_asset_changes.index)

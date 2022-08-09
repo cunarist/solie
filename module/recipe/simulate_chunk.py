@@ -22,13 +22,13 @@ def do(dataset):
     target_progress = dataset["target_progress"]
     strategy = dataset["strategy"]
     calculation_index = dataset["calculation_index"]
-    unit_candle_data = dataset["unit_candle_data"]
-    unit_indicators = dataset["unit_indicators"]
-    unit_asset_record = dataset["unit_asset_record"]
-    unit_unrealized_changes = dataset["unit_unrealized_changes"]
-    unit_scribbles = dataset["unit_scribbles"]
-    unit_account_state = dataset["unit_account_state"]
-    unit_virtual_state = dataset["unit_virtual_state"]
+    chunk_candle_data = dataset["chunk_candle_data"]
+    chunk_indicators = dataset["chunk_indicators"]
+    chunk_asset_record = dataset["chunk_asset_record"]
+    chunk_unrealized_changes = dataset["chunk_unrealized_changes"]
+    chunk_scribbles = dataset["chunk_scribbles"]
+    chunk_account_state = dataset["chunk_account_state"]
+    chunk_virtual_state = dataset["chunk_virtual_state"]
     decision_script = dataset["decision_script"]
 
     # ■■■■■ basic values ■■■■■
@@ -39,11 +39,11 @@ def do(dataset):
 
     if len(calculation_index) == 0:
         dataset = {
-            "unit_asset_record": unit_asset_record,
-            "unit_unrealized_changes": unit_unrealized_changes,
-            "unit_scribbles": unit_scribbles,
-            "unit_account_state": unit_account_state,
-            "unit_virtual_state": unit_virtual_state,
+            "chunk_asset_record": chunk_asset_record,
+            "chunk_unrealized_changes": chunk_unrealized_changes,
+            "chunk_scribbles": chunk_scribbles,
+            "chunk_account_state": chunk_account_state,
+            "chunk_virtual_state": chunk_virtual_state,
         }
 
         return dataset
@@ -51,10 +51,10 @@ def do(dataset):
     # ■■■■■ convert to numpy objects for fast calculation ■■■■■
 
     calculation_index_ar = calculation_index.to_numpy()  # inside are datetime objects
-    candle_data_ar = unit_candle_data.to_records()
-    indicators_ar = unit_indicators.to_records()
-    asset_record_ar = unit_asset_record.to_records()
-    unit_unrealized_changes_ar = unit_unrealized_changes.to_frame().to_records()
+    candle_data_ar = chunk_candle_data.to_records()
+    indicators_ar = chunk_indicators.to_records()
+    asset_record_ar = chunk_asset_record.to_records()
+    chunk_unrealized_changes_ar = chunk_unrealized_changes.to_frame().to_records()
 
     # ■■■■■ actual loop calculation ■■■■■
 
@@ -84,27 +84,27 @@ def do(dataset):
             is_margin_nan = False
 
             # special placements
-            if "cancel_all" in unit_virtual_state["placements"][symbol]:
+            if "cancel_all" in chunk_virtual_state["placements"][symbol]:
                 cancel_placement_names = []
-                for placement_name in unit_virtual_state["placements"][symbol].keys():
+                for placement_name in chunk_virtual_state["placements"][symbol].keys():
                     if any(s in placement_name for s in ("later", "book")):
                         cancel_placement_names.append(placement_name)
                 for cancel_placement_name in cancel_placement_names:
-                    unit_virtual_state["placements"][symbol].pop(cancel_placement_name)
-                unit_virtual_state["placements"][symbol].pop("cancel_all")
+                    chunk_virtual_state["placements"][symbol].pop(cancel_placement_name)
+                chunk_virtual_state["placements"][symbol].pop("cancel_all")
 
             # instant placements
-            if "now_close" in unit_virtual_state["placements"][symbol]:
+            if "now_close" in chunk_virtual_state["placements"][symbol]:
                 would_trade_happen = True
-                command = unit_virtual_state["placements"][symbol]["now_close"]
+                command = chunk_virtual_state["placements"][symbol]["now_close"]
                 role = "taker"
                 fill_price = open_price + price_speed * (decision_lag / 1000)
-                amount_shift = -unit_virtual_state["locations"][symbol]["amount"]
-                unit_virtual_state["placements"][symbol].pop("now_close")
+                amount_shift = -chunk_virtual_state["locations"][symbol]["amount"]
+                chunk_virtual_state["placements"][symbol].pop("now_close")
 
-            if "now_buy" in unit_virtual_state["placements"][symbol]:
+            if "now_buy" in chunk_virtual_state["placements"][symbol]:
                 would_trade_happen = True
-                command = unit_virtual_state["placements"][symbol]["now_buy"]
+                command = chunk_virtual_state["placements"][symbol]["now_buy"]
                 role = "taker"
                 fill_price = open_price + price_speed * (decision_lag / 1000)
                 fill_margin = command["margin"]
@@ -113,11 +113,11 @@ def do(dataset):
                 if math.isnan(fill_margin):
                     is_margin_nan = True
                 amount_shift = fill_margin / fill_price
-                unit_virtual_state["placements"][symbol].pop("now_buy")
+                chunk_virtual_state["placements"][symbol].pop("now_buy")
 
-            if "now_sell" in unit_virtual_state["placements"][symbol]:
+            if "now_sell" in chunk_virtual_state["placements"][symbol]:
                 would_trade_happen = True
-                command = unit_virtual_state["placements"][symbol]["now_sell"]
+                command = chunk_virtual_state["placements"][symbol]["now_sell"]
                 role = "taker"
                 fill_price = open_price + price_speed * (decision_lag / 1000)
                 fill_margin = command["margin"]
@@ -126,11 +126,11 @@ def do(dataset):
                 if math.isnan(fill_margin):
                     is_margin_nan = True
                 amount_shift = -fill_margin / fill_price
-                unit_virtual_state["placements"][symbol].pop("now_sell")
+                chunk_virtual_state["placements"][symbol].pop("now_sell")
 
             # conditional placements
-            if "later_up_close" in unit_virtual_state["placements"][symbol]:
-                command = unit_virtual_state["placements"][symbol]["later_up_close"]
+            if "later_up_close" in chunk_virtual_state["placements"][symbol]:
+                command = chunk_virtual_state["placements"][symbol]["later_up_close"]
                 boundary = command["boundary"]
 
                 wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
@@ -141,11 +141,11 @@ def do(dataset):
                     would_trade_happen = True
                     role = "taker"
                     fill_price = boundary
-                    amount_shift = -unit_virtual_state["locations"][symbol]["amount"]
-                    unit_virtual_state["placements"][symbol].pop("later_up_close")
+                    amount_shift = -chunk_virtual_state["locations"][symbol]["amount"]
+                    chunk_virtual_state["placements"][symbol].pop("later_up_close")
 
-            if "later_down_close" in unit_virtual_state["placements"][symbol]:
-                command = unit_virtual_state["placements"][symbol]["later_down_close"]
+            if "later_down_close" in chunk_virtual_state["placements"][symbol]:
+                command = chunk_virtual_state["placements"][symbol]["later_down_close"]
                 boundary = command["boundary"]
 
                 wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
@@ -156,31 +156,11 @@ def do(dataset):
                     would_trade_happen = True
                     role = "taker"
                     fill_price = boundary
-                    amount_shift = -unit_virtual_state["locations"][symbol]["amount"]
-                    unit_virtual_state["placements"][symbol].pop("later_down_close")
+                    amount_shift = -chunk_virtual_state["locations"][symbol]["amount"]
+                    chunk_virtual_state["placements"][symbol].pop("later_down_close")
 
-            if "later_up_buy" in unit_virtual_state["placements"][symbol]:
-                command = unit_virtual_state["placements"][symbol]["later_up_buy"]
-                boundary = command["boundary"]
-
-                wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
-                wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
-                did_cross = wobble_low < boundary < wobble_high
-
-                if did_cross:
-                    would_trade_happen = True
-                    role = "taker"
-                    fill_price = boundary
-                    fill_margin = command["margin"]
-                    if fill_margin < 0:
-                        is_margin_negative = True
-                    if math.isnan(fill_margin):
-                        is_margin_nan = True
-                    amount_shift = fill_margin / fill_price
-                    unit_virtual_state["placements"][symbol].pop("later_up_buy")
-
-            if "later_down_buy" in unit_virtual_state["placements"][symbol]:
-                command = unit_virtual_state["placements"][symbol]["later_down_buy"]
+            if "later_up_buy" in chunk_virtual_state["placements"][symbol]:
+                command = chunk_virtual_state["placements"][symbol]["later_up_buy"]
                 boundary = command["boundary"]
 
                 wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
@@ -197,10 +177,30 @@ def do(dataset):
                     if math.isnan(fill_margin):
                         is_margin_nan = True
                     amount_shift = fill_margin / fill_price
-                    unit_virtual_state["placements"][symbol].pop("later_down_buy")
+                    chunk_virtual_state["placements"][symbol].pop("later_up_buy")
 
-            if "later_up_sell" in unit_virtual_state["placements"][symbol]:
-                command = unit_virtual_state["placements"][symbol]["later_up_sell"]
+            if "later_down_buy" in chunk_virtual_state["placements"][symbol]:
+                command = chunk_virtual_state["placements"][symbol]["later_down_buy"]
+                boundary = command["boundary"]
+
+                wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
+                wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
+                did_cross = wobble_low < boundary < wobble_high
+
+                if did_cross:
+                    would_trade_happen = True
+                    role = "taker"
+                    fill_price = boundary
+                    fill_margin = command["margin"]
+                    if fill_margin < 0:
+                        is_margin_negative = True
+                    if math.isnan(fill_margin):
+                        is_margin_nan = True
+                    amount_shift = fill_margin / fill_price
+                    chunk_virtual_state["placements"][symbol].pop("later_down_buy")
+
+            if "later_up_sell" in chunk_virtual_state["placements"][symbol]:
+                command = chunk_virtual_state["placements"][symbol]["later_up_sell"]
                 boundary = command["boundary"]
 
                 wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
@@ -217,10 +217,10 @@ def do(dataset):
                     if math.isnan(fill_margin):
                         is_margin_nan = True
                     amount_shift = -fill_margin / fill_price
-                    unit_virtual_state["placements"][symbol].pop("later_up_sell")
+                    chunk_virtual_state["placements"][symbol].pop("later_up_sell")
 
-            if "later_down_sell" in unit_virtual_state["placements"][symbol]:
-                command = unit_virtual_state["placements"][symbol]["later_down_sell"]
+            if "later_down_sell" in chunk_virtual_state["placements"][symbol]:
+                command = chunk_virtual_state["placements"][symbol]["later_down_sell"]
                 boundary = command["boundary"]
 
                 wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
@@ -237,10 +237,10 @@ def do(dataset):
                     if math.isnan(fill_margin):
                         is_margin_nan = True
                     amount_shift = -fill_margin / fill_price
-                    unit_virtual_state["placements"][symbol].pop("later_down_sell")
+                    chunk_virtual_state["placements"][symbol].pop("later_down_sell")
 
-            if "book_buy" in unit_virtual_state["placements"][symbol]:
-                command = unit_virtual_state["placements"][symbol]["book_buy"]
+            if "book_buy" in chunk_virtual_state["placements"][symbol]:
+                command = chunk_virtual_state["placements"][symbol]["book_buy"]
                 boundary = command["boundary"]
 
                 wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
@@ -257,10 +257,10 @@ def do(dataset):
                     if math.isnan(fill_margin):
                         is_margin_nan = True
                     amount_shift = fill_margin / fill_price
-                    unit_virtual_state["placements"][symbol].pop("book_buy")
+                    chunk_virtual_state["placements"][symbol].pop("book_buy")
 
-            if "book_sell" in unit_virtual_state["placements"][symbol]:
-                command = unit_virtual_state["placements"][symbol]["book_sell"]
+            if "book_sell" in chunk_virtual_state["placements"][symbol]:
+                command = chunk_virtual_state["placements"][symbol]["book_sell"]
                 boundary = command["boundary"]
 
                 wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
@@ -277,7 +277,7 @@ def do(dataset):
                     if math.isnan(fill_margin):
                         is_margin_nan = True
                     amount_shift = -fill_margin / fill_price
-                    unit_virtual_state["placements"][symbol].pop("book_sell")
+                    chunk_virtual_state["placements"][symbol].pop("book_sell")
 
             # check if situation is okay
             if is_margin_negative:
@@ -295,7 +295,7 @@ def do(dataset):
             # ■■■■■ mimic the real world phenomenon ■■■■■
 
             if would_trade_happen:
-                symbol_location = unit_virtual_state["locations"][symbol]
+                symbol_location = chunk_virtual_state["locations"][symbol]
                 before_entry_price = symbol_location["entry_price"]
                 before_amount = symbol_location["amount"]
 
@@ -306,15 +306,15 @@ def do(dataset):
                 if before_amount == 0 and current_amount != 0:
                     symbol_location["entry_price"] = fill_price
                     invested_margin = abs(current_amount) * fill_price
-                    unit_virtual_state["available_balance"] -= invested_margin
+                    chunk_virtual_state["available_balance"] -= invested_margin
                 # case when the position is closed from something
                 elif before_amount != 0 and current_amount == 0:
                     symbol_location["entry_price"] = 0
                     price_difference = fill_price - before_entry_price
                     realized_profit = price_difference * before_amount
                     returned_margin = abs(before_amount) * before_entry_price
-                    unit_virtual_state["available_balance"] += returned_margin
-                    unit_virtual_state["available_balance"] += realized_profit
+                    chunk_virtual_state["available_balance"] += returned_margin
+                    chunk_virtual_state["available_balance"] += realized_profit
                 # case when the position direction is flipped
                 elif before_amount * current_amount < 0:
                     symbol_location["entry_price"] = fill_price
@@ -322,9 +322,9 @@ def do(dataset):
                     realized_profit = price_difference * before_amount
                     returned_margin = abs(before_amount) * before_entry_price
                     invested_margin = abs(current_amount) * fill_price
-                    unit_virtual_state["available_balance"] += returned_margin
-                    unit_virtual_state["available_balance"] -= invested_margin
-                    unit_virtual_state["available_balance"] += realized_profit
+                    chunk_virtual_state["available_balance"] += returned_margin
+                    chunk_virtual_state["available_balance"] -= invested_margin
+                    chunk_virtual_state["available_balance"] += realized_profit
                 # case when the position size is increased one the same direction
                 elif abs(current_amount) > abs(before_amount):
                     before_numerator = before_entry_price * before_amount
@@ -334,20 +334,20 @@ def do(dataset):
                     symbol_location["entry_price"] = new_entry_price
                     realized_profit = 0
                     invested_margin = abs(amount_shift) * fill_price
-                    unit_virtual_state["available_balance"] -= invested_margin
-                    unit_virtual_state["available_balance"] += realized_profit
+                    chunk_virtual_state["available_balance"] -= invested_margin
+                    chunk_virtual_state["available_balance"] += realized_profit
                 # case when the position size is decreased one the same direction
                 else:
                     symbol_location["entry_price"] = before_entry_price
                     price_difference = fill_price - before_entry_price
                     realized_profit = price_difference * (-amount_shift)
                     returned_margin = abs(amount_shift) * before_entry_price
-                    unit_virtual_state["available_balance"] += returned_margin
-                    unit_virtual_state["available_balance"] += realized_profit
+                    chunk_virtual_state["available_balance"] += returned_margin
+                    chunk_virtual_state["available_balance"] += realized_profit
 
                 did_found_new_trade = True
 
-                if unit_virtual_state["available_balance"] < 0:
+                if chunk_virtual_state["available_balance"] < 0:
                     text = ""
                     text += "Available balance went below zero"
                     text += f" while calculating {symbol} market"
@@ -357,22 +357,26 @@ def do(dataset):
             # ■■■■■ update the account state (symbol dependent) ■■■■■
 
             # locations
-            current_entry_price = unit_virtual_state["locations"][symbol]["entry_price"]
+            current_entry_price = chunk_virtual_state["locations"][symbol][
+                "entry_price"
+            ]
             current_entry_price = float(current_entry_price)
-            current_amount = unit_virtual_state["locations"][symbol]["amount"]
+            current_amount = chunk_virtual_state["locations"][symbol]["amount"]
             current_margin = abs(current_amount) * current_entry_price
             current_margin = float(current_margin)
-            unit_account_state["positions"][symbol]["entry_price"] = current_entry_price
-            unit_account_state["positions"][symbol]["margin"] = current_margin
-            if unit_virtual_state["locations"][symbol]["amount"] > 0:
-                unit_account_state["positions"][symbol]["direction"] = "long"
-            if unit_virtual_state["locations"][symbol]["amount"] < 0:
-                unit_account_state["positions"][symbol]["direction"] = "short"
-            if unit_virtual_state["locations"][symbol]["amount"] == 0:
-                unit_account_state["positions"][symbol]["direction"] = "none"
+            chunk_account_state["positions"][symbol][
+                "entry_price"
+            ] = current_entry_price
+            chunk_account_state["positions"][symbol]["margin"] = current_margin
+            if chunk_virtual_state["locations"][symbol]["amount"] > 0:
+                chunk_account_state["positions"][symbol]["direction"] = "long"
+            if chunk_virtual_state["locations"][symbol]["amount"] < 0:
+                chunk_account_state["positions"][symbol]["direction"] = "short"
+            if chunk_virtual_state["locations"][symbol]["amount"] == 0:
+                chunk_account_state["positions"][symbol]["direction"] = "none"
 
             # placements
-            symbol_placements = unit_virtual_state["placements"][symbol]
+            symbol_placements = chunk_virtual_state["placements"][symbol]
             symbol_open_orders = {}
             for command_name, placement in symbol_placements.items():
                 order_id = placement["order_id"]
@@ -386,7 +390,7 @@ def do(dataset):
                     "boundary": boundary,
                     "left_margin": left_margin,
                 }
-            unit_account_state["open_orders"][symbol] = symbol_open_orders
+            chunk_account_state["open_orders"][symbol] = symbol_open_orders
 
             # ■■■■■ record (symbol dependent) ■■■■■
 
@@ -396,8 +400,8 @@ def do(dataset):
                 while fill_time in asset_record_ar["index"]:
                     fill_time += np.timedelta64(1, "ms")
 
-                wallet_balance = unit_virtual_state["available_balance"]
-                for symbol_key, location in unit_virtual_state["locations"].items():
+                wallet_balance = chunk_virtual_state["available_balance"]
+                for symbol_key, location in chunk_virtual_state["locations"].items():
                     if location["amount"] == 0:
                         continue
                     column_key = str((symbol_key, "Close"))
@@ -429,13 +433,13 @@ def do(dataset):
                 asset_record_ar[-1]["Result Asset"] = wallet_balance
 
                 update_time = fill_time.astype(datetime).replace(tzinfo=timezone.utc)
-                unit_account_state["positions"][symbol]["update_time"] = update_time
+                chunk_account_state["positions"][symbol]["update_time"] = update_time
 
         # ■■■■■ understand the situation ■■■■■
 
-        wallet_balance = unit_virtual_state["available_balance"]
+        wallet_balance = chunk_virtual_state["available_balance"]
         unrealized_profit = 0
-        for symbol_key, location in unit_virtual_state["locations"].items():
+        for symbol_key, location in chunk_virtual_state["locations"].items():
             if location["amount"] == 0:
                 continue
             symbol_price = candle_data_ar[cycle][str((symbol_key, "Close"))]
@@ -460,34 +464,34 @@ def do(dataset):
 
         # ■■■■■ update the account state (symbol independent) ■■■■■
 
-        unit_account_state["observed_until"] = current_moment
-        unit_account_state["wallet_balance"] = float(wallet_balance)
+        chunk_account_state["observed_until"] = current_moment
+        chunk_account_state["wallet_balance"] = float(wallet_balance)
 
         # ■■■■■ record (symbol independent) ■■■■■
 
-        original_size = unit_unrealized_changes_ar.shape[0]
-        unit_unrealized_changes_ar.resize(original_size + 1)
-        unit_unrealized_changes_ar[-1]["index"] = before_moment
-        unit_unrealized_changes_ar[-1]["0"] = unrealized_change
+        original_size = chunk_unrealized_changes_ar.shape[0]
+        chunk_unrealized_changes_ar.resize(original_size + 1)
+        chunk_unrealized_changes_ar[-1]["index"] = before_moment
+        chunk_unrealized_changes_ar[-1]["0"] = unrealized_change
 
         # ■■■■■ make decision and place order ■■■■■
 
         current_candle_data = candle_data_ar[cycle]
         current_indicators = indicators_ar[cycle]
-        decision, unit_scribbles = decide.choose(
+        decision, chunk_scribbles = decide.choose(
             current_moment=current_moment,
             current_candle_data=current_candle_data,
             current_indicators=current_indicators,
             strategy=strategy,
-            account_state=copy.deepcopy(unit_account_state),
-            scribbles=unit_scribbles,
+            account_state=copy.deepcopy(chunk_account_state),
+            scribbles=chunk_scribbles,
             compiled_custom_script=compiled_decision_script,
         )
 
         for symbol_key, symbol_decision in decision.items():
             for each_decision in symbol_decision.values():
                 each_decision["order_id"] = random.randint(10**18, 10**19 - 1)
-            unit_virtual_state["placements"][symbol_key].update(decision[symbol_key])
+            chunk_virtual_state["placements"][symbol_key].update(decision[symbol_key])
 
         # ■■■■■ report the progress in seconds ■■■■■
 
@@ -497,27 +501,27 @@ def do(dataset):
 
     # ■■■■■ convert back numpy objects to pandas objects ■■■■■
 
-    unit_asset_record = pd.DataFrame(asset_record_ar)
-    unit_asset_record = unit_asset_record.set_index("index")
-    unit_asset_record.index.name = None
-    unit_asset_record.index = pd.to_datetime(unit_asset_record.index, utc=True)
+    chunk_asset_record = pd.DataFrame(asset_record_ar)
+    chunk_asset_record = chunk_asset_record.set_index("index")
+    chunk_asset_record.index.name = None
+    chunk_asset_record.index = pd.to_datetime(chunk_asset_record.index, utc=True)
 
-    unit_unrealized_changes = pd.DataFrame(unit_unrealized_changes_ar)
-    unit_unrealized_changes = unit_unrealized_changes.set_index("index")
-    unit_unrealized_changes.index.name = None
-    unit_unrealized_changes.index = pd.to_datetime(
-        unit_unrealized_changes.index, utc=True
+    chunk_unrealized_changes = pd.DataFrame(chunk_unrealized_changes_ar)
+    chunk_unrealized_changes = chunk_unrealized_changes.set_index("index")
+    chunk_unrealized_changes.index.name = None
+    chunk_unrealized_changes.index = pd.to_datetime(
+        chunk_unrealized_changes.index, utc=True
     )
-    unit_unrealized_changes = unit_unrealized_changes["0"]
+    chunk_unrealized_changes = chunk_unrealized_changes["0"]
 
     # ■■■■■ return calculated data ■■■■■
 
     dataset = {
-        "unit_asset_record": unit_asset_record,
-        "unit_unrealized_changes": unit_unrealized_changes,
-        "unit_scribbles": unit_scribbles,
-        "unit_account_state": unit_account_state,
-        "unit_virtual_state": unit_virtual_state,
+        "chunk_asset_record": chunk_asset_record,
+        "chunk_unrealized_changes": chunk_unrealized_changes,
+        "chunk_scribbles": chunk_scribbles,
+        "chunk_account_state": chunk_account_state,
+        "chunk_virtual_state": chunk_virtual_state,
     }
 
     return dataset

@@ -1321,7 +1321,7 @@ class Ui_MainWindow(object):
         self.label_30.setText(QCoreApplication.translate("MainWindow", u"Indicators script", None))
         self.label_11.setText(QCoreApplication.translate("MainWindow", u"Decision script", None))
         self.checkBox_6.setText(QCoreApplication.translate("MainWindow", u"Available", None))
-        self.label_43.setText(QCoreApplication.translate("MainWindow", u"Unit division", None))
+        self.label_43.setText(QCoreApplication.translate("MainWindow", u"Chunk division", None))
         self.spinBox_3.setSuffix(QCoreApplication.translate("MainWindow", u"d", None))
         self.checkBox_7.setText(QCoreApplication.translate("MainWindow", u"Parallelized simulation", None))
         self.pushButton_19.setText(QCoreApplication.translate("MainWindow", u"Revert", None))

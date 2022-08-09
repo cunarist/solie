@@ -931,7 +931,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ intergrated strategies ■■■■■
 
-        # usability / is parallel calculation / divided unit length
+        # usability / is parallel calculation / divided chunk length
         self.strategy_tuples = [
             (0, "Custom strategy"),
             (1, "Make random orders", [True, True, 7]),
@@ -996,7 +996,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
             action_menu = QtWidgets.QMenu(self)
             self.simulator_actions = []
-            text = "Calculate temporarily only visible range"
+            text = "Calculate temporarily only on visible range"
             self.simulator_actions.append(action_menu.addAction(text))
             text = "Stop calculation"
             self.simulator_actions.append(action_menu.addAction(text))

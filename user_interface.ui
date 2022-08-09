@@ -1200,7 +1200,7 @@ AskPopupContent {
              <item>
               <widget class="QLabel" name="label_43">
                <property name="text">
-                <string>Unit division</string>
+                <string>Chunk division</string>
                </property>
               </widget>
              </item>
