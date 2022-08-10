@@ -322,9 +322,6 @@ class Manager:
             mean_difference = sum(deque_data) / len(deque_data)
         else:
             mean_difference = 0
-        difference_string = simply_format.fixed_float(
-            mean_difference, 6, positive_sign=True
-        )
 
         text = ""
         text += "Current time " + str(time)
@@ -334,9 +331,9 @@ class Manager:
         else:
             text += "Not connected to the internet"
         text += "  ⦁  "
-        text += "Ping " + simply_format.fixed_float(ping, 5) + "s"
+        text += f"Ping {ping:.3f}s"
         text += "  ⦁  "
-        text += "Time difference with server " + difference_string + "s"
+        text += f"Time difference with server {mean_difference:+.3f}s"
         core.window.undertake(lambda t=text: core.window.gauge.setText(t), False)
 
     def open_sample_ask_popup(self, *args, **kwargs):

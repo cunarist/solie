@@ -721,7 +721,6 @@ class Transactor:
         range_days = range_length.days
         range_hours, remains = divmod(range_length.seconds, 3600)
         range_minutes, remains = divmod(remains, 60)
-        range_length_text = f"{range_days}d {range_hours}h {range_minutes}s"
 
         if stop_flag.find("display_transaction_range_information", task_id):
             return
@@ -771,22 +770,23 @@ class Transactor:
         view_range = core.window.undertake(lambda w=widget: w.range, True)
         range_down = view_range[0]
         range_up = view_range[1]
-        range_height = round((1 - range_down / range_up) * 100, 2)
+        price_range_height = (1 - range_down / range_up) * 100
 
         text = ""
-        text += f"Visible time range {range_length_text}"
+        text += f"Visible time range {range_days}d {range_hours}h {range_minutes}s"
         text += "  ⦁  "
-        text += f"Visible price range {range_height}%"
+        text += "Visible price range"
+        text += f" {price_range_height:.2f}%"
         text += "  ⦁  "
         text += f"Transaction count {symbol_change_count}({total_change_count})"
         text += "  ⦁  "
         text += "Transaction amount"
-        text += f" ×{round(symbol_margin_ratio,4)}({round(total_margin_ratio,4)})"
+        text += f" ×{symbol_margin_ratio:.4f}({total_margin_ratio:.4f})"
         text += "  ⦁  "
-        text += "Total realized profit"
-        text += f" {round(symbol_yield,4)}({round(total_yield,4)})%"
+        text += f"Total realized profit {symbol_yield:+.4f}({total_yield:+.4f})%"
         text += "  ⦁  "
-        text += f"Lowest unrealized profit {round(min_unrealized_change*100,2)}%"
+        text += "Lowest unrealized profit"
+        text += f" {min_unrealized_change*100:+.4f}%"
         core.window.undertake(lambda t=text: core.window.label_8.setText(t), False)
 
     def set_minimum_view_range(self, *args, **kwargs):
@@ -1386,7 +1386,6 @@ class Transactor:
 
         # ■■■■■ display the information ■■■■■
 
-        price_precision = self.exchange_state["price_precisions"][self.viewing_symbol]
         position = self.account_state["positions"][self.viewing_symbol]
         if position["direction"] == "long":
             direction_text = "long"
@@ -1405,15 +1404,18 @@ class Transactor:
                 total_profit = 0
 
         text = ""
-        text += f"Total asset ＄{round(self.account_state['wallet_balance'],4)}"
+        text += "Total asset"
+        text += f" ＄{self.account_state['wallet_balance']:.4f}"
         text += "  ⦁  "
-        text += f"Investment ＄{round(position['margin'], 4)}({round(margin_sum,4)})"
+        text += f"Investment ＄{position['margin']:.4f}"
+        text += f"({margin_sum:.4f})"
         text += "  ⦁  "
         text += f"Direction {direction_text}"
         text += "  ⦁  "
-        text += f"Entry price ＄{round(position['entry_price'],price_precision)}"
+        text += "Entry price"
+        text += f" ＄{position['entry_price']:.4f}"
         text += "  ⦁  "
-        text += f"Automated revenue ＄{round(total_profit,4)}"
+        text += f"Automated revenue ＄{total_profit:+.4f}"
 
         core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
 

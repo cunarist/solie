@@ -11,7 +11,6 @@ def numeric(string):
 
 
 def fixed_float(number, width=4, positive_sign=False):
-
     if width < 4:
         width = 4
 
