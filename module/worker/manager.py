@@ -4,7 +4,6 @@ import os
 from collections import deque
 import time
 import statistics
-import multiprocessing
 import textwrap
 import logging
 import webbrowser
@@ -190,14 +189,19 @@ class Manager:
 
     def display_internal_status(self, *args, **kwargs):
         def job():
-            parent_process_id = multiprocessing.current_process().pid
+            active_process_count = 0
             texts = []
-            for process_id, thread_count in process_toss.get_thread_counts().items():
-                is_parent_process = process_id == parent_process_id
-                process_name = "Main process" if is_parent_process else "Child process"
-                text = f"{process_name} (PID {process_id}): {thread_count}"
+            for (
+                process_id,
+                is_task_present,
+            ) in process_toss.get_task_presences().items():
+                if is_task_present:
+                    active_process_count += 1
+                text = f"PID {process_id}"
+                text += f": {'Active' if is_task_present else 'Inactive'}"
                 texts.append(text)
-            text = "\n".join(texts)
+            text = f"{active_process_count} active"
+            text += "\n\n" + "\n".join(texts)
             core.window.undertake(lambda t=text: core.window.label_12.setText(t), False)
 
             texts = []
@@ -253,14 +257,17 @@ class Manager:
             text = "\n".join(lines)
             core.window.undertake(lambda t=text: core.window.label_36.setText(t), False)
 
-            thread_names = [thread.name for thread in threading.enumerate()]
-            row_size = 2
-            chunked = [
-                thread_names[i : i + row_size]
-                for i in range(0, len(thread_names), row_size)
-            ]
-            lines = [" ".join(chunk) for chunk in chunked]
-            text = "\n".join(lines)
+            active_thread_count = 0
+            texts = []
+            for thread in threading.enumerate():
+                is_task_present = getattr(thread, "is_task_present", False)
+                if getattr(thread, "is_task_present", False):
+                    active_thread_count += 1
+                text = thread.name
+                text += f": {'Active' if is_task_present else 'Inactive'}"
+                texts.append(text)
+            text = f"{active_thread_count} active"
+            text += "\n\n" + "\n".join(texts)
             core.window.undertake(lambda t=text: core.window.label_35.setText(t), False)
 
         for _ in range(10):

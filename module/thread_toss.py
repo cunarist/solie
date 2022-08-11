@@ -1,7 +1,8 @@
 from multiprocessing.pool import ThreadPool
 import logging
+import threading
 
-_thread_pool = ThreadPool(64)
+_pool = ThreadPool(64)
 
 
 def _error_callback(error):
@@ -12,30 +13,57 @@ def _error_callback(error):
         logger.exception("Exception occured from the thread pool")
 
 
+def _process_arguments(payload):
+    threading.currentThread().is_task_present = True
+    function, args, kwargs = payload
+    try:
+        returned = function(*args, **kwargs)
+        threading.currentThread().is_task_present = False
+    except Exception as error:  # noqa:B902
+        threading.currentThread().is_task_present = False
+        raise error
+    return returned
+
+
+def _process_iterable_item(payload):
+    threading.currentThread().is_task_present = True
+    function, item = payload
+    try:
+        returned = function(item)
+        threading.currentThread().is_task_present = False
+    except Exception as error:  # noqa:B902
+        threading.currentThread().is_task_present = False
+        raise error
+    return returned
+
+
 def apply(function, *args, **kwargs):
-    returned = _thread_pool.apply(function, args, kwargs)
+    payload = (function, args, kwargs)
+    returned = _pool.apply(_process_arguments, (payload,))
     return returned
 
 
 def apply_async(function, *args, **kwargs):
-    returned = _thread_pool.apply_async(
-        function,
-        args,
-        kwargs,
+    payload = (function, args, kwargs)
+    returned = _pool.apply_async(
+        _process_arguments,
+        (payload,),
         error_callback=_error_callback,
     )
     return returned
 
 
 def map(function, iterable):
-    returned = _thread_pool.map(function, iterable)
+    wrapper = [(function, item) for item in iterable]
+    returned = _pool.map(_process_iterable_item, wrapper)
     return returned
 
 
 def map_async(function, iterable):
-    returned = _thread_pool.map_async(
-        function,
-        iterable,
+    wrapper = [(function, item) for item in iterable]
+    returned = _pool.map_async(
+        _process_iterable_item,
+        wrapper,
         error_callback=_error_callback,
     )
     return returned

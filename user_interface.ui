@@ -1868,7 +1868,7 @@ AskPopupContent {
               <item row="0" column="0">
                <widget class="QLabel" name="label_37">
                 <property name="text">
-                 <string>Thread count per process</string>
+                 <string>Child processes</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>
@@ -1888,7 +1888,7 @@ AskPopupContent {
               <item row="2" column="1">
                <widget class="QLabel" name="label_39">
                 <property name="text">
-                 <string>Thread count of the main process</string>
+                 <string>Threads in the main process</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>

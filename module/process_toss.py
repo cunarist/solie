@@ -1,6 +1,5 @@
 import multiprocessing
 import logging
-import threading
 import time
 import os
 
@@ -9,9 +8,11 @@ import dill
 from module import thread_toss
 
 _communication_manager = None
-_thread_counts = None
+_task_presences = None
 _pool = None
 _pool_process_count = 0
+
+_is_task_present = False
 
 
 def _error_callback(error):
@@ -22,43 +23,56 @@ def _error_callback(error):
         logger.exception("Exception occured from the process pool")
 
 
-def _start_sharing_thread_count(shared_dictionary):
+def _process_arguments(payload):
+    global _is_task_present
+    _is_task_present = True
+    function, args, kwargs = dill.loads(payload)
+    try:
+        returned = function(*args, **kwargs)
+        _is_task_present = False
+    except Exception as error:  # noqa:B902
+        _is_task_present = False
+        raise error
+    return returned
+
+
+def _process_iterable_item(payload):
+    global _is_task_present
+    _is_task_present = True
+    function, item = dill.loads(payload)
+    try:
+        returned = function(item)
+        _is_task_present = False
+    except Exception as error:  # noqa:B902
+        _is_task_present = False
+        raise error
+    returned = function(item)
+    return returned
+
+
+def _start_sharing_task_presence(shared_dictionary):
     def job():
         while True:
             process_id = multiprocessing.current_process().pid
-            thread_count = threading.active_count()
-            shared_dictionary[process_id] = thread_count
+            shared_dictionary[process_id] = _is_task_present
             time.sleep(0.1)
 
     thread_toss.apply_async(job)
 
 
-def _process_arguments(payload):
-    function, args, kwargs = dill.loads(payload)
-    returned = function(*args, **kwargs)
-    return returned
-
-
-def _process_iterable_item(payload):
-    function, item = dill.loads(payload)
-    returned = function(item)
-    return returned
-
-
 def start_pool():
     global _communication_manager
-    global _thread_counts
+    global _task_presences
     global _pool
     global _pool_process_count
     _pool_process_count = os.cpu_count()
     _communication_manager = multiprocessing.Manager()
-    _thread_counts = _communication_manager.dict()
+    _task_presences = _communication_manager.dict()
     _pool = multiprocessing.Pool(
         _pool_process_count,
-        initializer=_start_sharing_thread_count,
-        initargs=(_thread_counts,),
+        initializer=_start_sharing_task_presence,
+        initargs=(_task_presences,),
     )
-    _start_sharing_thread_count(_thread_counts)
 
 
 def terminate_pool():
@@ -66,9 +80,9 @@ def terminate_pool():
     _pool.join()
 
 
-def get_thread_counts():
+def get_task_presences():
     return_dictionary = {}
-    for process_id, thread_count in _thread_counts.items():
+    for process_id, thread_count in _task_presences.items():
         return_dictionary[process_id] = thread_count
     return return_dictionary
 
