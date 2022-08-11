@@ -46,7 +46,6 @@ def _process_iterable_item(payload):
     except Exception as error:
         _is_task_present = False
         raise error
-    returned = function(item)
     return returned
 
 
