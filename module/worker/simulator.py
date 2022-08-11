@@ -1575,7 +1575,7 @@ class Simulator:
             core.window.ask(question)
         else:
             text_lines = [
-                str(index) + " " + str(round(peak_value * 100, 2)) + "%"
+                f"{index} {peak_value:+.2f}%"
                 for index, peak_value in peak_sr.iteritems()
             ]
             question = [

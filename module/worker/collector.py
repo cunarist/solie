@@ -345,7 +345,7 @@ class Collector:
             if len(temp_ar) > 0:
                 price_precision = price_precisions[symbol]
                 latest_price = temp_ar[-1]
-                text = "＄" + str(round(latest_price, price_precision))
+                text = f"＄{latest_price:.{price_precision}f}"
                 widget = core.window.price_labels[symbol]
                 core.window.undertake(lambda w=widget, t=text: w.setText(t), False)
 
@@ -386,7 +386,7 @@ class Collector:
         written_length_text = f"{range_days}d {range_hours}h {range_minutes}m"
 
         text = ""
-        text += f"24h candle data accumulation rate {round(ratio * 100, 2)}%"
+        text += f"24h candle data accumulation rate {ratio * 100:.2f}%"
         text += "  ⦁  "
         text += f"Realtime data length {written_length_text}"
 
