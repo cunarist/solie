@@ -61,6 +61,7 @@ def do(dataset):
     calculation_index_length = len(calculation_index_ar)
     compiled_decision_script = compile(decision_script, "<string>", "exec")
     target_symbols = standardize.get_basics()["target_symbols"]
+    first_calculation_moment = calculation_index_ar[0]
 
     for cycle in range(calculation_index_length):
         before_moment = calculation_index_ar[cycle]
@@ -496,7 +497,7 @@ def do(dataset):
         # ■■■■■ report the progress in seconds ■■■■■
 
         progress_list[target_progress] = max(
-            (current_moment - calculation_index[0]).total_seconds(), 0
+            (current_moment - first_calculation_moment).total_seconds(), 0
         )
 
     # ■■■■■ convert back numpy objects to pandas objects ■■■■■
