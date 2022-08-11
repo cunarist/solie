@@ -50,7 +50,7 @@ class ApiStreamer:
                 # not using thread pool
                 # because thread pool is even slower with frequent messages
                 self._when_received(received=received)
-            except Exception:  # noqa:B902
+            except Exception:
                 logger = logging.getLogger("solsol")
                 logger.exception(
                     "Exception occured from a streamer\nBelow is the received data\n"

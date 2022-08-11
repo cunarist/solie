@@ -18,7 +18,7 @@ _is_task_present = False
 def _error_callback(error):
     try:
         raise error
-    except Exception:  # noqa:B902
+    except Exception:
         logger = logging.getLogger("solsol")
         logger.exception("Exception occured from the process pool")
 
@@ -30,7 +30,7 @@ def _process_arguments(payload):
     try:
         returned = function(*args, **kwargs)
         _is_task_present = False
-    except Exception as error:  # noqa:B902
+    except Exception as error:
         _is_task_present = False
         raise error
     return returned
@@ -43,7 +43,7 @@ def _process_iterable_item(payload):
     try:
         returned = function(item)
         _is_task_present = False
-    except Exception as error:  # noqa:B902
+    except Exception as error:
         _is_task_present = False
         raise error
     returned = function(item)

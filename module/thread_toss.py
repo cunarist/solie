@@ -8,7 +8,7 @@ _pool = ThreadPool(64)
 def _error_callback(error):
     try:
         raise error
-    except Exception:  # noqa:B902
+    except Exception:
         logger = logging.getLogger("solsol")
         logger.exception("Exception occured from the thread pool")
 
@@ -19,7 +19,7 @@ def _process_arguments(payload):
     try:
         returned = function(*args, **kwargs)
         threading.currentThread().is_task_present = False
-    except Exception as error:  # noqa:B902
+    except Exception as error:
         threading.currentThread().is_task_present = False
         raise error
     return returned
@@ -31,7 +31,7 @@ def _process_iterable_item(payload):
     try:
         returned = function(item)
         threading.currentThread().is_task_present = False
-    except Exception as error:  # noqa:B902
+    except Exception as error:
         threading.currentThread().is_task_present = False
         raise error
     return returned
