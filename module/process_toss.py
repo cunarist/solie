@@ -81,8 +81,8 @@ def terminate_pool():
 
 def get_task_presences():
     return_dictionary = {}
-    for process_id, thread_count in _task_presences.items():
-        return_dictionary[process_id] = thread_count
+    for process_id, task_presence in _task_presences.items():
+        return_dictionary[process_id] = task_presence
     return return_dictionary
 
 

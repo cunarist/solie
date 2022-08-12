@@ -37,6 +37,14 @@ def _process_iterable_item(payload):
     return returned
 
 
+def get_task_presences():
+    return_dictionary = {}
+    for thread in _pool._pool:
+        task_presence = getattr(thread, "is_task_present", False)
+        return_dictionary[thread.name] = task_presence
+    return return_dictionary
+
+
 def apply(function, *args, **kwargs):
     payload = (function, args, kwargs)
     returned = _pool.apply(_process_arguments, (payload,))

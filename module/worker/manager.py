@@ -189,18 +189,16 @@ class Manager:
 
     def display_internal_status(self, *args, **kwargs):
         def job():
-            active_process_count = 0
+            active_count = 0
             texts = []
-            for (
-                process_id,
-                is_task_present,
-            ) in process_toss.get_task_presences().items():
+            task_presences = process_toss.get_task_presences()
+            for process_id, is_task_present in task_presences.items():
                 if is_task_present:
-                    active_process_count += 1
+                    active_count += 1
                 text = f"PID {process_id}"
                 text += f": {'Active' if is_task_present else 'Inactive'}"
                 texts.append(text)
-            text = f"{active_process_count} active"
+            text = f"{active_count} active"
             text += "\n\n" + "\n".join(texts)
             core.window.undertake(lambda t=text: core.window.label_12.setText(t), False)
 
@@ -257,16 +255,16 @@ class Manager:
             text = "\n".join(lines)
             core.window.undertake(lambda t=text: core.window.label_36.setText(t), False)
 
-            active_thread_count = 0
+            active_count = 0
             texts = []
-            for thread in threading.enumerate():
-                is_task_present = getattr(thread, "is_task_present", False)
-                if getattr(thread, "is_task_present", False):
-                    active_thread_count += 1
-                text = thread.name
+            task_presences = thread_toss.get_task_presences()
+            for thread_name, is_task_present in task_presences.items():
+                if is_task_present:
+                    active_count += 1
+                text = thread_name
                 text += f": {'Active' if is_task_present else 'Inactive'}"
                 texts.append(text)
-            text = f"{active_thread_count} active"
+            text = f"{active_count} active"
             text += "\n\n" + "\n".join(texts)
             core.window.undertake(lambda t=text: core.window.label_35.setText(t), False)
 
