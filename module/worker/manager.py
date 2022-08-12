@@ -191,6 +191,19 @@ class Manager:
         def job():
             active_count = 0
             texts = []
+            task_presences = thread_toss.get_task_presences()
+            for thread_name, is_task_present in task_presences.items():
+                if is_task_present:
+                    active_count += 1
+                text = thread_name
+                text += f": {'Active' if is_task_present else 'Inactive'}"
+                texts.append(text)
+            text = f"{active_count} active"
+            text += "\n\n" + "\n".join(texts)
+            core.window.undertake(lambda t=text: core.window.label_12.setText(t), False)
+
+            active_count = 0
+            texts = []
             task_presences = process_toss.get_task_presences()
             for process_id, is_task_present in task_presences.items():
                 if is_task_present:
@@ -200,7 +213,7 @@ class Manager:
                 texts.append(text)
             text = f"{active_count} active"
             text += "\n\n" + "\n".join(texts)
-            core.window.undertake(lambda t=text: core.window.label_12.setText(t), False)
+            core.window.undertake(lambda t=text: core.window.label_32.setText(t), False)
 
             texts = []
             texts.append("Limits")
@@ -227,7 +240,7 @@ class Manager:
                     texts.append(text)
 
             text = "\n".join(texts)
-            core.window.undertake(lambda t=text: core.window.label_32.setText(t), False)
+            core.window.undertake(lambda t=text: core.window.label_35.setText(t), False)
 
             texts = []
 
@@ -254,19 +267,6 @@ class Manager:
             lines = (f"{symbol} {count}" for (symbol, count) in block_sizes.items())
             text = "\n".join(lines)
             core.window.undertake(lambda t=text: core.window.label_36.setText(t), False)
-
-            active_count = 0
-            texts = []
-            task_presences = thread_toss.get_task_presences()
-            for thread_name, is_task_present in task_presences.items():
-                if is_task_present:
-                    active_count += 1
-                text = thread_name
-                text += f": {'Active' if is_task_present else 'Inactive'}"
-                texts.append(text)
-            text = f"{active_count} active"
-            text += "\n\n" + "\n".join(texts)
-            core.window.undertake(lambda t=text: core.window.label_35.setText(t), False)
 
         for _ in range(10):
             job()

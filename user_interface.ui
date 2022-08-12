@@ -1701,8 +1701,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>262</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_6">
@@ -1730,8 +1730,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>262</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_7">
@@ -1759,8 +1759,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>262</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_4">
@@ -1788,8 +1788,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>262</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_8">
@@ -1817,8 +1817,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>262</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_5">
@@ -1846,8 +1846,8 @@ AskPopupContent {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>262</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_9">
@@ -1868,7 +1868,7 @@ AskPopupContent {
               <item row="0" column="0">
                <widget class="QLabel" name="label_37">
                 <property name="text">
-                 <string>Process pool</string>
+                 <string>Thread pool</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>
@@ -1888,7 +1888,7 @@ AskPopupContent {
               <item row="2" column="1">
                <widget class="QLabel" name="label_39">
                 <property name="text">
-                 <string>Thread pool</string>
+                 <string>Binance API usage and limits</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>
@@ -1918,7 +1918,7 @@ AskPopupContent {
               <item row="0" column="1">
                <widget class="QLabel" name="label_42">
                 <property name="text">
-                 <string>Binance API usage and limits</string>
+                 <string>Process pool</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>
