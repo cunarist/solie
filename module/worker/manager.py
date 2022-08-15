@@ -15,6 +15,7 @@ from module import introduction
 from module import core
 from module import process_toss
 from module import thread_toss
+from module.worker import collector
 from module.instrument.api_requester import ApiRequester
 from module.instrument.api_request_error import ApiRequestError
 from module.recipe import simply_format
@@ -263,7 +264,7 @@ class Manager:
             text = "\n\n".join(texts)
             core.window.undertake(lambda t=text: core.window.label_33.setText(t), False)
 
-            block_sizes = core.window.collector.aggtrade_candle_sizes
+            block_sizes = collector.me.aggtrade_candle_sizes
             lines = (f"{symbol} {count}" for (symbol, count) in block_sizes.items())
             text = "\n".join(lines)
             core.window.undertake(lambda t=text: core.window.label_36.setText(t), False)
@@ -517,3 +518,11 @@ class Manager:
             if answer in (0, 1):
                 return
             core.window.undertake(lambda: core.window.board.setEnabled(True), False)
+
+
+me = None
+
+
+def bring_to_life():
+    global me
+    me = Manager()

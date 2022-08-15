@@ -16,6 +16,8 @@ import numpy as np
 from module import core
 from module import process_toss
 from module import thread_toss
+from module.worker import collector
+from module.worker import strategist
 from module.instrument.api_requester import ApiRequester
 from module.instrument.api_streamer import ApiStreamer
 from module.instrument.api_request_error import ApiRequestError
@@ -605,7 +607,7 @@ class Transactor:
         self.automation_settings["strategy"] = strategy
 
         if strategy == 0:
-            strategy_details = core.window.strategist.details
+            strategy_details = strategist.me.details
         else:
             for strategy_tuple in core.window.strategy_tuples:
                 if strategy_tuple[0] == strategy:
@@ -644,7 +646,7 @@ class Transactor:
                 core.window.ask(question)
 
             if strategy == 0:
-                strategy_details = core.window.strategist.details
+                strategy_details = strategist.me.details
             else:
                 for strategy_tuple in core.window.strategy_tuples:
                     if strategy_tuple[0] == strategy:
@@ -655,8 +657,8 @@ class Transactor:
                 seconds=current_moment.second % 10
             )
             count_start_time = current_moment - timedelta(hours=24)
-            with core.window.collector.datalocks[0]:
-                df = core.window.collector.candle_data
+            with collector.me.datalocks[0]:
+                df = collector.me.candle_data
                 cumulated_moments = len(df[count_start_time:].dropna())
             needed_moments = 24 * 60 * 60 / 10
             ratio = cumulated_moments / needed_moments
@@ -824,8 +826,8 @@ class Transactor:
 
         # ■■■■■ check if the data exists ■■■■■
 
-        with core.window.collector.datalocks[0]:
-            if len(core.window.collector.candle_data) == 0:
+        with collector.me.datalocks[0]:
+            if len(collector.me.candle_data) == 0:
                 return
 
         # ■■■■■ wait for the latest data to be added ■■■■■
@@ -838,8 +840,8 @@ class Transactor:
             for _ in range(50):
                 if stop_flag.find(task_name, task_id):
                     return
-                with core.window.collector.datalocks[0]:
-                    last_index = core.window.collector.candle_data.index[-1]
+                with collector.me.datalocks[0]:
+                    last_index = collector.me.candle_data.index[-1]
                     if last_index == before_moment:
                         break
                 time.sleep(0.1)
@@ -855,12 +857,12 @@ class Transactor:
 
         # ■■■■■ get light data ■■■■■
 
-        with core.window.collector.datalocks[1]:
-            before_chunk = core.window.collector.realtime_data_chunks[-2].copy()
-            current_chunk = core.window.collector.realtime_data_chunks[-1].copy()
+        with collector.me.datalocks[1]:
+            before_chunk = collector.me.realtime_data_chunks[-2].copy()
+            current_chunk = collector.me.realtime_data_chunks[-1].copy()
         realtime_data = np.concatenate((before_chunk, current_chunk))
-        with core.window.collector.datalocks[2]:
-            aggregate_trades = core.window.collector.aggregate_trades.copy()
+        with collector.me.datalocks[2]:
+            aggregate_trades = collector.me.aggregate_trades.copy()
 
         # ■■■■■ draw light lines ■■■■■
 
@@ -1018,8 +1020,8 @@ class Transactor:
 
         # ■■■■■ get heavy data ■■■■■
 
-        with core.window.collector.datalocks[0]:
-            candle_data = core.window.collector.candle_data
+        with collector.me.datalocks[0]:
+            candle_data = collector.me.candle_data
             candle_data = candle_data[get_from:slice_until][[symbol]]
             candle_data = candle_data.copy()
         with self.datalocks[0]:
@@ -1040,7 +1042,7 @@ class Transactor:
 
         # ■■■■■ make indicators ■■■■■
 
-        indicators_script = core.window.strategist.indicators_script
+        indicators_script = strategist.me.indicators_script
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
         indicators = process_toss.apply(
@@ -1435,7 +1437,7 @@ class Transactor:
         strategy = self.automation_settings["strategy"]
 
         if strategy == 0:
-            strategy_details = core.window.strategist.details
+            strategy_details = strategist.me.details
         else:
             for strategy_tuple in core.window.strategy_tuples:
                 if strategy_tuple[0] == strategy:
@@ -1483,16 +1485,16 @@ class Transactor:
 
         # ■■■■■ check if the data exists ■■■■■
 
-        with core.window.collector.datalocks[0]:
-            if len(core.window.collector.candle_data) == 0:
+        with collector.me.datalocks[0]:
+            if len(collector.me.candle_data) == 0:
                 # case when the app is executed for the first time
                 return
 
         # ■■■■■ wait for the latest data to be added ■■■■■
 
         for _ in range(50):
-            with core.window.collector.datalocks[0]:
-                last_index = core.window.collector.candle_data.index[-1]
+            with collector.me.datalocks[0]:
+                last_index = collector.me.candle_data.index[-1]
                 if last_index == before_moment:
                     break
             time.sleep(0.1)
@@ -1501,8 +1503,8 @@ class Transactor:
 
         count_start_time = current_moment - timedelta(hours=24)
 
-        with core.window.collector.datalocks[0]:
-            df = core.window.collector.candle_data
+        with collector.me.datalocks[0]:
+            df = collector.me.candle_data
             cumulated_moments = len(df[count_start_time:].dropna())
         needed_moments = 24 * 60 * 60 / 10
         ratio = cumulated_moments / needed_moments
@@ -1513,13 +1515,13 @@ class Transactor:
         # ■■■■■ get the candle data ■■■■■
 
         slice_from = datetime.now(timezone.utc) - timedelta(days=7)
-        with core.window.collector.datalocks[0]:
-            df = core.window.collector.candle_data
+        with collector.me.datalocks[0]:
+            df = collector.me.candle_data
             partial_candle_data = df[slice_from:].copy()
 
         # ■■■■■ make decision ■■■■■
 
-        indicators_script = core.window.strategist.indicators_script
+        indicators_script = strategist.me.indicators_script
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
         indicators = process_toss.apply(
@@ -1531,7 +1533,7 @@ class Transactor:
 
         current_candle_data = partial_candle_data.to_records()[-1]
         current_indicators = indicators.to_records()[-1]
-        decision_script = core.window.strategist.decision_script
+        decision_script = strategist.me.decision_script
         compiled_decision_script = compile(decision_script, "<string>", "exec")
 
         decision, scribbles = process_toss.apply(
@@ -1991,8 +1993,8 @@ class Transactor:
             if symbol not in decision.keys():
                 continue
 
-            with core.window.collector.datalocks[2]:
-                ar = core.window.collector.aggregate_trades[-10000:].copy()
+            with collector.me.datalocks[2]:
+                ar = collector.me.aggregate_trades[-10000:].copy()
             temp_ar = ar[str((symbol, "Price"))]
             temp_ar = temp_ar[temp_ar != 0]
             current_price = float(temp_ar[-1])
@@ -2296,3 +2298,11 @@ class Transactor:
             widget.setXRange(range_start + 10, range_end + 10, padding=0)
 
         core.window.undertake(job, False)
+
+
+me = None
+
+
+def bring_to_life():
+    global me
+    me = Transactor()

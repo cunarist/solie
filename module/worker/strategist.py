@@ -3,6 +3,8 @@ import os
 import json
 
 from module import core
+from module.worker import transactor
+from module.worker import simulator
 from module.recipe import check_internet
 from module.recipe import standardize
 
@@ -116,10 +118,10 @@ class Strategiest:
         self.details = details
 
         # display to graphs
-        if core.window.transactor.automation_settings["strategy"] == 0:
-            core.window.transactor.display_lines()
-        if core.window.simulator.calculation_settings["strategy"] == 0:
-            core.window.simulator.display_lines()
+        if transactor.me.automation_settings["strategy"] == 0:
+            transactor.me.display_lines()
+        if simulator.me.calculation_settings["strategy"] == 0:
+            simulator.me.display_lines()
 
     def revert_scripts(self, *args, **kwargs):
         # decision script
@@ -178,3 +180,11 @@ class Strategiest:
             False,
         ]
         core.window.ask(question)
+
+
+me = None
+
+
+def bring_to_life():
+    global me
+    me = Strategiest()

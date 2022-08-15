@@ -15,6 +15,8 @@ import numpy as np
 from module import core
 from module import process_toss
 from module import thread_toss
+from module.worker import transactor
+from module.worker import simulator
 from module.instrument.api_requester import ApiRequester
 from module.instrument.api_streamer import ApiStreamer
 from module.recipe import simply_format
@@ -647,8 +649,8 @@ class Collector:
 
         # ■■■■■ display to graphs ■■■■■
 
-        core.window.transactor.display_lines()
-        core.window.simulator.display_lines()
+        transactor.me.display_lines()
+        simulator.me.display_lines()
 
     def add_book_tickers(self, *args, **kwargs):
         received = kwargs.get("received")
@@ -805,3 +807,11 @@ class Collector:
 
     def stop_filling_candle_data(self, *args, **kwargs):
         stop_flag.make("download_fill_candle_data")
+
+
+me = None
+
+
+def bring_to_life():
+    global me
+    me = Collector()

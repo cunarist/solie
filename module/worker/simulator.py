@@ -14,6 +14,8 @@ from scipy.signal import find_peaks
 from module import core
 from module import process_toss
 from module import thread_toss
+from module.worker import collector
+from module.worker import strategist
 from module.recipe import simulate_chunk
 from module.recipe import make_indicators
 from module.recipe import stop_flag
@@ -173,7 +175,7 @@ class Simulator:
         self.calculation_settings["strategy"] = strategy
 
         if strategy == 0:
-            strategy_details = core.window.strategist.details
+            strategy_details = strategist.me.details
         else:
             for strategy_tuple in core.window.strategy_tuples:
                 if strategy_tuple[0] == strategy:
@@ -226,8 +228,8 @@ class Simulator:
 
         # ■■■■■ check if the data exists ■■■■■
 
-        with core.window.collector.datalocks[0]:
-            if len(core.window.collector.candle_data) == 0:
+        with collector.me.datalocks[0]:
+            if len(collector.me.candle_data) == 0:
                 return
 
         # ■■■■■ wait for the latest data to be added ■■■■■
@@ -240,8 +242,8 @@ class Simulator:
             for _ in range(50):
                 if stop_flag.find(task_name, task_id):
                     return
-                with core.window.collector.datalocks[0]:
-                    last_index = core.window.collector.candle_data.index[-1]
+                with collector.me.datalocks[0]:
+                    last_index = collector.me.candle_data.index[-1]
                     if last_index == before_moment:
                         break
                 time.sleep(0.1)
@@ -257,12 +259,12 @@ class Simulator:
 
         # ■■■■■ get light data ■■■■■
 
-        with core.window.collector.datalocks[1]:
-            before_chunk = core.window.collector.realtime_data_chunks[-2].copy()
-            current_chunk = core.window.collector.realtime_data_chunks[-1].copy()
+        with collector.me.datalocks[1]:
+            before_chunk = collector.me.realtime_data_chunks[-2].copy()
+            current_chunk = collector.me.realtime_data_chunks[-1].copy()
         realtime_data = np.concatenate((before_chunk, current_chunk))
-        with core.window.collector.datalocks[2]:
-            aggregate_trades = core.window.collector.aggregate_trades.copy()
+        with collector.me.datalocks[2]:
+            aggregate_trades = collector.me.aggregate_trades.copy()
 
         # ■■■■■ draw light lines ■■■■■
 
@@ -423,8 +425,8 @@ class Simulator:
 
         # ■■■■■ get heavy data ■■■■■
 
-        with core.window.collector.datalocks[0]:
-            candle_data = core.window.collector.candle_data
+        with collector.me.datalocks[0]:
+            candle_data = collector.me.candle_data
             candle_data = candle_data[get_from:slice_until][[symbol]]
             candle_data = candle_data.copy()
         with self.datalocks[0]:
@@ -445,7 +447,7 @@ class Simulator:
 
         # ■■■■■ make indicators ■■■■■
 
-        indicators_script = core.window.strategist.indicators_script
+        indicators_script = strategist.me.indicators_script
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
         indicators = process_toss.apply(
@@ -793,8 +795,8 @@ class Simulator:
         self.present()
 
     def display_available_years(self, *args, **kwargs):
-        with core.window.collector.datalocks[0]:
-            years_sr = core.window.collector.candle_data.index.year.drop_duplicates()
+        with collector.me.datalocks[0]:
+            years_sr = collector.me.candle_data.index.year.drop_duplicates()
         years = years_sr.tolist()
         years.sort(reverse=True)
         years = [str(year) for year in years]
@@ -1002,7 +1004,7 @@ class Simulator:
         virtual_state_filepath = path_start + "_virtual_state.pickle"
 
         if strategy == 0:
-            strategy_details = core.window.strategist.details
+            strategy_details = strategist.me.details
         else:
             for strategy_tuple in core.window.strategy_tuples:
                 if strategy_tuple[0] == strategy:
@@ -1037,8 +1039,8 @@ class Simulator:
         get_from = slice_from - timedelta(days=7)
 
         # get only year range
-        with core.window.collector.datalocks[0]:
-            df = core.window.collector.candle_data
+        with collector.me.datalocks[0]:
+            df = collector.me.candle_data
             year_candle_data = df[get_from:slice_until].copy()
 
         # interpolate
@@ -1146,8 +1148,8 @@ class Simulator:
         # ■■■■■ prepare per chunk data ■■■■■
 
         if should_calculate:
-            decision_script = core.window.strategist.decision_script
-            indicators_script = core.window.strategist.indicators_script
+            decision_script = strategist.me.decision_script
+            indicators_script = strategist.me.indicators_script
             compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
             # a little more data for generation
@@ -1326,7 +1328,7 @@ class Simulator:
         else:
             strategy = self.about_viewing["strategy"]
             if strategy == 0:
-                strategy_details = core.window.strategist.details
+                strategy_details = strategist.me.details
             else:
                 for strategy_tuple in core.window.strategy_tuples:
                     if strategy_tuple[0] == strategy:
@@ -1593,3 +1595,11 @@ class Simulator:
         else:
             self.should_draw_all_years = False
         self.display_lines()
+
+
+me = None
+
+
+def bring_to_life():
+    global me
+    me = Simulator()
