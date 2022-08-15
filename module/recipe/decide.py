@@ -2,7 +2,7 @@ from datetime import datetime, timezone, timedelta
 import math
 import random
 
-from module.recipe import standardize
+from module.recipe import user_settings
 
 
 def choose(
@@ -14,7 +14,7 @@ def choose(
     scribbles,
     compiled_custom_script,
 ):
-    target_symbols = standardize.get_basics()["target_symbols"]
+    target_symbols = user_settings.get_basics()["target_symbols"]
 
     # ■■■■■ decision template ■■■■■
 
@@ -52,7 +52,7 @@ def choose(
 
             target_symbols = target_symbols
             # too little volatility on testnet markets except these symbols
-            asset_token = standardize.get_basics()["asset_token"]
+            asset_token = user_settings.get_basics()["asset_token"]
             prefer_symbol = "BTC" + asset_token
             if prefer_symbol in target_symbols:
                 should_filter = True

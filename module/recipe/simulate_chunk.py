@@ -8,7 +8,7 @@ import pandas as pd
 
 from module.instrument.simluation_error import SimulationError
 from module.recipe import decide
-from module.recipe import standardize
+from module.recipe import user_settings
 
 
 def do(dataset):
@@ -60,7 +60,7 @@ def do(dataset):
 
     calculation_index_length = len(calculation_index_ar)
     compiled_decision_script = compile(decision_script, "<string>", "exec")
-    target_symbols = standardize.get_basics()["target_symbols"]
+    target_symbols = user_settings.get_basics()["target_symbols"]
     first_calculation_moment = calculation_index_ar[0]
 
     for cycle in range(calculation_index_length):

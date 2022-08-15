@@ -22,48 +22,42 @@ from module.instrument.api_streamer import ApiStreamer
 from module.recipe import simply_format
 from module.recipe import stop_flag
 from module.recipe import check_internet
-from module.recipe import standardize
+from module.recipe import user_settings
 from module.recipe import download_aggtrade_data
 from module.recipe import combine_candle_datas
 from module.recipe import sort_dataframe
 from module.recipe import fill_holes_with_aggtrades
 from module.recipe import remember_task_durations
+from module.recipe import standardize
 
 
 class Collector:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        self.workerpath = standardize.get_datapath() + "/collector"
+        self.workerpath = user_settings.get_datapath() + "/collector"
         os.makedirs(self.workerpath, exist_ok=True)
         self.datalocks = [threading.Lock() for _ in range(8)]
 
-        # ■■■■■ remember and display ■■■■■
+        # ■■■■■ worker secret memory ■■■■■
 
-        self.api_requester = ApiRequester()
-
-        self.exchange_state = {
+        self.secret_memory = {
             "maximum_quantities": {},
             "minimum_notionals": {},
             "price_precisions": {},
             "quantity_precisions": {},
         }
 
+        # ■■■■■ remember and display ■■■■■
+
+        self.api_requester = ApiRequester()
+
         self.aggtrade_candle_sizes = {}
-        for symbol in standardize.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_basics()["target_symbols"]:
             self.aggtrade_candle_sizes[symbol] = 0
 
         # candle data
-        self.candle_data = pd.DataFrame(
-            columns=pd.MultiIndex.from_product(
-                [
-                    standardize.get_basics()["target_symbols"],
-                    ("Open", "High", "Low", "Close", "Volume"),
-                ]
-            ),
-            dtype=np.float32,
-            index=pd.DatetimeIndex([], tz="UTC"),
-        )
+        self.candle_data = standardize.candle_data()
         years = [
             int(simply_format.numeric(filename))
             for filename in os.listdir(self.workerpath)
@@ -83,7 +77,7 @@ class Collector:
 
         # realtime data chunks
         field_names = itertools.product(
-            standardize.get_basics()["target_symbols"],
+            user_settings.get_basics()["target_symbols"],
             ("Best Bid Price", "Best Ask Price", "Mark Price"),
         )
         field_names = [str(field_name) for field_name in field_names]
@@ -95,7 +89,7 @@ class Collector:
 
         # aggregate trades
         field_names = itertools.product(
-            standardize.get_basics()["target_symbols"],
+            user_settings.get_basics()["target_symbols"],
             ("Price", "Volume"),
         )
         field_names = [str(field_name) for field_name in field_names]
@@ -159,7 +153,7 @@ class Collector:
                 self.add_mark_price,
             ),
         ]
-        for symbol in standardize.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_basics()["target_symbols"]:
             api_streamer = ApiStreamer(
                 f"wss://fstream.binance.com/ws/{symbol.lower()}@bookTicker",
                 self.add_book_tickers,
@@ -200,7 +194,7 @@ class Collector:
                 if about_filter["filterType"] == "MIN_NOTIONAL":
                     break
             minimum_notional = float(about_filter["notional"])
-            self.exchange_state["minimum_notionals"][symbol] = minimum_notional
+            self.secret_memory["minimum_notionals"][symbol] = minimum_notional
 
             for about_filter in about_symbol["filters"]:
                 if about_filter["filterType"] == "LOT_SIZE":
@@ -210,21 +204,21 @@ class Collector:
                 if about_filter["filterType"] == "MARKET_LOT_SIZE":
                     break
             maximum_quantity = min(maximum_quantity, float(about_filter["maxQty"]))
-            self.exchange_state["maximum_quantities"][symbol] = maximum_quantity
+            self.secret_memory["maximum_quantities"][symbol] = maximum_quantity
 
             for about_filter in about_symbol["filters"]:
                 if about_filter["filterType"] == "PRICE_FILTER":
                     break
             ticksize = float(about_filter["tickSize"])
             price_precision = int(math.log10(1 / ticksize))
-            self.exchange_state["price_precisions"][symbol] = price_precision
+            self.secret_memory["price_precisions"][symbol] = price_precision
 
             for about_filter in about_symbol["filters"]:
                 if about_filter["filterType"] == "LOT_SIZE":
                     break
             stepsize = float(about_filter["stepSize"])
             quantity_precision = int(math.log10(1 / stepsize))
-            self.exchange_state["quantity_precisions"][symbol] = quantity_precision
+            self.secret_memory["quantity_precisions"][symbol] = quantity_precision
 
     def fill_candle_data_holes(self, *args, **kwargs):
         # ■■■■■ check internet connection ■■■■■
@@ -248,7 +242,7 @@ class Collector:
             df = self.candle_data
             recent_candle_data = df[df.index >= split_moment].copy()
 
-        target_symbols = standardize.get_basics()["target_symbols"]
+        target_symbols = user_settings.get_basics()["target_symbols"]
         while len(full_symbols) < len(target_symbols) and request_count < 10:
             for symbol in target_symbols:
                 if symbol in full_symbols:
@@ -332,16 +326,16 @@ class Collector:
                 # when the app is executed for the first time
                 return
 
-        if len(self.exchange_state["price_precisions"]) == 0:
+        if len(self.secret_memory["price_precisions"]) == 0:
             # right after the app execution
             return
 
         # price
         with self.datalocks[2]:
             ar = self.aggregate_trades.copy()
-        price_precisions = self.exchange_state["price_precisions"]
+        price_precisions = self.secret_memory["price_precisions"]
 
-        for symbol in standardize.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_basics()["target_symbols"]:
             temp_ar = ar[str((symbol, "Price"))]
             temp_ar = temp_ar[temp_ar != 0]
             if len(temp_ar) > 0:
@@ -488,7 +482,7 @@ class Collector:
         task_id = stop_flag.make("download_fill_candle_data")
 
         target_tuples = []
-        target_symbols = standardize.get_basics()["target_symbols"]
+        target_symbols = user_settings.get_basics()["target_symbols"]
         if filling_type == 1:
             current_year = datetime.now(timezone.utc).year
             for year in range(2020, current_year):
@@ -673,7 +667,7 @@ class Collector:
     def add_mark_price(self, *args, **kwargs):
         received = kwargs.get("received")
         start_time = datetime.now(timezone.utc)
-        target_symbols = standardize.get_basics()["target_symbols"]
+        target_symbols = user_settings.get_basics()["target_symbols"]
         event_time = np.datetime64(received[0]["E"] * 10**6, "ns")
         filtered_data = {}
         for about_mark_price in received:
@@ -761,7 +755,7 @@ class Collector:
 
         new_datas = {}
 
-        for symbol in standardize.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_basics()["target_symbols"]:
             block_start_timestamp = before_moment.timestamp()
             block_end_timestamp = current_moment.timestamp()
 

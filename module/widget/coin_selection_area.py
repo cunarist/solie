@@ -6,7 +6,7 @@ from PySide6 import QtWidgets, QtCore, QtGui
 from module import core
 from module import thread_toss
 from module.instrument.api_requester import ApiRequester
-from module.recipe import standardize
+from module.recipe import user_settings
 from module.recipe import outsource
 
 
@@ -28,7 +28,7 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
 
         # ■■■■■ get previous things ■■■■■
 
-        asset_token = standardize.get_basics()["asset_token"]
+        asset_token = user_settings.get_basics()["asset_token"]
 
         # ■■■■■ get available symbols ■■■■■
 
@@ -102,7 +102,7 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
                 answer = core.window.ask(question)
                 if answer in (0, 1):
                     return
-                standardize.apply_basics(basics)
+                user_settings.apply_basics(basics)
                 self.done_event.set()
 
         # ■■■■■ full structure ■■■■■

@@ -31,7 +31,7 @@ from module.instrument.api_requester import ApiRequester
 from module.instrument.log_handler import LogHandler
 from module.recipe import outsource
 from module.recipe import check_internet
-from module.recipe import standardize
+from module.recipe import user_settings
 from module.recipe import find_goodies
 from module.recipe import examine_data_files
 from module.widget.ask_popup import AskPopup
@@ -159,7 +159,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ check license key ■■■■■
 
-        if standardize.get_license_key() is None:
+        if user_settings.get_license_key() is None:
             license_area = None
 
             # add temporary widget
@@ -180,7 +180,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ check data folder ■■■■■
 
-        if standardize.get_datapath() is None:
+        if user_settings.get_datapath() is None:
             datapath = ""
 
             def job():
@@ -206,16 +206,16 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.ask(question)
                 self.undertake(job, True)
 
-            standardize.set_datapath(datapath)
+            user_settings.set_datapath(datapath)
 
         # ■■■■■ examine data files ■■■■■
 
-        examine_data_files.do(standardize.get_datapath())
-        standardize.load()
+        examine_data_files.do(user_settings.get_datapath())
+        user_settings.load()
 
         # ■■■■■ check basics ■■■■■
 
-        if "asset_token" not in standardize.get_basics().keys():
+        if "asset_token" not in user_settings.get_basics().keys():
             token_selection_area = None
 
             # add temporary widget
@@ -234,7 +234,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
             self.undertake(job, True)
 
-        if "target_symbols" not in standardize.get_basics().keys():
+        if "target_symbols" not in user_settings.get_basics().keys():
             coin_selection_area = None
 
             # add temporary widget
@@ -271,8 +271,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ get information about target symbols ■■■■■
 
-        asset_token = standardize.get_basics()["asset_token"]
-        target_symbols = standardize.get_basics()["target_symbols"]
+        asset_token = user_settings.get_basics()["asset_token"]
+        target_symbols = user_settings.get_basics()["target_symbols"]
         response = ApiRequester().coinstats("GET", "/public/v1/coins")
         about_coins = response["coins"]
 
@@ -326,7 +326,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         token_pixmap.loadFromData(image_data)
 
         def job():
-            self.lineEdit.setText(standardize.get_datapath())
+            self.lineEdit.setText(user_settings.get_datapath())
 
             icon_label = QtWidgets.QLabel(
                 "",

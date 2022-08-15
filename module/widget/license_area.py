@@ -6,7 +6,7 @@ from PySide6 import QtWidgets, QtCore, QtGui
 from module import core
 from module.instrument.api_requester import ApiRequester
 from module.instrument.api_request_error import ApiRequestError
-from module.recipe import standardize
+from module.recipe import user_settings
 from module.recipe import outsource
 
 
@@ -121,7 +121,7 @@ class LicenseArea(QtWidgets.QScrollArea):
                     "macAddress": getmac.get_mac_address(),
                 }
                 api_requester.cunarist("PUT", "/api/solsol/key-mac-pair", payload)
-                standardize.set_license_key(license_key)
+                user_settings.set_license_key(license_key)
                 self.done_event.set()
             except ApiRequestError:
                 question = [

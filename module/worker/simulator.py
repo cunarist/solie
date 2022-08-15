@@ -20,6 +20,7 @@ from module.recipe import simulate_chunk
 from module.recipe import make_indicators
 from module.recipe import stop_flag
 from module.recipe import check_internet
+from module.recipe import user_settings
 from module.recipe import standardize
 
 
@@ -27,13 +28,17 @@ class Simulator:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        self.workerpath = standardize.get_datapath() + "/simulator"
+        self.workerpath = user_settings.get_datapath() + "/simulator"
         os.makedirs(self.workerpath, exist_ok=True)
         self.datalocks = [threading.Lock() for _ in range(8)]
 
+        # ■■■■■ worker secret memory ■■■■■
+
+        self.secret_memory = {}
+
         # ■■■■■ remember and display ■■■■■
 
-        self.viewing_symbol = standardize.get_basics()["target_symbols"][0]
+        self.viewing_symbol = user_settings.get_basics()["target_symbols"][0]
         self.should_draw_all_years = False
 
         self.about_viewing = None
@@ -48,69 +53,15 @@ class Simulator:
             "leverage": 1,
         }
 
-        self.raw_account_state = {
-            "observed_until": datetime.now(timezone.utc),
-            "wallet_balance": 1,
-            "positions": {},
-            "open_orders": {},
-        }
-        for symbol in standardize.get_basics()["target_symbols"]:
-            self.raw_account_state["positions"][symbol] = {
-                "margin": 0,
-                "direction": "none",
-                "entry_price": 0,
-                "update_time": datetime.fromtimestamp(0, tz=timezone.utc),
-            }
-            self.raw_account_state["open_orders"][symbol] = {}
+        self.raw_account_state = standardize.account_state()
         self.raw_scribbles = {}
-        self.raw_asset_record = pd.DataFrame(
-            columns=[
-                "Cause",
-                "Symbol",
-                "Side",
-                "Fill Price",
-                "Role",
-                "Margin Ratio",
-                "Order ID",
-                "Result Asset",
-            ],
-            index=pd.DatetimeIndex([], tz="UTC"),
-        )
-        self.raw_unrealized_changes = pd.Series(
-            index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32
-        )
+        self.raw_asset_record = standardize.asset_record()
+        self.raw_unrealized_changes = standardize.unrealized_changes()
 
-        self.account_state = {
-            "observed_until": datetime.now(timezone.utc),
-            "wallet_balance": 1,
-            "positions": {},
-            "open_orders": {},
-        }
-        for symbol in standardize.get_basics()["target_symbols"]:
-            self.account_state["positions"][symbol] = {
-                "margin": 0,
-                "direction": "none",
-                "entry_price": 0,
-                "update_time": datetime.fromtimestamp(0, tz=timezone.utc),
-            }
-            self.account_state["open_orders"][symbol] = {}
+        self.account_state = standardize.account_state()
         self.scribbles = {}
-        self.asset_record = pd.DataFrame(
-            columns=[
-                "Cause",
-                "Symbol",
-                "Side",
-                "Fill Price",
-                "Role",
-                "Margin Ratio",
-                "Order ID",
-                "Result Asset",
-            ],
-            index=pd.DatetimeIndex([], tz="UTC"),
-        )
-        self.unrealized_changes = pd.Series(
-            index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32
-        )
+        self.asset_record = standardize.asset_record()
+        self.unrealized_changes = standardize.unrealized_changes()
 
         text = "Nothing drawn"
         core.window.undertake(lambda t=text: core.window.label_19.setText(t), False)
@@ -759,37 +710,10 @@ class Simulator:
         pass
 
     def erase(self, *args, **kwargs):
-        self.raw_account_state = {
-            "observed_until": datetime.now(timezone.utc),
-            "wallet_balance": 1,
-            "positions": {},
-            "open_orders": {},
-        }
-        for symbol in standardize.get_basics()["target_symbols"]:
-            self.raw_account_state["positions"][symbol] = {
-                "margin": 0,
-                "direction": "none",
-                "entry_price": 0,
-                "update_time": datetime.fromtimestamp(0, tz=timezone.utc),
-            }
-            self.raw_account_state["open_orders"][symbol] = {}
+        self.raw_account_state = standardize.account_state()
         self.raw_scribbles = {}
-        self.raw_asset_record = pd.DataFrame(
-            columns=[
-                "Cause",
-                "Symbol",
-                "Side",
-                "Fill Price",
-                "Role",
-                "Margin Ratio",
-                "Order ID",
-                "Result Asset",
-            ],
-            index=pd.DatetimeIndex([], tz="UTC"),
-        )
-        self.raw_unrealized_changes = pd.Series(
-            index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32
-        )
+        self.raw_asset_record = standardize.asset_record()
+        self.raw_unrealized_changes = standardize.unrealized_changes()
         self.about_viewing = None
 
         self.present()
@@ -1050,43 +974,16 @@ class Simulator:
 
         # ■■■■■ prepare data and calculation range ■■■■■
 
-        blank_asset_record = pd.DataFrame(
-            columns=[
-                "Cause",
-                "Symbol",
-                "Side",
-                "Fill Price",
-                "Role",
-                "Margin Ratio",
-                "Order ID",
-                "Result Asset",
-            ],
-            index=pd.DatetimeIndex([], tz="UTC"),
-        )
-        blank_unrealized_changes = pd.Series(
-            index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32
-        )
+        blank_asset_record = standardize.asset_record()
+        blank_unrealized_changes = standardize.unrealized_changes()
         blank_scribbles = {}
-        blank_account_state = {
-            "observed_until": datetime.now(timezone.utc),
-            "wallet_balance": 1,
-            "positions": {},
-            "open_orders": {},
-        }
-        for symbol in standardize.get_basics()["target_symbols"]:
-            blank_account_state["positions"][symbol] = {
-                "margin": 0,
-                "direction": "none",
-                "entry_price": 0,
-                "update_time": datetime.fromtimestamp(0, tz=timezone.utc),
-            }
-            blank_account_state["open_orders"][symbol] = {}
+        blank_account_state = standardize.account_state()
         blank_virtual_state = {
             "available_balance": 1,
             "locations": {},
             "placements": {},
         }
-        for symbol in standardize.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_basics()["target_symbols"]:
             blank_virtual_state["locations"][symbol] = {
                 "amount": 0,
                 "entry_price": 0,

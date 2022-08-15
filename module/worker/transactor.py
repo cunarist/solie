@@ -26,50 +26,37 @@ from module.recipe import make_indicators
 from module.recipe import ball
 from module.recipe import stop_flag
 from module.recipe import check_internet
-from module.recipe import standardize
+from module.recipe import user_settings
 from module.recipe import remember_task_durations
+from module.recipe import standardize
 
 
 class Transactor:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        self.workerpath = standardize.get_datapath() + "/transactor"
+        self.workerpath = user_settings.get_datapath() + "/transactor"
         os.makedirs(self.workerpath, exist_ok=True)
         self.datalocks = [threading.Lock() for _ in range(8)]
+
+        # ■■■■■ worker secret memory ■■■■■
+
+        self.secret_memory = {
+            "maximum_quantities": {},
+            "minimum_notionals": {},
+            "price_precisions": {},
+            "quantity_precisions": {},
+            "leverages": {},
+        }
 
         # ■■■■■ remember and display ■■■■■
 
         self.api_requester = ApiRequester()
 
-        self.viewing_symbol = standardize.get_basics()["target_symbols"][0]
+        self.viewing_symbol = user_settings.get_basics()["target_symbols"][0]
         self.should_draw_frequently = True
 
-        self.account_state = {
-            "observed_until": datetime.now(timezone.utc),
-            "wallet_balance": 1,
-            "positions": {},
-            "open_orders": {},
-        }
-        for symbol in standardize.get_basics()["target_symbols"]:
-            self.account_state["positions"][symbol] = {
-                "margin": 0,
-                "direction": "none",
-                "entry_price": 0,
-                "update_time": datetime.fromtimestamp(0, tz=timezone.utc),
-            }
-            self.account_state["open_orders"][symbol] = {}
-
-        self.hidden_state = {
-            "leverages": {},
-        }
-
-        self.exchange_state = {
-            "maximum_quantities": {},
-            "minimum_notionals": {},
-            "price_precisions": {},
-            "quantity_precisions": {},
-        }
+        self.account_state = standardize.account_state()
 
         try:
             filepath = self.workerpath + "/scribbles.pickle"
@@ -142,34 +129,19 @@ class Transactor:
             }
 
         try:
-            self.unrealized_changes = pd.read_pickle(
-                self.workerpath + "/unrealized_changes.pickle"
-            )
+            filepath = self.workerpath + "/unrealized_changes.pickle"
+            self.unrealized_changes = pd.read_pickle(filepath)
             self.unrealized_changes = self.unrealized_changes.sort_index()
             self.unrealized_changes = self.unrealized_changes.astype(np.float32)
         except FileNotFoundError:
-            self.unrealized_changes = pd.Series(
-                index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32
-            )
+            self.unrealized_changes = standardize.unrealized_changes()
 
         try:
             filepath = self.workerpath + "/asset_record.pickle"
             self.asset_record = pd.read_pickle(filepath)
             self.asset_record = self.asset_record.sort_index()
         except FileNotFoundError:
-            self.asset_record = pd.DataFrame(
-                columns=[
-                    "Cause",
-                    "Symbol",
-                    "Side",
-                    "Fill Price",
-                    "Role",
-                    "Margin Ratio",
-                    "Order ID",
-                    "Result Asset",
-                ],
-                index=pd.DatetimeIndex([], tz="UTC"),
-            )
+            self.asset_record = standardize.asset_record()
 
         try:
             filepath = self.workerpath + "/auto_order_record.pickle"
@@ -357,7 +329,7 @@ class Transactor:
             about_assets = about_update["B"]
             about_positions = about_update["P"]
 
-            asset_token = standardize.get_basics()["asset_token"]
+            asset_token = user_settings.get_basics()["asset_token"]
 
             if asset_token in [about_asset["a"] for about_asset in about_assets]:
                 for about_asset in about_assets:
@@ -374,7 +346,7 @@ class Transactor:
                     if position_side == "BOTH":
                         break
 
-                target_symbols = standardize.get_basics()["target_symbols"]
+                target_symbols = user_settings.get_basics()["target_symbols"]
                 if about_position["s"] not in target_symbols:
                     return
 
@@ -382,7 +354,7 @@ class Transactor:
                 amount = float(about_position["pa"])
                 entry_price = float(about_position["ep"])
 
-                leverage = self.hidden_state["leverages"][symbol]
+                leverage = self.secret_memory["leverages"][symbol]
                 margin = abs(amount) * entry_price / leverage
                 if amount == 0:
                     direction = "none"
@@ -399,7 +371,7 @@ class Transactor:
         if event_type == "ORDER_TRADE_UPDATE":
             about_update = received["o"]
 
-            target_symbols = standardize.get_basics()["target_symbols"]
+            target_symbols = user_settings.get_basics()["target_symbols"]
             if about_update["s"] not in target_symbols:
                 return
 
@@ -424,7 +396,7 @@ class Transactor:
             realized_profit = float(about_update.get("rp", 0))
 
             # from remembered
-            leverage = self.hidden_state["leverages"][symbol]
+            leverage = self.secret_memory["leverages"][symbol]
             wallet_balance = self.account_state["wallet_balance"]
 
             # when the order is removed
@@ -1630,7 +1602,7 @@ class Transactor:
                 if about_filter["filterType"] == "MIN_NOTIONAL":
                     break
             minimum_notional = float(about_filter["notional"])
-            self.exchange_state["minimum_notionals"][symbol] = minimum_notional
+            self.secret_memory["minimum_notionals"][symbol] = minimum_notional
 
             for about_filter in about_symbol["filters"]:
                 if about_filter["filterType"] == "LOT_SIZE":
@@ -1640,21 +1612,21 @@ class Transactor:
                 if about_filter["filterType"] == "MARKET_LOT_SIZE":
                     break
             maximum_quantity = min(maximum_quantity, float(about_filter["maxQty"]))
-            self.exchange_state["maximum_quantities"][symbol] = maximum_quantity
+            self.secret_memory["maximum_quantities"][symbol] = maximum_quantity
 
             for about_filter in about_symbol["filters"]:
                 if about_filter["filterType"] == "PRICE_FILTER":
                     break
             ticksize = float(about_filter["tickSize"])
             price_precision = int(math.log10(1 / ticksize))
-            self.exchange_state["price_precisions"][symbol] = price_precision
+            self.secret_memory["price_precisions"][symbol] = price_precision
 
             for about_filter in about_symbol["filters"]:
                 if about_filter["filterType"] == "LOT_SIZE":
                     break
             stepsize = float(about_filter["stepSize"])
             quantity_precision = int(math.log10(1 / stepsize))
-            self.exchange_state["quantity_precisions"][symbol] = quantity_precision
+            self.secret_memory["quantity_precisions"][symbol] = quantity_precision
 
         # ■■■■■ request account information ■■■■■
 
@@ -1686,7 +1658,7 @@ class Transactor:
             )
             about_open_orders[symbol] = response
 
-        thread_toss.map(job, standardize.get_basics()["target_symbols"])
+        thread_toss.map(job, user_settings.get_basics()["target_symbols"])
 
         # ■■■■■ update account state ■■■■■
 
@@ -1695,13 +1667,13 @@ class Transactor:
 
         # wallet_balance
         for about_asset in about_account["assets"]:
-            if about_asset["asset"] == standardize.get_basics()["asset_token"]:
+            if about_asset["asset"] == user_settings.get_basics()["asset_token"]:
                 break
         wallet_balance = float(about_asset["walletBalance"])
         self.account_state["wallet_balance"] = wallet_balance
 
         # positions
-        for symbol in standardize.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_basics()["target_symbols"]:
             for about_position in about_account["positions"]:
                 if about_position["symbol"] == symbol:
                     break
@@ -1727,10 +1699,10 @@ class Transactor:
 
         # open orders
         open_orders = {}
-        for symbol in standardize.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_basics()["target_symbols"]:
             open_orders[symbol] = {}
 
-        for symbol in standardize.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_basics()["target_symbols"]:
             for about_position in about_account["positions"]:
                 if about_position["symbol"] == symbol:
                     break
@@ -1816,17 +1788,17 @@ class Transactor:
 
         # ■■■■■ update hidden state ■■■■■
 
-        for symbol in standardize.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_basics()["target_symbols"]:
             for about_position in about_account["positions"]:
                 if about_position["symbol"] == symbol:
                     break
             leverage = int(about_position["leverage"])
-            self.hidden_state["leverages"][symbol] = leverage
+            self.secret_memory["leverages"][symbol] = leverage
 
         # ■■■■■ record unrealized change ■■■■■
 
         for about_asset in about_account["assets"]:
-            if about_asset["asset"] == standardize.get_basics()["asset_token"]:
+            if about_asset["asset"] == user_settings.get_basics()["asset_token"]:
                 break
         # unrealized profit is not included in walletBalance
         wallet_balance = float(about_asset["walletBalance"])
@@ -1844,7 +1816,10 @@ class Transactor:
         with self.datalocks[1]:
             if len(self.asset_record) == 0:
                 for about_asset in about_account["assets"]:
-                    if about_asset["asset"] == standardize.get_basics()["asset_token"]:
+                    if (
+                        about_asset["asset"]
+                        == user_settings.get_basics()["asset_token"]
+                    ):
                         break
                 wallet_balance = float(about_asset["walletBalance"])
                 current_time = datetime.now(timezone.utc)
@@ -1855,7 +1830,7 @@ class Transactor:
         # ■■■■■ when the wallet balance changed for no good reason ■■■■■
 
         for about_asset in about_account["assets"]:
-            if about_asset["asset"] == standardize.get_basics()["asset_token"]:
+            if about_asset["asset"] == user_settings.get_basics()["asset_token"]:
                 break
         wallet_balance = float(about_asset["walletBalance"])
 
@@ -1903,7 +1878,7 @@ class Transactor:
                         payload=payload,
                     )
 
-            thread_toss.map(job, standardize.get_basics()["target_symbols"])
+            thread_toss.map(job, user_settings.get_basics()["target_symbols"])
 
             def job(symbol):
                 for about_position in about_account["positions"]:
@@ -1936,7 +1911,7 @@ class Transactor:
                         payload=payload,
                     )
 
-            thread_toss.map(job, standardize.get_basics()["target_symbols"])
+            thread_toss.map(job, user_settings.get_basics()["target_symbols"])
 
             try:
                 timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
@@ -1989,7 +1964,7 @@ class Transactor:
         cancel_orders = []
         new_orders = []
 
-        for symbol in standardize.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_basics()["target_symbols"]:
             if symbol not in decision.keys():
                 continue
 
@@ -1999,11 +1974,11 @@ class Transactor:
             temp_ar = temp_ar[temp_ar != 0]
             current_price = float(temp_ar[-1])
 
-            leverage = self.hidden_state["leverages"][symbol]
-            maximum_quantity = self.exchange_state["maximum_quantities"][symbol]
-            minimum_notional = self.exchange_state["minimum_notionals"][symbol]
-            price_precision = self.exchange_state["price_precisions"][symbol]
-            quantity_precision = self.exchange_state["quantity_precisions"][symbol]
+            leverage = self.secret_memory["leverages"][symbol]
+            maximum_quantity = self.secret_memory["maximum_quantities"][symbol]
+            minimum_notional = self.secret_memory["minimum_notionals"][symbol]
+            price_precision = self.secret_memory["price_precisions"][symbol]
+            quantity_precision = self.secret_memory["quantity_precisions"][symbol]
 
             if "cancel_all" in decision[symbol]:
                 cancel_order = {
@@ -2242,7 +2217,7 @@ class Transactor:
             return
 
         conflicting_order_tuples = []
-        for symbol in standardize.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_basics()["target_symbols"]:
             symbol_open_orders = self.account_state["open_orders"][symbol]
             groups_by_command = {}
             for order_id, open_order_state in symbol_open_orders.items():

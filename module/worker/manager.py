@@ -20,7 +20,7 @@ from module.instrument.api_requester import ApiRequester
 from module.instrument.api_request_error import ApiRequestError
 from module.recipe import simply_format
 from module.recipe import check_internet
-from module.recipe import standardize
+from module.recipe import user_settings
 from module.recipe import find_goodies
 from module.recipe import remember_task_durations
 
@@ -29,9 +29,13 @@ class Manager:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        self.workerpath = standardize.get_datapath() + "/manager"
+        self.workerpath = user_settings.get_datapath() + "/manager"
         os.makedirs(self.workerpath, exist_ok=True)
         self.datalocks = [threading.Lock() for _ in range(8)]
+
+        # ■■■■■ worker secret memory ■■■■■
+
+        self.secret_memory = {}
 
         # ■■■■■ remember and display ■■■■■
 
@@ -135,7 +139,7 @@ class Manager:
         check_internet.add_disconnected_functions(disconnected_functions)
 
     def open_datapath(self, *args, **kwargs):
-        os.startfile(standardize.get_datapath())
+        os.startfile(user_settings.get_datapath())
 
     def deselect_log_output(self, *args, **kwargs):
         def job():
@@ -425,7 +429,7 @@ class Manager:
         core.window.ask(question)
 
     def occupy_license_key(self, *args, **kwargs):
-        license_key = standardize.get_license_key()
+        license_key = user_settings.get_license_key()
         payload = {
             "licenseKey": license_key,
             "macAddress": getmac.get_mac_address(),
@@ -436,7 +440,7 @@ class Manager:
         is_occupying_key = True
         is_key_valid = True
 
-        license_key = standardize.get_license_key()
+        license_key = user_settings.get_license_key()
         try:
             payload = {
                 "licenseKey": license_key,

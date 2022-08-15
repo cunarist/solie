@@ -6,16 +6,20 @@ from module import core
 from module.worker import transactor
 from module.worker import simulator
 from module.recipe import check_internet
-from module.recipe import standardize
+from module.recipe import user_settings
 
 
 class Strategiest:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        self.workerpath = standardize.get_datapath() + "/strategist"
+        self.workerpath = user_settings.get_datapath() + "/strategist"
         os.makedirs(self.workerpath, exist_ok=True)
         self.datalocks = [threading.Lock() for _ in range(8)]
+
+        # ■■■■■ worker secret memory ■■■■■
+
+        self.secret_memory = {}
 
         # ■■■■■ remember and display ■■■■■
 
