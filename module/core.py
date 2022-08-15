@@ -141,11 +141,15 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         thread_toss.apply_async(self.boot)
 
     def boot(self):
-        # ■■■■■ start monitoring the internet ■■■■■
+        # ■■■■■ start basic things ■■■■■
 
+        examine_data_files.do_first()
+        user_settings.load()
+        examine_data_files.do()
+        user_settings.load()
         check_internet.start_monitoring()
 
-        # ■■■■■ check system status ■■■■■
+        # ■■■■■ request internet connection ■■■■■
 
         while not check_internet.connected():
             question = [
@@ -157,9 +161,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.ask(question)
             time.sleep(1)
 
-        # ■■■■■ check license key ■■■■■
+        # ■■■■■ check app settings ■■■■■
 
-        if user_settings.get_license_key() is None:
+        if user_settings.get_app_settings()["license_key"] is None:
             license_area = None
 
             # add temporary widget
@@ -178,9 +182,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
             self.undertake(job, True)
 
-        # ■■■■■ check data folder ■■■■■
-
-        if user_settings.get_datapath() is None:
+        if user_settings.get_app_settings()["datapath"] is None:
             datapath = ""
 
             def job():
@@ -206,16 +208,13 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.ask(question)
                 self.undertake(job, True)
 
-            user_settings.set_datapath(datapath)
+            user_settings.apply_app_settings({"datapath": datapath})
 
-        # ■■■■■ examine data files ■■■■■
-
-        examine_data_files.do(user_settings.get_datapath())
         user_settings.load()
 
-        # ■■■■■ check basics ■■■■■
+        # ■■■■■ check data settings ■■■■■
 
-        if "asset_token" not in user_settings.get_basics().keys():
+        if user_settings.get_data_settings()["asset_token"] is None:
             token_selection_area = None
 
             # add temporary widget
@@ -234,7 +233,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
             self.undertake(job, True)
 
-        if "target_symbols" not in user_settings.get_basics().keys():
+        if user_settings.get_data_settings()["target_symbols"] is None:
             coin_selection_area = None
 
             # add temporary widget
@@ -252,6 +251,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 coin_selection_area.setParent(None)
 
             self.undertake(job, True)
+
+        user_settings.load()
 
         # ■■■■■ guide frame ■■■■■
 
@@ -271,8 +272,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ get information about target symbols ■■■■■
 
-        asset_token = user_settings.get_basics()["asset_token"]
-        target_symbols = user_settings.get_basics()["target_symbols"]
+        asset_token = user_settings.get_data_settings()["asset_token"]
+        target_symbols = user_settings.get_data_settings()["target_symbols"]
         response = ApiRequester().coinstats("GET", "/public/v1/coins")
         about_coins = response["coins"]
 
@@ -299,7 +300,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.alias_to_symbol[alias] = symbol
             self.symbol_to_alias[symbol] = alias
 
-        # ■■■■■ make widgets according to the basics ■■■■■
+        # ■■■■■ make widgets according to the data_settings ■■■■■
 
         token_text_size = 14
         name_text_size = 11
@@ -326,7 +327,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         token_pixmap.loadFromData(image_data)
 
         def job():
-            self.lineEdit.setText(user_settings.get_datapath())
+            self.lineEdit.setText(user_settings.get_app_settings()["datapath"])
 
             icon_label = QtWidgets.QLabel(
                 "",

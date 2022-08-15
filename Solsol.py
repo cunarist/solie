@@ -4,11 +4,15 @@ import sys
 from tendo import singleton
 
 from module import core
+from module.recipe import user_settings
+
+user_settings.load()
 
 if __name__ == "__main__":
-    # make pyinstaller executable work with multiprocessing
+    # even when frozen with pyinstaller
     multiprocessing.freeze_support()
 
+    # from here only happens on the main process
     # prevent multiple instances of app running together
     try:
         single_instance = singleton.SingleInstance()

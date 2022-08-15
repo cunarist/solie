@@ -24,7 +24,7 @@ def do(candle_data, strategy, compiled_custom_script):
 
     candle_data_lock = threading.Lock()
     blank_columns = itertools.product(
-        user_settings.get_basics()["target_symbols"],
+        user_settings.get_data_settings()["target_symbols"],
         ("Price", "Volume", "Abstract"),
         ("Blank",),
     )
@@ -95,7 +95,7 @@ def do(candle_data, strategy, compiled_custom_script):
             calmness[calmness > 4] = 4
             new_indicators[(symbol, "Abstract", "Calmness (#FF8888)")] = calmness
 
-    thread_toss.map(job, user_settings.get_basics()["target_symbols"])
+    thread_toss.map(job, user_settings.get_data_settings()["target_symbols"])
 
     # ■■■■■ concatenate individual indicators into one ■■■■■
 

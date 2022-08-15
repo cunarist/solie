@@ -55,7 +55,7 @@ class TokenSelectionArea(QtWidgets.QScrollArea):
         # ■■■■■ prepare confirm function ■■■■■
 
         def job(*args):
-            basics = {}
+            data_settings = {}
             selected_tokens = []
             for symbol, radiobox in token_radioboxes.items():
                 is_selected = core.window.undertake(lambda: radiobox.isChecked(), True)
@@ -63,7 +63,7 @@ class TokenSelectionArea(QtWidgets.QScrollArea):
                     selected_tokens.append(symbol)
             if len(selected_tokens) == 1:
                 is_symbol_count_ok = True
-                basics["asset_token"] = selected_tokens[0]
+                data_settings["asset_token"] = selected_tokens[0]
             else:
                 is_symbol_count_ok = False
                 question = [
@@ -83,7 +83,7 @@ class TokenSelectionArea(QtWidgets.QScrollArea):
                 answer = core.window.ask(question)
                 if answer in (0, 1):
                     return
-                user_settings.apply_basics(basics)
+                user_settings.apply_data_settings(data_settings)
                 self.done_event.set()
 
         # ■■■■■ set things ■■■■■

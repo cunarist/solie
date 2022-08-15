@@ -35,7 +35,7 @@ class Collector:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        self.workerpath = user_settings.get_datapath() + "/collector"
+        self.workerpath = user_settings.get_app_settings()["datapath"] + "/collector"
         os.makedirs(self.workerpath, exist_ok=True)
         self.datalocks = [threading.Lock() for _ in range(8)]
 
@@ -53,7 +53,7 @@ class Collector:
         self.api_requester = ApiRequester()
 
         self.aggtrade_candle_sizes = {}
-        for symbol in user_settings.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_data_settings()["target_symbols"]:
             self.aggtrade_candle_sizes[symbol] = 0
 
         # candle data
@@ -77,7 +77,7 @@ class Collector:
 
         # realtime data chunks
         field_names = itertools.product(
-            user_settings.get_basics()["target_symbols"],
+            user_settings.get_data_settings()["target_symbols"],
             ("Best Bid Price", "Best Ask Price", "Mark Price"),
         )
         field_names = [str(field_name) for field_name in field_names]
@@ -89,7 +89,7 @@ class Collector:
 
         # aggregate trades
         field_names = itertools.product(
-            user_settings.get_basics()["target_symbols"],
+            user_settings.get_data_settings()["target_symbols"],
             ("Price", "Volume"),
         )
         field_names = [str(field_name) for field_name in field_names]
@@ -153,7 +153,7 @@ class Collector:
                 self.add_mark_price,
             ),
         ]
-        for symbol in user_settings.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_data_settings()["target_symbols"]:
             api_streamer = ApiStreamer(
                 f"wss://fstream.binance.com/ws/{symbol.lower()}@bookTicker",
                 self.add_book_tickers,
@@ -242,7 +242,7 @@ class Collector:
             df = self.candle_data
             recent_candle_data = df[df.index >= split_moment].copy()
 
-        target_symbols = user_settings.get_basics()["target_symbols"]
+        target_symbols = user_settings.get_data_settings()["target_symbols"]
         while len(full_symbols) < len(target_symbols) and request_count < 10:
             for symbol in target_symbols:
                 if symbol in full_symbols:
@@ -335,7 +335,7 @@ class Collector:
             ar = self.aggregate_trades.copy()
         price_precisions = self.secret_memory["price_precisions"]
 
-        for symbol in user_settings.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_data_settings()["target_symbols"]:
             temp_ar = ar[str((symbol, "Price"))]
             temp_ar = temp_ar[temp_ar != 0]
             if len(temp_ar) > 0:
@@ -482,7 +482,7 @@ class Collector:
         task_id = stop_flag.make("download_fill_candle_data")
 
         target_tuples = []
-        target_symbols = user_settings.get_basics()["target_symbols"]
+        target_symbols = user_settings.get_data_settings()["target_symbols"]
         if filling_type == 1:
             current_year = datetime.now(timezone.utc).year
             for year in range(2020, current_year):
@@ -667,7 +667,7 @@ class Collector:
     def add_mark_price(self, *args, **kwargs):
         received = kwargs.get("received")
         start_time = datetime.now(timezone.utc)
-        target_symbols = user_settings.get_basics()["target_symbols"]
+        target_symbols = user_settings.get_data_settings()["target_symbols"]
         event_time = np.datetime64(received[0]["E"] * 10**6, "ns")
         filtered_data = {}
         for about_mark_price in received:
@@ -755,7 +755,7 @@ class Collector:
 
         new_datas = {}
 
-        for symbol in user_settings.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_data_settings()["target_symbols"]:
             block_start_timestamp = before_moment.timestamp()
             block_end_timestamp = current_moment.timestamp()
 

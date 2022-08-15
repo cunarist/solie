@@ -14,7 +14,7 @@ def choose(
     scribbles,
     compiled_custom_script,
 ):
-    target_symbols = user_settings.get_basics()["target_symbols"]
+    target_symbols = user_settings.get_data_settings()["target_symbols"]
 
     # ■■■■■ decision template ■■■■■
 
@@ -52,7 +52,7 @@ def choose(
 
             target_symbols = target_symbols
             # too little volatility on testnet markets except these symbols
-            asset_token = user_settings.get_basics()["asset_token"]
+            asset_token = user_settings.get_data_settings()["asset_token"]
             prefer_symbol = "BTC" + asset_token
             if prefer_symbol in target_symbols:
                 should_filter = True

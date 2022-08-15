@@ -28,7 +28,7 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
 
         # ■■■■■ get previous things ■■■■■
 
-        asset_token = user_settings.get_basics()["asset_token"]
+        asset_token = user_settings.get_data_settings()["asset_token"]
 
         # ■■■■■ get available symbols ■■■■■
 
@@ -73,7 +73,7 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
         # ■■■■■ prepare confirm function ■■■■■
 
         def job(*args):
-            basics = {}
+            data_settings = {}
             selected_symbols = []
             for symbol, checkbox in symbol_checkboxes.items():
                 is_checked = core.window.undertake(lambda: checkbox.isChecked(), True)
@@ -81,7 +81,7 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
                     selected_symbols.append(symbol)
             if 1 <= len(selected_symbols) <= 10:
                 is_symbol_count_ok = True
-                basics["target_symbols"] = selected_symbols
+                data_settings["target_symbols"] = selected_symbols
             else:
                 is_symbol_count_ok = False
                 question = [
@@ -102,7 +102,7 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
                 answer = core.window.ask(question)
                 if answer in (0, 1):
                     return
-                user_settings.apply_basics(basics)
+                user_settings.apply_data_settings(data_settings)
                 self.done_event.set()
 
         # ■■■■■ full structure ■■■■■

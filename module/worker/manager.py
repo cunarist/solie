@@ -29,7 +29,7 @@ class Manager:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        self.workerpath = user_settings.get_datapath() + "/manager"
+        self.workerpath = user_settings.get_app_settings()["datapath"] + "/manager"
         os.makedirs(self.workerpath, exist_ok=True)
         self.datalocks = [threading.Lock() for _ in range(8)]
 
@@ -139,7 +139,7 @@ class Manager:
         check_internet.add_disconnected_functions(disconnected_functions)
 
     def open_datapath(self, *args, **kwargs):
-        os.startfile(user_settings.get_datapath())
+        os.startfile(user_settings.get_app_settings()["datapath"])
 
     def deselect_log_output(self, *args, **kwargs):
         def job():
@@ -429,7 +429,7 @@ class Manager:
         core.window.ask(question)
 
     def occupy_license_key(self, *args, **kwargs):
-        license_key = user_settings.get_license_key()
+        license_key = user_settings.get_app_settings()["license_key"]
         payload = {
             "licenseKey": license_key,
             "macAddress": getmac.get_mac_address(),
@@ -440,7 +440,7 @@ class Manager:
         is_occupying_key = True
         is_key_valid = True
 
-        license_key = user_settings.get_license_key()
+        license_key = user_settings.get_app_settings()["license_key"]
         try:
             payload = {
                 "licenseKey": license_key,

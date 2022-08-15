@@ -13,7 +13,7 @@ class Strategiest:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        self.workerpath = user_settings.get_datapath() + "/strategist"
+        self.workerpath = user_settings.get_app_settings()["datapath"] + "/strategist"
         os.makedirs(self.workerpath, exist_ok=True)
         self.datalocks = [threading.Lock() for _ in range(8)]
 

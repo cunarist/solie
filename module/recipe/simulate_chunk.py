@@ -60,7 +60,7 @@ def do(dataset):
 
     calculation_index_length = len(calculation_index_ar)
     compiled_decision_script = compile(decision_script, "<string>", "exec")
-    target_symbols = user_settings.get_basics()["target_symbols"]
+    target_symbols = user_settings.get_data_settings()["target_symbols"]
     first_calculation_moment = calculation_index_ar[0]
 
     for cycle in range(calculation_index_length):

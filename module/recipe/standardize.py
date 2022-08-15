@@ -6,7 +6,7 @@ from module.recipe import user_settings
 
 
 def candle_data():
-    target_symbols = user_settings.get_basics()["target_symbols"]
+    target_symbols = user_settings.get_data_settings()["target_symbols"]
     return pd.DataFrame(
         columns=pd.MultiIndex.from_product(
             [
@@ -20,7 +20,7 @@ def candle_data():
 
 
 def account_state():
-    target_symbols = user_settings.get_basics()["target_symbols"]
+    target_symbols = user_settings.get_data_settings()["target_symbols"]
     return {
         "observed_until": datetime.now(timezone.utc),
         "wallet_balance": 1,

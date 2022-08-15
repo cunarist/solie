@@ -35,7 +35,7 @@ class Transactor:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        self.workerpath = user_settings.get_datapath() + "/transactor"
+        self.workerpath = user_settings.get_app_settings()["datapath"] + "/transactor"
         os.makedirs(self.workerpath, exist_ok=True)
         self.datalocks = [threading.Lock() for _ in range(8)]
 
@@ -53,7 +53,7 @@ class Transactor:
 
         self.api_requester = ApiRequester()
 
-        self.viewing_symbol = user_settings.get_basics()["target_symbols"][0]
+        self.viewing_symbol = user_settings.get_data_settings()["target_symbols"][0]
         self.should_draw_frequently = True
 
         self.account_state = standardize.account_state()
@@ -329,7 +329,7 @@ class Transactor:
             about_assets = about_update["B"]
             about_positions = about_update["P"]
 
-            asset_token = user_settings.get_basics()["asset_token"]
+            asset_token = user_settings.get_data_settings()["asset_token"]
 
             if asset_token in [about_asset["a"] for about_asset in about_assets]:
                 for about_asset in about_assets:
@@ -346,7 +346,7 @@ class Transactor:
                     if position_side == "BOTH":
                         break
 
-                target_symbols = user_settings.get_basics()["target_symbols"]
+                target_symbols = user_settings.get_data_settings()["target_symbols"]
                 if about_position["s"] not in target_symbols:
                     return
 
@@ -371,7 +371,7 @@ class Transactor:
         if event_type == "ORDER_TRADE_UPDATE":
             about_update = received["o"]
 
-            target_symbols = user_settings.get_basics()["target_symbols"]
+            target_symbols = user_settings.get_data_settings()["target_symbols"]
             if about_update["s"] not in target_symbols:
                 return
 
@@ -1658,7 +1658,7 @@ class Transactor:
             )
             about_open_orders[symbol] = response
 
-        thread_toss.map(job, user_settings.get_basics()["target_symbols"])
+        thread_toss.map(job, user_settings.get_data_settings()["target_symbols"])
 
         # ■■■■■ update account state ■■■■■
 
@@ -1667,13 +1667,13 @@ class Transactor:
 
         # wallet_balance
         for about_asset in about_account["assets"]:
-            if about_asset["asset"] == user_settings.get_basics()["asset_token"]:
+            if about_asset["asset"] == user_settings.get_data_settings()["asset_token"]:
                 break
         wallet_balance = float(about_asset["walletBalance"])
         self.account_state["wallet_balance"] = wallet_balance
 
         # positions
-        for symbol in user_settings.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_data_settings()["target_symbols"]:
             for about_position in about_account["positions"]:
                 if about_position["symbol"] == symbol:
                     break
@@ -1699,10 +1699,10 @@ class Transactor:
 
         # open orders
         open_orders = {}
-        for symbol in user_settings.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_data_settings()["target_symbols"]:
             open_orders[symbol] = {}
 
-        for symbol in user_settings.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_data_settings()["target_symbols"]:
             for about_position in about_account["positions"]:
                 if about_position["symbol"] == symbol:
                     break
@@ -1788,7 +1788,7 @@ class Transactor:
 
         # ■■■■■ update hidden state ■■■■■
 
-        for symbol in user_settings.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_data_settings()["target_symbols"]:
             for about_position in about_account["positions"]:
                 if about_position["symbol"] == symbol:
                     break
@@ -1798,7 +1798,7 @@ class Transactor:
         # ■■■■■ record unrealized change ■■■■■
 
         for about_asset in about_account["assets"]:
-            if about_asset["asset"] == user_settings.get_basics()["asset_token"]:
+            if about_asset["asset"] == user_settings.get_data_settings()["asset_token"]:
                 break
         # unrealized profit is not included in walletBalance
         wallet_balance = float(about_asset["walletBalance"])
@@ -1818,7 +1818,7 @@ class Transactor:
                 for about_asset in about_account["assets"]:
                     if (
                         about_asset["asset"]
-                        == user_settings.get_basics()["asset_token"]
+                        == user_settings.get_data_settings()["asset_token"]
                     ):
                         break
                 wallet_balance = float(about_asset["walletBalance"])
@@ -1830,7 +1830,7 @@ class Transactor:
         # ■■■■■ when the wallet balance changed for no good reason ■■■■■
 
         for about_asset in about_account["assets"]:
-            if about_asset["asset"] == user_settings.get_basics()["asset_token"]:
+            if about_asset["asset"] == user_settings.get_data_settings()["asset_token"]:
                 break
         wallet_balance = float(about_asset["walletBalance"])
 
@@ -1878,7 +1878,7 @@ class Transactor:
                         payload=payload,
                     )
 
-            thread_toss.map(job, user_settings.get_basics()["target_symbols"])
+            thread_toss.map(job, user_settings.get_data_settings()["target_symbols"])
 
             def job(symbol):
                 for about_position in about_account["positions"]:
@@ -1911,7 +1911,7 @@ class Transactor:
                         payload=payload,
                     )
 
-            thread_toss.map(job, user_settings.get_basics()["target_symbols"])
+            thread_toss.map(job, user_settings.get_data_settings()["target_symbols"])
 
             try:
                 timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
@@ -1964,7 +1964,7 @@ class Transactor:
         cancel_orders = []
         new_orders = []
 
-        for symbol in user_settings.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_data_settings()["target_symbols"]:
             if symbol not in decision.keys():
                 continue
 
@@ -2217,7 +2217,7 @@ class Transactor:
             return
 
         conflicting_order_tuples = []
-        for symbol in user_settings.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_data_settings()["target_symbols"]:
             symbol_open_orders = self.account_state["open_orders"][symbol]
             groups_by_command = {}
             for order_id, open_order_state in symbol_open_orders.items():

@@ -28,7 +28,7 @@ class Simulator:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        self.workerpath = user_settings.get_datapath() + "/simulator"
+        self.workerpath = user_settings.get_app_settings()["datapath"] + "/simulator"
         os.makedirs(self.workerpath, exist_ok=True)
         self.datalocks = [threading.Lock() for _ in range(8)]
 
@@ -38,7 +38,7 @@ class Simulator:
 
         # ■■■■■ remember and display ■■■■■
 
-        self.viewing_symbol = user_settings.get_basics()["target_symbols"][0]
+        self.viewing_symbol = user_settings.get_data_settings()["target_symbols"][0]
         self.should_draw_all_years = False
 
         self.about_viewing = None
@@ -983,7 +983,7 @@ class Simulator:
             "locations": {},
             "placements": {},
         }
-        for symbol in user_settings.get_basics()["target_symbols"]:
+        for symbol in user_settings.get_data_settings()["target_symbols"]:
             blank_virtual_state["locations"][symbol] = {
                 "amount": 0,
                 "entry_price": 0,
