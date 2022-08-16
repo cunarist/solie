@@ -7,10 +7,16 @@ import pandas as pd
 import numpy as np
 
 from module import thread_toss
-from module.recipe import user_settings
 
 
-def do(candle_data, strategy, compiled_custom_script):
+def do(**kwargs):
+    # ■■■■■ get data ■■■■■
+
+    target_symbols = kwargs["target_symbols"]
+    candle_data = kwargs["candle_data"]
+    strategy = kwargs["strategy"]
+    compiled_custom_script = kwargs["compiled_custom_script"]
+
     # ■■■■■ interpolate nans ■■■■■
 
     candle_data = candle_data.interpolate()
@@ -24,7 +30,7 @@ def do(candle_data, strategy, compiled_custom_script):
 
     candle_data_lock = threading.Lock()
     blank_columns = itertools.product(
-        user_settings.get_data_settings()["target_symbols"],
+        target_symbols,
         ("Price", "Volume", "Abstract"),
         ("Blank",),
     )
@@ -95,7 +101,7 @@ def do(candle_data, strategy, compiled_custom_script):
             calmness[calmness > 4] = 4
             new_indicators[(symbol, "Abstract", "Calmness (#FF8888)")] = calmness
 
-    thread_toss.map(job, user_settings.get_data_settings()["target_symbols"])
+    thread_toss.map(job, target_symbols)
 
     # ■■■■■ concatenate individual indicators into one ■■■■■
 

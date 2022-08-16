@@ -5,16 +5,17 @@ import random
 from module.recipe import user_settings
 
 
-def choose(
-    current_moment,
-    current_candle_data,
-    current_indicators,
-    strategy,
-    account_state,
-    scribbles,
-    compiled_custom_script,
-):
-    target_symbols = user_settings.get_data_settings()["target_symbols"]
+def choose(**kwargs):
+    # ■■■■■ get data ■■■■■
+
+    target_symbols = kwargs["target_symbols"]
+    current_moment = kwargs["current_moment"]
+    current_candle_data = kwargs["current_candle_data"]
+    current_indicators = kwargs["current_indicators"]
+    strategy = kwargs["strategy"]
+    account_state = kwargs["account_state"]
+    scribbles = kwargs["scribbles"]
+    compiled_custom_script = kwargs["compiled_custom_script"]
 
     # ■■■■■ decision template ■■■■■
 

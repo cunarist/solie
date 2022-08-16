@@ -8,7 +8,6 @@ import pandas as pd
 
 from module.instrument.simluation_error import SimulationError
 from module.recipe import decide
-from module.recipe import user_settings
 
 
 def do(dataset):
@@ -21,6 +20,7 @@ def do(dataset):
     progress_list = dataset["progress_list"]
     target_progress = dataset["target_progress"]
     strategy = dataset["strategy"]
+    target_symbols = dataset["target_symbols"]
     calculation_index = dataset["calculation_index"]
     chunk_candle_data = dataset["chunk_candle_data"]
     chunk_indicators = dataset["chunk_indicators"]
@@ -60,7 +60,6 @@ def do(dataset):
 
     calculation_index_length = len(calculation_index_ar)
     compiled_decision_script = compile(decision_script, "<string>", "exec")
-    target_symbols = user_settings.get_data_settings()["target_symbols"]
     first_calculation_moment = calculation_index_ar[0]
 
     for cycle in range(calculation_index_length):
@@ -480,6 +479,7 @@ def do(dataset):
         current_candle_data = candle_data_ar[cycle]
         current_indicators = indicators_ar[cycle]
         decision, chunk_scribbles = decide.choose(
+            target_symbols=target_symbols,
             current_moment=current_moment,
             current_candle_data=current_candle_data,
             current_indicators=current_indicators,

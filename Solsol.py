@@ -4,9 +4,6 @@ import sys
 from tendo import singleton
 
 from module import core
-from module.recipe import user_settings
-
-user_settings.load()
 
 if __name__ == "__main__":
     # even when frozen with pyinstaller

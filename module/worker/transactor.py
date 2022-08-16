@@ -1016,9 +1016,11 @@ class Transactor:
 
         indicators_script = strategist.me.indicators_script
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
+        target_symbols = user_settings.get_data_settings()["target_symbols"]
 
         indicators = process_toss.apply(
             make_indicators.do,
+            target_symbols=target_symbols,
             candle_data=candle_data,
             strategy=strategy,
             compiled_custom_script=compiled_indicators_script,
@@ -1493,11 +1495,14 @@ class Transactor:
 
         # ■■■■■ make decision ■■■■■
 
+        target_symbols = user_settings.get_data_settings()["target_symbols"]
+
         indicators_script = strategist.me.indicators_script
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
         indicators = process_toss.apply(
             make_indicators.do,
+            target_symbols=target_symbols,
             candle_data=partial_candle_data,
             strategy=strategy,
             compiled_custom_script=compiled_indicators_script,
@@ -1510,6 +1515,7 @@ class Transactor:
 
         decision, scribbles = process_toss.apply(
             decide.choose,
+            target_symbols=target_symbols,
             current_moment=current_moment,
             current_candle_data=current_candle_data,
             current_indicators=current_indicators,

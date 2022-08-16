@@ -400,9 +400,11 @@ class Simulator:
 
         indicators_script = strategist.me.indicators_script
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
+        target_symbols = user_settings.get_data_settings()["target_symbols"]
 
         indicators = process_toss.apply(
             make_indicators.do,
+            target_symbols=target_symbols,
             candle_data=candle_data,
             strategy=strategy,
             compiled_custom_script=compiled_indicators_script,
@@ -927,6 +929,8 @@ class Simulator:
         account_state_filepath = path_start + "_account_state.pickle"
         virtual_state_filepath = path_start + "_virtual_state.pickle"
 
+        target_symbols = user_settings.get_data_settings()["target_symbols"]
+
         if strategy == 0:
             strategy_details = strategist.me.details
         else:
@@ -983,7 +987,7 @@ class Simulator:
             "locations": {},
             "placements": {},
         }
-        for symbol in user_settings.get_data_settings()["target_symbols"]:
+        for symbol in target_symbols:
             blank_virtual_state["locations"][symbol] = {
                 "amount": 0,
                 "entry_price": 0,
@@ -1053,6 +1057,7 @@ class Simulator:
             provide_from = calculate_from - timedelta(days=7)
             year_indicators = process_toss.apply(
                 make_indicators.do,
+                target_symbols=target_symbols,
                 candle_data=year_candle_data[provide_from:calculate_until],
                 strategy=strategy,
                 compiled_custom_script=compiled_indicators_script,
@@ -1099,6 +1104,7 @@ class Simulator:
                         "progress_list": progress_list,
                         "target_progress": turn,
                         "strategy": strategy,
+                        "target_symbols": target_symbols,
                         "calculation_index": chunk_index,
                         "chunk_candle_data": chunk_candle_data,
                         "chunk_indicators": chunk_indicators,
@@ -1120,6 +1126,7 @@ class Simulator:
                     "progress_list": progress_list,
                     "target_progress": 0,
                     "strategy": strategy,
+                    "target_symbols": target_symbols,
                     "calculation_index": needed_index,
                     "chunk_candle_data": needed_candle_data,
                     "chunk_indicators": needed_indicators,
