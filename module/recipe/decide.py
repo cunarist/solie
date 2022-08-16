@@ -2,8 +2,6 @@ from datetime import datetime, timezone, timedelta
 import math
 import random
 
-from module.recipe import user_settings
-
 
 def choose(**kwargs):
     # ■■■■■ get data ■■■■■
@@ -43,6 +41,15 @@ def choose(**kwargs):
         exec(compiled_custom_script, namespace)
 
     elif strategy == 1:
+        # there is too little volatility on testnet markets except BTC
+        prefer_symbol = ""
+        should_filter = False
+        for symbol in target_symbols:
+            if symbol.startswith("BTC"):
+                should_filter = True
+                prefer_symbol = symbol
+                break
+
         for symbol in target_symbols:
             split_ratio = 0.0001
 
@@ -50,15 +57,6 @@ def choose(**kwargs):
 
             wallet_balance = account_state["wallet_balance"]
             direction = account_state["positions"][symbol]["direction"]
-
-            target_symbols = target_symbols
-            # too little volatility on testnet markets except these symbols
-            asset_token = user_settings.get_data_settings()["asset_token"]
-            prefer_symbol = "BTC" + asset_token
-            if prefer_symbol in target_symbols:
-                should_filter = True
-            else:
-                should_filter = False
 
             if should_filter and symbol != prefer_symbol:
                 continue
