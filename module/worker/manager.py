@@ -417,8 +417,7 @@ class Manager:
         core.window.ask(question)
 
     def show_license_key(self, *args, **kwargs):
-        with open("./note/license_key.txt", mode="r", encoding="utf8") as file:
-            license_key = file.read()
+        license_key = user_settings.get_app_settings()["license_key"]
 
         question = [
             "Solsol license key",
@@ -475,7 +474,7 @@ class Manager:
                 False,
             ]
 
-        os.remove("./note/license_key.txt")
+        user_settings.apply_app_settings({"license_key": None})
 
         def job():
             time.sleep(wait_time)
