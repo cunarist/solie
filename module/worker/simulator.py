@@ -1072,9 +1072,9 @@ class Simulator:
                     )
                 ]
 
-                communication_manager = multiprocessing.Manager()
+                communication = process_toss.communication
                 chunk_count = len(chunk_candle_data_list)
-                progress_list = communication_manager.list([0] * chunk_count)
+                progress_list = communication.list([0] * chunk_count)
 
                 input_data = []
                 for turn, chunk_candle_data in enumerate(chunk_candle_data_list):

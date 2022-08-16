@@ -7,7 +7,7 @@ import dill
 
 from module import thread_toss
 
-_communication_manager = None
+communication = None
 _task_presences = None
 _pool = None
 _pool_process_count = 0
@@ -49,24 +49,24 @@ def _process_iterable_item(payload):
     return returned
 
 
-def _start_sharing_task_presence(shared_dictionary):
+def _start_sharing_task_presence(received_task_presences):
     def job():
         while True:
             process_id = multiprocessing.current_process().pid
-            shared_dictionary[process_id] = _is_task_present
+            received_task_presences[process_id] = _is_task_present
             time.sleep(0.1)
 
     thread_toss.apply_async(job)
 
 
 def start_pool():
-    global _communication_manager
+    global communication
     global _task_presences
     global _pool
     global _pool_process_count
     _pool_process_count = os.cpu_count()
-    _communication_manager = multiprocessing.Manager()
-    _task_presences = _communication_manager.dict()
+    communication = multiprocessing.Manager()
+    _task_presences = communication.dict()
     _pool = multiprocessing.Pool(
         _pool_process_count,
         initializer=_start_sharing_task_presence,
