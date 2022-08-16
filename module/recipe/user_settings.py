@@ -48,6 +48,7 @@ def apply_data_settings(payload):
     payload = copy.deepcopy(payload)
     _data_settings = {**_data_settings, **payload}
     datapath = _app_settings["datapath"]
-    os.makedirs(os.path.dirname(f"{datapath}/data_settings.json"), exist_ok=True)
-    with open(f"{datapath}/data_settings.json", "w", encoding="utf8") as file:
-        json.dump(_data_settings, file, indent=4)
+    if datapath is not None:
+        os.makedirs(os.path.dirname(f"{datapath}/data_settings.json"), exist_ok=True)
+        with open(f"{datapath}/data_settings.json", "w", encoding="utf8") as file:
+            json.dump(_data_settings, file, indent=4)
