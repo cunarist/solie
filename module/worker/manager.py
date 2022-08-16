@@ -400,7 +400,7 @@ class Manager:
         if answer in (0, 1):
             return
 
-        os.remove("./note/datapath.txt")
+        user_settings.apply_app_settings({"datapath": None})
 
         core.window.should_confirm_closing = False
         core.window.undertake(core.window.close, False)
