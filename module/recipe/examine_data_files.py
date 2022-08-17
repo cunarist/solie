@@ -4,6 +4,7 @@ import os
 import json
 import shutil
 from datetime import datetime, timezone
+import pandas as pd
 
 from module.recipe import user_settings
 
@@ -94,7 +95,7 @@ def do():
     except FileNotFoundError:
         pass
 
-    # 5.0 app_settings and data_settings
+    # 5.0: data settings
     try:
         filepath = f"{datapath}/basics.json"
         with open(filepath, "r", encoding="utf8") as file:
@@ -106,8 +107,20 @@ def do():
     except FileNotFoundError:
         pass
 
+    # 5.0: symbol column was added to auto order record
+    try:
+        filepath = f"{datapath}/transactor/auto_order_record.pickle"
+        auto_order_record = pd.read_pickle(filepath)
+        if "Symbol" not in auto_order_record.columns:
+            auto_order_record["Symbol"] = ""
+            auto_order_record.to_pickle(filepath)
+    except FileNotFoundError:
+        pass
+
 
 def do_first():
+    # 5.0: app settings
+
     try:
         filepath = "./note/datapath.txt"
         with open(filepath, "r", encoding="utf8") as file:

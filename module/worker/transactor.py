@@ -150,6 +150,7 @@ class Transactor:
         except FileNotFoundError:
             self.auto_order_record = pd.DataFrame(
                 columns=[
+                    "Symbol",
                     "Order ID",
                     "Net Profit",
                 ],
@@ -513,9 +514,11 @@ class Transactor:
                     self.asset_record.to_pickle(filepath)
 
                 with self.datalocks[2]:
-                    if order_id in self.auto_order_record["Order ID"].unique():
-                        mask_sr = self.auto_order_record["Order ID"] == order_id
-                        index = self.auto_order_record.index[mask_sr][0]
+                    df = self.auto_order_record
+                    symbol_df = df[df["Symbol"] == symbol]
+                    if order_id in symbol_df["Order ID"].unique():
+                        mask_sr = symbol_df["Order ID"] == order_id
+                        index = symbol_df.index[mask_sr][0]
                         self.auto_order_record.loc[index, "Net Profit"] += net_profit
                         filepath = self.workerpath + "/auto_order_record.pickle"
                         self.auto_order_record.to_pickle(filepath)
@@ -2181,10 +2184,12 @@ class Transactor:
                     path="/fapi/v1/order",
                     payload=payload,
                 )
+                order_symbol = response["symbol"]
                 order_id = response["orderId"]
                 timestamp = response["updateTime"] / 1000
                 update_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
                 with self.datalocks[2]:
+                    self.auto_order_record.loc[update_time, "Symbol"] = order_symbol
                     self.auto_order_record.loc[update_time, "Order ID"] = order_id
                     self.auto_order_record.loc[update_time, "Net Profit"] = 0
                     self.auto_order_record = self.auto_order_record.sort_index()
