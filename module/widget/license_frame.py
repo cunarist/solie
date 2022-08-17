@@ -10,7 +10,7 @@ from module.recipe import user_settings
 from module.recipe import outsource
 
 
-class LicenseArea(QtWidgets.QScrollArea):
+class LicenseFrame(QtWidgets.QScrollArea):
     done_event = threading.Event()
 
     def __init__(self):

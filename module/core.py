@@ -35,10 +35,10 @@ from module.recipe import user_settings
 from module.recipe import find_goodies
 from module.recipe import examine_data_files
 from module.widget.ask_popup import AskPopup
-from module.widget.token_selection_area import TokenSelectionArea
-from module.widget.coin_selection_area import CoinSelectionArea
+from module.widget.token_selection_frame import TokenSelectionFrame
+from module.widget.coin_selection_frame import CoinSelectionFrame
 from module.widget.guide_frame import GuideFrame
-from module.widget.license_area import LicenseArea
+from module.widget.license_frame import LicenseFrame
 from module.widget.symbol_box import SymbolBox
 
 
@@ -164,21 +164,21 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ check app settings ■■■■■
 
         if user_settings.get_app_settings()["license_key"] is None:
-            license_area = None
+            license_frame = None
 
             # add temporary widget
             def job():
-                nonlocal license_area
-                license_area = LicenseArea()
-                self.centralWidget().layout().addWidget(license_area)
+                nonlocal license_frame
+                license_frame = LicenseFrame()
+                self.centralWidget().layout().addWidget(license_frame)
 
             self.undertake(job, True)
 
-            license_area.done_event.wait()
+            license_frame.done_event.wait()
 
             # remove temporary widget
             def job():
-                license_area.setParent(None)
+                license_frame.setParent(None)
 
             self.undertake(job, True)
 
@@ -215,40 +215,40 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ check data settings ■■■■■
 
         if user_settings.get_data_settings()["asset_token"] is None:
-            token_selection_area = None
+            token_selection_frame = None
 
             # add temporary widget
             def job():
-                nonlocal token_selection_area
-                token_selection_area = TokenSelectionArea()
-                self.centralWidget().layout().addWidget(token_selection_area)
+                nonlocal token_selection_frame
+                token_selection_frame = TokenSelectionFrame()
+                self.centralWidget().layout().addWidget(token_selection_frame)
 
             self.undertake(job, True)
 
-            token_selection_area.done_event.wait()
+            token_selection_frame.done_event.wait()
 
             # remove temporary widget
             def job():
-                token_selection_area.setParent(None)
+                token_selection_frame.setParent(None)
 
             self.undertake(job, True)
 
         if user_settings.get_data_settings()["target_symbols"] is None:
-            coin_selection_area = None
+            coin_selection_frame = None
 
             # add temporary widget
             def job():
-                nonlocal coin_selection_area
-                coin_selection_area = CoinSelectionArea()
-                self.centralWidget().layout().addWidget(coin_selection_area)
+                nonlocal coin_selection_frame
+                coin_selection_frame = CoinSelectionFrame()
+                self.centralWidget().layout().addWidget(coin_selection_frame)
 
             self.undertake(job, True)
 
-            coin_selection_area.done_event.wait()
+            coin_selection_frame.done_event.wait()
 
             # remove temporary widget
             def job():
-                coin_selection_area.setParent(None)
+                coin_selection_frame.setParent(None)
 
             self.undertake(job, True)
 

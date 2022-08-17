@@ -10,7 +10,7 @@ from module.recipe import user_settings
 from module.recipe import outsource
 
 
-class CoinSelectionArea(QtWidgets.QScrollArea):
+class TokenSelectionFrame(QtWidgets.QScrollArea):
     done_event = threading.Event()
 
     def __init__(self):
@@ -20,17 +20,13 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
 
         # ■■■■■ for remembering ■■■■■
 
-        symbol_checkboxes = {}
+        token_radioboxes = {}
 
         # ■■■■■ prepare the api requester ■■■■■
 
         api_requester = ApiRequester()
 
-        # ■■■■■ get previous things ■■■■■
-
-        asset_token = user_settings.get_data_settings()["asset_token"]
-
-        # ■■■■■ get available symbols ■■■■■
+        # ■■■■■ get all symbols ■■■■■
 
         response = api_requester.binance(
             http_method="GET",
@@ -41,8 +37,7 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
         available_symbols = []
         for about_symbol in about_symbols:
             symbol = about_symbol["symbol"]
-            if symbol.endswith(asset_token):
-                available_symbols.append(symbol)
+            available_symbols.append(symbol)
 
         # ■■■■■ get coin informations ■■■■■
 
@@ -57,36 +52,23 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
             coin_icon_urls[coin_symbol] = about_coin["icon"]
             coin_ranks[coin_symbol] = about_coin["rank"]
 
-        # ■■■■■ sort symbols by rank ■■■■■
-
-        for rank in range(250, 0, -1):
-            if rank not in coin_ranks.values():
-                continue
-            index_to_find = list(coin_ranks.values()).index(rank)
-            coin_symbol = list(coin_ranks.keys())[index_to_find]
-            symbol = coin_symbol + asset_token
-            if symbol not in available_symbols:
-                continue
-            original_index = available_symbols.index(symbol)
-            available_symbols.insert(0, available_symbols.pop(original_index))
-
         # ■■■■■ prepare confirm function ■■■■■
 
         def job(*args):
             data_settings = {}
-            selected_symbols = []
-            for symbol, checkbox in symbol_checkboxes.items():
-                is_checked = core.window.undertake(lambda: checkbox.isChecked(), True)
-                if is_checked:
-                    selected_symbols.append(symbol)
-            if 1 <= len(selected_symbols) <= 10:
+            selected_tokens = []
+            for symbol, radiobox in token_radioboxes.items():
+                is_selected = core.window.undertake(lambda: radiobox.isChecked(), True)
+                if is_selected:
+                    selected_tokens.append(symbol)
+            if len(selected_tokens) == 1:
                 is_symbol_count_ok = True
-                data_settings["target_symbols"] = selected_symbols
+                data_settings["asset_token"] = selected_tokens[0]
             else:
                 is_symbol_count_ok = False
                 question = [
-                    "Select proper number of symbols",
-                    "You can select a minimum of 1 and a maximum of 10.",
+                    "Nothing selected",
+                    "Choose one of the tokens.",
                     ["Okay"],
                     False,
                 ]
@@ -94,8 +76,7 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
             if is_symbol_count_ok:
                 question = [
                     "Okay to proceed?",
-                    "You cannot change your selections unless you make a new data"
-                    " folder.",
+                    "Solsol will treat this token as your asset.",
                     ["No", "Yes"],
                     False,
                 ]
@@ -104,6 +85,23 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
                     return
                 user_settings.apply_data_settings(data_settings)
                 self.done_event.set()
+
+        # ■■■■■ set things ■■■■■
+
+        available_tokens = []
+        for symbol in available_symbols:
+            if "_" in symbol:
+                continue
+            if symbol.startswith("BTC"):
+                token = symbol.removeprefix("BTC")
+                available_tokens.append(token)
+        available_tokens = ["USDT", "BUSD"]
+        number_of_markets = {token: 0 for token in available_tokens}
+
+        for symbol in available_symbols:
+            for token in available_tokens:
+                if symbol.endswith(token):
+                    number_of_markets[token] += 1
 
         # ■■■■■ full structure ■■■■■
 
@@ -138,7 +136,7 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
 
         # title
         main_text = QtWidgets.QLabel(
-            "Choose cryptos",
+            "Choose a token to treat as your asset",
             alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
         )
         main_text_font = QtGui.QFont()
@@ -156,8 +154,7 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
 
         # explanation
         detail_text = QtWidgets.QLabel(
-            "These are all available cryptos on Biancne.\nYou can select a minimum of 1"
-            " and a maximum of 10.",
+            "These are all available tokens on Binance.",
             alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
         )
         detail_text.setWordWrap(True)
@@ -184,32 +181,26 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
         card_layout.addWidget(spacing_text)
 
         # input
-        symbol_icon_labels = {}
+        token_icon_labels = {}
         input_layout = QtWidgets.QGridLayout()
         blank_coin_pixmap = QtGui.QPixmap()
         blank_coin_pixmap.load("./resource/icon/blank_coin.png")
-        for turn, symbol in enumerate(available_symbols):
-            coin_symbol = symbol.removesuffix(asset_token)
-            coin_name = coin_names.get(coin_symbol, "")
-            coin_rank = coin_ranks.get(coin_symbol, 0)
+        for turn, token in enumerate(available_tokens):
             this_layout = QtWidgets.QHBoxLayout()
             row = turn // 2
             column = turn % 2
             input_layout.addLayout(this_layout, row, column)
-            checkbox = QtWidgets.QCheckBox(card)
-            symbol_checkboxes[symbol] = checkbox
-            this_layout.addWidget(checkbox)
+            radiobutton = QtWidgets.QRadioButton(card)
+            token_radioboxes[token] = radiobutton
+            this_layout.addWidget(radiobutton)
             icon_label = QtWidgets.QLabel("", card)
             icon_label.setPixmap(blank_coin_pixmap)
             icon_label.setScaledContents(True)
             icon_label.setFixedSize(40, 40)
             icon_label.setMargin(5)
             this_layout.addWidget(icon_label)
-            symbol_icon_labels[symbol] = icon_label
-            if coin_name == "":
-                text = coin_symbol
-            else:
-                text = f"{coin_rank} - {coin_name} ({coin_symbol})"
+            token_icon_labels[token] = icon_label
+            text = f"{token} ({number_of_markets[token]} cryptos available)"
             text_label = QtWidgets.QLabel(text, card)
             this_layout.addWidget(text_label)
             spacer = QtWidgets.QSpacerItem(
@@ -252,9 +243,8 @@ class CoinSelectionArea(QtWidgets.QScrollArea):
         # ■■■■■ draw crypto icons from another thread ■■■■■
 
         def job():
-            for symbol, icon_label in symbol_icon_labels.items():
-                coin_symbol = symbol.removesuffix(asset_token)
-                coin_icon_url = coin_icon_urls.get(coin_symbol, "")
+            for token, icon_label in token_icon_labels.items():
+                coin_icon_url = coin_icon_urls.get(token, "")
                 if coin_icon_url == "":
                     continue
                 image_data = urllib.request.urlopen(coin_icon_url).read()
