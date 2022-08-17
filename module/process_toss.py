@@ -7,7 +7,7 @@ import dill
 
 from module import thread_toss
 
-communication = None
+communicator = None
 _task_presences = None
 _pool = None
 _pool_process_count = 0
@@ -60,13 +60,13 @@ def _start_sharing_task_presence(received_task_presences):
 
 
 def start_pool():
-    global communication
+    global communicator
     global _task_presences
     global _pool
     global _pool_process_count
     _pool_process_count = os.cpu_count()
-    communication = multiprocessing.Manager()
-    _task_presences = communication.dict()
+    communicator = multiprocessing.Manager()
+    _task_presences = communicator.dict()
     _pool = multiprocessing.Pool(
         _pool_process_count,
         initializer=_start_sharing_task_presence,

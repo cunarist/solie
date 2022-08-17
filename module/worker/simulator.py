@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta, timezone
 import math
 import threading
-import multiprocessing
 import os
 import time
 import re
@@ -1077,9 +1076,8 @@ class Simulator:
                     )
                 ]
 
-                communication = process_toss.communication
                 chunk_count = len(chunk_candle_data_list)
-                progress_list = communication.list([0] * chunk_count)
+                progress_list = process_toss.communicator.list([0] * chunk_count)
 
                 input_data = []
                 for turn, chunk_candle_data in enumerate(chunk_candle_data_list):
@@ -1118,8 +1116,7 @@ class Simulator:
                     input_data.append(dataset)
 
             else:
-                communication_manager = multiprocessing.Manager()
-                progress_list = communication_manager.list([0])
+                progress_list = process_toss.communicator.list([0])
 
                 input_data = []
                 dataset = {
