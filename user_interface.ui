@@ -355,7 +355,7 @@ AskPopupContent {
              <item>
               <widget class="QLabel" name="label_2">
                <property name="text">
-                <string>Graph crypto</string>
+                <string>Graph coin</string>
                </property>
               </widget>
              </item>
@@ -744,7 +744,7 @@ AskPopupContent {
              <item>
               <widget class="QLabel" name="label_10">
                <property name="text">
-                <string>Graph crypto</string>
+                <string>Graph coin</string>
                </property>
               </widget>
              </item>

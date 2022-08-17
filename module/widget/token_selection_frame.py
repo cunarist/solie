@@ -200,7 +200,7 @@ class TokenSelectionFrame(QtWidgets.QScrollArea):
             icon_label.setMargin(5)
             this_layout.addWidget(icon_label)
             token_icon_labels[token] = icon_label
-            text = f"{token} ({number_of_markets[token]} cryptos available)"
+            text = f"{token} ({number_of_markets[token]} coins available)"
             text_label = QtWidgets.QLabel(text, card)
             this_layout.addWidget(text_label)
             spacer = QtWidgets.QSpacerItem(
@@ -240,7 +240,7 @@ class TokenSelectionFrame(QtWidgets.QScrollArea):
         )
         cards_layout.addItem(spacer)
 
-        # ■■■■■ draw crypto icons from another thread ■■■■■
+        # ■■■■■ draw coin icons from another thread ■■■■■
 
         def job():
             for token, icon_label in token_icon_labels.items():

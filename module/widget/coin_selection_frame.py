@@ -138,7 +138,7 @@ class CoinSelectionFrame(QtWidgets.QScrollArea):
 
         # title
         main_text = QtWidgets.QLabel(
-            "Choose cryptos",
+            "Choose coins",
             alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
         )
         main_text_font = QtGui.QFont()
@@ -156,7 +156,7 @@ class CoinSelectionFrame(QtWidgets.QScrollArea):
 
         # explanation
         detail_text = QtWidgets.QLabel(
-            "These are all available cryptos on Biancne.\nYou can select a minimum of 1"
+            "These are all available coins on Biancne.\nYou can select a minimum of 1"
             " and a maximum of 10.",
             alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
         )
@@ -249,7 +249,7 @@ class CoinSelectionFrame(QtWidgets.QScrollArea):
         )
         cards_layout.addItem(spacer)
 
-        # ■■■■■ draw crypto icons from another thread ■■■■■
+        # ■■■■■ draw coin icons from another thread ■■■■■
 
         def job():
             for symbol, icon_label in symbol_icon_labels.items():
