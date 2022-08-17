@@ -478,51 +478,62 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             # ■■■■■ show package licenses ■■■■■
 
             def job():
-                for dependency in introduction.DEPENDENCIES:
-                    dependency_name = dependency[0]
-                    dependency_version = dependency[1]
-                    dependency_license = dependency[2]
-                    dependency_url = dependency[3]
+                for category in ("CODE_SOURCES", "DEPENDENCIES"):
+                    if category == "CODE_SOURCES":
+                        category_text = "Code sources"
+                    elif category == "DEPENDENCIES":
+                        category_text = "Dependencies"
+                    category_label = QtWidgets.QLabel(category_text)
+                    self.verticalLayout_15.addWidget(category_label)
+                    divider = QtWidgets.QFrame(self)
+                    divider.setFrameShape(QtWidgets.QFrame.Shape.HLine)
+                    divider.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
+                    self.verticalLayout_15.addWidget(divider)
+                    for dependency in getattr(introduction, category):
+                        dependency_name = dependency[0]
+                        dependency_version = dependency[1]
+                        dependency_license = dependency[2]
+                        dependency_url = dependency[3]
 
-                    text = dependency_name
-                    text += f" ({dependency_version})"
-                    text += f" - {dependency_license}"
+                        text = dependency_name
+                        text += f" ({dependency_version})"
+                        text += f" - {dependency_license}"
 
-                    # card structure
-                    card = QtWidgets.QGroupBox()
-                    card.setFixedHeight(72)
-                    card_layout = QtWidgets.QHBoxLayout(card)
-                    license_label = QtWidgets.QLabel(
-                        text,
-                        alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-                    )
-                    card_layout.addWidget(license_label)
+                        # card structure
+                        card = QtWidgets.QGroupBox()
+                        card.setFixedHeight(72)
+                        card_layout = QtWidgets.QHBoxLayout(card)
+                        license_label = QtWidgets.QLabel(
+                            text,
+                            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
+                        )
+                        card_layout.addWidget(license_label)
+                        spacer = QtWidgets.QSpacerItem(
+                            0,
+                            0,
+                            QtWidgets.QSizePolicy.Policy.Expanding,
+                            QtWidgets.QSizePolicy.Policy.Minimum,
+                        )
+                        card_layout.addItem(spacer)
+
+                        def job(dependency_url=dependency_url):
+                            webbrowser.open(dependency_url)
+
+                        if dependency_url.startswith("http"):
+                            text = dependency_url
+                            link_button = QtWidgets.QPushButton(text, card)
+                            outsource.do(link_button.clicked, job)
+                            card_layout.addWidget(link_button)
+
+                        self.verticalLayout_15.addWidget(card)
+
                     spacer = QtWidgets.QSpacerItem(
                         0,
                         0,
-                        QtWidgets.QSizePolicy.Policy.Expanding,
                         QtWidgets.QSizePolicy.Policy.Minimum,
+                        QtWidgets.QSizePolicy.Policy.Expanding,
                     )
-                    card_layout.addItem(spacer)
-
-                    def job(dependency_url=dependency_url):
-                        webbrowser.open(dependency_url)
-
-                    if dependency_url.startswith("http"):
-                        text = dependency_url
-                        link_button = QtWidgets.QPushButton(text, card)
-                        outsource.do(link_button.clicked, job)
-                        card_layout.addWidget(link_button)
-
-                    self.verticalLayout_15.addWidget(card)
-
-                spacer = QtWidgets.QSpacerItem(
-                    0,
-                    0,
-                    QtWidgets.QSizePolicy.Policy.Minimum,
-                    QtWidgets.QSizePolicy.Policy.Expanding,
-                )
-                self.verticalLayout_15.addItem(spacer)
+                    self.verticalLayout_15.addItem(spacer)
 
             self.undertake(job, True)
 

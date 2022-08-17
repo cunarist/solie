@@ -1,5 +1,7 @@
 CURRENT_VERSION = "4.5"
 
+CODE_SOURCES = []
+
 DEPENDENCIES = [
     [
         "requests",
