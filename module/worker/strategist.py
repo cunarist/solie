@@ -150,7 +150,7 @@ class Strategiest:
 
     def fill_with_sample(self, *args, **kwargs):
         # decision script
-        filepath = "./resource/sample_decision_script.txt"
+        filepath = "./static/sample_decision_script.txt"
         with open(filepath, "r", encoding="utf8") as file:
             script = file.read()
 
@@ -160,7 +160,7 @@ class Strategiest:
         core.window.undertake(job, False)
 
         # indicators script
-        filepath = "./resource/sample_indicators_script.txt"
+        filepath = "./static/sample_indicators_script.txt"
         with open(filepath, "r", encoding="utf8") as file:
             script = file.read()
 

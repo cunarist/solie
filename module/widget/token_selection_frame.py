@@ -184,7 +184,7 @@ class TokenSelectionFrame(QtWidgets.QScrollArea):
         token_icon_labels = {}
         input_layout = QtWidgets.QGridLayout()
         blank_coin_pixmap = QtGui.QPixmap()
-        blank_coin_pixmap.load("./resource/icon/blank_coin.png")
+        blank_coin_pixmap.load("./static/icon/blank_coin.png")
         for turn, token in enumerate(available_tokens):
             this_layout = QtWidgets.QHBoxLayout()
             row = turn // 2

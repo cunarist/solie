@@ -320,7 +320,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                     image_data = urllib.request.urlopen(coin_icon_url).read()
                     pixmap.loadFromData(image_data)
                 else:
-                    pixmap.load("./resource/icon/blank_coin.png")
+                    pixmap.load("./static/icon/blank_coin.png")
                 symbol_pixmaps[symbol] = pixmap
 
             token_icon_url = coin_icon_urls.get(asset_token, "")
@@ -953,11 +953,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             ]
 
             red_pixmap = QtGui.QPixmap()
-            red_pixmap.load("./resource/icon/traffic_light_red.png")
+            red_pixmap.load("./static/icon/traffic_light_red.png")
             yellow_pixmap = QtGui.QPixmap()
-            yellow_pixmap.load("./resource/icon/traffic_light_yellow.png")
+            yellow_pixmap.load("./static/icon/traffic_light_yellow.png")
             green_pixmap = QtGui.QPixmap()
-            green_pixmap.load("./resource/icon/traffic_light_green.png")
+            green_pixmap.load("./static/icon/traffic_light_green.png")
 
             for strategy_tuple in self.strategy_tuples:
                 strategy_number = strategy_tuple[0]
@@ -1287,8 +1287,8 @@ def bring_to_life():
     # ■■■■■ theme ■■■■■
 
     # this part should be done after creating the app and before creating the window
-    QtGui.QFontDatabase.addApplicationFont("./resource/consolas.ttf")
-    QtGui.QFontDatabase.addApplicationFont("./resource/notosans_regular.ttf")
+    QtGui.QFontDatabase.addApplicationFont("./static/consolas.ttf")
+    QtGui.QFontDatabase.addApplicationFont("./static/notosans_regular.ttf")
     default_font = QtGui.QFont("Noto Sans", 9)
 
     app.setStyle("Fusion")

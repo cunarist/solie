@@ -10,7 +10,7 @@ hiddenimports = []
 
 # ■■■■■ include needed files ■■■■■
 
-datas.append(("./resource", "./resource"))
+datas.append(("./static", "./static"))
 
 # ■■■■■ packages to complete ■■■■■
 
@@ -70,7 +70,7 @@ exe = EXE(  # type:ignore # noqa:F821
     codesign_identity=None,
     entitlements_file=None,
     uac_admin=True,
-    icon="./resource/product_icon_solsol.ico",
+    icon="./static/product_icon_solsol.ico",
 )
 
 coll = COLLECT(  # type:ignore # noqa:F821

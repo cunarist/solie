@@ -2,10 +2,10 @@ from PySide6 import QtWidgets, QtGui, QtCore
 
 
 class GuideFrame(QtWidgets.QFrame):
-    with open("./resource/product_icon_solsol.png", mode="rb") as file:
+    with open("./static/product_icon_solsol.png", mode="rb") as file:
         image_logo_data = file.read()
 
-    with open("./resource/product_text_solsol.png", mode="rb") as file:
+    with open("./static/product_text_solsol.png", mode="rb") as file:
         text_logo_data = file.read()
 
     def __init__(self, total_steps=0):

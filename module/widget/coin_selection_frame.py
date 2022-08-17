@@ -187,7 +187,7 @@ class CoinSelectionFrame(QtWidgets.QScrollArea):
         symbol_icon_labels = {}
         input_layout = QtWidgets.QGridLayout()
         blank_coin_pixmap = QtGui.QPixmap()
-        blank_coin_pixmap.load("./resource/icon/blank_coin.png")
+        blank_coin_pixmap.load("./static/icon/blank_coin.png")
         for turn, symbol in enumerate(available_symbols):
             coin_symbol = symbol.removesuffix(asset_token)
             coin_name = coin_names.get(coin_symbol, "")
