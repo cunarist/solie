@@ -922,11 +922,11 @@ class Simulator:
         strategy = self.calculation_settings["strategy"]
 
         path_start = f"{self.workerpath}/{strategy}_{year}"
-        asset_record_filepath = path_start + "_asset_record.pickle"
-        unrealized_changes_filepath = path_start + "_unrealized_changes.pickle"
-        scribbles_filepath = path_start + "_scribbles.pickle"
-        account_state_filepath = path_start + "_account_state.pickle"
-        virtual_state_filepath = path_start + "_virtual_state.pickle"
+        asset_record_path = path_start + "_asset_record.pickle"
+        unrealized_changes_path = path_start + "_unrealized_changes.pickle"
+        scribbles_path = path_start + "_scribbles.pickle"
+        account_state_path = path_start + "_account_state.pickle"
+        virtual_state_path = path_start + "_virtual_state.pickle"
 
         target_symbols = user_settings.get_data_settings()["target_symbols"]
 
@@ -1015,15 +1015,15 @@ class Simulator:
         else:
             # when calculating properly
             try:
-                filepath = asset_record_filepath
+                filepath = asset_record_path
                 previous_asset_record = pd.read_pickle(filepath)
-                filepath = unrealized_changes_filepath
+                filepath = unrealized_changes_path
                 previous_unrealized_changes = pd.read_pickle(filepath)
-                with open(scribbles_filepath, "rb") as file:
+                with open(scribbles_path, "rb") as file:
                     previous_scribbles = pickle.load(file)
-                with open(account_state_filepath, "rb") as file:
+                with open(account_state_path, "rb") as file:
                     previous_account_state = pickle.load(file)
-                with open(virtual_state_filepath, "rb") as file:
+                with open(virtual_state_path, "rb") as file:
                     previous_virtual_state = pickle.load(file)
 
                 calculate_from = previous_account_state["observed_until"]
@@ -1201,13 +1201,13 @@ class Simulator:
         # ■■■■■ save if properly calculated ■■■■■
 
         if not only_visible and should_calculate:
-            asset_record.to_pickle(asset_record_filepath)
-            unrealized_changes.to_pickle(unrealized_changes_filepath)
-            with open(scribbles_filepath, "wb") as file:
+            asset_record.to_pickle(asset_record_path)
+            unrealized_changes.to_pickle(unrealized_changes_path)
+            with open(scribbles_path, "wb") as file:
                 pickle.dump(scribbles, file)
-            with open(account_state_filepath, "wb") as file:
+            with open(account_state_path, "wb") as file:
                 pickle.dump(account_state, file)
-            with open(virtual_state_filepath, "wb") as file:
+            with open(virtual_state_path, "wb") as file:
                 pickle.dump(virtual_state, file)
 
     def present(self, *args, **kwargs):
@@ -1347,23 +1347,23 @@ class Simulator:
         strategy = self.calculation_settings["strategy"]
 
         path_start = f"{self.workerpath}/{strategy}_{year}"
-        asset_record_filepath = path_start + "_asset_record.pickle"
-        unrealized_changes_filepath = path_start + "_unrealized_changes.pickle"
-        scribbles_filepath = path_start + "_scribbles.pickle"
-        account_state_filepath = path_start + "_account_state.pickle"
-        virtual_state_filepath = path_start + "_virtual_state.pickle"
+        asset_record_path = path_start + "_asset_record.pickle"
+        unrealized_changes_path = path_start + "_unrealized_changes.pickle"
+        scribbles_path = path_start + "_scribbles.pickle"
+        account_state_path = path_start + "_account_state.pickle"
+        virtual_state_path = path_start + "_virtual_state.pickle"
 
         does_file_exist = False
 
-        if os.path.exists(asset_record_filepath):
+        if os.path.exists(asset_record_path):
             does_file_exist = True
-        if os.path.exists(unrealized_changes_filepath):
+        if os.path.exists(unrealized_changes_path):
             does_file_exist = True
-        if os.path.exists(scribbles_filepath):
+        if os.path.exists(scribbles_path):
             does_file_exist = True
-        if os.path.exists(account_state_filepath):
+        if os.path.exists(account_state_path):
             does_file_exist = True
-        if os.path.exists(virtual_state_filepath):
+        if os.path.exists(virtual_state_path):
             does_file_exist = True
 
         if not does_file_exist:
@@ -1391,23 +1391,23 @@ class Simulator:
                 return
 
         try:
-            os.remove(asset_record_filepath)
+            os.remove(asset_record_path)
         except FileNotFoundError:
             pass
         try:
-            os.remove(unrealized_changes_filepath)
+            os.remove(unrealized_changes_path)
         except FileNotFoundError:
             pass
         try:
-            os.remove(scribbles_filepath)
+            os.remove(scribbles_path)
         except FileNotFoundError:
             pass
         try:
-            os.remove(account_state_filepath)
+            os.remove(account_state_path)
         except FileNotFoundError:
             pass
         try:
-            os.remove(virtual_state_filepath)
+            os.remove(virtual_state_path)
         except FileNotFoundError:
             pass
 
@@ -1418,20 +1418,18 @@ class Simulator:
         strategy = self.calculation_settings["strategy"]
 
         path_start = f"{self.workerpath}/{strategy}_{year}"
-        asset_record_filepath = path_start + "_asset_record.pickle"
-        unrealized_changes_filepath = path_start + "_unrealized_changes.pickle"
-        scribbles_filepath = path_start + "_scribbles.pickle"
-        account_state_filepath = path_start + "_account_state.pickle"
+        asset_record_path = path_start + "_asset_record.pickle"
+        unrealized_changes_path = path_start + "_unrealized_changes.pickle"
+        scribbles_path = path_start + "_scribbles.pickle"
+        account_state_path = path_start + "_account_state.pickle"
 
         try:
             with self.datalocks[0]:
-                self.raw_asset_record = pd.read_pickle(asset_record_filepath)
-                self.raw_unrealized_changes = pd.read_pickle(
-                    unrealized_changes_filepath
-                )
-                with open(scribbles_filepath, "rb") as file:
+                self.raw_asset_record = pd.read_pickle(asset_record_path)
+                self.raw_unrealized_changes = pd.read_pickle(unrealized_changes_path)
+                with open(scribbles_path, "rb") as file:
                     self.raw_scribbles = pickle.load(file)
-                with open(account_state_filepath, "rb") as file:
+                with open(account_state_path, "rb") as file:
                     self.raw_account_state = pickle.load(file)
             self.about_viewing = {"year": year, "strategy": strategy}
             self.present()
