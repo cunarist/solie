@@ -46,6 +46,7 @@ class Transactor:
             "minimum_notionals": {},
             "price_precisions": {},
             "quantity_precisions": {},
+            "maximum_leverages": {},
             "leverages": {},
         }
 
@@ -1568,10 +1569,43 @@ class Transactor:
         core.window.undertake(job, False)
 
     def update_mode_settings(self, *args, **kwargs):
-        desired_leverage = core.window.undertake(
-            lambda: core.window.spinBox.value(), True
-        )
+        widget = core.window.spinBox
+        desired_leverage = core.window.undertake(lambda w=widget: w.value(), True)
         self.mode_settings["desired_leverage"] = desired_leverage
+
+        # ■■■■■ tell if some symbol's leverage cannot be set as desired ■■■■■
+
+        target_symbols = user_settings.get_data_settings()["target_symbols"]
+        target_max_leverages = {}
+        for symbol in target_symbols:
+            max_leverage = self.secret_memory["maximum_leverages"][symbol]
+            target_max_leverages[symbol] = max_leverage
+        lowest_max_leverage = min(target_max_leverages.values())
+
+        if lowest_max_leverage < desired_leverage:
+            question = [
+                "Leverage on some symbols cannot be set as desired",
+                "Binance has its own leverage limits per market. For some symbols,"
+                " leverage will be set as high as it can be, but not as same as the"
+                " value entered. Generally, situation gets safer in terms of lowest"
+                " unrealized changes and profit turns out to be a bit lower than"
+                " simulation prediction with the same leverage.",
+                ["Show details", "Okay"],
+                False,
+            ]
+            answer = core.window.ask(question)
+            if answer == 1:
+                texts = []
+                for symbol, max_leverage in target_max_leverages.items():
+                    texts.append(f"{symbol} {max_leverage}")
+                text = "\n".join(texts)
+                question = [
+                    "These are highest available leverages",
+                    text,
+                    ["Okay"],
+                    False,
+                ]
+                core.window.ask(question)
 
         # ■■■■■ save ■■■■■
 
@@ -1601,8 +1635,6 @@ class Transactor:
             payload=payload,
         )
         about_exchange = response
-
-        # ■■■■■ remember exchange information ■■■■■
 
         for about_symbol in about_exchange["symbols"]:
             symbol = about_symbol["symbol"]
@@ -1636,6 +1668,23 @@ class Transactor:
             stepsize = float(about_filter["stepSize"])
             quantity_precision = int(math.log10(1 / stepsize))
             self.secret_memory["quantity_precisions"][symbol] = quantity_precision
+
+        # ■■■■■ request leverage bracket information ■■■■■
+
+        payload = {
+            "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+        }
+        response = self.api_requester.binance(
+            http_method="GET",
+            path="/fapi/v1/leverageBracket",
+            payload=payload,
+        )
+        about_brackets = response
+
+        for about_bracket in about_brackets:
+            symbol = about_bracket["symbol"]
+            max_leverage = about_bracket["brackets"][0]["initialLeverage"]
+            self.secret_memory["maximum_leverages"][symbol] = max_leverage
 
         # ■■■■■ request account information ■■■■■
 
@@ -1872,14 +1921,18 @@ class Transactor:
                 for about_position in about_account["positions"]:
                     if about_position["symbol"] == symbol:
                         break
-                leverage = int(about_position["leverage"])
+                current_leverage = int(about_position["leverage"])
 
-                if leverage != self.mode_settings["desired_leverage"]:
+                desired_leverage = self.mode_settings["desired_leverage"]
+                max_leverage = self.secret_memory["maximum_leverages"][symbol]
+                goal_leverage = min(desired_leverage, max_leverage)
+
+                if current_leverage != goal_leverage:
                     timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
                     payload = {
                         "symbol": symbol,
                         "timestamp": timestamp,
-                        "leverage": self.mode_settings["desired_leverage"],
+                        "leverage": goal_leverage,
                     }
                     self.api_requester.binance(
                         http_method="POST",
