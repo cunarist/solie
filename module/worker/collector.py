@@ -42,10 +42,7 @@ class Collector:
         # ■■■■■ worker secret memory ■■■■■
 
         self.secret_memory = {
-            "maximum_quantities": {},
-            "minimum_notionals": {},
             "price_precisions": {},
-            "quantity_precisions": {},
         }
 
         # ■■■■■ remember and display ■■■■■
@@ -191,34 +188,11 @@ class Collector:
             symbol = about_symbol["symbol"]
 
             for about_filter in about_symbol["filters"]:
-                if about_filter["filterType"] == "MIN_NOTIONAL":
-                    break
-            minimum_notional = float(about_filter["notional"])
-            self.secret_memory["minimum_notionals"][symbol] = minimum_notional
-
-            for about_filter in about_symbol["filters"]:
-                if about_filter["filterType"] == "LOT_SIZE":
-                    break
-            maximum_quantity = float(about_filter["maxQty"])
-            for about_filter in about_symbol["filters"]:
-                if about_filter["filterType"] == "MARKET_LOT_SIZE":
-                    break
-            maximum_quantity = min(maximum_quantity, float(about_filter["maxQty"]))
-            self.secret_memory["maximum_quantities"][symbol] = maximum_quantity
-
-            for about_filter in about_symbol["filters"]:
                 if about_filter["filterType"] == "PRICE_FILTER":
                     break
             ticksize = float(about_filter["tickSize"])
             price_precision = int(math.log10(1 / ticksize))
             self.secret_memory["price_precisions"][symbol] = price_precision
-
-            for about_filter in about_symbol["filters"]:
-                if about_filter["filterType"] == "LOT_SIZE":
-                    break
-            stepsize = float(about_filter["stepSize"])
-            quantity_precision = int(math.log10(1 / stepsize))
-            self.secret_memory["quantity_precisions"][symbol] = quantity_precision
 
     def fill_candle_data_holes(self, *args, **kwargs):
         # ■■■■■ check internet connection ■■■■■
