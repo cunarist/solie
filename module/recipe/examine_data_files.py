@@ -3,7 +3,6 @@ import copy
 import os
 import json
 import shutil
-from datetime import datetime, timezone
 import pandas as pd
 
 from module.recipe import user_settings
@@ -48,10 +47,6 @@ def do():
             data_settings = json.load(file)
         if "asset_token" not in data_settings.keys():
             data_settings["asset_token"] = "USDT"
-        if "modified_timestamp" not in data_settings.keys():
-            data_settings["modified_timestamp"] = int(
-                datetime.now(timezone.utc).timestamp()
-            )
         if "generated_timestamp" in data_settings.keys():
             data_settings.pop("generated_timestamp")
         with open(filepath, "w", encoding="utf8") as file:
