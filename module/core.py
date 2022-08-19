@@ -1016,69 +1016,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
             self.undertake(job, True)
 
-        # ■■■■■ submenus ■■■■■
-
-        def job():
-            action_menu = QtWidgets.QMenu(self)
-            collector.me_actions = []
-            text = "Save candle data"
-            collector.me_actions.append(action_menu.addAction(text))
-            text = "Save every year's candle data"
-            collector.me_actions.append(action_menu.addAction(text))
-            text = "Open binance historical data webpage"
-            collector.me_actions.append(action_menu.addAction(text))
-            text = "Stop filling candle data"
-            collector.me_actions.append(action_menu.addAction(text))
-            self.pushButton_13.setMenu(action_menu)
-
-            action_menu = QtWidgets.QMenu(self)
-            transactor.me_actions = []
-            text = "Open binance exchange"
-            transactor.me_actions.append(action_menu.addAction(text))
-            text = "Open binance testnet exchange"
-            transactor.me_actions.append(action_menu.addAction(text))
-            text = "Open binance wallet"
-            transactor.me_actions.append(action_menu.addAction(text))
-            text = "Open binance API management webpage"
-            transactor.me_actions.append(action_menu.addAction(text))
-            text = "Cancel all open orders on this symbol"
-            transactor.me_actions.append(action_menu.addAction(text))
-            text = "Display same range as simulation graph"
-            transactor.me_actions.append(action_menu.addAction(text))
-            self.pushButton_12.setMenu(action_menu)
-
-            action_menu = QtWidgets.QMenu(self)
-            simulator.me_actions = []
-            text = "Calculate temporarily only on visible range"
-            simulator.me_actions.append(action_menu.addAction(text))
-            text = "Stop calculation"
-            simulator.me_actions.append(action_menu.addAction(text))
-            text = "Find spots with lowest unrealized profit"
-            simulator.me_actions.append(action_menu.addAction(text))
-            text = "Display same range as transaction graph"
-            simulator.me_actions.append(action_menu.addAction(text))
-            self.pushButton_11.setMenu(action_menu)
-
-            action_menu = QtWidgets.QMenu(self)
-            strategist.me_actions = []
-            text = "Apply sample strategy"
-            strategist.me_actions.append(action_menu.addAction(text))
-            self.pushButton_9.setMenu(action_menu)
-
-            action_menu = QtWidgets.QMenu(self)
-            manager.me_actions = []
-            text = "Make a small error on purpose"
-            manager.me_actions.append(action_menu.addAction(text))
-            text = "Show test popup"
-            manager.me_actions.append(action_menu.addAction(text))
-            text = "Match system time with binance server"
-            manager.me_actions.append(action_menu.addAction(text))
-            text = "Show Solsol license key"
-            manager.me_actions.append(action_menu.addAction(text))
-            self.pushButton_10.setMenu(action_menu)
-
-        self.undertake(job, True)
-
         # ■■■■■ prepare auto executions ■■■■■
 
         self.initialize_functions = []
@@ -1109,46 +1046,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             # gauge
             job = manager.me.toggle_board_availability
             outsource.do(self.gauge.clicked, job)
-
-            # actions
-            job = collector.me.save_candle_data
-            outsource.do(collector.me_actions[0].triggered, job)
-            job = collector.me.save_all_years_history
-            outsource.do(collector.me_actions[1].triggered, job)
-            job = collector.me.open_binance_data_page
-            outsource.do(collector.me_actions[2].triggered, job)
-            job = collector.me.stop_filling_candle_data
-            outsource.do(collector.me_actions[3].triggered, job)
-            job = transactor.me.open_exchange
-            outsource.do(transactor.me_actions[0].triggered, job)
-            job = transactor.me.open_testnet_exchange
-            outsource.do(transactor.me_actions[1].triggered, job)
-            job = transactor.me.open_futures_wallet_page
-            outsource.do(transactor.me_actions[2].triggered, job)
-            job = transactor.me.open_api_management_page
-            outsource.do(transactor.me_actions[3].triggered, job)
-            job = transactor.me.cancel_symbol_orders
-            outsource.do(transactor.me_actions[4].triggered, job)
-            job = transactor.me.match_graph_range
-            outsource.do(transactor.me_actions[5].triggered, job)
-            job = simulator.me.simulate_only_visible
-            outsource.do(simulator.me_actions[0].triggered, job)
-            job = simulator.me.stop_calculation
-            outsource.do(simulator.me_actions[1].triggered, job)
-            job = simulator.me.analyze_unrealized_peaks
-            outsource.do(simulator.me_actions[2].triggered, job)
-            job = simulator.me.match_graph_range
-            outsource.do(simulator.me_actions[3].triggered, job)
-            job = strategist.me.fill_with_sample
-            outsource.do(strategist.me_actions[0].triggered, job)
-            job = manager.me.make_small_exception
-            outsource.do(manager.me_actions[0].triggered, job)
-            job = manager.me.open_sample_ask_popup
-            outsource.do(manager.me_actions[1].triggered, job)
-            job = manager.me.match_system_time
-            outsource.do(manager.me_actions[2].triggered, job)
-            job = manager.me.show_license_key
-            outsource.do(manager.me_actions[3].triggered, job)
 
             # special widgets
             job = transactor.me.display_range_information
@@ -1219,6 +1116,103 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             outsource.do(self.comboBox_6.activated, job)
             job = manager.me.open_documentation
             outsource.do(self.pushButton_7.clicked, job)
+
+        self.undertake(job, True)
+
+        # ■■■■■ submenu actions ■■■■■
+
+        def job():
+            action_menu = QtWidgets.QMenu(self)
+            self.pushButton_13.setMenu(action_menu)
+            text = "Save candle data"
+            job = collector.me.save_candle_data
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
+            text = "Save every year's candle data"
+            job = collector.me.save_all_years_history
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
+            text = "Open binance historical data webpage"
+            job = collector.me.open_binance_data_page
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
+            text = "Stop filling candle data"
+            job = collector.me.stop_filling_candle_data
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
+
+            action_menu = QtWidgets.QMenu(self)
+            self.pushButton_12.setMenu(action_menu)
+            text = "Open binance exchange"
+            job = transactor.me.open_exchange
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
+            self.pushButton_12.setMenu(action_menu)
+            text = "Open binance testnet exchange"
+            job = transactor.me.open_testnet_exchange
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
+            text = "Open binance wallet"
+            job = transactor.me.open_futures_wallet_page
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
+            text = "Open binance API management webpage"
+            job = transactor.me.open_api_management_page
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
+            text = "Cancel all open orders on this symbol"
+            job = transactor.me.cancel_symbol_orders
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
+            text = "Display same range as simulation graph"
+            job = transactor.me.match_graph_range
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
+
+            action_menu = QtWidgets.QMenu(self)
+            self.pushButton_11.setMenu(action_menu)
+            text = "Calculate temporarily only on visible range"
+            job = simulator.me.simulate_only_visible
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
+            text = "Stop calculation"
+            job = simulator.me.stop_calculation
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
+            text = "Find spots with lowest unrealized profit"
+            job = simulator.me.analyze_unrealized_peaks
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
+            text = "Display same range as transaction graph"
+            job = simulator.me.match_graph_range
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
+
+            action_menu = QtWidgets.QMenu(self)
+            self.pushButton_9.setMenu(action_menu)
+            text = "Apply sample strategy"
+            job = strategist.me.fill_with_sample
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
+
+            action_menu = QtWidgets.QMenu(self)
+            self.pushButton_10.setMenu(action_menu)
+            text = "Make a small error on purpose"
+            job = manager.me.make_small_exception
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
+            text = "Show test popup"
+            job = manager.me.open_sample_ask_popup
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
+            text = "Match system time with binance server"
+            job = manager.me.match_system_time
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
+            text = "Show Solsol license key"
+            job = manager.me.show_license_key
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
 
         self.undertake(job, True)
 
