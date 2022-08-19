@@ -1,5 +1,5 @@
 # get candle data
-with datalocks.hold(candle_data):
+with datalocks.hold("candle_data_during_indicator_creation"):
     close_sr = candle_data[(symbol, "Close")].copy()
     volume_sr = candle_data[(symbol, "Volume")].copy()
 

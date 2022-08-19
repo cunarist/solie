@@ -26,11 +26,11 @@ class ApiRequester:
         attempt = 0
         while True:
             slot = attempt % self._SESSION_COUNT
-            if datalocks.hold(self._sessions[slot]).locked():
+            if datalocks.hold(f"request_session_{slot}").locked():
                 attempt += 1
             else:
                 break
-        with datalocks.hold(self._sessions[slot]):
+        with datalocks.hold(f"request_session_{slot}"):
             if http_method == "GET":
                 raw_response = self._sessions[slot].get(**parameters)
             elif http_method == "DELETE":

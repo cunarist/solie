@@ -45,7 +45,7 @@ def do(**kwargs):
     # ■■■■■ make individual indicators ■■■■■
 
     def job(symbol):
-        with datalocks.hold(candle_data):
+        with datalocks.hold("candle_data_during_indicator_creation"):
             if symbol not in candle_data.columns.get_level_values(0):
                 return
 
@@ -68,7 +68,7 @@ def do(**kwargs):
         elif strategy == 2:
             border = 0.5  # percent
 
-            with datalocks.hold(candle_data):
+            with datalocks.hold("candle_data_during_indicator_creation"):
                 close = candle_data[(symbol, "Close")].copy()
 
             dimensions = [1, 4, 16, 64]
@@ -89,7 +89,7 @@ def do(**kwargs):
             diff_sum = diff.rolling(int(600 / 10)).sum() / 6  # percent*minute
             new_indicators[(symbol, "Abstract", "Diff Sum (#BB00FF)")] = diff_sum
 
-            with datalocks.hold(candle_data):
+            with datalocks.hold("candle_data_during_indicator_creation"):
                 volume = candle_data[(symbol, "Volume")].copy()
 
             fast_volume_sma = talib.SMA(volume, 10 * 60 / 10)

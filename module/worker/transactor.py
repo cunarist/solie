@@ -477,7 +477,7 @@ class Transactor:
                 added_margin = added_notional / leverage
                 added_margin_ratio = added_margin / wallet_balance
 
-                with datalocks.hold(self.asset_record):
+                with datalocks.hold("transactor_asset_record"):
                     df = self.asset_record
                     symbol_df = df[df["Symbol"] == symbol]
                     recorded_id_list = symbol_df["Order ID"].tolist()
@@ -513,7 +513,7 @@ class Transactor:
                     filepath = self.workerpath + "/asset_record.pickle"
                     self.asset_record.to_pickle(filepath)
 
-                with datalocks.hold(self.auto_order_record):
+                with datalocks.hold("transactor_auto_order_record"):
                     df = self.auto_order_record
                     symbol_df = df[df["Symbol"] == symbol]
                     if order_id in symbol_df["Order ID"].unique():
@@ -528,7 +528,7 @@ class Transactor:
         self.cancel_conflicting_orders()
 
     def save_unrealized_changes(self, *args, **kwargs):
-        with datalocks.hold(self.unrealized_changes):
+        with datalocks.hold("transactor_unrealized_changes"):
             sr = self.unrealized_changes.sort_index()
             sr = sr.astype(np.float32)
             unrealized_changes = sr.copy()
@@ -631,7 +631,7 @@ class Transactor:
                 seconds=current_moment.second % 10
             )
             count_start_time = current_moment - timedelta(hours=24)
-            with datalocks.hold(collector.me.candle_data):
+            with datalocks.hold("collector_candle_data"):
                 df = collector.me.candle_data
                 cumulated_moments = len(df[count_start_time:].dropna())
             needed_moments = 24 * 60 * 60 / 10
@@ -700,9 +700,9 @@ class Transactor:
         if stop_flag.find("display_transaction_range_information", task_id):
             return
 
-        with datalocks.hold(self.unrealized_changes):
+        with datalocks.hold("transactor_unrealized_changes"):
             unrealized_changes = self.unrealized_changes[range_start:range_end].copy()
-        with datalocks.hold(self.asset_record):
+        with datalocks.hold("transactor_asset_record"):
             asset_record = self.asset_record[range_start:range_end].copy()
 
         asset_changes = asset_record["Result Asset"].pct_change() + 1
@@ -799,7 +799,7 @@ class Transactor:
 
         # ■■■■■ check if the data exists ■■■■■
 
-        with datalocks.hold(collector.me.candle_data):
+        with datalocks.hold("collector_candle_data"):
             if len(collector.me.candle_data) == 0:
                 return
 
@@ -813,7 +813,7 @@ class Transactor:
             for _ in range(50):
                 if stop_flag.find(task_name, task_id):
                     return
-                with datalocks.hold(collector.me.candle_data):
+                with datalocks.hold("collector_candle_data"):
                     last_index = collector.me.candle_data.index[-1]
                     if last_index == before_moment:
                         break
@@ -830,11 +830,11 @@ class Transactor:
 
         # ■■■■■ get light data ■■■■■
 
-        with datalocks.hold(collector.me.realtime_data_chunks):
+        with datalocks.hold("collector_realtime_data_chunks"):
             before_chunk = collector.me.realtime_data_chunks[-2].copy()
             current_chunk = collector.me.realtime_data_chunks[-1].copy()
         realtime_data = np.concatenate((before_chunk, current_chunk))
-        with datalocks.hold(collector.me.aggregate_trades):
+        with datalocks.hold("collector_aggregate_trades"):
             aggregate_trades = collector.me.aggregate_trades.copy()
 
         # ■■■■■ draw light lines ■■■■■
@@ -993,13 +993,13 @@ class Transactor:
 
         # ■■■■■ get heavy data ■■■■■
 
-        with datalocks.hold(collector.me.candle_data):
+        with datalocks.hold("collector_candle_data"):
             candle_data = collector.me.candle_data
             candle_data = candle_data[get_from:slice_until][[symbol]]
             candle_data = candle_data.copy()
-        with datalocks.hold(self.unrealized_changes):
+        with datalocks.hold("transactor_unrealized_changes"):
             unrealized_changes = self.unrealized_changes.copy()
-        with datalocks.hold(self.asset_record):
+        with datalocks.hold("transactor_asset_record"):
             asset_record = self.asset_record
             if len(asset_record) > 0:
                 last_asset = asset_record.iloc[-1]["Result Asset"]
@@ -1413,7 +1413,7 @@ class Transactor:
         for each_position in self.account_state["positions"].values():
             margin_sum += each_position["margin"]
 
-        with datalocks.hold(self.auto_order_record):
+        with datalocks.hold("transactor_auto_order_record"):
             if len(self.auto_order_record) > 0:
                 total_profit = self.auto_order_record["Net Profit"].sum()
             else:
@@ -1499,7 +1499,7 @@ class Transactor:
 
         # ■■■■■ check if the data exists ■■■■■
 
-        with datalocks.hold(collector.me.candle_data):
+        with datalocks.hold("collector_candle_data"):
             if len(collector.me.candle_data) == 0:
                 # case when the app is executed for the first time
                 return
@@ -1507,7 +1507,7 @@ class Transactor:
         # ■■■■■ wait for the latest data to be added ■■■■■
 
         for _ in range(50):
-            with datalocks.hold(collector.me.candle_data):
+            with datalocks.hold("collector_candle_data"):
                 last_index = collector.me.candle_data.index[-1]
                 if last_index == before_moment:
                     break
@@ -1517,7 +1517,7 @@ class Transactor:
 
         count_start_time = current_moment - timedelta(hours=24)
 
-        with datalocks.hold(collector.me.candle_data):
+        with datalocks.hold("collector_candle_data"):
             df = collector.me.candle_data
             cumulated_moments = len(df[count_start_time:].dropna())
         needed_moments = 24 * 60 * 60 / 10
@@ -1529,7 +1529,7 @@ class Transactor:
         # ■■■■■ get the candle data ■■■■■
 
         slice_from = datetime.now(timezone.utc) - timedelta(days=7)
-        with datalocks.hold(collector.me.candle_data):
+        with datalocks.hold("collector_candle_data"):
             df = collector.me.candle_data
             partial_candle_data = df[slice_from:].copy()
 
@@ -1904,12 +1904,12 @@ class Transactor:
         else:
             unrealized_change = 0
 
-        with datalocks.hold(self.unrealized_changes):
+        with datalocks.hold("transactor_unrealized_changes"):
             self.unrealized_changes[before_moment] = unrealized_change
 
         # ■■■■■ make an asset trace if it's blank ■■■■■
 
-        with datalocks.hold(self.asset_record):
+        with datalocks.hold("transactor_asset_record"):
             if len(self.asset_record) == 0:
                 for about_asset in about_account["assets"]:
                     if (
@@ -1930,7 +1930,7 @@ class Transactor:
                 break
         wallet_balance = float(about_asset["walletBalance"])
 
-        with datalocks.hold(self.asset_record):
+        with datalocks.hold("transactor_asset_record"):
             last_index = self.asset_record.index[-1]
             last_asset = self.asset_record.loc[last_index, "Result Asset"]
 
@@ -1939,7 +1939,7 @@ class Transactor:
         elif abs(wallet_balance - last_asset) / wallet_balance > 10**-9:
             # when the difference is bigger than one billionth
             # referal fee, funding fee, wallet transfer, etc..
-            with datalocks.hold(self.asset_record):
+            with datalocks.hold("transactor_asset_record"):
                 current_time = datetime.now(timezone.utc)
                 self.asset_record.loc[current_time, "Cause"] = "other"
                 self.asset_record.loc[current_time, "Result Asset"] = wallet_balance
@@ -1947,7 +1947,7 @@ class Transactor:
                 self.asset_record = self.asset_record.sort_index()
         else:
             # when the difference is small enough to consider as an numeric error
-            with datalocks.hold(self.asset_record):
+            with datalocks.hold("transactor_asset_record"):
                 last_index = self.asset_record.index[-1]
                 self.asset_record.loc[last_index, "Result Asset"] = wallet_balance
 
@@ -2069,7 +2069,7 @@ class Transactor:
             if symbol not in decision.keys():
                 continue
 
-            with datalocks.hold(collector.me.aggregate_trades):
+            with datalocks.hold("collector_aggregate_trades"):
                 ar = collector.me.aggregate_trades[-10000:].copy()
             temp_ar = ar[str((symbol, "Price"))]
             temp_ar = temp_ar[temp_ar != 0]
@@ -2280,7 +2280,7 @@ class Transactor:
                 order_id = response["orderId"]
                 timestamp = response["updateTime"] / 1000
                 update_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-                with datalocks.hold(self.auto_order_record):
+                with datalocks.hold("transactor_auto_order_record"):
                     self.auto_order_record.loc[update_time, "Symbol"] = order_symbol
                     self.auto_order_record.loc[update_time, "Order ID"] = order_id
                     self.auto_order_record.loc[update_time, "Net Profit"] = 0

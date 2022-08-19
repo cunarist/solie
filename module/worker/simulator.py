@@ -176,7 +176,7 @@ class Simulator:
 
         # ■■■■■ check if the data exists ■■■■■
 
-        with datalocks.hold(collector.me.candle_data):
+        with datalocks.hold("collector_candle_data"):
             if len(collector.me.candle_data) == 0:
                 return
 
@@ -190,7 +190,7 @@ class Simulator:
             for _ in range(50):
                 if stop_flag.find(task_name, task_id):
                     return
-                with datalocks.hold(collector.me.candle_data):
+                with datalocks.hold("collector_candle_data"):
                     last_index = collector.me.candle_data.index[-1]
                     if last_index == before_moment:
                         break
@@ -207,11 +207,11 @@ class Simulator:
 
         # ■■■■■ get light data ■■■■■
 
-        with datalocks.hold(collector.me.realtime_data_chunks):
+        with datalocks.hold("collector_realtime_data_chunks"):
             before_chunk = collector.me.realtime_data_chunks[-2].copy()
             current_chunk = collector.me.realtime_data_chunks[-1].copy()
         realtime_data = np.concatenate((before_chunk, current_chunk))
-        with datalocks.hold(collector.me.aggregate_trades):
+        with datalocks.hold("collector_aggregate_trades"):
             aggregate_trades = collector.me.aggregate_trades.copy()
 
         # ■■■■■ draw light lines ■■■■■
@@ -373,13 +373,13 @@ class Simulator:
 
         # ■■■■■ get heavy data ■■■■■
 
-        with datalocks.hold(collector.me.candle_data):
+        with datalocks.hold("collector_candle_data"):
             candle_data = collector.me.candle_data
             candle_data = candle_data[get_from:slice_until][[symbol]]
             candle_data = candle_data.copy()
-        with datalocks.hold(self.unrealized_changes):
+        with datalocks.hold("simulator_unrealized_changes"):
             unrealized_changes = self.unrealized_changes.copy()
-        with datalocks.hold(self.asset_record):
+        with datalocks.hold("simulator_asset_record"):
             asset_record = self.asset_record
             if len(asset_record) > 0:
                 last_asset = asset_record.iloc[-1]["Result Asset"]
@@ -757,7 +757,7 @@ class Simulator:
         self.present()
 
     def display_available_years(self, *args, **kwargs):
-        with datalocks.hold(collector.me.candle_data):
+        with datalocks.hold("collector_candle_data"):
             years_sr = collector.me.candle_data.index.year.drop_duplicates()
         years = years_sr.tolist()
         years.sort(reverse=True)
@@ -816,9 +816,9 @@ class Simulator:
         if stop_flag.find("display_simulation_range_information", task_id):
             return
 
-        with datalocks.hold(self.unrealized_changes):
+        with datalocks.hold("simulator_unrealized_changes"):
             unrealized_changes = self.unrealized_changes[range_start:range_end].copy()
-        with datalocks.hold(self.asset_record):
+        with datalocks.hold("simulator_asset_record"):
             asset_record = self.asset_record[range_start:range_end].copy()
 
         asset_changes = asset_record["Result Asset"].pct_change() + 1
@@ -1002,7 +1002,7 @@ class Simulator:
         get_from = slice_from - timedelta(days=7)
 
         # get only year range
-        with datalocks.hold(collector.me.candle_data):
+        with datalocks.hold("collector_candle_data"):
             df = collector.me.candle_data
             year_candle_data = df[get_from:slice_until].copy()
 
@@ -1251,7 +1251,7 @@ class Simulator:
         taker_fee = self.presentation_settings["taker_fee"]
         leverage = self.presentation_settings["leverage"]
 
-        with datalocks.hold(self.unrealized_changes):
+        with datalocks.hold("simulator_unrealized_changes"):
             asset_record = self.raw_asset_record.copy()
             unrealized_changes = self.raw_unrealized_changes.copy()
             scribbles = self.raw_scribbles.copy()
@@ -1334,9 +1334,9 @@ class Simulator:
 
         self.scribbles = presentation_scribbles
         self.account_state = presentation_account_state
-        with datalocks.hold(self.unrealized_changes):
+        with datalocks.hold("simulator_unrealized_changes"):
             self.unrealized_changes = presentation_unrealized_changes
-        with datalocks.hold(self.asset_record):
+        with datalocks.hold("simulator_asset_record"):
             self.asset_record = presentation_asset_record
 
         # ■■■■■ display ■■■■■
@@ -1458,7 +1458,7 @@ class Simulator:
         account_state_path = path_start + "_account_state.pickle"
 
         try:
-            with datalocks.hold(self.unrealized_changes):
+            with datalocks.hold("simulator_unrealized_changes"):
                 self.raw_asset_record = pd.read_pickle(asset_record_path)
                 self.raw_unrealized_changes = pd.read_pickle(unrealized_changes_path)
                 with open(scribbles_path, "rb") as file:
