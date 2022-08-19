@@ -91,11 +91,7 @@ class OverlapPopup(QtWidgets.QWidget):
 
         scroll_widget.setLayout(scroll_layout)
         scroll_area.setWidget(scroll_widget)
-
-        scroll_area.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
-        scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         scroll_area.setWidgetResizable(True)
-        scroll_area.setWidget(scroll_widget)
 
         content_box_layout.addWidget(scroll_area)
         self.scroll_layout = scroll_layout

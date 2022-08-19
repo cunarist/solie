@@ -8,8 +8,8 @@ from module.instrument.syntax_highlighter import SyntaxHighlighter
 class ScriptEditor(QtWidgets.QPlainTextEdit):
     def __init__(self, parent):
         super().__init__(parent)
-        fixed_width_font = QtGui.QFont("Consolas", 9)
-        self.setFont(fixed_width_font)
+        self.fixed_width_font = QtGui.QFont("Consolas", 9)
+        self.setFont(self.fixed_width_font)
         SyntaxHighlighter(parent).setDocument(self.document())
 
     def keyPressEvent(self, event):  # noqa:N802

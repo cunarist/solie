@@ -6,8 +6,8 @@ from module import core
 class LogList(QtWidgets.QListWidget):
     def __init__(self, parent):
         super().__init__(parent)
-        fixed_width_font = QtGui.QFont("Consolas", 9)
-        self.setFont(fixed_width_font)
+        self.fixed_width_font = QtGui.QFont("Consolas", 9)
+        self.setFont(self.fixed_width_font)
         self.itemClicked.connect(self.show_fulltext)
 
     def addItem(self, fulltext):  # noqa:N802
@@ -37,6 +37,7 @@ class LogList(QtWidgets.QListWidget):
 
         def job():
             label = QtWidgets.QLabel(fulltext)
+            label.setFont(self.fixed_width_font)
             scroll_layout.addWidget(label)
 
         core.window.undertake(job, False)
