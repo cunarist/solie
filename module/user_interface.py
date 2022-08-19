@@ -98,7 +98,7 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "BrandLabel {\n"
-"	color: #787878;\n"
+"	color: #888888;\n"
 "}\n"
 "\n"
 "HorizontalDivider, VerticalDivider {\n"

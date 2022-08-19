@@ -83,7 +83,7 @@ PopupBox {
 }
 
 BrandLabel {
-	color: #787878;
+	color: #888888;
 }
 
 HorizontalDivider, VerticalDivider {
