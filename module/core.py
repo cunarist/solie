@@ -585,10 +585,10 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.plot_widget_1 = pyqtgraph.PlotWidget()
             self.plot_widget_4 = pyqtgraph.PlotWidget()
             self.plot_widget_6 = pyqtgraph.PlotWidget()
-            self.plot_widget.setBackground("#2B2B2B")
-            self.plot_widget_1.setBackground("#2B2B2B")
-            self.plot_widget_4.setBackground("#2B2B2B")
-            self.plot_widget_6.setBackground("#2B2B2B")
+            self.plot_widget.setBackground("#252525")
+            self.plot_widget_1.setBackground("#252525")
+            self.plot_widget_4.setBackground("#252525")
+            self.plot_widget_6.setBackground("#252525")
             self.plot_widget.setMouseEnabled(y=False)
             self.plot_widget_1.setMouseEnabled(y=False)
             self.plot_widget_4.setMouseEnabled(y=False)
@@ -696,12 +696,12 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                     for _ in range(2)
                 ],
                 "last_price": plot_item.plot(
-                    pen=pyqtgraph.mkPen("#5A5F27"),
+                    pen=pyqtgraph.mkPen("#5A8CC2"),
                     connect="finite",
                     stepMode="right",
                 ),
                 "mark_price": plot_item.plot(
-                    pen=pyqtgraph.mkPen("#224200"),
+                    pen=pyqtgraph.mkPen("#3E628A"),
                     connect="finite",
                 ),
                 "price_indicators": [
@@ -720,18 +720,18 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 ],
                 "wobbles": [
                     plot_item.plot(
-                        pen=pyqtgraph.mkPen("#666666"),
+                        pen=pyqtgraph.mkPen("#888888"),
                         connect="finite",
                         stepMode="right",
                     )
                     for _ in range(2)
                 ],
                 "price_rise": plot_item.plot(
-                    pen=pyqtgraph.mkPen("#5DC100"),
+                    pen=pyqtgraph.mkPen("#70E161"),
                     connect="finite",
                 ),
                 "price_fall": plot_item.plot(
-                    pen=pyqtgraph.mkPen("#FF4444"),
+                    pen=pyqtgraph.mkPen("#FF304F"),
                     connect="finite",
                 ),
                 "price_stay": plot_item.plot(
@@ -791,10 +791,10 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.plot_widget_3 = pyqtgraph.PlotWidget()
             self.plot_widget_5 = pyqtgraph.PlotWidget()
             self.plot_widget_7 = pyqtgraph.PlotWidget()
-            self.plot_widget_2.setBackground("#2B2B2B")
-            self.plot_widget_3.setBackground("#2B2B2B")
-            self.plot_widget_5.setBackground("#2B2B2B")
-            self.plot_widget_7.setBackground("#2B2B2B")
+            self.plot_widget_2.setBackground("#252525")
+            self.plot_widget_3.setBackground("#252525")
+            self.plot_widget_5.setBackground("#252525")
+            self.plot_widget_7.setBackground("#252525")
             self.plot_widget_2.setMouseEnabled(y=False)
             self.plot_widget_3.setMouseEnabled(y=False)
             self.plot_widget_5.setMouseEnabled(y=False)
@@ -902,12 +902,12 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                     for _ in range(2)
                 ],
                 "last_price": plot_item_2.plot(
-                    pen=pyqtgraph.mkPen("#5A5F27"),
+                    pen=pyqtgraph.mkPen("#5A8CC2"),
                     connect="finite",
                     stepMode="right",
                 ),
                 "mark_price": plot_item_2.plot(
-                    pen=pyqtgraph.mkPen("#224200"),
+                    pen=pyqtgraph.mkPen("#3E628A"),
                     connect="finite",
                 ),
                 "price_indicators": [
@@ -926,18 +926,18 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 ],
                 "wobbles": [
                     plot_item_2.plot(
-                        pen=pyqtgraph.mkPen("#666666"),
+                        pen=pyqtgraph.mkPen("#888888"),
                         connect="finite",
                         stepMode="right",
                     )
                     for _ in range(2)
                 ],
                 "price_rise": plot_item_2.plot(
-                    pen=pyqtgraph.mkPen("#5DC100"),
+                    pen=pyqtgraph.mkPen("#70E161"),
                     connect="finite",
                 ),
                 "price_fall": plot_item_2.plot(
-                    pen=pyqtgraph.mkPen("#FF4444"),
+                    pen=pyqtgraph.mkPen("#FF304F"),
                     connect="finite",
                 ),
                 "price_stay": plot_item_2.plot(
@@ -1356,14 +1356,14 @@ def bring_to_life():
     app.setFont(default_font)
 
     dark_palette = QtGui.QPalette()
-    dark_palette.setColor(QtGui.QPalette.Window, QtGui.QColor(33, 33, 33))
+    dark_palette.setColor(QtGui.QPalette.Window, QtGui.QColor(29, 29, 29))
     dark_palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor(230, 230, 230))
-    dark_palette.setColor(QtGui.QPalette.Base, QtGui.QColor(29, 29, 29))
-    dark_palette.setColor(QtGui.QPalette.AlternateBase, QtGui.QColor(33, 33, 33))
+    dark_palette.setColor(QtGui.QPalette.Base, QtGui.QColor(26, 26, 26))
+    dark_palette.setColor(QtGui.QPalette.AlternateBase, QtGui.QColor(29, 29, 29))
     dark_palette.setColor(QtGui.QPalette.ToolTipBase, QtGui.QColor(230, 230, 230))
     dark_palette.setColor(QtGui.QPalette.ToolTipText, QtGui.QColor(230, 230, 230))
     dark_palette.setColor(QtGui.QPalette.Text, QtGui.QColor(230, 230, 230))
-    dark_palette.setColor(QtGui.QPalette.Button, QtGui.QColor(33, 33, 33))
+    dark_palette.setColor(QtGui.QPalette.Button, QtGui.QColor(29, 29, 29))
     dark_palette.setColor(QtGui.QPalette.ButtonText, QtGui.QColor(230, 230, 230))
     dark_palette.setColor(QtGui.QPalette.BrightText, QtGui.QColor(255, 180, 0))
     dark_palette.setColor(QtGui.QPalette.Link, QtGui.QColor(42, 130, 218))
