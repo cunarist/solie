@@ -1176,7 +1176,13 @@ class Transactor:
         data_x = np.stack(
             [
                 index_ar[stay_ar] + 2,
+                index_ar[stay_ar] + 5,
+                index_ar[stay_ar],
+                index_ar[stay_ar] + 5,
                 index_ar[stay_ar] + 8,
+                index_ar[stay_ar],
+                index_ar[stay_ar] + 5,
+                index_ar[stay_ar] + 5,
                 index_ar[stay_ar],
             ],
             axis=1,
@@ -1184,7 +1190,13 @@ class Transactor:
         data_y = np.stack(
             [
                 open_ar[stay_ar],
+                open_ar[stay_ar],
+                nan_ar[stay_ar],
                 close_ar[stay_ar],
+                close_ar[stay_ar],
+                nan_ar[stay_ar],
+                high_ar[stay_ar],
+                low_ar[stay_ar],
                 nan_ar[stay_ar],
             ],
             axis=1,
