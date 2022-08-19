@@ -15,7 +15,7 @@ class LogHandler(logging.Handler):
     def emit(self, log_record):
         text = self.format(log_record)
         lines = text.split("\n")
-        message = log_record.msg
+        message = log_record.getMessage()
         if log_record.exc_info is None:
             plain_message = message.split("\n")[0]
             lines[0] += f" | {plain_message}"
