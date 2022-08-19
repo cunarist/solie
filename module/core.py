@@ -41,6 +41,7 @@ from module.widget.guide_frame import GuideFrame
 from module.widget.license_frame import LicenseFrame
 from module.widget.symbol_box import SymbolBox
 from module.widget.brand_label import BrandLabel
+from module.widget.horizontal_divider import HorizontalDivider
 
 
 class Window(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -374,9 +375,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.verticalLayout_14.addWidget(spacing_text)
             this_layout = QtWidgets.QHBoxLayout()
             self.verticalLayout_14.addLayout(this_layout)
-            divider = QtWidgets.QFrame(self)
-            divider.setFrameShape(QtWidgets.QFrame.Shape.HLine)
-            divider.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
+            divider = HorizontalDivider(self)
             divider.setFixedWidth(320)
             this_layout.addWidget(divider)
             spacing_text = QtWidgets.QLabel("")
@@ -525,9 +524,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                     category_text = "Dependencies"
                 category_label = QtWidgets.QLabel(category_text)
                 self.verticalLayout_15.addWidget(category_label)
-                divider = QtWidgets.QFrame(self)
-                divider.setFrameShape(QtWidgets.QFrame.Shape.HLine)
-                divider.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
+                divider = HorizontalDivider(self)
                 self.verticalLayout_15.addWidget(divider)
                 for dependency in getattr(introduction, category):
                     dependency_name = dependency[0]
@@ -584,10 +581,10 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.plot_widget_1 = pyqtgraph.PlotWidget()
             self.plot_widget_4 = pyqtgraph.PlotWidget()
             self.plot_widget_6 = pyqtgraph.PlotWidget()
-            self.plot_widget.setBackground("#FCFCFC")
-            self.plot_widget_1.setBackground("#FCFCFC")
-            self.plot_widget_4.setBackground("#FCFCFC")
-            self.plot_widget_6.setBackground("#FCFCFC")
+            self.plot_widget.setBackground("#2B2B2B")
+            self.plot_widget_1.setBackground("#2B2B2B")
+            self.plot_widget_4.setBackground("#2B2B2B")
+            self.plot_widget_6.setBackground("#2B2B2B")
             self.plot_widget.setMouseEnabled(y=False)
             self.plot_widget_1.setMouseEnabled(y=False)
             self.plot_widget_4.setMouseEnabled(y=False)
@@ -680,27 +677,27 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             plot_item_4.getAxis("bottom").setHeight(0)
             plot_item_6.getAxis("top").setHeight(0)
             plot_item_6.getAxis("bottom").setHeight(0)
-            plot_item.showGrid(x=True, y=True, alpha=0.15)
-            plot_item_1.showGrid(x=True, y=True, alpha=0.15)
-            plot_item_4.showGrid(x=True, y=True, alpha=0.15)
-            plot_item_6.showGrid(x=True, y=True, alpha=0.15)
+            plot_item.showGrid(x=True, y=True, alpha=0.1)
+            plot_item_1.showGrid(x=True, y=True, alpha=0.1)
+            plot_item_4.showGrid(x=True, y=True, alpha=0.1)
+            plot_item_6.showGrid(x=True, y=True, alpha=0.1)
 
             self.transaction_lines = {
                 "book_tickers": [
                     plot_item.plot(
-                        pen=pyqtgraph.mkPen("#CFCFCF"),
+                        pen=pyqtgraph.mkPen("#3F3F3F"),
                         connect="finite",
                         stepMode="right",
                     )
                     for _ in range(2)
                 ],
                 "last_price": plot_item.plot(
-                    pen=pyqtgraph.mkPen("#D8E461"),
+                    pen=pyqtgraph.mkPen("#5A5F27"),
                     connect="finite",
                     stepMode="right",
                 ),
                 "mark_price": plot_item.plot(
-                    pen=pyqtgraph.mkPen("#E2F200"),
+                    pen=pyqtgraph.mkPen("#224200"),
                     connect="finite",
                 ),
                 "price_indicators": [
@@ -719,22 +716,22 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 ],
                 "wobbles": [
                     plot_item.plot(
-                        pen=pyqtgraph.mkPen("#BBBBBB"),
+                        pen=pyqtgraph.mkPen("#666666"),
                         connect="finite",
                         stepMode="right",
                     )
                     for _ in range(2)
                 ],
                 "price_rise": plot_item.plot(
-                    pen=pyqtgraph.mkPen("#1CA200"),
+                    pen=pyqtgraph.mkPen("#5DC100"),
                     connect="finite",
                 ),
                 "price_fall": plot_item.plot(
-                    pen=pyqtgraph.mkPen("#DD0000"),
+                    pen=pyqtgraph.mkPen("#FF4444"),
                     connect="finite",
                 ),
                 "price_stay": plot_item.plot(
-                    pen=pyqtgraph.mkPen("#464646"),
+                    pen=pyqtgraph.mkPen("#DDDDDD"),
                     connect="finite",
                 ),
                 "sell": plot_item.plot(
@@ -752,14 +749,14 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                     symbolSize=8,
                 ),
                 "volume": plot_item_4.plot(
-                    pen=pyqtgraph.mkPen("#111111"),
+                    pen=pyqtgraph.mkPen("#BBBBBB"),
                     connect="all",
                     stepMode="right",
                     fillLevel=0,
-                    brush=pyqtgraph.mkBrush(0, 0, 0, 15),
+                    brush=pyqtgraph.mkBrush(255, 255, 255, 15),
                 ),
                 "last_volume": plot_item_4.plot(
-                    pen=pyqtgraph.mkPen("#111111"),
+                    pen=pyqtgraph.mkPen("#BBBBBB"),
                     connect="finite",
                 ),
                 "volume_indicators": [
@@ -769,7 +766,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                     plot_item_6.plot(connect="finite") for _ in range(20)
                 ],
                 "asset_with_unrealized_profit": plot_item_1.plot(
-                    pen=pyqtgraph.mkPen("#AAAAAA"),
+                    pen=pyqtgraph.mkPen("#999999"),
                     connect="finite",
                 ),
                 "asset": plot_item_1.plot(
@@ -790,10 +787,10 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.plot_widget_3 = pyqtgraph.PlotWidget()
             self.plot_widget_5 = pyqtgraph.PlotWidget()
             self.plot_widget_7 = pyqtgraph.PlotWidget()
-            self.plot_widget_2.setBackground("#FCFCFC")
-            self.plot_widget_3.setBackground("#FCFCFC")
-            self.plot_widget_5.setBackground("#FCFCFC")
-            self.plot_widget_7.setBackground("#FCFCFC")
+            self.plot_widget_2.setBackground("#2B2B2B")
+            self.plot_widget_3.setBackground("#2B2B2B")
+            self.plot_widget_5.setBackground("#2B2B2B")
+            self.plot_widget_7.setBackground("#2B2B2B")
             self.plot_widget_2.setMouseEnabled(y=False)
             self.plot_widget_3.setMouseEnabled(y=False)
             self.plot_widget_5.setMouseEnabled(y=False)
@@ -886,27 +883,27 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             plot_item_5.getAxis("bottom").setHeight(0)
             plot_item_7.getAxis("top").setHeight(0)
             plot_item_7.getAxis("bottom").setHeight(0)
-            plot_item_2.showGrid(x=True, y=True, alpha=0.15)
-            plot_item_3.showGrid(x=True, y=True, alpha=0.15)
-            plot_item_5.showGrid(x=True, y=True, alpha=0.15)
-            plot_item_7.showGrid(x=True, y=True, alpha=0.15)
+            plot_item_2.showGrid(x=True, y=True, alpha=0.1)
+            plot_item_3.showGrid(x=True, y=True, alpha=0.1)
+            plot_item_5.showGrid(x=True, y=True, alpha=0.1)
+            plot_item_7.showGrid(x=True, y=True, alpha=0.1)
 
             self.simulation_lines = {
                 "book_tickers": [
                     plot_item_2.plot(
-                        pen=pyqtgraph.mkPen("#CFCFCF"),
+                        pen=pyqtgraph.mkPen("#3F3F3F"),
                         connect="finite",
                         stepMode="right",
                     )
                     for _ in range(2)
                 ],
                 "last_price": plot_item_2.plot(
-                    pen=pyqtgraph.mkPen("#D8E461"),
+                    pen=pyqtgraph.mkPen("#5A5F27"),
                     connect="finite",
                     stepMode="right",
                 ),
                 "mark_price": plot_item_2.plot(
-                    pen=pyqtgraph.mkPen("#E2F200"),
+                    pen=pyqtgraph.mkPen("#224200"),
                     connect="finite",
                 ),
                 "price_indicators": [
@@ -925,22 +922,22 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 ],
                 "wobbles": [
                     plot_item_2.plot(
-                        pen=pyqtgraph.mkPen("#BBBBBB"),
+                        pen=pyqtgraph.mkPen("#666666"),
                         connect="finite",
                         stepMode="right",
                     )
                     for _ in range(2)
                 ],
                 "price_rise": plot_item_2.plot(
-                    pen=pyqtgraph.mkPen("#1CA200"),
+                    pen=pyqtgraph.mkPen("#5DC100"),
                     connect="finite",
                 ),
                 "price_fall": plot_item_2.plot(
-                    pen=pyqtgraph.mkPen("#DD0000"),
+                    pen=pyqtgraph.mkPen("#FF4444"),
                     connect="finite",
                 ),
                 "price_stay": plot_item_2.plot(
-                    pen=pyqtgraph.mkPen("#464646"),
+                    pen=pyqtgraph.mkPen("#DDDDDD"),
                     connect="finite",
                 ),
                 "sell": plot_item_2.plot(
@@ -958,14 +955,14 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                     symbolSize=8,
                 ),
                 "volume": plot_item_5.plot(
-                    pen=pyqtgraph.mkPen("#111111"),
+                    pen=pyqtgraph.mkPen("#BBBBBB"),
                     connect="all",
                     stepMode="right",
                     fillLevel=0,
-                    brush=pyqtgraph.mkBrush(0, 0, 0, 15),
+                    brush=pyqtgraph.mkBrush(255, 255, 255, 15),
                 ),
                 "last_volume": plot_item_5.plot(
-                    pen=pyqtgraph.mkPen("#111111"),
+                    pen=pyqtgraph.mkPen("#BBBBBB"),
                     connect="finite",
                 ),
                 "volume_indicators": [
@@ -975,7 +972,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                     plot_item_7.plot(connect="finite") for _ in range(20)
                 ],
                 "asset_with_unrealized_profit": plot_item_3.plot(
-                    pen=pyqtgraph.mkPen("#AAAAAA"),
+                    pen=pyqtgraph.mkPen("#999999"),
                     connect="finite",
                 ),
                 "asset": plot_item_3.plot(
@@ -1252,7 +1249,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         map_result = thread_toss.map_async(job, self.initialize_functions)
 
-        for _ in range(200):
+        for _ in range(100):
             if map_result.ready() and map_result.successful():
                 break
             time.sleep(0.1)
@@ -1329,13 +1326,29 @@ def bring_to_life():
     QtGui.QFontDatabase.addApplicationFont("./static/notosans_regular.ttf")
     QtGui.QFontDatabase.addApplicationFont("./static/lexend_bold.ttf")
     default_font = QtGui.QFont("Noto Sans", 9)
-
-    app.setStyle("Fusion")
     app.setFont(default_font)
+
+    dark_palette = QtGui.QPalette()
+    dark_palette.setColor(QtGui.QPalette.Window, QtGui.QColor(33, 33, 33))
+    dark_palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor(230, 230, 230))
+    dark_palette.setColor(QtGui.QPalette.Base, QtGui.QColor(29, 29, 29))
+    dark_palette.setColor(QtGui.QPalette.AlternateBase, QtGui.QColor(33, 33, 33))
+    dark_palette.setColor(QtGui.QPalette.ToolTipBase, QtGui.QColor(230, 230, 230))
+    dark_palette.setColor(QtGui.QPalette.ToolTipText, QtGui.QColor(230, 230, 230))
+    dark_palette.setColor(QtGui.QPalette.Text, QtGui.QColor(230, 230, 230))
+    dark_palette.setColor(QtGui.QPalette.Button, QtGui.QColor(33, 33, 33))
+    dark_palette.setColor(QtGui.QPalette.ButtonText, QtGui.QColor(230, 230, 230))
+    dark_palette.setColor(QtGui.QPalette.BrightText, QtGui.QColor(255, 180, 0))
+    dark_palette.setColor(QtGui.QPalette.Link, QtGui.QColor(42, 130, 218))
+    dark_palette.setColor(QtGui.QPalette.Highlight, QtGui.QColor(42, 130, 218))
+    dark_palette.setColor(QtGui.QPalette.HighlightedText, QtGui.QColor(0, 0, 0))
+    app.setStyle("Fusion")
+    app.setPalette(dark_palette)
 
     # ■■■■■ window ■■■■■
 
     window = Window()
+    window.setPalette(dark_palette)
 
     # ■■■■■ show ■■■■■
 

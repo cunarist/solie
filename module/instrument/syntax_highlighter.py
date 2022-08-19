@@ -23,44 +23,26 @@ class SyntaxHighlighter(QtGui.QSyntaxHighlighter):
         self._lexer = lexers.PythonLexer()
         self._mapping = {}
 
-        text_type = "Token.Error"
-        hex_color = "#DD0000"
-        text_format = QtGui.QTextCharFormat()
-        text_format.setForeground(QtGui.QBrush(QtGui.QColor(hex_color)))
-        self._mapping[text_type] = text_format
-
         text_type = "Token.Keyword"
-        hex_color = "#0077AA"
-        text_format = QtGui.QTextCharFormat()
-        text_format.setForeground(QtGui.QBrush(QtGui.QColor(hex_color)))
-        self._mapping[text_type] = text_format
-
-        text_type = "Token.Name.Class"
-        hex_color = "#DD4A68"
-        text_format = QtGui.QTextCharFormat()
-        text_format.setForeground(QtGui.QBrush(QtGui.QColor(hex_color)))
-        self._mapping[text_type] = text_format
-
-        text_type = "Token.Name.Function"
-        hex_color = "#DD4A68"
+        hex_color = "#d1939e"
         text_format = QtGui.QTextCharFormat()
         text_format.setForeground(QtGui.QBrush(QtGui.QColor(hex_color)))
         self._mapping[text_type] = text_format
 
         text_type = "Token.Literal.String"
-        hex_color = "#669900"
+        hex_color = "#bce051"
         text_format = QtGui.QTextCharFormat()
         text_format.setForeground(QtGui.QBrush(QtGui.QColor(hex_color)))
         self._mapping[text_type] = text_format
 
         text_type = "Token.Literal.Number"
-        hex_color = "#990055"
+        hex_color = "#d1939e"
         text_format = QtGui.QTextCharFormat()
         text_format.setForeground(QtGui.QBrush(QtGui.QColor(hex_color)))
         self._mapping[text_type] = text_format
 
         text_type = "Token.Operator"
-        hex_color = "#9A6E3A"
+        hex_color = "#f4b73d"
         text_format = QtGui.QTextCharFormat()
         text_format.setForeground(QtGui.QBrush(QtGui.QColor(hex_color)))
         self._mapping[text_type] = text_format
@@ -72,7 +54,7 @@ class SyntaxHighlighter(QtGui.QSyntaxHighlighter):
         self._mapping[text_type] = text_format
 
         text_type = "Token.Comment"
-        hex_color = "#708090"
+        hex_color = "#997f66"
         text_format = QtGui.QTextCharFormat()
         text_format.setForeground(QtGui.QBrush(QtGui.QColor(hex_color)))
         self._mapping[text_type] = text_format

@@ -24,8 +24,10 @@ from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication
     QWidget)
 
 from module.widget.gauge import Gauge
+from module.widget.horizontal_divider import HorizontalDivider
 from module.widget.log_list import LogList
 from module.widget.script_editor import ScriptEditor
+from module.widget.vertical_divider import VerticalDivider
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -33,8 +35,6 @@ class Ui_MainWindow(object):
             MainWindow.setObjectName(u"MainWindow")
         MainWindow.resize(1280, 720)
         MainWindow.setMinimumSize(QSize(1280, 720))
-        font = QFont()
-        MainWindow.setFont(font)
         icon = QIcon()
         icon.addFile(u"static/product_icon_solsol.png", QSize(), QIcon.Normal, QIcon.Off)
         MainWindow.setWindowIcon(icon)
@@ -65,13 +65,13 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "QSplitter::handle {\n"
-"    background-color: #FCFCFC;\n"
+"    background: rgba(0,0,0,0);\n"
 "}\n"
 "\n"
 "ScriptEditor, LogList {\n"
-"    background-color: #F5F2F0;\n"
+"    background: #4C3f33;\n"
 "	border-radius: 0.2em;\n"
-"	border: 1px solid rgba(0,0,0,0.1);\n"
+"	border: 1px solid rgba(255,255,255,0.1);\n"
 "}\n"
 "\n"
 "SymbolBox {\n"
@@ -79,8 +79,8 @@ class Ui_MainWindow(object):
 "    max-width: 10em;\n"
 "    min-height: 10em;\n"
 "    max-height: 10em;\n"
-"    background-color: #F7F7F7;\n"
-"	border: 1px solid rgba(0,0,0,0.1);\n"
+"    background: rgba(255,255,255,0.05);\n"
+"	border: 1px solid rgba(255,255,255,0.1);\n"
 "    border-radius: 5em;\n"
 "}\n"
 "\n"
@@ -89,10 +89,10 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "AskPopupContent {\n"
-"    border: 1px solid rgba(0,0,0,0.1);\n"
-""
-                        "    border-radius: 0.4em;\n"
-"    background: #F9F9F9;\n"
+"    border: 1px solid rgb"
+                        "a(255,255,255,0.1);\n"
+"    border-radius: 0.4em;\n"
+"    background: #2B2B2B;\n"
 "    min-width: 24em;\n"
 "    max-width: 24em;\n"
 "    min-height: 24em;\n"
@@ -102,7 +102,11 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "BrandLabel {\n"
-"	color: #646464;\n"
+"	color: #787878;\n"
+"}\n"
+"\n"
+"HorizontalDivider, VerticalDivider {\n"
+"    border: 8px solid #464646;\n"
 "}")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
@@ -174,12 +178,11 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_24.addWidget(self.pushButton_2)
 
-        self.line_6 = QFrame(self.groupBox_6)
-        self.line_6.setObjectName(u"line_6")
-        self.line_6.setFrameShape(QFrame.VLine)
-        self.line_6.setFrameShadow(QFrame.Sunken)
+        self.frame = VerticalDivider(self.groupBox_6)
+        self.frame.setObjectName(u"frame")
+        self.frame.setFrameShape(QFrame.VLine)
 
-        self.horizontalLayout_24.addWidget(self.line_6)
+        self.horizontalLayout_24.addWidget(self.frame)
 
         self.pushButton_13 = QPushButton(self.groupBox_6)
         self.pushButton_13.setObjectName(u"pushButton_13")
@@ -202,9 +205,9 @@ class Ui_MainWindow(object):
         self.horizontalLayout_12.setObjectName(u"horizontalLayout_12")
         self.progressBar_3 = QProgressBar(self.groupBox_6)
         self.progressBar_3.setObjectName(u"progressBar_3")
-        font1 = QFont()
-        font1.setPointSize(1)
-        self.progressBar_3.setFont(font1)
+        font = QFont()
+        font.setPointSize(1)
+        self.progressBar_3.setFont(font)
         self.progressBar_3.setMaximum(1000)
         self.progressBar_3.setTextVisible(False)
 
@@ -275,7 +278,8 @@ class Ui_MainWindow(object):
         sizePolicy1.setVerticalStretch(0)
         sizePolicy1.setHeightForWidth(self.label_16.sizePolicy().hasHeightForWidth())
         self.label_16.setSizePolicy(sizePolicy1)
-        self.label_16.setFont(font)
+        font1 = QFont()
+        self.label_16.setFont(font1)
         self.label_16.setAlignment(Qt.AlignCenter)
 
         self.horizontalLayout_3.addWidget(self.label_16)
@@ -316,12 +320,11 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_15.addWidget(self.comboBox_4)
 
-        self.line_8 = QFrame(self.groupBox_9)
-        self.line_8.setObjectName(u"line_8")
-        self.line_8.setFrameShape(QFrame.VLine)
-        self.line_8.setFrameShadow(QFrame.Sunken)
+        self.frame_7 = VerticalDivider(self.groupBox_9)
+        self.frame_7.setObjectName(u"frame_7")
+        self.frame_7.setFrameShape(QFrame.VLine)
 
-        self.horizontalLayout_15.addWidget(self.line_8)
+        self.horizontalLayout_15.addWidget(self.frame_7)
 
         self.label_21 = QLabel(self.groupBox_9)
         self.label_21.setObjectName(u"label_21")
@@ -400,12 +403,11 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_5.addWidget(self.lineEdit_6)
 
-        self.line = QFrame(self.groupBox_9)
-        self.line.setObjectName(u"line")
-        self.line.setFrameShape(QFrame.VLine)
-        self.line.setFrameShadow(QFrame.Sunken)
+        self.frame_4 = VerticalDivider(self.groupBox_9)
+        self.frame_4.setObjectName(u"frame_4")
+        self.frame_4.setFrameShape(QFrame.VLine)
 
-        self.horizontalLayout_5.addWidget(self.line)
+        self.horizontalLayout_5.addWidget(self.frame_4)
 
         self.label_7 = QLabel(self.groupBox_9)
         self.label_7.setObjectName(u"label_7")
@@ -424,12 +426,11 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_5.addWidget(self.spinBox)
 
-        self.line_3 = QFrame(self.groupBox_9)
-        self.line_3.setObjectName(u"line_3")
-        self.line_3.setFrameShape(QFrame.VLine)
-        self.line_3.setFrameShadow(QFrame.Sunken)
+        self.frame_3 = VerticalDivider(self.groupBox_9)
+        self.frame_3.setObjectName(u"frame_3")
+        self.frame_3.setFrameShape(QFrame.VLine)
 
-        self.horizontalLayout_5.addWidget(self.line_3)
+        self.horizontalLayout_5.addWidget(self.frame_3)
 
         self.pushButton_12 = QPushButton(self.groupBox_9)
         self.pushButton_12.setObjectName(u"pushButton_12")
@@ -449,7 +450,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_27.setObjectName(u"horizontalLayout_27")
         self.progressBar_2 = QProgressBar(self.groupBox_9)
         self.progressBar_2.setObjectName(u"progressBar_2")
-        self.progressBar_2.setFont(font1)
+        self.progressBar_2.setFont(font)
         self.progressBar_2.setMaximum(1000)
         self.progressBar_2.setTextVisible(False)
 
@@ -555,12 +556,11 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_23.addWidget(self.comboBox_6)
 
-        self.line_2 = QFrame(self.groupBox_3)
-        self.line_2.setObjectName(u"line_2")
-        self.line_2.setFrameShape(QFrame.VLine)
-        self.line_2.setFrameShadow(QFrame.Sunken)
+        self.frame_2 = VerticalDivider(self.groupBox_3)
+        self.frame_2.setObjectName(u"frame_2")
+        self.frame_2.setFrameShape(QFrame.VLine)
 
-        self.horizontalLayout_23.addWidget(self.line_2)
+        self.horizontalLayout_23.addWidget(self.frame_2)
 
         self.label_20 = QLabel(self.groupBox_3)
         self.label_20.setObjectName(u"label_20")
@@ -678,12 +678,11 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_9.addWidget(self.pushButton_16)
 
-        self.line_4 = QFrame(self.groupBox_3)
-        self.line_4.setObjectName(u"line_4")
-        self.line_4.setFrameShape(QFrame.VLine)
-        self.line_4.setFrameShadow(QFrame.Sunken)
+        self.frame_5 = VerticalDivider(self.groupBox_3)
+        self.frame_5.setObjectName(u"frame_5")
+        self.frame_5.setFrameShape(QFrame.VLine)
 
-        self.horizontalLayout_9.addWidget(self.line_4)
+        self.horizontalLayout_9.addWidget(self.frame_5)
 
         self.pushButton_11 = QPushButton(self.groupBox_3)
         self.pushButton_11.setObjectName(u"pushButton_11")
@@ -705,7 +704,7 @@ class Ui_MainWindow(object):
         self.progressBar_4.setObjectName(u"progressBar_4")
         self.progressBar_4.setMinimumSize(QSize(160, 0))
         self.progressBar_4.setMaximumSize(QSize(160, 16777215))
-        self.progressBar_4.setFont(font1)
+        self.progressBar_4.setFont(font)
         self.progressBar_4.setMaximum(1000)
         self.progressBar_4.setTextVisible(False)
 
@@ -713,7 +712,7 @@ class Ui_MainWindow(object):
 
         self.progressBar = QProgressBar(self.groupBox_3)
         self.progressBar.setObjectName(u"progressBar")
-        self.progressBar.setFont(font1)
+        self.progressBar.setFont(font)
         self.progressBar.setMaximum(1000)
         self.progressBar.setTextVisible(False)
 
@@ -785,12 +784,11 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_26.addWidget(self.checkBox_6)
 
-        self.line_10 = QFrame(self.groupBox_17)
-        self.line_10.setObjectName(u"line_10")
-        self.line_10.setFrameShape(QFrame.VLine)
-        self.line_10.setFrameShadow(QFrame.Sunken)
+        self.frame_21 = VerticalDivider(self.groupBox_17)
+        self.frame_21.setObjectName(u"frame_21")
+        self.frame_21.setFrameShape(QFrame.VLine)
 
-        self.horizontalLayout_26.addWidget(self.line_10)
+        self.horizontalLayout_26.addWidget(self.frame_21)
 
         self.label_43 = QLabel(self.groupBox_17)
         self.label_43.setObjectName(u"label_43")
@@ -816,12 +814,11 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_26.addWidget(self.checkBox_7)
 
-        self.line_7 = QFrame(self.groupBox_17)
-        self.line_7.setObjectName(u"line_7")
-        self.line_7.setFrameShape(QFrame.VLine)
-        self.line_7.setFrameShadow(QFrame.Sunken)
+        self.frame_27 = VerticalDivider(self.groupBox_17)
+        self.frame_27.setObjectName(u"frame_27")
+        self.frame_27.setFrameShape(QFrame.VLine)
 
-        self.horizontalLayout_26.addWidget(self.line_7)
+        self.horizontalLayout_26.addWidget(self.frame_27)
 
         self.pushButton_19 = QPushButton(self.groupBox_17)
         self.pushButton_19.setObjectName(u"pushButton_19")
@@ -833,12 +830,11 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_26.addWidget(self.pushButton_20)
 
-        self.line_11 = QFrame(self.groupBox_17)
-        self.line_11.setObjectName(u"line_11")
-        self.line_11.setFrameShape(QFrame.VLine)
-        self.line_11.setFrameShadow(QFrame.Sunken)
+        self.frame_28 = VerticalDivider(self.groupBox_17)
+        self.frame_28.setObjectName(u"frame_28")
+        self.frame_28.setFrameShape(QFrame.VLine)
 
-        self.horizontalLayout_26.addWidget(self.line_11)
+        self.horizontalLayout_26.addWidget(self.frame_28)
 
         self.pushButton_9 = QPushButton(self.groupBox_17)
         self.pushButton_9.setObjectName(u"pushButton_9")
@@ -891,12 +887,11 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_13.addWidget(self.label_15)
 
-        self.line_12 = QFrame(self.tab_4)
-        self.line_12.setObjectName(u"line_12")
-        self.line_12.setFrameShape(QFrame.HLine)
-        self.line_12.setFrameShadow(QFrame.Sunken)
+        self.frame_6 = HorizontalDivider(self.tab_4)
+        self.frame_6.setObjectName(u"frame_6")
+        self.frame_6.setFrameShape(QFrame.HLine)
 
-        self.verticalLayout_13.addWidget(self.line_12)
+        self.verticalLayout_13.addWidget(self.frame_6)
 
         self.label_14 = QLabel(self.tab_4)
         self.label_14.setObjectName(u"label_14")
@@ -966,12 +961,11 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_21.addWidget(self.pushButton_22)
 
-        self.line_5 = QFrame(self.groupBox_7)
-        self.line_5.setObjectName(u"line_5")
-        self.line_5.setFrameShape(QFrame.VLine)
-        self.line_5.setFrameShadow(QFrame.Sunken)
+        self.frame_22 = VerticalDivider(self.groupBox_7)
+        self.frame_22.setObjectName(u"frame_22")
+        self.frame_22.setFrameShape(QFrame.VLine)
 
-        self.horizontalLayout_21.addWidget(self.line_5)
+        self.horizontalLayout_21.addWidget(self.frame_22)
 
         self.pushButton_10 = QPushButton(self.groupBox_7)
         self.pushButton_10.setObjectName(u"pushButton_10")
@@ -1077,7 +1071,7 @@ class Ui_MainWindow(object):
         self.scrollArea_6.setWidgetResizable(True)
         self.scrollAreaWidgetContents_6 = QWidget()
         self.scrollAreaWidgetContents_6.setObjectName(u"scrollAreaWidgetContents_6")
-        self.scrollAreaWidgetContents_6.setGeometry(QRect(0, 0, 81, 34))
+        self.scrollAreaWidgetContents_6.setGeometry(QRect(0, 0, 398, 262))
         self.gridLayout_6 = QGridLayout(self.scrollAreaWidgetContents_6)
         self.gridLayout_6.setObjectName(u"gridLayout_6")
         self.label_33 = QLabel(self.scrollAreaWidgetContents_6)
@@ -1095,7 +1089,7 @@ class Ui_MainWindow(object):
         self.scrollArea_4.setWidgetResizable(True)
         self.scrollAreaWidgetContents_4 = QWidget()
         self.scrollAreaWidgetContents_4.setObjectName(u"scrollAreaWidgetContents_4")
-        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 81, 34))
+        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 398, 262))
         self.gridLayout_7 = QGridLayout(self.scrollAreaWidgetContents_4)
         self.gridLayout_7.setObjectName(u"gridLayout_7")
         self.label_35 = QLabel(self.scrollAreaWidgetContents_4)
@@ -1113,7 +1107,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 81, 34))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 398, 262))
         self.gridLayout_4 = QGridLayout(self.scrollAreaWidgetContents)
         self.gridLayout_4.setObjectName(u"gridLayout_4")
         self.label_12 = QLabel(self.scrollAreaWidgetContents)
@@ -1131,7 +1125,7 @@ class Ui_MainWindow(object):
         self.scrollArea_5.setWidgetResizable(True)
         self.scrollAreaWidgetContents_5 = QWidget()
         self.scrollAreaWidgetContents_5.setObjectName(u"scrollAreaWidgetContents_5")
-        self.scrollAreaWidgetContents_5.setGeometry(QRect(0, 0, 81, 34))
+        self.scrollAreaWidgetContents_5.setGeometry(QRect(0, 0, 398, 262))
         self.gridLayout_8 = QGridLayout(self.scrollAreaWidgetContents_5)
         self.gridLayout_8.setObjectName(u"gridLayout_8")
         self.label_36 = QLabel(self.scrollAreaWidgetContents_5)
@@ -1149,7 +1143,7 @@ class Ui_MainWindow(object):
         self.scrollArea_3.setWidgetResizable(True)
         self.scrollAreaWidgetContents_3 = QWidget()
         self.scrollAreaWidgetContents_3.setObjectName(u"scrollAreaWidgetContents_3")
-        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 81, 34))
+        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 398, 262))
         self.gridLayout_5 = QGridLayout(self.scrollAreaWidgetContents_3)
         self.gridLayout_5.setObjectName(u"gridLayout_5")
         self.label_32 = QLabel(self.scrollAreaWidgetContents_3)
@@ -1167,7 +1161,7 @@ class Ui_MainWindow(object):
         self.scrollArea_7.setWidgetResizable(True)
         self.scrollAreaWidgetContents_7 = QWidget()
         self.scrollAreaWidgetContents_7.setObjectName(u"scrollAreaWidgetContents_7")
-        self.scrollAreaWidgetContents_7.setGeometry(QRect(0, 0, 81, 34))
+        self.scrollAreaWidgetContents_7.setGeometry(QRect(0, 0, 398, 262))
         self.gridLayout_9 = QGridLayout(self.scrollAreaWidgetContents_7)
         self.gridLayout_9.setObjectName(u"gridLayout_9")
         self.label_34 = QLabel(self.scrollAreaWidgetContents_7)
@@ -1234,7 +1228,7 @@ class Ui_MainWindow(object):
         self.scrollArea_2.setWidgetResizable(True)
         self.scrollAreaWidgetContents_2 = QWidget()
         self.scrollAreaWidgetContents_2.setObjectName(u"scrollAreaWidgetContents_2")
-        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 80, 20))
+        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 1212, 578))
         self.horizontalLayout_33 = QHBoxLayout(self.scrollAreaWidgetContents_2)
         self.horizontalLayout_33.setObjectName(u"horizontalLayout_33")
         self.verticalLayout_15 = QVBoxLayout()

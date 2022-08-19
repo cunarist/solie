@@ -6,6 +6,7 @@ from PySide6 import QtWidgets, QtCore, QtGui
 from module import core
 from module.instrument.api_requester import ApiRequester
 from module.instrument.api_request_error import ApiRequestError
+from module.widget.horizontal_divider import HorizontalDivider
 from module.recipe import user_settings
 from module.recipe import outsource
 
@@ -88,9 +89,7 @@ class LicenseFrame(QtWidgets.QScrollArea):
         card_layout.addWidget(spacing_text)
 
         # divider
-        divider = QtWidgets.QFrame(self)
-        divider.setFrameShape(QtWidgets.QFrame.Shape.HLine)
-        divider.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
+        divider = HorizontalDivider(self)
         card_layout.addWidget(divider)
 
         # spacing

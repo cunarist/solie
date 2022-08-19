@@ -1,6 +1,7 @@
 from PySide6 import QtWidgets, QtGui, QtCore
 
 from module.widget.brand_label import BrandLabel
+from module.widget.horizontal_divider import HorizontalDivider
 from module import introduction
 
 
@@ -60,9 +61,7 @@ class GuideFrame(QtWidgets.QFrame):
         spacing_text.setFont(spacing_text_font)
         central_layout.addWidget(spacing_text)
 
-        divider = QtWidgets.QFrame(self)
-        divider.setFrameShape(QtWidgets.QFrame.Shape.HLine)
-        divider.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
+        divider = HorizontalDivider(self)
         central_layout.addWidget(divider)
 
         spacing_text = QtWidgets.QLabel("")

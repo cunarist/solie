@@ -16,9 +16,6 @@
     <height>720</height>
    </size>
   </property>
-  <property name="font">
-   <font/>
-  </property>
   <property name="windowTitle">
    <string>Solsol</string>
   </property>
@@ -54,13 +51,13 @@ QMenu::separator {
 }
 
 QSplitter::handle {
-    background-color: #FCFCFC;
+    background: rgba(0,0,0,0);
 }
 
 ScriptEditor, LogList {
-    background-color: #F5F2F0;
+    background: #4C3f33;
 	border-radius: 0.2em;
-	border: 1px solid rgba(0,0,0,0.1);
+	border: 1px solid rgba(255,255,255,0.1);
 }
 
 SymbolBox {
@@ -68,8 +65,8 @@ SymbolBox {
     max-width: 10em;
     min-height: 10em;
     max-height: 10em;
-    background-color: #F7F7F7;
-	border: 1px solid rgba(0,0,0,0.1);
+    background: rgba(255,255,255,0.05);
+	border: 1px solid rgba(255,255,255,0.1);
     border-radius: 5em;
 }
 
@@ -78,9 +75,9 @@ AskPopup {
 }
 
 AskPopupContent {
-    border: 1px solid rgba(0,0,0,0.1);
+    border: 1px solid rgba(255,255,255,0.1);
     border-radius: 0.4em;
-    background: #F9F9F9;
+    background: #2B2B2B;
     min-width: 24em;
     max-width: 24em;
     min-height: 24em;
@@ -90,7 +87,11 @@ AskPopupContent {
 }
 
 BrandLabel {
-	color: #646464;
+	color: #787878;
+}
+
+HorizontalDivider, VerticalDivider {
+    border: 8px solid #464646;
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
@@ -204,9 +205,9 @@ BrandLabel {
               </widget>
              </item>
              <item>
-              <widget class="Line" name="line_6">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
+              <widget class="VerticalDivider" name="frame">
+               <property name="frameShape">
+                <enum>QFrame::VLine</enum>
                </property>
               </widget>
              </item>
@@ -380,9 +381,9 @@ BrandLabel {
               </widget>
              </item>
              <item>
-              <widget class="Line" name="line_8">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
+              <widget class="VerticalDivider" name="frame_7">
+               <property name="frameShape">
+                <enum>QFrame::VLine</enum>
                </property>
               </widget>
              </item>
@@ -554,9 +555,9 @@ BrandLabel {
               </widget>
              </item>
              <item>
-              <widget class="Line" name="line">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
+              <widget class="VerticalDivider" name="frame_4">
+               <property name="frameShape">
+                <enum>QFrame::VLine</enum>
                </property>
               </widget>
              </item>
@@ -602,9 +603,9 @@ BrandLabel {
               </widget>
              </item>
              <item>
-              <widget class="Line" name="line_3">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
+              <widget class="VerticalDivider" name="frame_3">
+               <property name="frameShape">
+                <enum>QFrame::VLine</enum>
                </property>
               </widget>
              </item>
@@ -769,9 +770,9 @@ BrandLabel {
               </widget>
              </item>
              <item>
-              <widget class="Line" name="line_2">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
+              <widget class="VerticalDivider" name="frame_2">
+               <property name="frameShape">
+                <enum>QFrame::VLine</enum>
                </property>
               </widget>
              </item>
@@ -1030,9 +1031,9 @@ BrandLabel {
               </widget>
              </item>
              <item>
-              <widget class="Line" name="line_4">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
+              <widget class="VerticalDivider" name="frame_5">
+               <property name="frameShape">
+                <enum>QFrame::VLine</enum>
                </property>
               </widget>
              </item>
@@ -1195,9 +1196,9 @@ BrandLabel {
               </widget>
              </item>
              <item>
-              <widget class="Line" name="line_10">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
+              <widget class="VerticalDivider" name="frame_21">
+               <property name="frameShape">
+                <enum>QFrame::VLine</enum>
                </property>
               </widget>
              </item>
@@ -1256,9 +1257,9 @@ BrandLabel {
               </widget>
              </item>
              <item>
-              <widget class="Line" name="line_7">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
+              <widget class="VerticalDivider" name="frame_27">
+               <property name="frameShape">
+                <enum>QFrame::VLine</enum>
                </property>
               </widget>
              </item>
@@ -1277,9 +1278,9 @@ BrandLabel {
               </widget>
              </item>
              <item>
-              <widget class="Line" name="line_11">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
+              <widget class="VerticalDivider" name="frame_28">
+               <property name="frameShape">
+                <enum>QFrame::VLine</enum>
                </property>
               </widget>
              </item>
@@ -1368,9 +1369,9 @@ BrandLabel {
                  </widget>
                 </item>
                 <item>
-                 <widget class="Line" name="line_12">
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
+                 <widget class="HorizontalDivider" name="frame_6">
+                  <property name="frameShape">
+                   <enum>QFrame::HLine</enum>
                   </property>
                  </widget>
                 </item>
@@ -1498,9 +1499,9 @@ BrandLabel {
                   </widget>
                  </item>
                  <item>
-                  <widget class="Line" name="line_5">
-                   <property name="orientation">
-                    <enum>Qt::Vertical</enum>
+                  <widget class="VerticalDivider" name="frame_22">
+                   <property name="frameShape">
+                    <enum>QFrame::VLine</enum>
                    </property>
                   </widget>
                  </item>
@@ -1660,8 +1661,8 @@ BrandLabel {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>262</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_6">
@@ -1689,8 +1690,8 @@ BrandLabel {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>262</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_7">
@@ -1718,8 +1719,8 @@ BrandLabel {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>262</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_4">
@@ -1747,8 +1748,8 @@ BrandLabel {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>262</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_8">
@@ -1776,8 +1777,8 @@ BrandLabel {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>262</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_5">
@@ -1805,8 +1806,8 @@ BrandLabel {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>262</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_9">
@@ -1903,8 +1904,8 @@ BrandLabel {
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>80</width>
-                 <height>20</height>
+                 <width>1212</width>
+                 <height>578</height>
                 </rect>
                </property>
                <layout class="QHBoxLayout" name="horizontalLayout_33">
@@ -1941,6 +1942,18 @@ BrandLabel {
    <class>Gauge</class>
    <extends>QPushButton</extends>
    <header>module/widget/gauge</header>
+  </customwidget>
+  <customwidget>
+   <class>HorizontalDivider</class>
+   <extends>QFrame</extends>
+   <header>module/widget/horizontal_divider</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>VerticalDivider</class>
+   <extends>QFrame</extends>
+   <header>module/widget/vertical_divider</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>
