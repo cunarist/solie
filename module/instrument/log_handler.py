@@ -6,7 +6,7 @@ class LogHandler(logging.Handler):
     def __init__(self, after_function):
         super().__init__()
         self.after_function = after_function
-        log_format = "%(asctime)s.%(msecs)03d | %(levelname)s"
+        log_format = "%(asctime)s.%(msecs)03d %(levelname)s"
         date_format = "%Y-%m-%d %H:%M:%S"
         log_formatter = logging.Formatter(log_format, datefmt=date_format)
         log_formatter.converter = time.gmtime
@@ -18,10 +18,10 @@ class LogHandler(logging.Handler):
         message = log_record.getMessage()
         if log_record.exc_info is None:
             plain_message = message.split("\n")[0]
-            lines[0] += f" | {plain_message}"
+            lines[0] += f" - {plain_message}"
         else:
             exc_type = log_record.exc_info[0].__name__
-            lines[0] += f" | {exc_type}"
+            lines[0] += f" - {exc_type}"
         lines.insert(1, message)
         lines[0] = lines[0][:80]
         text = "\n".join(lines)
