@@ -68,6 +68,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 if answer in (0, 1):
                     return
 
+            AskPopup.done_event.set()
+            OverlapPopup.done_event.set()
+
             total_steps = len(self.finalize_functions)
             done_steps = 0
 

@@ -53,6 +53,7 @@ class OverlapPopup(QtWidgets.QWidget):
 
         # box
         content_box = PopupBox(autoFillBackground=True)
+        content_box.setMaximumSize(1600, 1200)
         content_box_layout = QtWidgets.QVBoxLayout(content_box)
         full_layout.addWidget(content_box)
 
@@ -83,6 +84,18 @@ class OverlapPopup(QtWidgets.QWidget):
         this_layout.addWidget(close_button)
         content_box_layout.addLayout(this_layout)
 
-        scroll_area = QtWidgets.QScrollArea(self)
+        # scroll area
+        scroll_area = QtWidgets.QScrollArea()
+        scroll_widget = QtWidgets.QWidget()
+        scroll_layout = QtWidgets.QVBoxLayout()
+
+        scroll_widget.setLayout(scroll_layout)
+        scroll_area.setWidget(scroll_widget)
+
+        scroll_area.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(scroll_widget)
+
         content_box_layout.addWidget(scroll_area)
-        self.scroll_layout = QtWidgets.QVBoxLayout(scroll_area)
+        self.scroll_layout = scroll_layout
