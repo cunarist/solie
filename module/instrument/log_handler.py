@@ -17,7 +17,8 @@ class LogHandler(logging.Handler):
         lines = text.split("\n")
         message = log_record.msg
         if log_record.exc_info is None:
-            lines[0] += f" | {message}"
+            plain_message = message.split("\n")[0]
+            lines[0] += f" | {plain_message}"
         else:
             exc_type = log_record.exc_info[0].__name__
             lines[0] += f" | {exc_type}"
