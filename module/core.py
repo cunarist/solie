@@ -725,12 +725,16 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                     )
                     for _ in range(2)
                 ],
-                "price_down": plot_item.plot(
+                "price_rise": plot_item.plot(
+                    pen=pyqtgraph.mkPen("#1CA200"),
+                    connect="finite",
+                ),
+                "price_fall": plot_item.plot(
                     pen=pyqtgraph.mkPen("#DD0000"),
                     connect="finite",
                 ),
-                "price_up": plot_item.plot(
-                    pen=pyqtgraph.mkPen("#1CA200"),
+                "price_stay": plot_item.plot(
+                    pen=pyqtgraph.mkPen("#464646"),
                     connect="finite",
                 ),
                 "sell": plot_item.plot(
@@ -927,12 +931,16 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                     )
                     for _ in range(2)
                 ],
-                "price_down": plot_item_2.plot(
+                "price_rise": plot_item_2.plot(
+                    pen=pyqtgraph.mkPen("#1CA200"),
+                    connect="finite",
+                ),
+                "price_fall": plot_item_2.plot(
                     pen=pyqtgraph.mkPen("#DD0000"),
                     connect="finite",
                 ),
-                "price_up": plot_item_2.plot(
-                    pen=pyqtgraph.mkPen("#1CA200"),
+                "price_stay": plot_item_2.plot(
+                    pen=pyqtgraph.mkPen("#464646"),
                     connect="finite",
                 ),
                 "sell": plot_item_2.plot(

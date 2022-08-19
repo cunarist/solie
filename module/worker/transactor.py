@@ -1096,6 +1096,8 @@ class Transactor:
         high_ar = candle_data[(symbol, "High")].to_numpy()
         low_ar = candle_data[(symbol, "Low")].to_numpy()
         rise_ar = close_ar > open_ar
+        fall_ar = close_ar < open_ar
+        stay_ar = close_ar == open_ar
         length = len(index_ar)
         nan_ar = np.empty(length)
         nan_ar[:] = np.nan
@@ -1128,7 +1130,7 @@ class Transactor:
             ],
             axis=1,
         ).reshape(-1)
-        widget = core.window.transaction_lines["price_up"]
+        widget = core.window.transaction_lines["price_rise"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
@@ -1139,33 +1141,58 @@ class Transactor:
 
         data_x = np.stack(
             [
-                index_ar[~rise_ar] + 2,
-                index_ar[~rise_ar] + 5,
-                index_ar[~rise_ar],
-                index_ar[~rise_ar] + 5,
-                index_ar[~rise_ar] + 8,
-                index_ar[~rise_ar],
-                index_ar[~rise_ar] + 5,
-                index_ar[~rise_ar] + 5,
-                index_ar[~rise_ar],
+                index_ar[fall_ar] + 2,
+                index_ar[fall_ar] + 5,
+                index_ar[fall_ar],
+                index_ar[fall_ar] + 5,
+                index_ar[fall_ar] + 8,
+                index_ar[fall_ar],
+                index_ar[fall_ar] + 5,
+                index_ar[fall_ar] + 5,
+                index_ar[fall_ar],
             ],
             axis=1,
         ).reshape(-1)
         data_y = np.stack(
             [
-                open_ar[~rise_ar],
-                open_ar[~rise_ar],
-                nan_ar[~rise_ar],
-                close_ar[~rise_ar],
-                close_ar[~rise_ar],
-                nan_ar[~rise_ar],
-                high_ar[~rise_ar],
-                low_ar[~rise_ar],
-                nan_ar[~rise_ar],
+                open_ar[fall_ar],
+                open_ar[fall_ar],
+                nan_ar[fall_ar],
+                close_ar[fall_ar],
+                close_ar[fall_ar],
+                nan_ar[fall_ar],
+                high_ar[fall_ar],
+                low_ar[fall_ar],
+                nan_ar[fall_ar],
             ],
             axis=1,
         ).reshape(-1)
-        widget = core.window.transaction_lines["price_down"]
+        widget = core.window.transaction_lines["price_fall"]
+
+        def job(widget=widget, data_x=data_x, data_y=data_y):
+            widget.setData(data_x, data_y)
+
+        if stop_flag.find(task_name, task_id):
+            return
+        core.window.undertake(job, False)
+
+        data_x = np.stack(
+            [
+                index_ar[stay_ar] + 2,
+                index_ar[stay_ar] + 8,
+                index_ar[stay_ar],
+            ],
+            axis=1,
+        ).reshape(-1)
+        data_y = np.stack(
+            [
+                open_ar[stay_ar],
+                close_ar[stay_ar],
+                nan_ar[stay_ar],
+            ],
+            axis=1,
+        ).reshape(-1)
+        widget = core.window.transaction_lines["price_stay"]
 
         def job(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
