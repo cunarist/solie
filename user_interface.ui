@@ -87,6 +87,10 @@ AskPopupContent {
     max-height: 24em;
     margin: 0em;
     padding: 2em;
+}
+
+BrandLabel {
+	color: #646464;
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
@@ -1352,52 +1356,7 @@ AskPopupContent {
                  </spacer>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_13">
-                  <item>
-                   <widget class="QLabel" name="label_5">
-                    <property name="minimumSize">
-                     <size>
-                      <width>80</width>
-                      <height>80</height>
-                     </size>
-                    </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>80</width>
-                      <height>80</height>
-                     </size>
-                    </property>
-                    <property name="pixmap">
-                     <pixmap>static/product_icon_solsol.png</pixmap>
-                    </property>
-                    <property name="scaledContents">
-                     <bool>true</bool>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QLabel" name="label_9">
-                    <property name="minimumSize">
-                     <size>
-                      <width>320</width>
-                      <height>80</height>
-                     </size>
-                    </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>320</width>
-                      <height>80</height>
-                     </size>
-                    </property>
-                    <property name="pixmap">
-                     <pixmap>static/product_text_solsol.png</pixmap>
-                    </property>
-                    <property name="scaledContents">
-                     <bool>true</bool>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
+                 <layout class="QHBoxLayout" name="horizontalLayout_13"/>
                 </item>
                 <item>
                  <widget class="QLabel" name="label_15">

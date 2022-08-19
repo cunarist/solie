@@ -99,6 +99,10 @@ class Ui_MainWindow(object):
 "    max-height: 24em;\n"
 "    margin: 0em;\n"
 "    padding: 2em;\n"
+"}\n"
+"\n"
+"BrandLabel {\n"
+"	color: #646464;\n"
 "}")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
@@ -876,24 +880,6 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_13 = QHBoxLayout()
         self.horizontalLayout_13.setObjectName(u"horizontalLayout_13")
-        self.label_5 = QLabel(self.tab_4)
-        self.label_5.setObjectName(u"label_5")
-        self.label_5.setMinimumSize(QSize(80, 80))
-        self.label_5.setMaximumSize(QSize(80, 80))
-        self.label_5.setPixmap(QPixmap(u"static/product_icon_solsol.png"))
-        self.label_5.setScaledContents(True)
-
-        self.horizontalLayout_13.addWidget(self.label_5)
-
-        self.label_9 = QLabel(self.tab_4)
-        self.label_9.setObjectName(u"label_9")
-        self.label_9.setMinimumSize(QSize(320, 80))
-        self.label_9.setMaximumSize(QSize(320, 80))
-        self.label_9.setPixmap(QPixmap(u"static/product_text_solsol.png"))
-        self.label_9.setScaledContents(True)
-
-        self.horizontalLayout_13.addWidget(self.label_9)
-
 
         self.verticalLayout_13.addLayout(self.horizontalLayout_13)
 

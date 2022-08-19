@@ -40,6 +40,7 @@ from module.widget.coin_selection_frame import CoinSelectionFrame
 from module.widget.guide_frame import GuideFrame
 from module.widget.license_frame import LicenseFrame
 from module.widget.symbol_box import SymbolBox
+from module.widget.brand_label import BrandLabel
 
 
 class Window(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -76,7 +77,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
             def job():
                 nonlocal guide_frame
-                guide_frame = GuideFrame(1)
+                guide_frame = GuideFrame()
                 guide_frame.announce("Finalizing...")
                 self.centralWidget().layout().addWidget(guide_frame)
 
@@ -275,7 +276,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         def job():
             nonlocal guide_frame
-            guide_frame = GuideFrame(2)
+            guide_frame = GuideFrame()
             guide_frame.announce("Loading...")
             self.centralWidget().layout().addWidget(guide_frame)
 
@@ -485,6 +486,32 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 QtWidgets.QSizePolicy.Policy.Minimum,
             )
             self.horizontalLayout_17.addItem(spacer)
+
+        self.undertake(job, True)
+
+        # ■■■■■ show product icon and title ■■■■■
+
+        def job():
+            this_layout = self.horizontalLayout_13
+            product_icon_pixmap = QtGui.QPixmap()
+            with open("./static/product_icon_solsol.png", mode="rb") as file:
+                product_icon_data = file.read()
+            product_icon_pixmap.loadFromData(product_icon_data)
+            product_icon_label = QtWidgets.QLabel("", self)
+            product_icon_label.setPixmap(product_icon_pixmap)
+            product_icon_label.setScaledContents(True)
+            product_icon_label.setFixedSize(80, 80)
+            this_layout.addWidget(product_icon_label)
+            spacing_text = QtWidgets.QLabel("")
+            spacing_text_font = QtGui.QFont()
+            spacing_text_font.setPointSize(8)
+            spacing_text.setFont(spacing_text_font)
+            this_layout.addWidget(spacing_text)
+            title_label = BrandLabel(self, "SOLSOL", 48)
+            this_layout.addWidget(title_label)
+            text = introduction.CURRENT_VERSION
+            label = BrandLabel(self, text, 24)
+            this_layout.addWidget(label)
 
         self.undertake(job, True)
 
@@ -1292,6 +1319,7 @@ def bring_to_life():
     # this part should be done after creating the app and before creating the window
     QtGui.QFontDatabase.addApplicationFont("./static/consolas.ttf")
     QtGui.QFontDatabase.addApplicationFont("./static/notosans_regular.ttf")
+    QtGui.QFontDatabase.addApplicationFont("./static/lexend_bold.ttf")
     default_font = QtGui.QFont("Noto Sans", 9)
 
     app.setStyle("Fusion")
