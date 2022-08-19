@@ -6,10 +6,12 @@ import pathlib
 import urllib
 import math
 import webbrowser
+import os
 
 from PySide6 import QtGui, QtWidgets, QtCore
 import pyqtgraph
 from apscheduler.schedulers.background import BlockingScheduler
+import pandas as pd
 
 from module import introduction
 from module import process_toss
@@ -153,6 +155,14 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         boot_log_handler = LogHandler(job)
         logging.getLogger().addHandler(boot_log_handler)
+
+        # ■■■■■ global settings of packages ■■■■■
+
+        os.get_terminal_size = lambda *args: os.terminal_size((120, 90))
+        pd.set_option("display.precision", 3)
+        pd.set_option("display.min_rows", 20)
+        pd.set_option("display.max_rows", 20)
+        pyqtgraph.setConfigOptions(antialias=True)
 
         # ■■■■■ start basic things ■■■■■
 
