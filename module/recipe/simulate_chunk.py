@@ -19,7 +19,7 @@ def do(dataset):
 
     progress_list = dataset["progress_list"]
     target_progress = dataset["target_progress"]
-    strategy = dataset["strategy"]
+    strategy_code = dataset["strategy_code"]
     target_symbols = dataset["target_symbols"]
     calculation_index = dataset["calculation_index"]
     chunk_candle_data = dataset["chunk_candle_data"]
@@ -483,7 +483,7 @@ def do(dataset):
             current_moment=current_moment,
             current_candle_data=current_candle_data,
             current_indicators=current_indicators,
-            strategy=strategy,
+            strategy_code=strategy_code,
             account_state=copy.deepcopy(chunk_account_state),
             scribbles=chunk_scribbles,
             compiled_custom_script=compiled_decision_script,

@@ -74,15 +74,15 @@ class Transactor:
             core.window.undertake(
                 lambda s=state: core.window.checkBox.setChecked(s), False
             )
-            strategy = read_data["strategy"]
+            strategy_code = read_data["strategy_code"]
             for index, strategy_tuple in enumerate(core.window.strategy_tuples):
-                if strategy == strategy_tuple[0]:
+                if strategy_code == strategy_tuple[0]:
                     core.window.undertake(
                         lambda i=index: core.window.comboBox_2.setCurrentIndex(i), False
                     )
         except FileNotFoundError:
             self.automation_settings = {
-                "strategy": 0,
+                "strategy_code": "SLSLDS",
                 "should_transact": False,
             }
 
@@ -579,24 +579,8 @@ class Transactor:
         index = core.window.undertake(
             lambda: core.window.comboBox_2.currentIndex(), True
         )
-        strategy = core.window.strategy_tuples[index][0]
-        self.automation_settings["strategy"] = strategy
-
-        if strategy == 0:
-            strategy_details = strategist.me.details
-        else:
-            for strategy_tuple in core.window.strategy_tuples:
-                if strategy_tuple[0] == strategy:
-                    strategy_details = strategy_tuple[2]
-        is_working_strategy = strategy_details[0]
-
-        if not is_working_strategy:
-            question = [
-                "Strategy not available",
-                "Nothing happends with this strategy.",
-                ["Okay"],
-            ]
-            core.window.ask(question)
+        strategy_code = core.window.strategy_tuples[index][0]
+        self.automation_settings["strategy_code"] = strategy_code
 
         self.display_lines()
 
@@ -607,7 +591,7 @@ class Transactor:
         )
 
         if is_checked:
-            if strategy == 1:
+            if strategy_code == "MKRNDM":
                 question = [
                     "Random strategy selected",
                     "If you turn on auto transaction with the random strategy on, you"
@@ -618,13 +602,6 @@ class Transactor:
                     ["Okay"],
                 ]
                 core.window.ask(question)
-
-            if strategy == 0:
-                strategy_details = strategist.me.details
-            else:
-                for strategy_tuple in core.window.strategy_tuples:
-                    if strategy_tuple[0] == strategy:
-                        strategy_details = strategy_tuple[2]
 
             current_moment = datetime.now(timezone.utc).replace(microsecond=0)
             current_moment = current_moment - timedelta(
@@ -826,7 +803,7 @@ class Transactor:
         # ■■■■■ check things ■■■■■
 
         symbol = self.viewing_symbol
-        strategy = self.automation_settings["strategy"]
+        strategy_code = self.automation_settings["strategy_code"]
 
         # ■■■■■ get light data ■■■■■
 
@@ -1023,7 +1000,7 @@ class Transactor:
             make_indicators.do,
             target_symbols=target_symbols,
             candle_data=candle_data,
-            strategy=strategy,
+            strategy_code=strategy_code,
             compiled_custom_script=compiled_indicators_script,
         )
 
@@ -1448,20 +1425,7 @@ class Transactor:
 
         # ■■■■■ get strategy details ■■■■■
 
-        strategy = self.automation_settings["strategy"]
-
-        if strategy == 0:
-            strategy_details = strategist.me.details
-        else:
-            for strategy_tuple in core.window.strategy_tuples:
-                if strategy_tuple[0] == strategy:
-                    strategy_details = strategy_tuple[2]
-
-        # ■■■■■ determine if should keep on going ■■■■■
-
-        is_working_strategy = strategy_details[0]
-        if not is_working_strategy:
-            return
+        strategy_code = self.automation_settings["strategy_code"]
 
         # ■■■■■ play the progress bar ■■■■■
 
@@ -1544,7 +1508,7 @@ class Transactor:
             make_indicators.do,
             target_symbols=target_symbols,
             candle_data=partial_candle_data,
-            strategy=strategy,
+            strategy_code=strategy_code,
             compiled_custom_script=compiled_indicators_script,
         )
 
@@ -1559,7 +1523,7 @@ class Transactor:
             current_moment=current_moment,
             current_candle_data=current_candle_data,
             current_indicators=current_indicators,
-            strategy=strategy,
+            strategy_code=strategy_code,
             account_state=copy.deepcopy(self.account_state),
             scribbles=self.scribbles,
             compiled_custom_script=compiled_decision_script,

@@ -14,7 +14,7 @@ def do(**kwargs):
 
     target_symbols = kwargs["target_symbols"]
     candle_data = kwargs["candle_data"]
-    strategy = kwargs["strategy"]
+    strategy_code = kwargs["strategy_code"]
     compiled_custom_script = kwargs["compiled_custom_script"]
 
     # ■■■■■ interpolate nans ■■■■■
@@ -49,23 +49,7 @@ def do(**kwargs):
             if symbol not in candle_data.columns.get_level_values(0):
                 return
 
-        if strategy == 0:
-            namespace = {
-                "talib": talib,
-                "pd": pd,
-                "np": np,
-                "symbol": symbol,
-                "candle_data": candle_data,
-                "datalocks": datalocks,
-                "new_indicators": new_indicators,
-            }
-
-            exec(compiled_custom_script, namespace)
-
-        elif strategy == 1:
-            pass
-
-        elif strategy == 2:
+        if strategy_code == "SLSLDS":
             border = 0.5  # percent
 
             with datalocks.hold("candle_data_during_indicator_creation"):
@@ -99,6 +83,22 @@ def do(**kwargs):
             calmness = calmness.fillna(value=1)
             calmness[calmness > 4] = 4
             new_indicators[(symbol, "Abstract", "Calmness (#FF8888)")] = calmness
+
+        elif strategy_code == "MKRNDM":
+            pass
+
+        elif strategy_code == "CSMSTR":
+            namespace = {
+                "talib": talib,
+                "pd": pd,
+                "np": np,
+                "symbol": symbol,
+                "candle_data": candle_data,
+                "datalocks": datalocks,
+                "new_indicators": new_indicators,
+            }
+
+            exec(compiled_custom_script, namespace)
 
     thread_toss.map(job, target_symbols)
 

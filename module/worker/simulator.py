@@ -43,7 +43,7 @@ class Simulator:
 
         self.calculation_settings = {
             "year": datetime.now(timezone.utc).year,
-            "strategy": 0,
+            "strategy_code": "SLSLDS",
         }
         self.presentation_settings = {
             "maker_fee": 0.02,
@@ -120,24 +120,8 @@ class Simulator:
             self.display_year_range()
 
         index = core.window.undertake(lambda: core.window.comboBox.currentIndex(), True)
-        strategy = core.window.strategy_tuples[index][0]
-        self.calculation_settings["strategy"] = strategy
-
-        if strategy == 0:
-            strategy_details = strategist.me.details
-        else:
-            for strategy_tuple in core.window.strategy_tuples:
-                if strategy_tuple[0] == strategy:
-                    strategy_details = strategy_tuple[2]
-        is_working_strategy = strategy_details[0]
-
-        if not is_working_strategy:
-            question = [
-                "Strategy not available",
-                "Calculation is not available with this strategy.",
-                ["Okay"],
-            ]
-            core.window.ask(question)
+        strategy_code = core.window.strategy_tuples[index][0]
+        self.calculation_settings["strategy_code"] = strategy_code
 
         self.display_lines()
 
@@ -203,7 +187,7 @@ class Simulator:
         # ■■■■■ check things ■■■■■
 
         symbol = self.viewing_symbol
-        strategy = self.calculation_settings["strategy"]
+        strategy_code = self.calculation_settings["strategy_code"]
 
         # ■■■■■ get light data ■■■■■
 
@@ -403,7 +387,7 @@ class Simulator:
             make_indicators.do,
             target_symbols=target_symbols,
             candle_data=candle_data,
-            strategy=strategy,
+            strategy_code=strategy_code,
             compiled_custom_script=compiled_indicators_script,
         )
 
@@ -956,9 +940,9 @@ class Simulator:
         # ■■■■■ default values and the strategy ■■■■■
 
         year = self.calculation_settings["year"]
-        strategy = self.calculation_settings["strategy"]
+        strategy_code = self.calculation_settings["strategy_code"]
 
-        path_start = f"{self.workerpath}/{strategy}_{year}"
+        path_start = f"{self.workerpath}/{strategy_code}_{year}"
         asset_record_path = path_start + "_asset_record.pickle"
         unrealized_changes_path = path_start + "_unrealized_changes.pickle"
         scribbles_path = path_start + "_scribbles.pickle"
@@ -967,25 +951,14 @@ class Simulator:
 
         target_symbols = user_settings.get_data_settings()["target_symbols"]
 
-        if strategy == 0:
+        if strategy_code == "CSMSTR":
             strategy_details = strategist.me.details
         else:
             for strategy_tuple in core.window.strategy_tuples:
-                if strategy_tuple[0] == strategy:
+                if strategy_tuple[0] == strategy_code:
                     strategy_details = strategy_tuple[2]
-        is_working_strategy = strategy_details[0]
-        should_parallalize = strategy_details[1]
-        chunk_length = strategy_details[2]
-
-        if not is_working_strategy:
-            stop_flag.make("calculate_simulation")
-            question = [
-                "Strategy not available",
-                "Choose a different one.",
-                ["Okay"],
-            ]
-            core.window.ask(question)
-            return
+        should_parallalize = strategy_details[0]
+        chunk_length = strategy_details[1]
 
         prepare_step = 2
 
@@ -1094,7 +1067,7 @@ class Simulator:
                 make_indicators.do,
                 target_symbols=target_symbols,
                 candle_data=year_candle_data[provide_from:calculate_until],
-                strategy=strategy,
+                strategy_code=strategy_code,
                 compiled_custom_script=compiled_indicators_script,
             )
 
@@ -1137,7 +1110,7 @@ class Simulator:
                     dataset = {
                         "progress_list": progress_list,
                         "target_progress": turn,
-                        "strategy": strategy,
+                        "strategy_code": strategy_code,
                         "target_symbols": target_symbols,
                         "calculation_index": chunk_index,
                         "chunk_candle_data": chunk_candle_data,
@@ -1158,7 +1131,7 @@ class Simulator:
                 dataset = {
                     "progress_list": progress_list,
                     "target_progress": 0,
-                    "strategy": strategy,
+                    "strategy_code": strategy_code,
                     "target_symbols": target_symbols,
                     "calculation_index": needed_index,
                     "chunk_candle_data": needed_candle_data,
@@ -1231,7 +1204,7 @@ class Simulator:
         self.raw_unrealized_changes = unrealized_changes
         self.raw_scribbles = scribbles
         self.raw_account_state = account_state
-        self.about_viewing = {"year": year, "strategy": strategy}
+        self.about_viewing = {"year": year, "strategy_code": strategy_code}
         self.present()
 
         # ■■■■■ save if properly calculated ■■■■■
@@ -1263,15 +1236,15 @@ class Simulator:
             should_parallalize = False
             chunk_length = 0
         else:
-            strategy = self.about_viewing["strategy"]
-            if strategy == 0:
+            strategy_code = self.about_viewing["strategy_code"]
+            if strategy_code == "CSMSTR":
                 strategy_details = strategist.me.details
             else:
                 for strategy_tuple in core.window.strategy_tuples:
-                    if strategy_tuple[0] == strategy:
+                    if strategy_tuple[0] == strategy_code:
                         strategy_details = strategy_tuple[2]
-            should_parallalize = strategy_details[1]
-            chunk_length = strategy_details[2]
+            should_parallalize = strategy_details[0]
+            chunk_length = strategy_details[1]
 
         # ■■■■■ apply other factors to the asset trace ■■■■
 
@@ -1349,11 +1322,11 @@ class Simulator:
             core.window.undertake(lambda t=text: core.window.label_19.setText(t), False)
         else:
             year = self.about_viewing["year"]
-            strategy = self.about_viewing["strategy"]
+            strategy_code = self.about_viewing["strategy_code"]
             text = ""
             text += f"Target year {year}"
             text += "  ⦁  "
-            text += f"Strategy number {strategy}"
+            text += f"Strategy code {strategy_code}"
             core.window.undertake(lambda t=text: core.window.label_19.setText(t), False)
 
     def display_year_range(self, *args, **kwargs):
@@ -1380,9 +1353,9 @@ class Simulator:
 
     def delete_calculation_data(self, *args, **kwargs):
         year = self.calculation_settings["year"]
-        strategy = self.calculation_settings["strategy"]
+        strategy_code = self.calculation_settings["strategy_code"]
 
-        path_start = f"{self.workerpath}/{strategy}_{year}"
+        path_start = f"{self.workerpath}/{strategy_code}_{year}"
         asset_record_path = path_start + "_asset_record.pickle"
         unrealized_changes_path = path_start + "_unrealized_changes.pickle"
         scribbles_path = path_start + "_scribbles.pickle"
@@ -1405,8 +1378,8 @@ class Simulator:
         if not does_file_exist:
             question = [
                 "No calculation data on this combination",
-                f"You should calculate first on year {year} with strategy number"
-                f" {strategy}.",
+                f"You should calculate first on year {year} with strategy code"
+                f" {strategy_code}.",
                 ["Okay"],
             ]
             core.window.ask(question)
@@ -1415,8 +1388,8 @@ class Simulator:
             question = [
                 "Are you sure you want to delete calculation data on this combination?",
                 "If you do, you should perform the calculation again to see the"
-                f" prediction on year {year} with strategy number"
-                f" {strategy}. Calculation data of other combinations does not get"
+                f" prediction on year {year} with strategy code"
+                f" {strategy_code}. Calculation data of other combinations does not get"
                 " affected.",
                 ["Cancel", "Delete"],
             ]
@@ -1449,9 +1422,9 @@ class Simulator:
 
     def draw(self, *args, **kwargs):
         year = self.calculation_settings["year"]
-        strategy = self.calculation_settings["strategy"]
+        strategy_code = self.calculation_settings["strategy_code"]
 
-        path_start = f"{self.workerpath}/{strategy}_{year}"
+        path_start = f"{self.workerpath}/{strategy_code}_{year}"
         asset_record_path = path_start + "_asset_record.pickle"
         unrealized_changes_path = path_start + "_unrealized_changes.pickle"
         scribbles_path = path_start + "_scribbles.pickle"
@@ -1465,13 +1438,13 @@ class Simulator:
                     self.raw_scribbles = pickle.load(file)
                 with open(account_state_path, "rb") as file:
                     self.raw_account_state = pickle.load(file)
-            self.about_viewing = {"year": year, "strategy": strategy}
+            self.about_viewing = {"year": year, "strategy_code": strategy_code}
             self.present()
         except FileNotFoundError:
             question = [
                 "No calculation data on this combination",
-                f"You should calculate first on year {year} with strategy number"
-                f" {strategy}.",
+                f"You should calculate first on year {year} with strategy code"
+                f" {strategy_code}.",
                 ["Okay"],
             ]
             core.window.ask(question)

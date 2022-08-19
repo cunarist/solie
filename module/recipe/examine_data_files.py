@@ -83,7 +83,7 @@ def do():
         filepath = f"{datapath}/transactor/automation_settings.json"
         with open(filepath, "r", encoding="utf8") as file:
             automation_settings = json.load(file)
-        if automation_settings["strategy"] == 110:
+        if automation_settings.get("strategy", None) == 110:
             automation_settings["strategy"] = 2
         with open(filepath, "w", encoding="utf8") as file:
             json.dump(automation_settings, file, indent=4)
@@ -109,6 +109,19 @@ def do():
         if "Symbol" not in auto_order_record.columns:
             auto_order_record["Symbol"] = ""
             auto_order_record.to_pickle(filepath)
+    except FileNotFoundError:
+        pass
+
+    # 5.0: solsol default strategy now has strategy code SLSLDS
+    try:
+        filepath = f"{datapath}/transactor/automation_settings.json"
+        with open(filepath, "r", encoding="utf8") as file:
+            automation_settings = json.load(file)
+        if automation_settings.get("strategy", None) == 2:
+            automation_settings.pop("strategy")
+            automation_settings["strategy_code"] = "SLSLDS"
+        with open(filepath, "w", encoding="utf8") as file:
+            json.dump(automation_settings, file, indent=4)
     except FileNotFoundError:
         pass
 

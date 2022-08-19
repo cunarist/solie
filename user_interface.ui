@@ -1188,23 +1188,6 @@ HorizontalDivider, VerticalDivider {
               </spacer>
              </item>
              <item>
-              <widget class="QCheckBox" name="checkBox_6">
-               <property name="text">
-                <string>Available</string>
-               </property>
-               <property name="checked">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="VerticalDivider" name="frame_21">
-               <property name="frameShape">
-                <enum>QFrame::VLine</enum>
-               </property>
-              </widget>
-             </item>
-             <item>
               <widget class="QLabel" name="label_43">
                <property name="text">
                 <string>Chunk division</string>
@@ -1663,8 +1646,8 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_6">
@@ -1692,8 +1675,8 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_7">
@@ -1721,8 +1704,8 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_4">
@@ -1750,8 +1733,8 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_8">
@@ -1779,8 +1762,8 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_5">
@@ -1808,8 +1791,8 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_9">

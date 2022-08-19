@@ -994,11 +994,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ intergrated strategies ■■■■■
 
-        # usability / is parallel calculation / divided chunk length
+        # is parallel calculation / divided chunk length
         self.strategy_tuples = [
-            (0, "Custom strategy"),
-            (1, "Make random orders", [True, True, 7]),
-            (2, "Solsol default strategy", [True, True, 30]),
+            ("SLSLDS", "Solsol default strategy", [True, 30]),
+            ("MKRNDM", "Make random orders", [True, 7]),
+            ("CSMSTR", "Custom strategy"),
         ]
 
         red_pixmap = QtGui.QPixmap()
@@ -1009,18 +1009,19 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         green_pixmap.load("./static/icon/traffic_light_green.png")
 
         for strategy_tuple in self.strategy_tuples:
-            strategy_number = strategy_tuple[0]
+            strategy_code = strategy_tuple[0]
             strategy_name = strategy_tuple[1]
+            text = f"{strategy_code} - {strategy_name}"
 
             traffic_light_icon = QtGui.QIcon()
-            if strategy_number == 0:
+            if strategy_code == 0:
                 traffic_light_icon.addPixmap(yellow_pixmap)
-            elif strategy_number == 1:
+            elif strategy_code == 1:
                 traffic_light_icon.addPixmap(red_pixmap)
-            elif strategy_number == 2:
+            elif strategy_code == 2:
                 traffic_light_icon.addPixmap(green_pixmap)
 
-            def job(text=strategy_name):
+            def job(text=text):
                 self.comboBox.addItem(traffic_light_icon, text)
                 self.comboBox_2.addItem(traffic_light_icon, text)
 

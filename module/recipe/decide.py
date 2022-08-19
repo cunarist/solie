@@ -10,7 +10,7 @@ def choose(**kwargs):
     current_moment = kwargs["current_moment"]
     current_candle_data = kwargs["current_candle_data"]
     current_indicators = kwargs["current_indicators"]
-    strategy = kwargs["strategy"]
+    strategy_code = kwargs["strategy_code"]
     account_state = kwargs["account_state"]
     scribbles = kwargs["scribbles"]
     compiled_custom_script = kwargs["compiled_custom_script"]
@@ -23,91 +23,7 @@ def choose(**kwargs):
 
     # ■■■■■ write decisions ■■■■■
 
-    if strategy == 0:
-        namespace = {
-            "datetime": datetime,
-            "timezone": timezone,
-            "timedelta": timedelta,
-            "math": math,
-            "target_symbols": target_symbols,
-            "current_moment": current_moment,
-            "current_candle_data": current_candle_data,
-            "current_indicators": current_indicators,
-            "account_state": account_state,
-            "scribbles": scribbles,
-            "decision": decision,
-        }
-
-        exec(compiled_custom_script, namespace)
-
-    elif strategy == 1:
-        # there is too little volatility on testnet markets except BTC
-        prefer_symbol = ""
-        should_filter = False
-        for symbol in target_symbols:
-            if symbol.startswith("BTC"):
-                should_filter = True
-                prefer_symbol = symbol
-                break
-
-        for symbol in target_symbols:
-            split_ratio = 0.0001
-
-            current_price = current_candle_data[str((symbol, "Close"))]
-
-            wallet_balance = account_state["wallet_balance"]
-            direction = account_state["positions"][symbol]["direction"]
-
-            if should_filter and symbol != prefer_symbol:
-                continue
-
-            if direction == "none":
-                if random.random() < 0.5:
-                    decision[symbol]["now_buy"] = {
-                        "margin": split_ratio * wallet_balance,
-                    }
-                else:
-                    decision[symbol]["now_sell"] = {
-                        "margin": split_ratio * wallet_balance,
-                    }
-            else:
-                decision[symbol]["now_close"] = {}
-                decision[symbol]["cancel_all"] = {}
-
-            if direction == "none":
-                decision[symbol]["later_down_buy"] = {
-                    "boundary": current_price * 0.92,
-                    "margin": split_ratio * wallet_balance,
-                }
-                decision[symbol]["later_up_sell"] = {
-                    "boundary": current_price * 1.08,
-                    "margin": split_ratio * wallet_balance,
-                }
-                decision[symbol]["later_up_buy"] = {
-                    "boundary": current_price * 1.1,
-                    "margin": split_ratio * wallet_balance,
-                }
-                decision[symbol]["later_down_sell"] = {
-                    "boundary": current_price * 0.9,
-                    "margin": split_ratio * wallet_balance,
-                }
-                decision[symbol]["book_buy"] = {
-                    "boundary": current_price * 0.94,
-                    "margin": split_ratio * wallet_balance,
-                }
-                decision[symbol]["book_sell"] = {
-                    "boundary": current_price * 1.06,
-                    "margin": split_ratio * wallet_balance,
-                }
-            else:
-                decision[symbol]["later_down_close"] = {
-                    "boundary": current_price * 0.88,
-                }
-                decision[symbol]["later_up_close"] = {
-                    "boundary": current_price * 1.12,
-                }
-
-    elif strategy == 2:
+    if strategy_code == "SLSLDS":
         for symbol in target_symbols:
             symbols_count = len(target_symbols)
             acquire_ratio = 0.8 / symbols_count / (80 * 60 / 10)  # ratio
@@ -243,6 +159,90 @@ def choose(**kwargs):
                         decision[symbol]["now_sell"] = {
                             "margin": ratio_shift * wallet_balance,
                         }
+
+    elif strategy_code == "MKRNDM":
+        # there is too little volatility on testnet markets except BTC
+        prefer_symbol = ""
+        should_filter = False
+        for symbol in target_symbols:
+            if symbol.startswith("BTC"):
+                should_filter = True
+                prefer_symbol = symbol
+                break
+
+        for symbol in target_symbols:
+            split_ratio = 0.0001
+
+            current_price = current_candle_data[str((symbol, "Close"))]
+
+            wallet_balance = account_state["wallet_balance"]
+            direction = account_state["positions"][symbol]["direction"]
+
+            if should_filter and symbol != prefer_symbol:
+                continue
+
+            if direction == "none":
+                if random.random() < 0.5:
+                    decision[symbol]["now_buy"] = {
+                        "margin": split_ratio * wallet_balance,
+                    }
+                else:
+                    decision[symbol]["now_sell"] = {
+                        "margin": split_ratio * wallet_balance,
+                    }
+            else:
+                decision[symbol]["now_close"] = {}
+                decision[symbol]["cancel_all"] = {}
+
+            if direction == "none":
+                decision[symbol]["later_down_buy"] = {
+                    "boundary": current_price * 0.92,
+                    "margin": split_ratio * wallet_balance,
+                }
+                decision[symbol]["later_up_sell"] = {
+                    "boundary": current_price * 1.08,
+                    "margin": split_ratio * wallet_balance,
+                }
+                decision[symbol]["later_up_buy"] = {
+                    "boundary": current_price * 1.1,
+                    "margin": split_ratio * wallet_balance,
+                }
+                decision[symbol]["later_down_sell"] = {
+                    "boundary": current_price * 0.9,
+                    "margin": split_ratio * wallet_balance,
+                }
+                decision[symbol]["book_buy"] = {
+                    "boundary": current_price * 0.94,
+                    "margin": split_ratio * wallet_balance,
+                }
+                decision[symbol]["book_sell"] = {
+                    "boundary": current_price * 1.06,
+                    "margin": split_ratio * wallet_balance,
+                }
+            else:
+                decision[symbol]["later_down_close"] = {
+                    "boundary": current_price * 0.88,
+                }
+                decision[symbol]["later_up_close"] = {
+                    "boundary": current_price * 1.12,
+                }
+
+    elif strategy_code == "CSMSTR":
+        namespace = {
+            "datetime": datetime,
+            "timezone": timezone,
+            "timedelta": timedelta,
+            "math": math,
+            "target_symbols": target_symbols,
+            "current_moment": current_moment,
+            "current_candle_data": current_candle_data,
+            "current_indicators": current_indicators,
+            "account_state": account_state,
+            "scribbles": scribbles,
+            "decision": decision,
+        }
+
+        exec(compiled_custom_script, namespace)
 
     # ■■■■■ return decision ■■■■■
 

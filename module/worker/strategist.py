@@ -52,18 +52,14 @@ class Strategiest:
                 details = json.load(file)
                 self.details = details
         except FileNotFoundError:
-            details = [True, True, 30, False]
+            details = [True, 30]
             self.details = details
         core.window.undertake(
-            lambda d=details: core.window.checkBox_6.setChecked(d[0]),
+            lambda d=details: core.window.checkBox_7.setChecked(d[0]),
             False,
         )
         core.window.undertake(
-            lambda d=details: core.window.checkBox_7.setChecked(d[1]),
-            False,
-        )
-        core.window.undertake(
-            lambda d=details: core.window.spinBox_3.setValue(d[2]),
+            lambda d=details: core.window.spinBox_3.setValue(d[1]),
             False,
         )
 
@@ -107,22 +103,21 @@ class Strategiest:
 
         def job():
             return (
-                core.window.checkBox_6.isChecked(),
                 core.window.checkBox_7.isChecked(),
                 core.window.spinBox_3.value(),
             )
 
         retuned = core.window.undertake(job, True)
 
-        details = [retuned[0], retuned[1], retuned[2]]
+        details = [retuned[0], retuned[1]]
         with open(filepath, "w", encoding="utf8") as file:
             json.dump(details, file, indent=4)
         self.details = details
 
         # display to graphs
-        if transactor.me.automation_settings["strategy"] == 0:
+        if transactor.me.automation_settings["strategy_code"] == 0:
             transactor.me.display_lines()
-        if simulator.me.calculation_settings["strategy"] == 0:
+        if simulator.me.calculation_settings["strategy_code"] == 0:
             simulator.me.display_lines()
 
     def revert_scripts(self, *args, **kwargs):
@@ -140,9 +135,8 @@ class Strategiest:
 
         # strategy details
         def job(details=self.details):
-            core.window.checkBox_6.setChecked(details[0])
-            core.window.checkBox_7.setChecked(details[1])
-            core.window.spinBox_3.setValue(details[2])
+            core.window.checkBox_7.setChecked(details[0])
+            core.window.spinBox_3.setValue(details[1])
 
         core.window.undertake(job, False)
 
@@ -169,7 +163,6 @@ class Strategiest:
 
         # strategy details
         def job():
-            core.window.checkBox_6.setChecked(True)
             core.window.checkBox_7.setChecked(True)
             core.window.spinBox_3.setValue(30)
 
