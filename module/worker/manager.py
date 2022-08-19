@@ -4,7 +4,6 @@ import os
 from collections import deque
 import time
 import statistics
-import textwrap
 import logging
 import webbrowser
 
@@ -149,34 +148,12 @@ class Manager:
 
     def add_log_output(self, *args, **kwargs):
         # get the data
-        log_message = args[0]
-
-        # organize
-        message_lines = log_message.split("\n")
-        output_lines = []
-        for original_line in message_lines:
-            # split long lines
-            if original_line == "":
-                continue
-            leading_spaces = len(original_line) - len(original_line.lstrip())
-            dedented_line = textwrap.dedent(original_line)
-            wrapped_line = textwrap.fill(dedented_line, width=80 - leading_spaces)
-            divided_lines = wrapped_line.split("\n")
-            for divided_line in divided_lines:
-                indented_line = textwrap.indent(divided_line, " " * leading_spaces)
-                output_lines.append(indented_line)
-        if len(output_lines) > 160:
-            # only preserve top and bottom if the text has too many lines
-            front_lines = output_lines[:80]
-            middle_lines = ["", "...", ""]
-            back_lines = output_lines[-80:]
-            output_lines = front_lines + middle_lines + back_lines
-        log_output = "\n".join(output_lines)
+        log_text = args[0]
 
         # add to log list
-        core.window.undertake(
-            lambda l=log_output: core.window.listWidget.addItem(l), False
-        )
+        job = core.window.listWidget.addItem
+        payload = (job, log_text)
+        core.window.undertake(lambda p=payload: p[0](p[1]), False)
 
         # save to file
         task_start_time = datetime.now(timezone.utc)
@@ -187,7 +164,7 @@ class Manager:
         filepath = filepath.replace("+", "_")
         filepath = self.workerpath + "/log_outputs_" + filepath + ".txt"
         with open(filepath, "a", encoding="utf8") as file:
-            file.write(f"{log_output}\n\n")
+            file.write(f"{log_text}\n\n")
         duration = datetime.now(timezone.utc) - task_start_time
         duration = duration.total_seconds()
         remember_task_durations.add("write_log", duration)

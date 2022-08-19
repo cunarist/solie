@@ -63,7 +63,7 @@ class OverlapPopup(QtWidgets.QWidget):
         title_label_font = QtGui.QFont()
         title_label_font.setPointSize(12)
         title_label.setFont(title_label_font)
-        title_label.setWordWrap(True)
+        title_label.setWordWrap(False)
         this_layout.addWidget(title_label)
         widget = QtWidgets.QSpacerItem(
             0,

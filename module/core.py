@@ -139,15 +139,18 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
     def boot(self):
         # ■■■■■ prepare boot logging ■■■■■
 
-        def job(log_message):
-            question = [
-                "An error occured during the boot phase",
-                log_message,
-                ["Shut down"],
-                False,
-            ]
-            self.ask(question)
-            self.undertake(self.close, False)
+        def job(log_text):
+            title = "An error occured during the boot phase"
+            overlap_popup = self.overlap(title)
+            scroll_layout = overlap_popup.scroll_layout
+
+            def job(log_text=log_text):
+                label = QtWidgets.QLabel(log_text)
+                fixed_width_font = QtGui.QFont("Consolas", 9)
+                label.setFont(fixed_width_font)
+                scroll_layout.addWidget(label)
+
+            self.undertake(job, False)
 
         boot_log_handler = LogHandler(job)
         logging.getLogger().addHandler(boot_log_handler)
@@ -1099,11 +1102,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ prepare logging ■■■■■
 
         log_handler = LogHandler(manager.me.add_log_output)
-        log_format = "■ %(asctime)s.%(msecs)03d %(levelname)s\n\n%(message)s"
-        date_format = "%Y-%m-%d %H:%M:%S"
-        log_formatter = logging.Formatter(log_format, datefmt=date_format)
-        log_formatter.converter = time.gmtime
-        log_handler.setFormatter(log_formatter)
         logging.getLogger().addHandler(log_handler)
         logging.getLogger().removeHandler(boot_log_handler)
         logger = logging.getLogger("solsol")
