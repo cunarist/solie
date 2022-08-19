@@ -83,6 +83,6 @@ class OverlapPopup(QtWidgets.QWidget):
         this_layout.addWidget(close_button)
         content_box_layout.addLayout(this_layout)
 
-        scroll_area = QtWidgets.QScrollArea()
+        scroll_area = QtWidgets.QScrollArea(self)
         content_box_layout.addWidget(scroll_area)
         self.scroll_layout = QtWidgets.QVBoxLayout(scroll_area)
