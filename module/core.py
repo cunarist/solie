@@ -37,7 +37,7 @@ from module.recipe import examine_data_files
 from module.widget.ask_popup import AskPopup
 from module.widget.token_selection_frame import TokenSelectionFrame
 from module.widget.coin_selection_frame import CoinSelectionFrame
-from module.widget.guide_frame import GuideFrame
+from module.widget.splash_screen import SplashScreen
 from module.widget.license_frame import LicenseFrame
 from module.widget.symbol_box import SymbolBox
 from module.widget.brand_label import BrandLabel
@@ -74,13 +74,13 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.undertake(lambda: self.board.hide(), True)
             self.closeEvent = lambda e: e.ignore()
 
-            guide_frame = None
+            splash_screen = None
 
             def job():
-                nonlocal guide_frame
-                guide_frame = GuideFrame()
-                guide_frame.announce("Finalizing...")
-                self.centralWidget().layout().addWidget(guide_frame)
+                nonlocal splash_screen
+                splash_screen = SplashScreen()
+                splash_screen.announce("Finalizing...")
+                self.centralWidget().layout().addWidget(splash_screen)
 
             self.undertake(job, True)
 
@@ -88,7 +88,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 while True:
                     if done_steps == total_steps:
                         text = "Finalization done"
-                        self.undertake(lambda t=text: guide_frame.announce(t), True)
+                        self.undertake(lambda t=text: splash_screen.announce(t), True)
                         time.sleep(1)
                         process_toss.terminate_pool()
                         self.closeEvent = lambda e: e.accept()
@@ -273,13 +273,13 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ guide frame ■■■■■
 
-        guide_frame = None
+        splash_screen = None
 
         def job():
-            nonlocal guide_frame
-            guide_frame = GuideFrame()
-            guide_frame.announce("Loading...")
-            self.centralWidget().layout().addWidget(guide_frame)
+            nonlocal splash_screen
+            splash_screen = SplashScreen()
+            splash_screen.announce("Loading...")
+            self.centralWidget().layout().addWidget(splash_screen)
 
         self.undertake(job, True)
 
@@ -1240,7 +1240,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ initialize functions ■■■■■
 
         def job():
-            guide_frame.announce("Initializing...")
+            splash_screen.announce("Initializing...")
 
         self.undertake(job, True)
 
@@ -1268,7 +1268,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ show main widgets ■■■■■
 
-        self.undertake(lambda: guide_frame.setParent(None), True)
+        self.undertake(lambda: splash_screen.setParent(None), True)
         self.undertake(lambda: self.board.show(), True)
         self.undertake(lambda: self.gauge.show(), True)
 

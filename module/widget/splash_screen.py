@@ -5,7 +5,7 @@ from module.widget.horizontal_divider import HorizontalDivider
 from module import introduction
 
 
-class GuideFrame(QtWidgets.QFrame):
+class SplashScreen(QtWidgets.QFrame):
     def __init__(self):
         super().__init__()
 
