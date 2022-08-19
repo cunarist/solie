@@ -1219,7 +1219,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 return holder[1]
 
         else:
-            returned = job()
+            try:
+                returned = job()
+            except Exception:
+                logger = logging.getLogger("solsol")
+                logger.exception("Exception occured from the main thread")
             holder[1] = returned
             holder[0].set()
 
