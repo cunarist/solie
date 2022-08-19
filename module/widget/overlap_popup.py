@@ -7,7 +7,7 @@ from module.widget.popup_box import PopupBox
 # https://stackoverflow.com/questions/67029993/pyqt-creating-a-popup-in-the-window
 
 
-class AskPopup(QtWidgets.QWidget):
+class OverlapPopup(QtWidgets.QWidget):
     done_event = threading.Event()
 
     def showEvent(self, event):  # noqa:N802
@@ -20,7 +20,7 @@ class AskPopup(QtWidgets.QWidget):
             self.setGeometry(source.rect())
         return super().eventFilter(source, event)
 
-    def __init__(self, parent, question):
+    def __init__(self, parent, title):
         # ■■■■■ the basic ■■■■■
 
         super().__init__(parent)
@@ -53,12 +53,17 @@ class AskPopup(QtWidgets.QWidget):
 
         # box
         content_box = PopupBox(autoFillBackground=True)
-        content_box.setFixedSize(560, 560)
         content_box_layout = QtWidgets.QVBoxLayout(content_box)
         full_layout.addWidget(content_box)
 
         # line containing the close button
         this_layout = QtWidgets.QHBoxLayout()
+        title_label = QtWidgets.QLabel(title)
+        title_label_font = QtGui.QFont()
+        title_label_font.setPointSize(12)
+        title_label.setFont(title_label_font)
+        title_label.setWordWrap(True)
+        this_layout.addWidget(title_label)
         widget = QtWidgets.QSpacerItem(
             0,
             0,
@@ -78,65 +83,6 @@ class AskPopup(QtWidgets.QWidget):
         this_layout.addWidget(close_button)
         content_box_layout.addLayout(this_layout)
 
-        # spacing
-        widget = QtWidgets.QSpacerItem(
-            0,
-            0,
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Expanding,
-        )
-        content_box_layout.addItem(widget)
-
-        # title
-        main_text = QtWidgets.QLabel(
-            question[0],
-            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-        )
-        main_text_font = QtGui.QFont()
-        main_text_font.setPointSize(12)
-        main_text.setFont(main_text_font)
-        main_text.setWordWrap(True)
-        content_box_layout.addWidget(main_text)
-
-        # spacing
-        spacing_text = QtWidgets.QLabel("")
-        spacing_text_font = QtGui.QFont()
-        spacing_text_font.setPointSize(3)
-        spacing_text.setFont(spacing_text_font)
-        content_box_layout.addWidget(spacing_text)
-
-        # explanation
-        detail_text = QtWidgets.QLabel(
-            question[1],
-            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-        )
-        detail_text.setWordWrap(True)
-        content_box_layout.addWidget(detail_text)
-
-        # spacing
-        widget = QtWidgets.QSpacerItem(
-            0,
-            0,
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Expanding,
-        )
-        content_box_layout.addItem(widget)
-
-        # line including selection buttons
-        if question[3]:
-            this_layout = QtWidgets.QVBoxLayout()
-        else:
-            this_layout = QtWidgets.QHBoxLayout()
-        for turn, option in enumerate(question[2]):
-            option_button = QtWidgets.QPushButton(option, content_box)
-
-            def job(answer=turn + 1, *args, **kwargs):
-                self.answer = answer
-                self.done_event.set()
-
-            option_button.clicked.connect(job)
-            if not question[3]:
-                option_button.setMaximumWidth(240)
-            this_layout.addWidget(option_button)
-
-        content_box_layout.addLayout(this_layout)
+        scroll_area = QtWidgets.QScrollArea()
+        content_box_layout.addWidget(scroll_area)
+        self.scroll_layout = QtWidgets.QVBoxLayout(scroll_area)

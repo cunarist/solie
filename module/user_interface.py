@@ -84,20 +84,16 @@ class Ui_MainWindow(object):
 "    border-radius: 5em;\n"
 "}\n"
 "\n"
-"AskPopup {\n"
-"    background: rgba(0, 0, 0, 127);\n"
+"AskPopup, OverlapPopup {\n"
+"    background: rgba(0, 0, 0, 191);\n"
 "}\n"
 "\n"
-"AskPopupContent {\n"
-"    border: 1px solid rgb"
-                        "a(255,255,255,0.1);\n"
+"PopupBox {\n"
+"    border: 1px so"
+                        "lid rgba(255,255,255,0.1);\n"
 "    border-radius: 0.4em;\n"
 "    background: #2B2B2B;\n"
-"    min-width: 24em;\n"
-"    max-width: 24em;\n"
-"    min-height: 24em;\n"
-"    max-height: 24em;\n"
-"    margin: 0em;\n"
+"    margin: 2em;\n"
 "    padding: 2em;\n"
 "}\n"
 "\n"
@@ -1071,7 +1067,7 @@ class Ui_MainWindow(object):
         self.scrollArea_6.setWidgetResizable(True)
         self.scrollAreaWidgetContents_6 = QWidget()
         self.scrollAreaWidgetContents_6.setObjectName(u"scrollAreaWidgetContents_6")
-        self.scrollAreaWidgetContents_6.setGeometry(QRect(0, 0, 398, 262))
+        self.scrollAreaWidgetContents_6.setGeometry(QRect(0, 0, 81, 34))
         self.gridLayout_6 = QGridLayout(self.scrollAreaWidgetContents_6)
         self.gridLayout_6.setObjectName(u"gridLayout_6")
         self.label_33 = QLabel(self.scrollAreaWidgetContents_6)
@@ -1089,7 +1085,7 @@ class Ui_MainWindow(object):
         self.scrollArea_4.setWidgetResizable(True)
         self.scrollAreaWidgetContents_4 = QWidget()
         self.scrollAreaWidgetContents_4.setObjectName(u"scrollAreaWidgetContents_4")
-        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 398, 262))
+        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 81, 34))
         self.gridLayout_7 = QGridLayout(self.scrollAreaWidgetContents_4)
         self.gridLayout_7.setObjectName(u"gridLayout_7")
         self.label_35 = QLabel(self.scrollAreaWidgetContents_4)
@@ -1107,7 +1103,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 398, 262))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 81, 34))
         self.gridLayout_4 = QGridLayout(self.scrollAreaWidgetContents)
         self.gridLayout_4.setObjectName(u"gridLayout_4")
         self.label_12 = QLabel(self.scrollAreaWidgetContents)
@@ -1125,7 +1121,7 @@ class Ui_MainWindow(object):
         self.scrollArea_5.setWidgetResizable(True)
         self.scrollAreaWidgetContents_5 = QWidget()
         self.scrollAreaWidgetContents_5.setObjectName(u"scrollAreaWidgetContents_5")
-        self.scrollAreaWidgetContents_5.setGeometry(QRect(0, 0, 398, 262))
+        self.scrollAreaWidgetContents_5.setGeometry(QRect(0, 0, 81, 34))
         self.gridLayout_8 = QGridLayout(self.scrollAreaWidgetContents_5)
         self.gridLayout_8.setObjectName(u"gridLayout_8")
         self.label_36 = QLabel(self.scrollAreaWidgetContents_5)
@@ -1143,7 +1139,7 @@ class Ui_MainWindow(object):
         self.scrollArea_3.setWidgetResizable(True)
         self.scrollAreaWidgetContents_3 = QWidget()
         self.scrollAreaWidgetContents_3.setObjectName(u"scrollAreaWidgetContents_3")
-        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 398, 262))
+        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 81, 34))
         self.gridLayout_5 = QGridLayout(self.scrollAreaWidgetContents_3)
         self.gridLayout_5.setObjectName(u"gridLayout_5")
         self.label_32 = QLabel(self.scrollAreaWidgetContents_3)
@@ -1161,7 +1157,7 @@ class Ui_MainWindow(object):
         self.scrollArea_7.setWidgetResizable(True)
         self.scrollAreaWidgetContents_7 = QWidget()
         self.scrollAreaWidgetContents_7.setObjectName(u"scrollAreaWidgetContents_7")
-        self.scrollAreaWidgetContents_7.setGeometry(QRect(0, 0, 398, 262))
+        self.scrollAreaWidgetContents_7.setGeometry(QRect(0, 0, 81, 34))
         self.gridLayout_9 = QGridLayout(self.scrollAreaWidgetContents_7)
         self.gridLayout_9.setObjectName(u"gridLayout_9")
         self.label_34 = QLabel(self.scrollAreaWidgetContents_7)
@@ -1228,7 +1224,7 @@ class Ui_MainWindow(object):
         self.scrollArea_2.setWidgetResizable(True)
         self.scrollAreaWidgetContents_2 = QWidget()
         self.scrollAreaWidgetContents_2.setObjectName(u"scrollAreaWidgetContents_2")
-        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 1212, 578))
+        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 63, 20))
         self.horizontalLayout_33 = QHBoxLayout(self.scrollAreaWidgetContents_2)
         self.horizontalLayout_33.setObjectName(u"horizontalLayout_33")
         self.verticalLayout_15 = QVBoxLayout()

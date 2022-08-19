@@ -70,19 +70,15 @@ SymbolBox {
     border-radius: 5em;
 }
 
-AskPopup {
-    background: rgba(0, 0, 0, 127);
+AskPopup, OverlapPopup {
+    background: rgba(0, 0, 0, 191);
 }
 
-AskPopupContent {
+PopupBox {
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 0.4em;
     background: #2B2B2B;
-    min-width: 24em;
-    max-width: 24em;
-    min-height: 24em;
-    max-height: 24em;
-    margin: 0em;
+    margin: 2em;
     padding: 2em;
 }
 
@@ -1661,8 +1657,8 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_6">
@@ -1690,8 +1686,8 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_7">
@@ -1719,8 +1715,8 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_4">
@@ -1748,8 +1744,8 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_8">
@@ -1777,8 +1773,8 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_5">
@@ -1806,8 +1802,8 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>262</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_9">
@@ -1904,8 +1900,8 @@ HorizontalDivider, VerticalDivider {
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>1212</width>
-                 <height>578</height>
+                 <width>63</width>
+                 <height>20</height>
                 </rect>
                </property>
                <layout class="QHBoxLayout" name="horizontalLayout_33">

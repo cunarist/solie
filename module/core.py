@@ -42,6 +42,7 @@ from module.widget.license_frame import LicenseFrame
 from module.widget.symbol_box import SymbolBox
 from module.widget.brand_label import BrandLabel
 from module.widget.horizontal_divider import HorizontalDivider
+from module.widget.overlap_popup import OverlapPopup
 
 
 class Window(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -1307,6 +1308,29 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.undertake(job, False)
 
         return ask_popup.answer
+
+    # show an mainpulatable overlap popup
+    def overlap(self, title):
+        overlap_popup = None
+
+        def job():
+            nonlocal overlap_popup
+            overlap_popup = OverlapPopup(self, title)
+            overlap_popup.show()
+
+        self.undertake(job, True)
+
+        def job():
+            overlap_popup.done_event.wait()
+
+            def job():
+                overlap_popup.setParent(None)
+
+            self.undertake(job, False)
+
+        thread_toss.apply_async(job)
+
+        return overlap_popup
 
 
 window = None
