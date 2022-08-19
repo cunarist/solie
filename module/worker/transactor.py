@@ -1614,7 +1614,7 @@ class Transactor:
         target_symbols = user_settings.get_data_settings()["target_symbols"]
         target_max_leverages = {}
         for symbol in target_symbols:
-            max_leverage = self.secret_memory["maximum_leverages"][symbol]
+            max_leverage = self.secret_memory["maximum_leverages"].get(symbol, 125)
             target_max_leverages[symbol] = max_leverage
         lowest_max_leverage = min(target_max_leverages.values())
 
@@ -1705,20 +1705,24 @@ class Transactor:
 
         # ■■■■■ request leverage bracket information ■■■■■
 
-        payload = {
-            "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-        }
-        response = self.api_requester.binance(
-            http_method="GET",
-            path="/fapi/v1/leverageBracket",
-            payload=payload,
-        )
-        about_brackets = response
+        try:
+            payload = {
+                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+            }
+            response = self.api_requester.binance(
+                http_method="GET",
+                path="/fapi/v1/leverageBracket",
+                payload=payload,
+            )
+            about_brackets = response
 
-        for about_bracket in about_brackets:
-            symbol = about_bracket["symbol"]
-            max_leverage = about_bracket["brackets"][0]["initialLeverage"]
-            self.secret_memory["maximum_leverages"][symbol] = max_leverage
+            for about_bracket in about_brackets:
+                symbol = about_bracket["symbol"]
+                max_leverage = about_bracket["brackets"][0]["initialLeverage"]
+                self.secret_memory["maximum_leverages"][symbol] = max_leverage
+        except ApiRequestError:
+            # when the key is not ready
+            return
 
         # ■■■■■ request account information ■■■■■
 
@@ -1958,7 +1962,8 @@ class Transactor:
                 current_leverage = int(about_position["leverage"])
 
                 desired_leverage = self.mode_settings["desired_leverage"]
-                max_leverage = self.secret_memory["maximum_leverages"][symbol]
+                maximum_leverages = self.secret_memory["maximum_leverages"]
+                max_leverage = maximum_leverages.get(symbol, 125)
                 goal_leverage = min(desired_leverage, max_leverage)
 
                 if current_leverage != goal_leverage:
