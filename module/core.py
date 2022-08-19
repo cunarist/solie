@@ -1,4 +1,3 @@
-import os
 import sys
 import threading
 import time
@@ -9,7 +8,6 @@ import math
 import webbrowser
 
 from PySide6 import QtGui, QtWidgets, QtCore
-import pandas as pd
 import pyqtgraph
 from apscheduler.schedulers.background import BlockingScheduler
 
@@ -120,14 +118,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
-
-        # ■■■■■ global settings of packages ■■■■■
-
-        os.get_terminal_size = lambda *args: os.terminal_size((72, 80))
-        pd.set_option("display.precision", 3)
-        pd.set_option("display.min_rows", 20)
-        pd.set_option("display.max_rows", 20)
-        pyqtgraph.setConfigOptions(antialias=True)
 
         # ■■■■■ basic sizing ■■■■■
 
