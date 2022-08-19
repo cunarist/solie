@@ -1,5 +1,4 @@
 import itertools
-import threading
 from datetime import timedelta
 
 import talib
@@ -7,6 +6,7 @@ import pandas as pd
 import numpy as np
 
 from module import thread_toss
+from module.recipe import datalocks
 
 
 def do(**kwargs):
@@ -28,7 +28,6 @@ def do(**kwargs):
 
     # ■■■■■ basic values ■■■■■
 
-    candle_data_lock = threading.Lock()
     blank_columns = itertools.product(
         target_symbols,
         ("Price", "Volume", "Abstract"),
@@ -46,7 +45,7 @@ def do(**kwargs):
     # ■■■■■ make individual indicators ■■■■■
 
     def job(symbol):
-        with candle_data_lock:
+        with datalocks.hold(candle_data):
             if symbol not in candle_data.columns.get_level_values(0):
                 return
 
@@ -57,7 +56,7 @@ def do(**kwargs):
                 "np": np,
                 "symbol": symbol,
                 "candle_data": candle_data,
-                "candle_data_lock": candle_data_lock,
+                "datalocks": datalocks,
                 "new_indicators": new_indicators,
             }
 
@@ -69,7 +68,7 @@ def do(**kwargs):
         elif strategy == 2:
             border = 0.5  # percent
 
-            with candle_data_lock:
+            with datalocks.hold(candle_data):
                 close = candle_data[(symbol, "Close")].copy()
 
             dimensions = [1, 4, 16, 64]
@@ -90,7 +89,7 @@ def do(**kwargs):
             diff_sum = diff.rolling(int(600 / 10)).sum() / 6  # percent*minute
             new_indicators[(symbol, "Abstract", "Diff Sum (#BB00FF)")] = diff_sum
 
-            with candle_data_lock:
+            with datalocks.hold(candle_data):
                 volume = candle_data[(symbol, "Volume")].copy()
 
             fast_volume_sma = talib.SMA(volume, 10 * 60 / 10)

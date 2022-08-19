@@ -2,19 +2,18 @@ import hashlib
 import hmac
 from urllib.parse import urlencode
 import json
-import threading
 from datetime import datetime, timezone
 
 import requests
 
 from module.instrument.api_request_error import ApiRequestError
+from module.recipe import datalocks
 
 
 class ApiRequester:
+    _SESSION_COUNT = 16
     used_rates = {"real": {}, "testnet": {}}
-    _session_count = 16
-    _sessions = [requests.Session() for _ in range(_session_count)]
-    _locks = [threading.Lock() for _ in range(_session_count)]
+    _sessions = [requests.Session() for _ in range(_SESSION_COUNT)]
 
     def __init__(self):
         self.keys = {
@@ -26,12 +25,12 @@ class ApiRequester:
     def _request(self, http_method, parameters):
         attempt = 0
         while True:
-            slot = attempt % self._session_count
-            if self._locks[slot].locked():
+            slot = attempt % self._SESSION_COUNT
+            if datalocks.hold(self._sessions[slot]).locked():
                 attempt += 1
             else:
                 break
-        with self._locks[slot]:
+        with datalocks.hold(self._sessions[slot]):
             if http_method == "GET":
                 raw_response = self._sessions[slot].get(**parameters)
             elif http_method == "DELETE":

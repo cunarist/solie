@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta, timezone
 import os
 import math
-import threading
 import time
 import webbrowser
 from collections import deque
@@ -631,8 +630,6 @@ class Collector:
             new_chunk = target_tuples[turn * chunk_size : (turn + 1) * chunk_size]
             target_tuple_chunks.append(new_chunk)
 
-        combined_df_lock = threading.Lock()
-
         with datalocks.hold(self.candle_data):
             combined_df = self.candle_data.iloc[0:0].copy()
 
@@ -646,7 +643,7 @@ class Collector:
                 returned = process_toss.apply(download_aggtrade_data.do, target_tuple)
                 if returned is not None:
                     new_df = returned
-                    with combined_df_lock:
+                    with datalocks.hold(combined_df):
                         combined_df = process_toss.apply(
                             combine_candle_datas.do,
                             new_df,
