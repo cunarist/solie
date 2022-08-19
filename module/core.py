@@ -1343,7 +1343,7 @@ def bring_to_life():
     dark_palette = QtGui.QPalette()
     dark_palette.setColor(QtGui.QPalette.Window, QtGui.QColor(29, 29, 29))
     dark_palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor(230, 230, 230))
-    dark_palette.setColor(QtGui.QPalette.Base, QtGui.QColor(26, 26, 26))
+    dark_palette.setColor(QtGui.QPalette.Base, QtGui.QColor(22, 22, 22))
     dark_palette.setColor(QtGui.QPalette.AlternateBase, QtGui.QColor(29, 29, 29))
     dark_palette.setColor(QtGui.QPalette.ToolTipBase, QtGui.QColor(230, 230, 230))
     dark_palette.setColor(QtGui.QPalette.ToolTipText, QtGui.QColor(230, 230, 230))
