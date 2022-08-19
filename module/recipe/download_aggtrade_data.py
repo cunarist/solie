@@ -1,4 +1,5 @@
 import urllib
+import io
 
 import pandas as pd
 import numpy as np
@@ -27,9 +28,16 @@ def do(target_tuple):
         )
 
     try:
+        zipped_csv_data = io.BytesIO(urllib.request.urlopen(url).read())
+    except urllib.error.HTTPError:
+        # no data yet available from binance
+        # because it's not uploaded yet
+        return
+
+    try:
         df = pd.concat(
             pd.read_csv(
-                url,
+                zipped_csv_data,
                 compression="zip",
                 header=None,
                 usecols=[1, 2, 5],
@@ -37,10 +45,20 @@ def do(target_tuple):
                 chunksize=10**6,
             )
         )
-    except urllib.error.HTTPError:
-        # no data yet available from binance
-        # because it's not uploaded yet
-        return
+    except ValueError:
+        # when there is a header line in start of the file
+        # from august 2022, header is included from binance
+        df = pd.concat(
+            pd.read_csv(
+                zipped_csv_data,
+                compression="zip",
+                header=0,
+                usecols=[1, 2, 5],
+                dtype={1: np.float32, 2: np.float32, 5: np.int64},
+                chunksize=10**6,
+            )
+        )
+        df = df.rename(columns={"price": 1, "quantity": 2, "transact_time": 5})
 
     df = df.set_index(5)
     df.index.name = None
