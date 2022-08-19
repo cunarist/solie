@@ -251,7 +251,8 @@ class Manager:
             texts = []
             for key, lock in datalocks.object_locks.items():
                 is_locked = lock.locked()
-                texts.append(f"{key}: {is_locked}")
+                locked_text = "Locked" if is_locked else "Unlocked"
+                texts.append(f"{key}: {locked_text}")
             text = "\n".join(texts)
             core.window.undertake(lambda t=text: core.window.label_34.setText(t), False)
 
