@@ -10,7 +10,6 @@ import webbrowser
 import timesetter
 import getmac
 
-from module import introduction
 from module import core
 from module import process_toss
 from module import thread_toss
@@ -378,16 +377,6 @@ class Manager:
 
         core.window.should_confirm_closing = False
         core.window.undertake(core.window.close, False)
-
-    def show_version(self, *args, **kwargs):
-        version = introduction.CURRENT_VERSION
-
-        question = [
-            "Current Solsol version",
-            version,
-            ["Okay"],
-        ]
-        core.window.ask(question)
 
     def show_license_key(self, *args, **kwargs):
         license_key = user_settings.get_app_settings()["license_key"]

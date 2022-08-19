@@ -1073,8 +1073,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             manager.me_actions.append(action_menu.addAction(text))
             text = "Match system time with binance server"
             manager.me_actions.append(action_menu.addAction(text))
-            text = "Show current Solsol version"
-            manager.me_actions.append(action_menu.addAction(text))
             text = "Show Solsol license key"
             manager.me_actions.append(action_menu.addAction(text))
             self.pushButton_10.setMenu(action_menu)
@@ -1149,10 +1147,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             outsource.do(manager.me_actions[1].triggered, job)
             job = manager.me.match_system_time
             outsource.do(manager.me_actions[2].triggered, job)
-            job = manager.me.show_version
-            outsource.do(manager.me_actions[3].triggered, job)
             job = manager.me.show_license_key
-            outsource.do(manager.me_actions[4].triggered, job)
+            outsource.do(manager.me_actions[3].triggered, job)
 
             # special widgets
             job = transactor.me.display_range_information
