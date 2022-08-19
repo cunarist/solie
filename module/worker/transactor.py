@@ -1612,7 +1612,7 @@ class Transactor:
         if lowest_max_leverage < desired_leverage:
             question = [
                 "Leverage on some symbols cannot be set as desired",
-                "Binance has its own leverage limits per market. For some symbols,"
+                "Binance has its own leverage limit per market. For some symbols,"
                 " leverage will be set as high as it can be, but not as same as the"
                 " value entered. Generally, situation gets safer in terms of lowest"
                 " unrealized changes and profit turns out to be a bit lower than"
