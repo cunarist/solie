@@ -1663,8 +1663,8 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>262</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_6">
@@ -1692,8 +1692,8 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>262</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_7">
@@ -1721,8 +1721,8 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>262</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_4">
@@ -1750,8 +1750,8 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>262</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_8">
@@ -1779,8 +1779,8 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>262</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_5">
@@ -1808,8 +1808,8 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>81</width>
-                   <height>34</height>
+                   <width>398</width>
+                   <height>262</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_9">
@@ -1860,7 +1860,7 @@ HorizontalDivider, VerticalDivider {
               <item row="2" column="2">
                <widget class="QLabel" name="label_40">
                 <property name="text">
-                 <string>(None)</string>
+                 <string>Datalocks</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>
@@ -1906,7 +1906,7 @@ HorizontalDivider, VerticalDivider {
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>63</width>
+                 <width>80</width>
                  <height>20</height>
                 </rect>
                </property>

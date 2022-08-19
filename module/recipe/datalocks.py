@@ -1,18 +1,17 @@
-from collections import OrderedDict
 import threading
 
-_object_locks = OrderedDict()
+object_locks = {}
 
 
 def hold(unique_name):
-    global _object_locks
+    global object_locks
     if type(unique_name) is not str:
         return
-    if unique_name in _object_locks.keys():
-        object_lock = _object_locks[unique_name]
+    if unique_name in object_locks.keys():
+        object_lock = object_locks[unique_name]
     else:
         object_lock = threading.Lock()
-        _object_locks[unique_name] = object_lock
-    if len(_object_locks) > 1024:
-        _object_locks.popitem()
+        object_locks[unique_name] = object_lock
+    if len(object_locks) > 1024:
+        object_locks.popitem()
     return object_lock

@@ -20,6 +20,7 @@ from module.recipe import check_internet
 from module.recipe import user_settings
 from module.recipe import find_goodies
 from module.recipe import remember_task_durations
+from module.recipe import datalocks
 
 
 class Manager:
@@ -246,6 +247,13 @@ class Manager:
             lines = (f"{symbol} {count}" for (symbol, count) in block_sizes.items())
             text = "\n".join(lines)
             core.window.undertake(lambda t=text: core.window.label_36.setText(t), False)
+
+            texts = []
+            for key, lock in datalocks.object_locks.items():
+                is_locked = lock.locked()
+                texts.append(f"{key}\n{is_locked}")
+            text = "\n\n".join(texts)
+            core.window.undertake(lambda t=text: core.window.label_34.setText(t), False)
 
         for _ in range(10):
             job()
