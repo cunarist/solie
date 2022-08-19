@@ -1,4 +1,3 @@
-import threading
 import os
 import json
 
@@ -15,7 +14,6 @@ class Strategiest:
 
         self.workerpath = user_settings.get_app_settings()["datapath"] + "/strategist"
         os.makedirs(self.workerpath, exist_ok=True)
-        self.datalocks = [threading.Lock() for _ in range(8)]
 
         # ■■■■■ worker secret memory ■■■■■
 

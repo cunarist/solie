@@ -30,6 +30,7 @@ from module.recipe import sort_dataframe
 from module.recipe import fill_holes_with_aggtrades
 from module.recipe import remember_task_durations
 from module.recipe import standardize
+from module.recipe import datalocks
 
 
 class Collector:
@@ -38,7 +39,6 @@ class Collector:
 
         self.workerpath = user_settings.get_app_settings()["datapath"] + "/collector"
         os.makedirs(self.workerpath, exist_ok=True)
-        self.datalocks = [threading.Lock() for _ in range(8)]
 
         # ■■■■■ worker secret memory ■■■■■
 
@@ -213,7 +213,7 @@ class Collector:
         request_count = 0
 
         # only the recent part
-        with self.datalocks[0]:
+        with datalocks.hold(self.candle_data):
             df = self.candle_data
             recent_candle_data = df[df.index >= split_moment].copy()
 
@@ -283,7 +283,7 @@ class Collector:
                 )
 
         # combine
-        with self.datalocks[0]:
+        with datalocks.hold(self.candle_data):
             df = self.candle_data
             original_candle_data = df[df.index < split_moment]
             # in case the other data is added during the task
@@ -296,7 +296,7 @@ class Collector:
             self.candle_data = candle_data
 
     def display_information(self, *args, **kwargs):
-        with self.datalocks[0]:
+        with datalocks.hold(self.candle_data):
             if len(self.candle_data) == 0:
                 # when the app is executed for the first time
                 return
@@ -306,7 +306,7 @@ class Collector:
             return
 
         # price
-        with self.datalocks[2]:
+        with datalocks.hold(self.aggregate_trades):
             ar = self.aggregate_trades.copy()
         price_precisions = self.secret_memory["price_precisions"]
 
@@ -326,7 +326,7 @@ class Collector:
         count_start_moment = current_moment - timedelta(hours=24)
 
         # add one to ignore temporarily missing candle
-        with self.datalocks[0]:
+        with datalocks.hold(self.candle_data):
             df = self.candle_data
             cumulated_moments = len(df[count_start_moment:].dropna())
         needed_moments = 24 * 60 * 60 / 10
@@ -336,7 +336,7 @@ class Collector:
         first_written_time = None
         last_written_time = None
         for turn in range(chunk_count):
-            with self.datalocks[1]:
+            with datalocks.hold(self.realtime_data_chunks):
                 if len(self.realtime_data_chunks[turn]) > 0:
                     if first_written_time is None:
                         first_record = self.realtime_data_chunks[turn][0]
@@ -372,7 +372,7 @@ class Collector:
         current_year = datetime.now(timezone.utc).year
         filepath = f"{self.workerpath}/candle_data_{current_year}.pickle"
 
-        with self.datalocks[0]:
+        with datalocks.hold(self.candle_data):
             df = self.candle_data
             year_df = df[df.index.year == current_year].copy()
 
@@ -419,12 +419,12 @@ class Collector:
                 pass
 
     def save_all_years_history(self, *args, **kwargs):
-        with self.datalocks[0]:
+        with datalocks.hold(self.candle_data):
             years_sr = self.candle_data.index.year.drop_duplicates()
         years = years_sr.tolist()
 
         for year in years:
-            with self.datalocks[0]:
+            with datalocks.hold(self.candle_data):
                 df = self.candle_data
                 year_df = df[df.index.year == year].copy()
             filepath = f"{self.workerpath}/candle_data_{year}.pickle"
@@ -633,7 +633,7 @@ class Collector:
 
         combined_df_lock = threading.Lock()
 
-        with self.datalocks[0]:
+        with datalocks.hold(self.candle_data):
             combined_df = self.candle_data.iloc[0:0].copy()
 
         def job(target_tuple_chunk):
@@ -661,7 +661,7 @@ class Collector:
 
         # ■■■■■ combine ■■■■■
 
-        with self.datalocks[0]:
+        with datalocks.hold(self.candle_data):
             df = process_toss.apply(
                 combine_candle_datas.do, combined_df, self.candle_data
             )
@@ -689,7 +689,7 @@ class Collector:
         best_bid = received["b"]
         best_ask = received["a"]
         event_time = np.datetime64(received["E"] * 10**6, "ns")
-        with self.datalocks[1]:
+        with datalocks.hold(self.realtime_data_chunks):
             original_size = self.realtime_data_chunks[-1].shape[0]
             self.realtime_data_chunks[-1].resize(original_size + 1)
             self.realtime_data_chunks[-1][-1]["index"] = event_time
@@ -711,7 +711,7 @@ class Collector:
             if symbol in target_symbols:
                 mark_price = float(about_mark_price["p"])
                 filtered_data[symbol] = mark_price
-        with self.datalocks[1]:
+        with datalocks.hold(self.realtime_data_chunks):
             original_size = self.realtime_data_chunks[-1].shape[0]
             self.realtime_data_chunks[-1].resize(original_size + 1)
             self.realtime_data_chunks[-1][-1]["index"] = event_time
@@ -728,7 +728,7 @@ class Collector:
         price = float(received["p"])
         volume = float(received["q"])
         trade_time = np.datetime64(received["T"] * 10**6, "ns")
-        with self.datalocks[2]:
+        with datalocks.hold(self.aggregate_trades):
             original_size = self.aggregate_trades.shape[0]
             self.aggregate_trades.resize(original_size + 1)
             self.aggregate_trades[-1]["index"] = trade_time
@@ -740,18 +740,18 @@ class Collector:
     def organize_everything(self, *args, **kwargs):
         start_time = datetime.now(timezone.utc)
 
-        with self.datalocks[0]:
-            self.candle_data = self.candle_data.asfreq("10S")
-            self.candle_data = self.candle_data.astype(np.float32)
+        with datalocks.hold(self.candle_data):
+            df = self.candle_data.asfreq("10S")
+            self.candle_data = df.astype(np.float32)
 
-        with self.datalocks[1]:
+        with datalocks.hold(self.realtime_data_chunks):
             self.realtime_data_chunks[-1].sort(order="index")
             if len(self.realtime_data_chunks[-1]) > 2**16:
                 new_chunk = self.realtime_data_chunks[-1][0:0].copy()
                 self.realtime_data_chunks.append(new_chunk)
                 del new_chunk
 
-        with self.datalocks[2]:
+        with datalocks.hold(self.aggregate_trades):
             self.aggregate_trades.sort(order="index")
             last_index = self.aggregate_trades[-1]["index"]
             slice_from = last_index - np.timedelta64(60, "s")
@@ -762,7 +762,7 @@ class Collector:
         remember_task_durations.add("organize_everything", duration)
 
     def clear_aggregate_trades(self, *args, **kwargs):
-        with self.datalocks[2]:
+        with datalocks.hold(self.aggregate_trades):
             self.aggregate_trades = self.aggregate_trades[0:0].copy()
 
     def add_candle_data(self, *args, **kwargs):
@@ -770,19 +770,19 @@ class Collector:
         current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
         before_moment = current_moment - timedelta(seconds=10)
 
-        with self.datalocks[2]:
+        with datalocks.hold(self.aggregate_trades):
             data_length = len(self.aggregate_trades)
         if data_length == 0:
             return
 
         for _ in range(20):
-            with self.datalocks[2]:
+            with datalocks.hold(self.aggregate_trades):
                 last_received_index = self.aggregate_trades[-1]["index"]
             if np.datetime64(current_moment) < last_received_index:
                 break
             time.sleep(0.1)
 
-        with self.datalocks[2]:
+        with datalocks.hold(self.aggregate_trades):
             aggregate_trades = self.aggregate_trades.copy()
 
         first_received_index = aggregate_trades[0]["index"]
@@ -809,7 +809,7 @@ class Collector:
                 close_price = block_ar[-1][str((symbol, "Price"))]
                 sum_volume = block_ar[str((symbol, "Volume"))].sum()
             else:
-                with self.datalocks[0]:
+                with datalocks.hold(self.candle_data):
                     df = self.candle_data
                     inspect_sr = df.iloc[-60:][(symbol, "Close")].copy()
                 inspect_sr = inspect_sr.dropna()
@@ -828,7 +828,7 @@ class Collector:
             new_datas[(symbol, "Close")] = close_price
             new_datas[(symbol, "Volume")] = sum_volume
 
-        with self.datalocks[0]:
+        with datalocks.hold(self.candle_data):
             for column_name, new_data_value in new_datas.items():
                 self.candle_data.loc[before_moment, column_name] = new_data_value
 

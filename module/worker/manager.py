@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, timezone
-import threading
 import os
 from collections import deque
 import time
@@ -29,7 +28,6 @@ class Manager:
 
         self.workerpath = user_settings.get_app_settings()["datapath"] + "/manager"
         os.makedirs(self.workerpath, exist_ok=True)
-        self.datalocks = [threading.Lock() for _ in range(8)]
 
         # ■■■■■ worker secret memory ■■■■■
 
