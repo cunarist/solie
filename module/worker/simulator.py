@@ -137,7 +137,6 @@ class Simulator:
                 "Strategy not available",
                 "Calculation is not available with this strategy.",
                 ["Okay"],
-                False,
             ]
             core.window.ask(question)
 
@@ -973,7 +972,6 @@ class Simulator:
                 "Strategy not available",
                 "Choose a different one.",
                 ["Okay"],
-                False,
             ]
             core.window.ask(question)
             return
@@ -1399,7 +1397,6 @@ class Simulator:
                 f"You should calculate first on year {year} with strategy number"
                 f" {strategy}.",
                 ["Okay"],
-                False,
             ]
             core.window.ask(question)
             return
@@ -1411,7 +1408,6 @@ class Simulator:
                 f" {strategy}. Calculation data of other combinations does not get"
                 " affected.",
                 ["Cancel", "Delete"],
-                False,
             ]
             answer = core.window.ask(question)
             if answer in (0, 1):
@@ -1466,7 +1462,6 @@ class Simulator:
                 f"You should calculate first on year {year} with strategy number"
                 f" {strategy}.",
                 ["Okay"],
-                False,
             ]
             core.window.ask(question)
             return
@@ -1498,7 +1493,6 @@ class Simulator:
                 "Cannot get the list of meaningful spots with lowest unrealized"
                 " profit.",
                 ["Okay"],
-                False,
             ]
             core.window.ask(question)
         else:
@@ -1510,7 +1504,6 @@ class Simulator:
                 "Spots with lowest unrealized profit",
                 "\n".join(text_lines),
                 ["Okay"],
-                False,
             ]
             core.window.ask(question)
 

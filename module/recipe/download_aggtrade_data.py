@@ -5,7 +5,6 @@ import numpy as np
 
 
 def do(target_tuple):
-
     symbol = target_tuple[0]
     download_type = target_tuple[1]
 

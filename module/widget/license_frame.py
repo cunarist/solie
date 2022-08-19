@@ -127,7 +127,6 @@ class LicenseFrame(QtWidgets.QScrollArea):
                     "License key not valid",
                     "You have to provide a valid license key.",
                     ["Okay"],
-                    False,
                 ]
                 core.window.ask(question)
 

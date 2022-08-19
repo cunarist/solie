@@ -181,7 +181,6 @@ class Strategiest:
             "Sample strategy applied",
             "It is not yet saved. Use it as you want.",
             ["Okay"],
-            False,
         ]
         core.window.ask(question)
 

@@ -71,7 +71,6 @@ class TokenSelectionFrame(QtWidgets.QScrollArea):
                     "Nothing selected",
                     "Choose one of the tokens.",
                     ["Okay"],
-                    False,
                 ]
                 core.window.ask(question)
             if is_symbol_count_ok:
@@ -79,7 +78,6 @@ class TokenSelectionFrame(QtWidgets.QScrollArea):
                     "Okay to proceed?",
                     "Solsol will treat this token as your asset.",
                     ["No", "Yes"],
-                    False,
                 ]
                 answer = core.window.ask(question)
                 if answer in (0, 1):

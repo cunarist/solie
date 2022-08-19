@@ -11,6 +11,7 @@ import logging
 
 import pandas as pd
 import numpy as np
+from PySide6 import QtCore, QtWidgets
 
 from module import core
 from module import process_toss
@@ -432,24 +433,85 @@ class Collector:
     def download_fill_candle_data(self, *args, **kwargs):
         # ■■■■■ ask filling type ■■■■■
 
-        question = [
-            "Choose the range to fill",
-            "Solsol will fill the candle data with historical data provided by Binance."
-            " The more you fill, the longer it takes. Amount of a few days only takes"
-            " few minutes while amount of a few years can take hours.",
-            [
-                "From 2020 to last year",
-                "From first month of this year to last month",
-                "This month",
-                "Yesterday and the day before yesterday",
-            ],
-            True,
-        ]
-        answer = core.window.ask(question)
-        if answer in (0,):
-            return
+        title = "Choose the range to fill"
+        overlap_popup = core.window.overlap(title)
+        answer_container = {"filling_type": None}
+        fill_options = (
+            "From 2020 to last year",
+            "From first month of this year to last month",
+            "This month",
+            "Yesterday and the day before yesterday",
+        )
 
-        filling_type = answer
+        def job():
+            content_layout = overlap_popup.content_layout
+
+            # ■■■■■ spacing ■■■■■
+
+            spacer = QtWidgets.QSpacerItem(
+                0,
+                0,
+                QtWidgets.QSizePolicy.Policy.Minimum,
+                QtWidgets.QSizePolicy.Policy.Expanding,
+            )
+            content_layout.addItem(spacer)
+
+            # ■■■■■ a card ■■■■■
+
+            # card structure
+            card = QtWidgets.QGroupBox()
+            card.setFixedWidth(720)
+            card_layout = QtWidgets.QVBoxLayout(card)
+            card_layout.setContentsMargins(80, 40, 80, 40)
+            content_layout.addWidget(card)
+
+            # explanation
+            explain_label = QtWidgets.QLabel(
+                "Solsol will fill the candle data with historical data provided by"
+                " Binance. The more you fill, the longer it takes. Amount of a few days"
+                " only takes few minutes while amount of a few years can take hours.",
+                alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
+            )
+            explain_label.setWordWrap(True)
+            card_layout.addWidget(explain_label)
+
+            # ■■■■■ a card ■■■■■
+
+            # card structure
+            card = QtWidgets.QGroupBox()
+            card.setFixedWidth(720)
+            card_layout = QtWidgets.QVBoxLayout(card)
+            card_layout.setContentsMargins(80, 40, 80, 40)
+            content_layout.addWidget(card)
+
+            # option buttons
+            for turn, text in enumerate(fill_options):
+
+                def job(turn=turn, *args, **kwargs):
+                    answer_container["filling_type"] = turn
+                    overlap_popup.done_event.set()
+
+                option_button = QtWidgets.QPushButton(text, card)
+                option_button.clicked.connect(job)
+                card_layout.addWidget(option_button)
+
+            # ■■■■■ spacing ■■■■■
+
+            spacer = QtWidgets.QSpacerItem(
+                0,
+                0,
+                QtWidgets.QSizePolicy.Policy.Minimum,
+                QtWidgets.QSizePolicy.Policy.Expanding,
+            )
+            content_layout.addItem(spacer)
+
+        core.window.undertake(job, False)
+
+        overlap_popup.done_event.wait()
+        filling_type = answer_container["filling_type"]
+
+        if filling_type is None:
+            return
 
         # ■■■■■ prepare target tuples for downloading ■■■■■
 
@@ -457,7 +519,7 @@ class Collector:
 
         target_tuples = []
         target_symbols = user_settings.get_data_settings()["target_symbols"]
-        if filling_type == 1:
+        if filling_type == 0:
             current_year = datetime.now(timezone.utc).year
             for year in range(2020, current_year):
                 for month in range(1, 12 + 1):
@@ -470,7 +532,7 @@ class Collector:
                                 month,
                             )
                         )
-        if filling_type == 2:
+        if filling_type == 1:
             current_year = datetime.now(timezone.utc).year
             current_month = datetime.now(timezone.utc).month
             for month in range(1, current_month):
@@ -483,7 +545,7 @@ class Collector:
                             month,
                         )
                     )
-        elif filling_type == 3:
+        elif filling_type == 2:
             current_year = datetime.now(timezone.utc).year
             current_month = datetime.now(timezone.utc).month
             current_day = datetime.now(timezone.utc).day
@@ -498,7 +560,7 @@ class Collector:
                             target_day,
                         )
                     )
-        elif filling_type == 4:
+        elif filling_type == 3:
             now = datetime.now(timezone.utc)
             yesterday = now - timedelta(hours=24)
             day_before_yesterday = yesterday - timedelta(hours=24)

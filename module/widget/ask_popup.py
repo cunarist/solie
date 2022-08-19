@@ -123,10 +123,7 @@ class AskPopup(QtWidgets.QWidget):
         content_box_layout.addItem(widget)
 
         # line including selection buttons
-        if question[3]:
-            this_layout = QtWidgets.QVBoxLayout()
-        else:
-            this_layout = QtWidgets.QHBoxLayout()
+        this_layout = QtWidgets.QHBoxLayout()
         for turn, option in enumerate(question[2]):
             option_button = QtWidgets.QPushButton(option, content_box)
 
@@ -135,8 +132,7 @@ class AskPopup(QtWidgets.QWidget):
                 self.done_event.set()
 
             option_button.clicked.connect(job)
-            if not question[3]:
-                option_button.setMaximumWidth(240)
+            option_button.setMaximumWidth(240)
             this_layout.addWidget(option_button)
 
         content_box_layout.addLayout(this_layout)

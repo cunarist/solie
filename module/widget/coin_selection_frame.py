@@ -89,7 +89,6 @@ class CoinSelectionFrame(QtWidgets.QScrollArea):
                     "Select proper number of symbols",
                     "You can select a minimum of 1 and a maximum of 10.",
                     ["Okay"],
-                    False,
                 ]
                 core.window.ask(question)
             if is_symbol_count_ok:
@@ -98,7 +97,6 @@ class CoinSelectionFrame(QtWidgets.QScrollArea):
                     "You cannot change your selections unless you make a new data"
                     " folder.",
                     ["No", "Yes"],
-                    False,
                 ]
                 answer = core.window.ask(question)
                 if answer in (0, 1):
@@ -157,7 +155,7 @@ class CoinSelectionFrame(QtWidgets.QScrollArea):
 
         # explanation
         detail_text = QtWidgets.QLabel(
-            "These are all available coins on Biancne.\nYou can select a minimum of 1"
+            "These are all available coins on Binance.\nYou can select a minimum of 1"
             " and a maximum of 10.",
             alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
         )

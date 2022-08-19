@@ -33,11 +33,11 @@ class LogList(QtWidgets.QListWidget):
         fulltext = selected_item.fulltext
 
         overlap_popup = core.window.overlap("This is the full log")
-        scroll_layout = overlap_popup.scroll_layout
+        content_layout = overlap_popup.content_layout
 
         def job():
             label = QtWidgets.QLabel(fulltext)
             label.setFont(self.fixed_width_font)
-            scroll_layout.addWidget(label)
+            content_layout.addWidget(label)
 
         core.window.undertake(job, False)

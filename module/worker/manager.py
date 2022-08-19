@@ -268,7 +268,6 @@ class Manager:
                 "Execution condition is not fulfilled",
                 "Fulfill the condition first to run the script",
                 ["Okay"],
-                False,
             ]
             core.window.ask(question)
             return
@@ -328,7 +327,6 @@ class Manager:
             "Where is the capital of italy?",
             "This is a question solely for testing purposes.",
             ["Rome", "Seoul", "New York"],
-            False,
         ]
         answer = core.window.ask(question)
 
@@ -370,7 +368,6 @@ class Manager:
             "Solsol will shut down shortly. You will get to choose the new data folder"
             " when you start Solsol again. Previous data folder does not get deleted.",
             ["No", "Yes"],
-            False,
         ]
         answer = core.window.ask(question)
 
@@ -389,7 +386,6 @@ class Manager:
             "Current Solsol version",
             version,
             ["Okay"],
-            False,
         ]
         core.window.ask(question)
 
@@ -400,7 +396,6 @@ class Manager:
             "Solsol license key",
             license_key,
             ["Okay"],
-            False,
         ]
         core.window.ask(question)
 
@@ -441,14 +436,12 @@ class Manager:
                 "License key not valid",
                 f"Solsol will shut down at {exit_time}",
                 ["Okay"],
-                False,
             ]
         elif not is_occupying_key:
             question = [
                 "License key is being used by another computer",
                 f"Solsol will shut down at {exit_time}",
                 ["Okay"],
-                False,
             ]
 
         user_settings.apply_app_settings({"license_key": None})
@@ -476,7 +469,6 @@ class Manager:
                 "Shut down Solsol and wait for a while. Update will be automatically"
                 " installed.",
                 ["Okay"],
-                False,
             ]
             core.window.ask(question)
 
@@ -492,7 +484,6 @@ class Manager:
                 "Unlock the board?",
                 "You will be able to manipulate the board again.",
                 ["No", "Yes"],
-                False,
             ]
             answer = core.window.ask(question)
             if answer in (0, 1):

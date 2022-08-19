@@ -59,7 +59,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                     " Solsol will proceed to finalizations such as closing network"
                     " connections and saving data.",
                     ["Cancel", "Shut down"],
-                    False,
                 ]
                 answer = self.ask(question)
 
@@ -142,13 +141,13 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         def job(log_text):
             title = "An error occured during the boot phase"
             overlap_popup = self.overlap(title)
-            scroll_layout = overlap_popup.scroll_layout
+            content_layout = overlap_popup.content_layout
 
             def job(log_text=log_text):
                 label = QtWidgets.QLabel(log_text)
                 fixed_width_font = QtGui.QFont("Consolas", 9)
                 label.setFont(fixed_width_font)
-                scroll_layout.addWidget(label)
+                content_layout.addWidget(label)
 
             self.undertake(job, False)
 
@@ -170,7 +169,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 "No internet connection",
                 "Internet connection is necessary for Solsol to start up.",
                 ["Okay"],
-                False,
             ]
             self.ask(question)
             time.sleep(1)
@@ -217,7 +215,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                     "Choose your data folder",
                     "All the data that Solsol produces will go in this folder.",
                     ["Okay"],
-                    False,
                 ]
                 self.ask(question)
                 self.undertake(job, True)

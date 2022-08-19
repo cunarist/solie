@@ -595,7 +595,6 @@ class Transactor:
                 "Strategy not available",
                 "Nothing happends with this strategy.",
                 ["Okay"],
-                False,
             ]
             core.window.ask(question)
 
@@ -617,7 +616,6 @@ class Transactor:
                     " transaction code works well. Be careful as you will pay a lot of"
                     " fees if you leave it on for a long time.",
                     ["Okay"],
-                    False,
                 ]
                 core.window.ask(question)
 
@@ -651,7 +649,6 @@ class Transactor:
                     " auto transaction is turned on, nothing happens until the"
                     " cumulation rate reaches 100%.",
                     ["Okay"],
-                    False,
                 ]
                 core.window.ask(question)
 
@@ -1618,7 +1615,6 @@ class Transactor:
                 " unrealized changes and profit turns out to be a bit lower than"
                 " simulation prediction with the same leverage.",
                 ["Show details", "Okay"],
-                False,
             ]
             answer = core.window.ask(question)
             if answer == 1:
@@ -1630,7 +1626,6 @@ class Transactor:
                     "These are highest available leverages",
                     text,
                     ["Okay"],
-                    False,
                 ]
                 core.window.ask(question)
 
