@@ -47,8 +47,12 @@ def get_task_presences():
 
 def apply(function, *args, **kwargs):
     payload = (function, args, kwargs)
-    returned = _pool.apply(_process_arguments, (payload,))
-    return returned
+    try:
+        returned = _pool.apply(_process_arguments, (payload,))
+        return returned
+    except Exception:
+        logger = logging.getLogger("solsol")
+        logger.exception("Exception occured from the thread pool")
 
 
 def apply_async(function, *args, **kwargs):
@@ -63,8 +67,12 @@ def apply_async(function, *args, **kwargs):
 
 def map(function, iterable):
     wrapper = [(function, item) for item in iterable]
-    returned = _pool.map(_process_iterable_item, wrapper)
-    return returned
+    try:
+        returned = _pool.map(_process_iterable_item, wrapper)
+        return returned
+    except Exception:
+        logger = logging.getLogger("solsol")
+        logger.exception("Exception occured from the thread pool")
 
 
 def map_async(function, iterable):

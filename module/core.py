@@ -2,7 +2,6 @@ import sys
 import threading
 import time
 import logging
-import pathlib
 import urllib
 import math
 import webbrowser
@@ -35,14 +34,16 @@ from module.recipe import user_settings
 from module.recipe import find_goodies
 from module.recipe import examine_data_files
 from module.widget.ask_popup import AskPopup
-from module.widget.token_selection_frame import TokenSelectionFrame
-from module.widget.coin_selection_frame import CoinSelectionFrame
 from module.widget.splash_screen import SplashScreen
-from module.widget.license_frame import LicenseFrame
 from module.widget.symbol_box import SymbolBox
 from module.widget.brand_label import BrandLabel
 from module.widget.horizontal_divider import HorizontalDivider
 from module.widget.overlap_popup import OverlapPopup
+from module.shelf.token_selection import TokenSelection
+from module.shelf.coin_selection import CoinSelection
+from module.shelf.license_input import LicenseInput
+from module.shelf.datapath_input import DatapathInput
+from module.shelf.full_log_view import FullLogView
 
 
 class Window(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -141,17 +142,13 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ prepare boot logging ■■■■■
 
         def job(log_text):
-            title = "An error occured during the boot phase"
-            overlap_popup = self.overlap(title)
-            content_layout = overlap_popup.content_layout
-
-            def job(log_text=log_text):
-                label = QtWidgets.QLabel(log_text)
-                fixed_width_font = QtGui.QFont("Consolas", 9)
-                label.setFont(fixed_width_font)
-                content_layout.addWidget(label)
-
-            self.undertake(job, False)
+            formation = [
+                "An error occured during the boot phase",
+                FullLogView,
+                False,
+                [log_text],
+            ]
+            self.overlap(formation)
 
         boot_log_handler = LogHandler(job)
         logging.getLogger().addHandler(boot_log_handler)
@@ -163,6 +160,18 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         pd.set_option("display.min_rows", 20)
         pd.set_option("display.max_rows", 20)
         pyqtgraph.setConfigOptions(antialias=True)
+
+        # ■■■■■ guide frame ■■■■■
+
+        splash_screen = None
+
+        def job():
+            nonlocal splash_screen
+            splash_screen = SplashScreen()
+            splash_screen.announce("Loading...")
+            self.centralWidget().layout().addWidget(splash_screen)
+
+        self.undertake(job, True)
 
         # ■■■■■ start basic things ■■■■■
 
@@ -186,106 +195,42 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ check app settings ■■■■■
 
         if user_settings.get_app_settings()["license_key"] is None:
-            license_frame = None
-
-            # add temporary widget
-            def job():
-                nonlocal license_frame
-                license_frame = LicenseFrame()
-                self.centralWidget().layout().addWidget(license_frame)
-
-            self.undertake(job, True)
-
-            license_frame.done_event.wait()
-
-            # remove temporary widget
-            def job():
-                license_frame.setParent(None)
-
-            self.undertake(job, True)
+            formation = [
+                "Enter Solsol license key",
+                LicenseInput,
+                False,
+                None,
+            ]
+            self.overlap(formation)
 
         if user_settings.get_app_settings()["datapath"] is None:
-            datapath = ""
-
-            def job():
-                nonlocal datapath
-                file_dialog = QtWidgets.QFileDialog
-                default_path = str(pathlib.Path.home())
-                title_bar_text = "Data folder"
-                datapath = str(
-                    file_dialog.getExistingDirectory(
-                        self,
-                        title_bar_text,
-                        default_path,
-                    )
-                )
-
-            while datapath == "":
-                question = [
-                    "Choose your data folder",
-                    "All the data that Solsol produces will go in this folder.",
-                    ["Okay"],
-                ]
-                self.ask(question)
-                self.undertake(job, True)
-
-            user_settings.apply_app_settings({"datapath": datapath})
-
-        user_settings.load()
+            formation = [
+                "Choose your data folder",
+                DatapathInput,
+                False,
+                None,
+            ]
+            self.overlap(formation)
 
         # ■■■■■ check data settings ■■■■■
 
         if user_settings.get_data_settings()["asset_token"] is None:
-            token_selection_frame = None
-
-            # add temporary widget
-            def job():
-                nonlocal token_selection_frame
-                token_selection_frame = TokenSelectionFrame()
-                self.centralWidget().layout().addWidget(token_selection_frame)
-
-            self.undertake(job, True)
-
-            token_selection_frame.done_event.wait()
-
-            # remove temporary widget
-            def job():
-                token_selection_frame.setParent(None)
-
-            self.undertake(job, True)
+            formation = [
+                "Choose a token to treat as your asset",
+                TokenSelection,
+                False,
+                None,
+            ]
+            self.overlap(formation)
 
         if user_settings.get_data_settings()["target_symbols"] is None:
-            coin_selection_frame = None
-
-            # add temporary widget
-            def job():
-                nonlocal coin_selection_frame
-                coin_selection_frame = CoinSelectionFrame()
-                self.centralWidget().layout().addWidget(coin_selection_frame)
-
-            self.undertake(job, True)
-
-            coin_selection_frame.done_event.wait()
-
-            # remove temporary widget
-            def job():
-                coin_selection_frame.setParent(None)
-
-            self.undertake(job, True)
-
-        user_settings.load()
-
-        # ■■■■■ guide frame ■■■■■
-
-        splash_screen = None
-
-        def job():
-            nonlocal splash_screen
-            splash_screen = SplashScreen()
-            splash_screen.announce("Loading...")
-            self.centralWidget().layout().addWidget(splash_screen)
-
-        self.undertake(job, True)
+            formation = [
+                "Choose coins",
+                CoinSelection,
+                False,
+                None,
+            ]
+            self.overlap(formation)
 
         # ■■■■■ multiprocessing ■■■■■
 
@@ -1299,25 +1244,22 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         return ask_popup.answer
 
     # show an mainpulatable overlap popup
-    def overlap(self, title):
+    def overlap(self, formation):
         overlap_popup = None
 
         def job():
             nonlocal overlap_popup
-            overlap_popup = OverlapPopup(self, title)
+            overlap_popup = OverlapPopup(self, formation)
             overlap_popup.show()
 
         self.undertake(job, True)
 
+        overlap_popup.done_event.wait()
+
         def job():
-            overlap_popup.done_event.wait()
+            overlap_popup.setParent(None)
 
-            def job():
-                overlap_popup.setParent(None)
-
-            self.undertake(job, False)
-
-        thread_toss.apply_async(job)
+        self.undertake(job, False)
 
         return overlap_popup
 

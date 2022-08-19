@@ -1,4 +1,3 @@
-import threading
 import urllib
 
 from PySide6 import QtWidgets, QtCore, QtGui
@@ -11,10 +10,8 @@ from module.recipe import user_settings
 from module.recipe import outsource
 
 
-class TokenSelectionFrame(QtWidgets.QScrollArea):
-    done_event = threading.Event()
-
-    def __init__(self):
+class TokenSelection(QtWidgets.QWidget):
+    def __init__(self, done_event, payload):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
@@ -22,6 +19,7 @@ class TokenSelectionFrame(QtWidgets.QScrollArea):
         # ■■■■■ for remembering ■■■■■
 
         token_radioboxes = {}
+        self.is_closed = False
 
         # ■■■■■ prepare the api requester ■■■■■
 
@@ -29,61 +27,37 @@ class TokenSelectionFrame(QtWidgets.QScrollArea):
 
         # ■■■■■ get all symbols ■■■■■
 
-        response = api_requester.binance(
-            http_method="GET",
-            path="/fapi/v1/exchangeInfo",
-            payload={},
-        )
-        about_symbols = response["symbols"]
         available_symbols = []
-        for about_symbol in about_symbols:
-            symbol = about_symbol["symbol"]
-            available_symbols.append(symbol)
+
+        def job():
+            response = api_requester.binance(
+                http_method="GET",
+                path="/fapi/v1/exchangeInfo",
+                payload={},
+            )
+            about_symbols = response["symbols"]
+            for about_symbol in about_symbols:
+                symbol = about_symbol["symbol"]
+                available_symbols.append(symbol)
+
+        thread_toss.apply(job)
 
         # ■■■■■ get coin informations ■■■■■
 
-        response = api_requester.coinstats("GET", "/public/v1/coins")
-        about_coins = response["coins"]
         coin_names = {}
         coin_icon_urls = {}
         coin_ranks = {}
-        for about_coin in about_coins:
-            coin_symbol = about_coin["symbol"]
-            coin_names[coin_symbol] = about_coin["name"]
-            coin_icon_urls[coin_symbol] = about_coin["icon"]
-            coin_ranks[coin_symbol] = about_coin["rank"]
 
-        # ■■■■■ prepare confirm function ■■■■■
+        def job():
+            response = api_requester.coinstats("GET", "/public/v1/coins")
+            about_coins = response["coins"]
+            for about_coin in about_coins:
+                coin_symbol = about_coin["symbol"]
+                coin_names[coin_symbol] = about_coin["name"]
+                coin_icon_urls[coin_symbol] = about_coin["icon"]
+                coin_ranks[coin_symbol] = about_coin["rank"]
 
-        def job(*args):
-            data_settings = {}
-            selected_tokens = []
-            for symbol, radiobox in token_radioboxes.items():
-                is_selected = core.window.undertake(lambda: radiobox.isChecked(), True)
-                if is_selected:
-                    selected_tokens.append(symbol)
-            if len(selected_tokens) == 1:
-                is_symbol_count_ok = True
-                data_settings["asset_token"] = selected_tokens[0]
-            else:
-                is_symbol_count_ok = False
-                question = [
-                    "Nothing selected",
-                    "Choose one of the tokens.",
-                    ["Okay"],
-                ]
-                core.window.ask(question)
-            if is_symbol_count_ok:
-                question = [
-                    "Okay to proceed?",
-                    "Solsol will treat this token as your asset.",
-                    ["No", "Yes"],
-                ]
-                answer = core.window.ask(question)
-                if answer in (0, 1):
-                    return
-                user_settings.apply_data_settings(data_settings)
-                self.done_event.set()
+        thread_toss.apply(job)
 
         # ■■■■■ set things ■■■■■
 
@@ -102,15 +76,9 @@ class TokenSelectionFrame(QtWidgets.QScrollArea):
                 if symbol.endswith(token):
                     number_of_markets[token] += 1
 
-        # ■■■■■ full structure ■■■■■
-
-        self.setWidgetResizable(True)
-
         # ■■■■■ full layout ■■■■■
 
-        full_widget = QtWidgets.QWidget()
-        self.setWidget(full_widget)
-        full_layout = QtWidgets.QHBoxLayout(full_widget)
+        full_layout = QtWidgets.QHBoxLayout(self)
         cards_layout = QtWidgets.QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
@@ -132,24 +100,6 @@ class TokenSelectionFrame(QtWidgets.QScrollArea):
         card_layout = QtWidgets.QVBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
         cards_layout.addWidget(card)
-
-        # title
-        main_text = QtWidgets.QLabel(
-            "Choose a token to treat as your asset",
-            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-        )
-        main_text_font = QtGui.QFont()
-        main_text_font.setPointSize(12)
-        main_text.setFont(main_text_font)
-        main_text.setWordWrap(True)
-        card_layout.addWidget(main_text)
-
-        # spacing
-        spacing_text = QtWidgets.QLabel("")
-        spacing_text_font = QtGui.QFont()
-        spacing_text_font.setPointSize(3)
-        spacing_text.setFont(spacing_text_font)
-        card_layout.addWidget(spacing_text)
 
         # explanation
         detail_text = QtWidgets.QLabel(
@@ -211,6 +161,39 @@ class TokenSelectionFrame(QtWidgets.QScrollArea):
 
         # ■■■■■ a card ■■■■■
 
+        # confirm function
+        def job(*args):
+            data_settings = {}
+            selected_tokens = []
+            for symbol, radiobox in token_radioboxes.items():
+                is_selected = core.window.undertake(lambda: radiobox.isChecked(), True)
+                if is_selected:
+                    selected_tokens.append(symbol)
+            if len(selected_tokens) == 1:
+                is_symbol_count_ok = True
+                data_settings["asset_token"] = selected_tokens[0]
+            else:
+                is_symbol_count_ok = False
+                question = [
+                    "Nothing selected",
+                    "Choose one of the tokens.",
+                    ["Okay"],
+                ]
+                core.window.ask(question)
+            if is_symbol_count_ok:
+                question = [
+                    "Okay to proceed?",
+                    "Solsol will treat this token as your asset.",
+                    ["No", "Yes"],
+                ]
+                answer = core.window.ask(question)
+                if answer in (0, 1):
+                    return
+                user_settings.apply_data_settings(data_settings)
+                user_settings.load()
+                self.is_closed = True
+                done_event.set()
+
         # card structure
         card = QtWidgets.QGroupBox()
         card.setFixedWidth(720)
@@ -247,6 +230,9 @@ class TokenSelectionFrame(QtWidgets.QScrollArea):
                 image_data = urllib.request.urlopen(coin_icon_url).read()
                 pixmap = QtGui.QPixmap()
                 pixmap.loadFromData(image_data)
+
+                if self.is_closed:
+                    return
 
                 def job(icon_label=icon_label, pixmap=pixmap):
                     icon_label.setPixmap(pixmap)

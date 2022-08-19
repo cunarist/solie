@@ -1,4 +1,3 @@
-import threading
 import getmac
 
 from PySide6 import QtWidgets, QtCore, QtGui
@@ -11,10 +10,8 @@ from module.recipe import user_settings
 from module.recipe import outsource
 
 
-class LicenseFrame(QtWidgets.QScrollArea):
-    done_event = threading.Event()
-
-    def __init__(self):
+class LicenseInput(QtWidgets.QWidget):
+    def __init__(self, done_event, payload):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
@@ -23,15 +20,9 @@ class LicenseFrame(QtWidgets.QScrollArea):
 
         api_requester = ApiRequester()
 
-        # ■■■■■ full structure ■■■■■
-
-        self.setWidgetResizable(True)
-
         # ■■■■■ full layout ■■■■■
 
-        full_widget = QtWidgets.QWidget()
-        self.setWidget(full_widget)
-        full_layout = QtWidgets.QHBoxLayout(full_widget)
+        full_layout = QtWidgets.QHBoxLayout(self)
         cards_layout = QtWidgets.QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
@@ -54,24 +45,6 @@ class LicenseFrame(QtWidgets.QScrollArea):
         card_layout = QtWidgets.QVBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
         cards_layout.addWidget(card)
-
-        # title
-        main_text = QtWidgets.QLabel(
-            "Enter Solsol license key",
-            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-        )
-        main_text_font = QtGui.QFont()
-        main_text_font.setPointSize(12)
-        main_text.setFont(main_text_font)
-        main_text.setWordWrap(True)
-        card_layout.addWidget(main_text)
-
-        # spacing
-        spacing_text = QtWidgets.QLabel("")
-        spacing_text_font = QtGui.QFont()
-        spacing_text_font.setPointSize(3)
-        spacing_text.setFont(spacing_text_font)
-        card_layout.addWidget(spacing_text)
 
         # explanation
         detail_text = QtWidgets.QLabel(
@@ -121,7 +94,8 @@ class LicenseFrame(QtWidgets.QScrollArea):
                 }
                 api_requester.cunarist("PUT", "/api/solsol/key-mac-pair", payload)
                 user_settings.apply_app_settings({"license_key": license_key})
-                self.done_event.set()
+                user_settings.load()
+                done_event.set()
             except ApiRequestError:
                 question = [
                     "License key not valid",

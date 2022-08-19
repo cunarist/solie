@@ -1,6 +1,8 @@
 import logging
 import time
 
+from module import thread_toss
+
 
 class LogHandler(logging.Handler):
     def __init__(self, after_function):
@@ -25,4 +27,5 @@ class LogHandler(logging.Handler):
         lines.insert(1, message)
         lines[0] = lines[0][:80]
         text = "\n".join(lines)
-        self.after_function(text)
+
+        thread_toss.apply_async(lambda: self.after_function(text))

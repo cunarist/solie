@@ -20,7 +20,7 @@ class OverlapPopup(QtWidgets.QWidget):
             self.setGeometry(source.rect())
         return super().eventFilter(source, event)
 
-    def __init__(self, parent, title):
+    def __init__(self, parent, formation):
         # ■■■■■ the basic ■■■■■
 
         super().__init__(parent)
@@ -57,9 +57,9 @@ class OverlapPopup(QtWidgets.QWidget):
         content_box_layout = QtWidgets.QVBoxLayout(content_box)
         full_layout.addWidget(content_box)
 
-        # line containing the close button
+        # line containing the title and close button
         this_layout = QtWidgets.QHBoxLayout()
-        title_label = QtWidgets.QLabel(title)
+        title_label = QtWidgets.QLabel(formation[0])
         title_label_font = QtGui.QFont()
         title_label_font.setPointSize(12)
         title_label.setFont(title_label_font)
@@ -72,28 +72,24 @@ class OverlapPopup(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.Policy.Minimum,
         )
         this_layout.addItem(widget)
-        close_button = QtWidgets.QPushButton("✕", content_box)
-        close_button_font = QtGui.QFont()
-        close_button_font.setPointSize(11)
-        close_button.setFont(close_button_font)
+        if formation[2]:
+            close_button = QtWidgets.QPushButton("✕", content_box)
+            close_button_font = QtGui.QFont()
+            close_button_font.setPointSize(11)
+            close_button.setFont(close_button_font)
 
-        def job():
-            self.done_event.set()
+            def job():
+                self.done_event.set()
 
-        close_button.clicked.connect(job)
-        this_layout.addWidget(close_button)
+            close_button.clicked.connect(job)
+            this_layout.addWidget(close_button)
         content_box_layout.addLayout(this_layout)
 
         # scroll area
         scroll_area = QtWidgets.QScrollArea()
-        scroll_widget = QtWidgets.QWidget()
-        scroll_layout = QtWidgets.QHBoxLayout()
+        scroll_widget = formation[1](self.done_event, formation[3])
 
-        scroll_widget.setLayout(scroll_layout)
         scroll_area.setWidget(scroll_widget)
         scroll_area.setWidgetResizable(True)
 
         content_box_layout.addWidget(scroll_area)
-        content_layout = QtWidgets.QVBoxLayout()
-        scroll_layout.addLayout(content_layout)
-        self.content_layout = content_layout

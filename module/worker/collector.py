@@ -10,7 +10,6 @@ import logging
 
 import pandas as pd
 import numpy as np
-from PySide6 import QtCore, QtWidgets
 
 from module import core
 from module import process_toss
@@ -30,6 +29,7 @@ from module.recipe import fill_holes_with_aggtrades
 from module.recipe import remember_task_durations
 from module.recipe import standardize
 from module.recipe import datalocks
+from module.shelf.download_fill_option import DownloadFillOption
 
 
 class Collector:
@@ -432,83 +432,18 @@ class Collector:
     def download_fill_candle_data(self, *args, **kwargs):
         # ■■■■■ ask filling type ■■■■■
 
-        title = "Choose the range to fill"
-        overlap_popup = core.window.overlap(title)
         answer_container = {"filling_type": None}
-        fill_options = (
-            "From 2020 to last year",
-            "From first month of this year to last month",
-            "This month",
-            "Yesterday and the day before yesterday",
-        )
 
-        def job():
-            content_layout = overlap_popup.content_layout
+        formation = [
+            "Choose the range to fill",
+            DownloadFillOption,
+            True,
+            [answer_container],
+        ]
 
-            # ■■■■■ spacing ■■■■■
+        core.window.overlap(formation)
 
-            spacer = QtWidgets.QSpacerItem(
-                0,
-                0,
-                QtWidgets.QSizePolicy.Policy.Minimum,
-                QtWidgets.QSizePolicy.Policy.Expanding,
-            )
-            content_layout.addItem(spacer)
-
-            # ■■■■■ a card ■■■■■
-
-            # card structure
-            card = QtWidgets.QGroupBox()
-            card.setFixedWidth(720)
-            card_layout = QtWidgets.QVBoxLayout(card)
-            card_layout.setContentsMargins(80, 40, 80, 40)
-            content_layout.addWidget(card)
-
-            # explanation
-            explain_label = QtWidgets.QLabel(
-                "Solsol will fill the candle data with historical data provided by"
-                " Binance. The more you fill, the longer it takes. Amount of a few days"
-                " only takes few minutes while amount of a few years can take hours.",
-                alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-            )
-            explain_label.setWordWrap(True)
-            card_layout.addWidget(explain_label)
-
-            # ■■■■■ a card ■■■■■
-
-            # card structure
-            card = QtWidgets.QGroupBox()
-            card.setFixedWidth(720)
-            card_layout = QtWidgets.QVBoxLayout(card)
-            card_layout.setContentsMargins(80, 40, 80, 40)
-            content_layout.addWidget(card)
-
-            # option buttons
-            for turn, text in enumerate(fill_options):
-
-                def job(turn=turn, *args, **kwargs):
-                    answer_container["filling_type"] = turn
-                    overlap_popup.done_event.set()
-
-                option_button = QtWidgets.QPushButton(text, card)
-                option_button.clicked.connect(job)
-                card_layout.addWidget(option_button)
-
-            # ■■■■■ spacing ■■■■■
-
-            spacer = QtWidgets.QSpacerItem(
-                0,
-                0,
-                QtWidgets.QSizePolicy.Policy.Minimum,
-                QtWidgets.QSizePolicy.Policy.Expanding,
-            )
-            content_layout.addItem(spacer)
-
-        core.window.undertake(job, False)
-
-        overlap_popup.done_event.wait()
         filling_type = answer_container["filling_type"]
-
         if filling_type is None:
             return
 

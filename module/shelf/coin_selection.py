@@ -1,4 +1,3 @@
-import threading
 import urllib
 
 from PySide6 import QtWidgets, QtCore, QtGui
@@ -11,10 +10,8 @@ from module.recipe import user_settings
 from module.recipe import outsource
 
 
-class CoinSelectionFrame(QtWidgets.QScrollArea):
-    done_event = threading.Event()
-
-    def __init__(self):
+class CoinSelection(QtWidgets.QWidget):
+    def __init__(self, done_event, payload):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
@@ -22,6 +19,7 @@ class CoinSelectionFrame(QtWidgets.QScrollArea):
         # ■■■■■ for remembering ■■■■■
 
         symbol_checkboxes = {}
+        self.is_closed = False
 
         # ■■■■■ prepare the api requester ■■■■■
 
@@ -33,30 +31,38 @@ class CoinSelectionFrame(QtWidgets.QScrollArea):
 
         # ■■■■■ get available symbols ■■■■■
 
-        response = api_requester.binance(
-            http_method="GET",
-            path="/fapi/v1/exchangeInfo",
-            payload={},
-        )
-        about_symbols = response["symbols"]
         available_symbols = []
-        for about_symbol in about_symbols:
-            symbol = about_symbol["symbol"]
-            if symbol.endswith(asset_token):
-                available_symbols.append(symbol)
+
+        def job():
+            response = api_requester.binance(
+                http_method="GET",
+                path="/fapi/v1/exchangeInfo",
+                payload={},
+            )
+            about_symbols = response["symbols"]
+            for about_symbol in about_symbols:
+                symbol = about_symbol["symbol"]
+                if symbol.endswith(asset_token):
+                    available_symbols.append(symbol)
+
+        thread_toss.apply(job)
 
         # ■■■■■ get coin informations ■■■■■
 
-        response = api_requester.coinstats("GET", "/public/v1/coins")
-        about_coins = response["coins"]
         coin_names = {}
         coin_icon_urls = {}
         coin_ranks = {}
-        for about_coin in about_coins:
-            coin_symbol = about_coin["symbol"]
-            coin_names[coin_symbol] = about_coin["name"]
-            coin_icon_urls[coin_symbol] = about_coin["icon"]
-            coin_ranks[coin_symbol] = about_coin["rank"]
+
+        def job():
+            response = api_requester.coinstats("GET", "/public/v1/coins")
+            about_coins = response["coins"]
+            for about_coin in about_coins:
+                coin_symbol = about_coin["symbol"]
+                coin_names[coin_symbol] = about_coin["name"]
+                coin_icon_urls[coin_symbol] = about_coin["icon"]
+                coin_ranks[coin_symbol] = about_coin["rank"]
+
+        thread_toss.apply(job)
 
         # ■■■■■ sort symbols by rank ■■■■■
 
@@ -71,48 +77,9 @@ class CoinSelectionFrame(QtWidgets.QScrollArea):
             original_index = available_symbols.index(symbol)
             available_symbols.insert(0, available_symbols.pop(original_index))
 
-        # ■■■■■ prepare confirm function ■■■■■
-
-        def job(*args):
-            data_settings = {}
-            selected_symbols = []
-            for symbol, checkbox in symbol_checkboxes.items():
-                is_checked = core.window.undertake(lambda: checkbox.isChecked(), True)
-                if is_checked:
-                    selected_symbols.append(symbol)
-            if 1 <= len(selected_symbols) <= 10:
-                is_symbol_count_ok = True
-                data_settings["target_symbols"] = selected_symbols
-            else:
-                is_symbol_count_ok = False
-                question = [
-                    "Select proper number of symbols",
-                    "You can select a minimum of 1 and a maximum of 10.",
-                    ["Okay"],
-                ]
-                core.window.ask(question)
-            if is_symbol_count_ok:
-                question = [
-                    "Okay to proceed?",
-                    "You cannot change your selections unless you make a new data"
-                    " folder.",
-                    ["No", "Yes"],
-                ]
-                answer = core.window.ask(question)
-                if answer in (0, 1):
-                    return
-                user_settings.apply_data_settings(data_settings)
-                self.done_event.set()
-
-        # ■■■■■ full structure ■■■■■
-
-        self.setWidgetResizable(True)
-
         # ■■■■■ full layout ■■■■■
 
-        full_widget = QtWidgets.QWidget()
-        self.setWidget(full_widget)
-        full_layout = QtWidgets.QHBoxLayout(full_widget)
+        full_layout = QtWidgets.QHBoxLayout(self)
         cards_layout = QtWidgets.QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
@@ -134,24 +101,6 @@ class CoinSelectionFrame(QtWidgets.QScrollArea):
         card_layout = QtWidgets.QVBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
         cards_layout.addWidget(card)
-
-        # title
-        main_text = QtWidgets.QLabel(
-            "Choose coins",
-            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-        )
-        main_text_font = QtGui.QFont()
-        main_text_font.setPointSize(12)
-        main_text.setFont(main_text_font)
-        main_text.setWordWrap(True)
-        card_layout.addWidget(main_text)
-
-        # spacing
-        spacing_text = QtWidgets.QLabel("")
-        spacing_text_font = QtGui.QFont()
-        spacing_text_font.setPointSize(3)
-        spacing_text.setFont(spacing_text_font)
-        card_layout.addWidget(spacing_text)
 
         # explanation
         detail_text = QtWidgets.QLabel(
@@ -220,6 +169,40 @@ class CoinSelectionFrame(QtWidgets.QScrollArea):
 
         # ■■■■■ a card ■■■■■
 
+        # confirm function
+        def job(*args):
+            data_settings = {}
+            selected_symbols = []
+            for symbol, checkbox in symbol_checkboxes.items():
+                is_checked = core.window.undertake(lambda: checkbox.isChecked(), True)
+                if is_checked:
+                    selected_symbols.append(symbol)
+            if 1 <= len(selected_symbols) <= 10:
+                is_symbol_count_ok = True
+                data_settings["target_symbols"] = selected_symbols
+            else:
+                is_symbol_count_ok = False
+                question = [
+                    "Select proper number of symbols",
+                    "You can select a minimum of 1 and a maximum of 10.",
+                    ["Okay"],
+                ]
+                core.window.ask(question)
+            if is_symbol_count_ok:
+                question = [
+                    "Okay to proceed?",
+                    "You cannot change your selections unless you make a new data"
+                    " folder.",
+                    ["No", "Yes"],
+                ]
+                answer = core.window.ask(question)
+                if answer in (0, 1):
+                    return
+                user_settings.apply_data_settings(data_settings)
+                user_settings.load()
+                self.is_closed = True
+                done_event.set()
+
         # card structure
         card = QtWidgets.QGroupBox()
         card.setFixedWidth(720)
@@ -257,6 +240,9 @@ class CoinSelectionFrame(QtWidgets.QScrollArea):
                 image_data = urllib.request.urlopen(coin_icon_url).read()
                 pixmap = QtGui.QPixmap()
                 pixmap.loadFromData(image_data)
+
+                if self.is_closed:
+                    return
 
                 def job(icon_label=icon_label, pixmap=pixmap):
                     icon_label.setPixmap(pixmap)

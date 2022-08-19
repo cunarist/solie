@@ -1,6 +1,8 @@
 from PySide6 import QtWidgets, QtGui
 
 from module import core
+from module import thread_toss
+from module.shelf.full_log_view import FullLogView
 
 
 class LogList(QtWidgets.QListWidget):
@@ -32,12 +34,8 @@ class LogList(QtWidgets.QListWidget):
         selected_item = self.item(selected_index)
         fulltext = selected_item.fulltext
 
-        overlap_popup = core.window.overlap("This is the full log")
-        content_layout = overlap_popup.content_layout
-
         def job():
-            label = QtWidgets.QLabel(fulltext)
-            label.setFont(self.fixed_width_font)
-            content_layout.addWidget(label)
+            formation = ["This is the full log", FullLogView, True, [fulltext]]
+            core.window.overlap(formation)
 
-        core.window.undertake(job, False)
+        thread_toss.apply_async(job)
