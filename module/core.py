@@ -959,12 +959,12 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             text = f"{strategy_code} - {strategy_name}"
 
             traffic_light_icon = QtGui.QIcon()
-            if strategy_code == 0:
-                traffic_light_icon.addPixmap(yellow_pixmap)
-            elif strategy_code == 1:
-                traffic_light_icon.addPixmap(red_pixmap)
-            elif strategy_code == 2:
+            if strategy_code == "SLSLDS":
                 traffic_light_icon.addPixmap(green_pixmap)
+            elif strategy_code == "MKRNDM":
+                traffic_light_icon.addPixmap(red_pixmap)
+            elif strategy_code == "CSMSTR":
+                traffic_light_icon.addPixmap(yellow_pixmap)
 
             def job(text=text):
                 self.comboBox.addItem(traffic_light_icon, text)
