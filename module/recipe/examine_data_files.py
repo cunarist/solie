@@ -18,7 +18,7 @@ def do():
             realtime_data_chunks = copy.deepcopy(pickle.load(file))
         if isinstance(realtime_data_chunks, list):
             os.remove(filepath)
-    except FileNotFoundError:
+    except Exception:
         pass
 
     # 2.0: renamed leverage_settings to mode_settings
@@ -33,7 +33,7 @@ def do():
         filepath = f"{datapath}/transactor/mode_settings.json"
         with open(filepath, "w", encoding="utf8") as file:
             json.dump(mode_settings, file, indent=4)
-    except FileNotFoundError:
+    except Exception:
         pass
 
     # 2.11: included dependencies in the installer
@@ -51,7 +51,7 @@ def do():
             data_settings.pop("generated_timestamp")
         with open(filepath, "w", encoding="utf8") as file:
             json.dump(data_settings, file, indent=4)
-    except FileNotFoundError:
+    except Exception:
         pass
 
     # 3.11: merge asset_trace and trade_record to asset_record
@@ -75,7 +75,7 @@ def do():
         filepath = f"{datapath}/transactor/trade_record.pickle"
         os.remove(filepath)
 
-    except FileNotFoundError:
+    except Exception:
         pass
 
     # 4.0: solsol default strategy now has code number 2
@@ -87,7 +87,7 @@ def do():
             automation_settings["strategy"] = 2
         with open(filepath, "w", encoding="utf8") as file:
             json.dump(automation_settings, file, indent=4)
-    except FileNotFoundError:
+    except Exception:
         pass
 
     # 5.0: data settings
@@ -99,7 +99,7 @@ def do():
         filepath = f"{datapath}/data_settings.json"
         with open(filepath, "w", encoding="utf8") as file:
             json.dump(data_settings, file, indent=4)
-    except FileNotFoundError:
+    except Exception:
         pass
 
     # 5.0: symbol column was added to auto order record
@@ -109,7 +109,7 @@ def do():
         if "Symbol" not in auto_order_record.columns:
             auto_order_record["Symbol"] = ""
             auto_order_record.to_pickle(filepath)
-    except FileNotFoundError:
+    except Exception:
         pass
 
     # 5.0: solsol default strategy now has strategy code SLSLDS
@@ -122,7 +122,7 @@ def do():
             automation_settings["strategy_code"] = "SLSLDS"
         with open(filepath, "w", encoding="utf8") as file:
             json.dump(automation_settings, file, indent=4)
-    except FileNotFoundError:
+    except Exception:
         pass
 
 
@@ -145,5 +145,5 @@ def do_first():
         filepath = "./note/app_settings.json"
         with open(filepath, "w", encoding="utf8") as file:
             json.dump(app_settings, file, indent=4)
-    except FileNotFoundError:
+    except Exception:
         pass
