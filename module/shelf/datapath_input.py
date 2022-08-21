@@ -126,6 +126,7 @@ class DatapathInput(QtWidgets.QWidget):
                 core.window.ask(question)
             else:
                 user_settings.apply_app_settings({"datapath": datapath})
+                user_settings.load()
                 done_event.set()
 
         # card structure

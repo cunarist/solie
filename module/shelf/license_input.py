@@ -85,8 +85,8 @@ class LicenseInput(QtWidgets.QWidget):
 
         # function for checking license key
         def job(*args):
-            widget = key_input
-            license_key = core.window.undertake(lambda w=widget: w.text(), True)
+            payload = (key_input.text,)
+            license_key = core.window.undertake(lambda p=payload: p[0](), True)
             try:
                 payload = {
                     "licenseKey": license_key,

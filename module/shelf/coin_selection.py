@@ -33,19 +33,16 @@ class CoinSelection(QtWidgets.QWidget):
 
         available_symbols = []
 
-        def job():
-            response = api_requester.binance(
-                http_method="GET",
-                path="/fapi/v1/exchangeInfo",
-                payload={},
-            )
-            about_symbols = response["symbols"]
-            for about_symbol in about_symbols:
-                symbol = about_symbol["symbol"]
-                if symbol.endswith(asset_token):
-                    available_symbols.append(symbol)
-
-        thread_toss.apply(job)
+        response = api_requester.binance(
+            http_method="GET",
+            path="/fapi/v1/exchangeInfo",
+            payload={},
+        )
+        about_symbols = response["symbols"]
+        for about_symbol in about_symbols:
+            symbol = about_symbol["symbol"]
+            if symbol.endswith(asset_token):
+                available_symbols.append(symbol)
 
         # ■■■■■ get coin informations ■■■■■
 
@@ -53,16 +50,13 @@ class CoinSelection(QtWidgets.QWidget):
         coin_icon_urls = {}
         coin_ranks = {}
 
-        def job():
-            response = api_requester.coinstats("GET", "/public/v1/coins")
-            about_coins = response["coins"]
-            for about_coin in about_coins:
-                coin_symbol = about_coin["symbol"]
-                coin_names[coin_symbol] = about_coin["name"]
-                coin_icon_urls[coin_symbol] = about_coin["icon"]
-                coin_ranks[coin_symbol] = about_coin["rank"]
-
-        thread_toss.apply(job)
+        response = api_requester.coinstats("GET", "/public/v1/coins")
+        about_coins = response["coins"]
+        for about_coin in about_coins:
+            coin_symbol = about_coin["symbol"]
+            coin_names[coin_symbol] = about_coin["name"]
+            coin_icon_urls[coin_symbol] = about_coin["icon"]
+            coin_ranks[coin_symbol] = about_coin["rank"]
 
         # ■■■■■ sort symbols by rank ■■■■■
 
@@ -174,7 +168,8 @@ class CoinSelection(QtWidgets.QWidget):
             data_settings = {}
             selected_symbols = []
             for symbol, checkbox in symbol_checkboxes.items():
-                is_checked = core.window.undertake(lambda: checkbox.isChecked(), True)
+                payload = (checkbox.isChecked,)
+                is_checked = core.window.undertake(lambda p=payload: p[0](), True)
                 if is_checked:
                     selected_symbols.append(symbol)
             if 1 <= len(selected_symbols) <= 10:

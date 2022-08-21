@@ -92,12 +92,8 @@ def get_pool_process_count():
 
 def apply(function, *args, **kwargs):
     payload = dill.dumps((function, args, kwargs))
-    try:
-        returned = _pool.apply(_process_arguments, (payload,))
-        return returned
-    except Exception:
-        logger = logging.getLogger("solsol")
-        logger.exception("Exception occured from the process pool")
+    returned = _pool.apply(_process_arguments, (payload,))
+    return returned
 
 
 def apply_async(function, *args, **kwargs):
@@ -112,12 +108,8 @@ def apply_async(function, *args, **kwargs):
 
 def map(function, iterable):
     wrapper = [dill.dumps((function, item)) for item in iterable]
-    try:
-        returned = _pool.map(_process_iterable_item, wrapper)
-        return returned
-    except Exception:
-        logger = logging.getLogger("solsol")
-        logger.exception("Exception occured from the process pool")
+    returned = _pool.map(_process_iterable_item, wrapper)
+    return returned
 
 
 def map_async(function, iterable):

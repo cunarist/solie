@@ -201,7 +201,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 False,
                 None,
             ]
-            self.overlap(formation)
+            is_formed = self.overlap(formation)
+            if not is_formed:
+                return
 
         if user_settings.get_app_settings()["datapath"] is None:
             formation = [
@@ -210,7 +212,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 False,
                 None,
             ]
-            self.overlap(formation)
+            is_formed = self.overlap(formation)
+            if not is_formed:
+                return
 
         # ■■■■■ check data settings ■■■■■
 
@@ -221,7 +225,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 False,
                 None,
             ]
-            self.overlap(formation)
+            is_formed = self.overlap(formation)
+            if not is_formed:
+                return
 
         if user_settings.get_data_settings()["target_symbols"] is None:
             formation = [
@@ -230,7 +236,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 False,
                 None,
             ]
-            self.overlap(formation)
+            is_formed = self.overlap(formation)
+            if not is_formed:
+                return
 
         # ■■■■■ multiprocessing ■■■■■
 
@@ -1238,6 +1246,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.undertake(job, True)
 
+        if ask_popup is None:
+            return 0
+
         ask_popup.done_event.wait()
 
         def job():
@@ -1258,6 +1269,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.undertake(job, True)
 
+        if overlap_popup is None:
+            return False
+
         overlap_popup.done_event.wait()
 
         def job():
@@ -1265,7 +1279,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.undertake(job, False)
 
-        return overlap_popup
+        return True
 
 
 window = None

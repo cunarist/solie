@@ -29,18 +29,15 @@ class TokenSelection(QtWidgets.QWidget):
 
         available_symbols = []
 
-        def job():
-            response = api_requester.binance(
-                http_method="GET",
-                path="/fapi/v1/exchangeInfo",
-                payload={},
-            )
-            about_symbols = response["symbols"]
-            for about_symbol in about_symbols:
-                symbol = about_symbol["symbol"]
-                available_symbols.append(symbol)
-
-        thread_toss.apply(job)
+        response = api_requester.binance(
+            http_method="GET",
+            path="/fapi/v1/exchangeInfo",
+            payload={},
+        )
+        about_symbols = response["symbols"]
+        for about_symbol in about_symbols:
+            symbol = about_symbol["symbol"]
+            available_symbols.append(symbol)
 
         # ■■■■■ get coin informations ■■■■■
 
@@ -48,16 +45,13 @@ class TokenSelection(QtWidgets.QWidget):
         coin_icon_urls = {}
         coin_ranks = {}
 
-        def job():
-            response = api_requester.coinstats("GET", "/public/v1/coins")
-            about_coins = response["coins"]
-            for about_coin in about_coins:
-                coin_symbol = about_coin["symbol"]
-                coin_names[coin_symbol] = about_coin["name"]
-                coin_icon_urls[coin_symbol] = about_coin["icon"]
-                coin_ranks[coin_symbol] = about_coin["rank"]
-
-        thread_toss.apply(job)
+        response = api_requester.coinstats("GET", "/public/v1/coins")
+        about_coins = response["coins"]
+        for about_coin in about_coins:
+            coin_symbol = about_coin["symbol"]
+            coin_names[coin_symbol] = about_coin["name"]
+            coin_icon_urls[coin_symbol] = about_coin["icon"]
+            coin_ranks[coin_symbol] = about_coin["rank"]
 
         # ■■■■■ set things ■■■■■
 
@@ -166,7 +160,8 @@ class TokenSelection(QtWidgets.QWidget):
             data_settings = {}
             selected_tokens = []
             for symbol, radiobox in token_radioboxes.items():
-                is_selected = core.window.undertake(lambda: radiobox.isChecked(), True)
+                payload = (radiobox.isChecked,)
+                is_selected = core.window.undertake(lambda p=payload: p[0](), True)
                 if is_selected:
                     selected_tokens.append(symbol)
             if len(selected_tokens) == 1:
