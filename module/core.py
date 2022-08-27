@@ -83,7 +83,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             def job():
                 nonlocal splash_screen
                 splash_screen = SplashScreen()
-                splash_screen.announce("Finalizing...")
                 self.centralWidget().layout().addWidget(splash_screen)
 
             self.undertake(job, True)
@@ -91,8 +90,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             def job():
                 while True:
                     if done_steps == total_steps:
-                        text = "Finalization done"
-                        self.undertake(lambda t=text: splash_screen.announce(t), True)
                         time.sleep(1)
                         process_toss.terminate_pool()
                         self.closeEvent = lambda e: e.accept()
@@ -168,7 +165,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         def job():
             nonlocal splash_screen
             splash_screen = SplashScreen()
-            splash_screen.announce("Loading...")
             self.centralWidget().layout().addWidget(splash_screen)
 
         self.undertake(job, True)
@@ -1181,11 +1177,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.undertake(job, True)
 
         # ■■■■■ initialize functions ■■■■■
-
-        def job():
-            splash_screen.announce("Initializing...")
-
-        self.undertake(job, True)
 
         def job(function):
             function()

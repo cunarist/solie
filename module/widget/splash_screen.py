@@ -1,7 +1,6 @@
-from PySide6 import QtWidgets, QtGui, QtCore
+from PySide6 import QtWidgets, QtGui
 
 from module.widget.brand_label import BrandLabel
-from module.widget.horizontal_divider import HorizontalDivider
 from module import introduction
 
 
@@ -55,28 +54,6 @@ class SplashScreen(QtWidgets.QFrame):
         label = BrandLabel(self, text, 24)
         this_layout.addWidget(label)
 
-        spacing_text = QtWidgets.QLabel("")
-        spacing_text_font = QtGui.QFont()
-        spacing_text_font.setPointSize(3)
-        spacing_text.setFont(spacing_text_font)
-        central_layout.addWidget(spacing_text)
-
-        divider = HorizontalDivider(self)
-        central_layout.addWidget(divider)
-
-        spacing_text = QtWidgets.QLabel("")
-        spacing_text_font = QtGui.QFont()
-        spacing_text_font.setPointSize(3)
-        spacing_text.setFont(spacing_text_font)
-        central_layout.addWidget(spacing_text)
-
-        self.guide_label = QtWidgets.QLabel(
-            "",
-            self,
-            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-        )
-        central_layout.addWidget(self.guide_label)
-
         spacer = QtWidgets.QSpacerItem(
             0,
             0,
@@ -92,6 +69,3 @@ class SplashScreen(QtWidgets.QFrame):
             QtWidgets.QSizePolicy.Policy.Minimum,
         )
         full_layout.addItem(spacer)
-
-    def announce(self, guide_text):
-        self.guide_label.setText(guide_text)
