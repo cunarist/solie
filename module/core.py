@@ -43,7 +43,6 @@ from module.shelf.token_selection import TokenSelection
 from module.shelf.coin_selection import CoinSelection
 from module.shelf.license_input import LicenseInput
 from module.shelf.datapath_input import DatapathInput
-from module.shelf.full_log_view import FullLogView
 
 
 class Window(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -67,6 +66,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
                 if answer in (0, 1):
                     return
+
+            self.should_overlap_error = True
 
             AskPopup.done_event.set()
             OverlapPopup.done_event.set()
@@ -124,10 +125,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.splitter.setSizes([3, 1, 1, 2])
         self.splitter_2.setSizes([3, 1, 1, 2])
 
-        # ■■■■■ app closing settings ■■■■■
+        # ■■■■■ app behavior settings ■■■■■
 
         self.should_finalize = False
         self.should_confirm_closing = True
+        self.should_overlap_error = True
 
         # ■■■■■ hide the main widgets and go on to boot phase ■■■■■
 
@@ -136,20 +138,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         thread_toss.apply_async(self.boot)
 
     def boot(self):
-        # ■■■■■ prepare boot logging ■■■■■
-
-        def job(log_text):
-            formation = [
-                "An error occured during the boot phase",
-                FullLogView,
-                False,
-                [log_text],
-            ]
-            self.overlap(formation)
-
-        boot_log_handler = LogHandler(job)
-        logging.getLogger().addHandler(boot_log_handler)
-
         # ■■■■■ global settings of packages ■■■■■
 
         os.get_terminal_size = lambda *args: os.terminal_size((120, 90))
@@ -157,6 +145,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         pd.set_option("display.min_rows", 20)
         pd.set_option("display.max_rows", 20)
         pyqtgraph.setConfigOptions(antialias=True)
+        logging.getLogger().addHandler(LogHandler())
 
         # ■■■■■ guide frame ■■■■■
 
@@ -991,11 +980,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         strategist.bring_to_life()
         manager.bring_to_life()
 
-        # ■■■■■ prepare logging ■■■■■
+        # ■■■■■ change logging settings ■■■■■
 
-        log_handler = LogHandler(manager.me.add_log_output)
-        logging.getLogger().addHandler(log_handler)
-        logging.getLogger().removeHandler(boot_log_handler)
+        self.should_overlap_error = False
         logger = logging.getLogger("solsol")
         logger.setLevel("DEBUG")
         logger.info("Started up")

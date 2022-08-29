@@ -1,13 +1,15 @@
 import logging
 import time
 
+from module import core
 from module import thread_toss
+from module.worker import manager
+from module.shelf.full_log_view import FullLogView
 
 
 class LogHandler(logging.Handler):
-    def __init__(self, after_function):
+    def __init__(self):
         super().__init__()
-        self.after_function = after_function
         log_format = "%(asctime)s.%(msecs)03d %(levelname)s"
         date_format = "%Y-%m-%d %H:%M:%S"
         log_formatter = logging.Formatter(log_format, datefmt=date_format)
@@ -28,4 +30,20 @@ class LogHandler(logging.Handler):
         lines[0] = lines[0][:80]
         text = "\n".join(lines)
 
-        thread_toss.apply_async(lambda: self.after_function(text))
+        if core.window.should_overlap_error:
+
+            def job(text=text):
+                formation = [
+                    "There was an error",
+                    FullLogView,
+                    False,
+                    [text],
+                ]
+                core.window.overlap(formation)
+
+        else:
+
+            def job(text=text):
+                manager.me.add_log_output(text)
+
+        thread_toss.apply_async(job)
