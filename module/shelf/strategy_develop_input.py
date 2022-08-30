@@ -95,13 +95,13 @@ class StrategyDevelopInput(QtWidgets.QWidget):
             core.window.undertake(job, False)
 
             question = [
-                "Sample strategy applied",
+                "Sample scripts applied",
                 "It is not yet saved. Use it as you want.",
                 ["Okay"],
             ]
             core.window.ask(question)
 
-        # sample strategy button
+        # sample script button
         fill_button = QtWidgets.QPushButton("Fill with sample", card)
         outsource.do(fill_button.clicked, job)
         fill_button.setSizePolicy(
