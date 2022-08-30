@@ -3,7 +3,6 @@ import copy
 import json
 
 _app_settings = {
-    "license_key": None,
     "datapath": None,
 }
 _data_settings = {

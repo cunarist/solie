@@ -41,7 +41,6 @@ from module.widget.horizontal_divider import HorizontalDivider
 from module.widget.overlap_popup import OverlapPopup
 from module.shelf.token_selection import TokenSelection
 from module.shelf.coin_selection import CoinSelection
-from module.shelf.license_input import LicenseInput
 from module.shelf.datapath_input import DatapathInput
 
 
@@ -178,17 +177,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             time.sleep(1)
 
         # ■■■■■ check app settings ■■■■■
-
-        if user_settings.get_app_settings()["license_key"] is None:
-            formation = [
-                "Enter Solsol license key",
-                LicenseInput,
-                False,
-                None,
-            ]
-            is_formed = self.overlap(formation)
-            if not is_formed:
-                return
 
         if user_settings.get_app_settings()["datapath"] is None:
             formation = [
@@ -976,9 +964,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.initialize_functions.append(
             lambda: manager.me.check_binance_limits(),
         )
-        self.initialize_functions.append(
-            lambda: manager.me.occupy_license_key(),
-        )
 
         # ■■■■■ finalize functions ■■■■■
 
@@ -1161,10 +1146,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             outsource.do(new_action.triggered, job)
             text = "Match system time with binance server"
             job = manager.me.match_system_time
-            new_action = action_menu.addAction(text)
-            outsource.do(new_action.triggered, job)
-            text = "Show Solsol license key"
-            job = manager.me.show_license_key
             new_action = action_menu.addAction(text)
             outsource.do(new_action.triggered, job)
 

@@ -160,3 +160,16 @@ def do_first():
             json.dump(app_settings, file, indent=4)
     except Exception:
         pass
+
+    # 6.0: remove solsol license key
+
+    try:
+        filepath = "./note/app_settings.json"
+        with open(filepath, "r", encoding="utf8") as file:
+            app_settings = json.load(file)
+        if "license_key" in app_settings.keys():
+            app_settings.pop("license_key")
+        with open(filepath, "w", encoding="utf8") as file:
+            json.dump(app_settings, file, indent=4)
+    except Exception:
+        pass

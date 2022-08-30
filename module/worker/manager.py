@@ -7,14 +7,12 @@ import logging
 import webbrowser
 
 import timesetter
-import getmac
 
 from module import core
 from module import process_toss
 from module import thread_toss
 from module.worker import collector
 from module.instrument.api_requester import ApiRequester
-from module.instrument.api_request_error import ApiRequestError
 from module.recipe import simply_format
 from module.recipe import check_internet
 from module.recipe import user_settings
@@ -84,12 +82,6 @@ class Manager:
             executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
-            self.check_license_key,
-            trigger="cron",
-            minute="*/10",
-            executor="thread_pool_executor",
-        )
-        core.window.scheduler.add_job(
             self.prepare_update,
             trigger="cron",
             minute="*/10",
@@ -97,12 +89,6 @@ class Manager:
         )
         core.window.scheduler.add_job(
             self.check_binance_limits,
-            trigger="cron",
-            hour="*",
-            executor="thread_pool_executor",
-        )
-        core.window.scheduler.add_job(
-            self.occupy_license_key,
             trigger="cron",
             hour="*",
             executor="thread_pool_executor",
@@ -375,71 +361,6 @@ class Manager:
 
         core.window.should_confirm_closing = False
         core.window.undertake(core.window.close, False)
-
-    def show_license_key(self, *args, **kwargs):
-        license_key = user_settings.get_app_settings()["license_key"]
-
-        question = [
-            "Solsol license key",
-            license_key,
-            ["Okay"],
-        ]
-        core.window.ask(question)
-
-    def occupy_license_key(self, *args, **kwargs):
-        license_key = user_settings.get_app_settings()["license_key"]
-        payload = {
-            "licenseKey": license_key,
-            "macAddress": getmac.get_mac_address(),
-        }
-        self.api_requester.cunarist("PUT", "/api/solsol/key-mac-pair", payload)
-
-    def check_license_key(self, *args, **kwargs):
-        is_occupying_key = True
-        is_key_valid = True
-
-        license_key = user_settings.get_app_settings()["license_key"]
-        try:
-            payload = {
-                "licenseKey": license_key,
-            }
-            response = self.api_requester.cunarist(
-                "GET", "/api/solsol/key-mac-pair", payload
-            )
-            if response["macAddress"] != getmac.get_mac_address():
-                is_occupying_key = False
-        except ApiRequestError:
-            is_key_valid = False
-
-        if is_key_valid and is_occupying_key:
-            return
-
-        wait_time = 300
-        exit_time = datetime.now(timezone.utc) + timedelta(seconds=wait_time)
-        exit_time = exit_time.replace(microsecond=0)
-
-        if not is_key_valid:
-            question = [
-                "License key not valid",
-                f"Solsol will shut down at {exit_time}",
-                ["Okay"],
-            ]
-        elif not is_occupying_key:
-            question = [
-                "License key is being used by another computer",
-                f"Solsol will shut down at {exit_time}",
-                ["Okay"],
-            ]
-
-        user_settings.apply_app_settings({"license_key": None})
-
-        def job():
-            time.sleep(wait_time)
-            core.window.should_confirm_closing = False
-            core.window.undertake(core.window.close, False)
-
-        thread_toss.apply_async(job)
-        core.window.ask(question)
 
     def prepare_update(self, *args, **kwargs):
         find_goodies.prepare()
