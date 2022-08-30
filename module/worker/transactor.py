@@ -74,15 +74,14 @@ class Transactor:
             core.window.undertake(
                 lambda s=state: core.window.checkBox.setChecked(s), False
             )
-            strategy_code = read_data["strategy_code"]
-            for index, strategy_tuple in enumerate(core.window.strategy_tuples):
-                if strategy_code == strategy_tuple[0]:
-                    core.window.undertake(
-                        lambda i=index: core.window.comboBox_2.setCurrentIndex(i), False
-                    )
+            strategy_index = read_data["strategy_index"]
+            core.window.undertake(
+                lambda i=strategy_index: core.window.comboBox_2.setCurrentIndex(i),
+                False,
+            )
         except FileNotFoundError:
             self.automation_settings = {
-                "strategy_code": "SLSLDS",
+                "strategy_index": 0,
                 "should_transact": False,
             }
 
@@ -156,27 +155,6 @@ class Transactor:
                 ],
                 index=pd.DatetimeIndex([], tz="UTC"),
             )
-
-        # ■■■■■ default executions ■■■■■
-
-        core.window.initialize_functions.append(
-            lambda: self.watch_binance(),
-        )
-        core.window.initialize_functions.append(
-            lambda: self.update_user_data_stream(),
-        )
-        core.window.initialize_functions.append(
-            lambda: self.display_lines(),
-        )
-        core.window.initialize_functions.append(
-            lambda: self.display_day_range(),
-        )
-        core.window.finalize_functions.append(
-            lambda: self.save_unrealized_changes(),
-        )
-        core.window.finalize_functions.append(
-            lambda: self.save_scribbles(),
-        )
 
         # ■■■■■ repetitive schedules ■■■■■
 
@@ -576,11 +554,10 @@ class Transactor:
     def update_automation_settings(self, *args, **kwargs):
         # ■■■■■ get information about strategy ■■■■■
 
-        index = core.window.undertake(
+        strategy_index = core.window.undertake(
             lambda: core.window.comboBox_2.currentIndex(), True
         )
-        strategy_code = core.window.strategy_tuples[index][0]
-        self.automation_settings["strategy_code"] = strategy_code
+        self.automation_settings["strategy_index"] = strategy_index
 
         self.display_lines()
 
@@ -591,18 +568,6 @@ class Transactor:
         )
 
         if is_checked:
-            if strategy_code == "MKRNDM":
-                question = [
-                    "Random strategy selected",
-                    "If you turn on auto transaction with the random strategy on, you"
-                    " will repeat meaningless trades for 1/10000 of your total assets"
-                    " in all markets. This strategy was designed to test if auto"
-                    " transaction code works well. Be careful as you will pay a lot of"
-                    " fees if you leave it on for a long time.",
-                    ["Okay"],
-                ]
-                core.window.ask(question)
-
             current_moment = datetime.now(timezone.utc).replace(microsecond=0)
             current_moment = current_moment - timedelta(
                 seconds=current_moment.second % 10
@@ -752,6 +717,13 @@ class Transactor:
 
         core.window.undertake(job, False)
 
+    def display_strategy_index(self, *args, **kwargs):
+        strategy_index = self.automation_settings["strategy_index"]
+        core.window.undertake(
+            lambda i=strategy_index: core.window.comboBox_2.setCurrentIndex(i),
+            False,
+        )
+
     def display_lines(self, *args, **kwargs):
         # ■■■■■ start the task ■■■■■
 
@@ -803,7 +775,8 @@ class Transactor:
         # ■■■■■ check things ■■■■■
 
         symbol = self.viewing_symbol
-        strategy_code = self.automation_settings["strategy_code"]
+        strategy_index = self.automation_settings["strategy_index"]
+        strategy = strategist.me.strategies[strategy_index]
 
         # ■■■■■ get light data ■■■■■
 
@@ -990,24 +963,7 @@ class Transactor:
                 before_asset = None
             asset_record = asset_record.copy()
 
-        # ■■■■■ make indicators ■■■■■
-
-        indicators_script = strategist.me.indicators_script
-        compiled_indicators_script = compile(indicators_script, "<string>", "exec")
-        target_symbols = user_settings.get_data_settings()["target_symbols"]
-
-        indicators = process_toss.apply(
-            make_indicators.do,
-            target_symbols=target_symbols,
-            candle_data=candle_data,
-            strategy_code=strategy_code,
-            compiled_custom_script=compiled_indicators_script,
-        )
-
-        # ■■■■■ range cut ■■■■■
-
         candle_data = candle_data[slice_from:]
-        indicators = indicators[slice_from:]
 
         # ■■■■■ maniuplate heavy data ■■■■■
 
@@ -1034,34 +990,6 @@ class Transactor:
             asset_record = asset_record.sort_index()
 
         # ■■■■■ draw heavy lines ■■■■■
-
-        # price indicators
-        df = indicators[symbol]["Price"]
-        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-        data_x += 5
-        line_list = core.window.transaction_lines["price_indicators"]
-        for turn, widget in enumerate(line_list):
-            if turn < len(df.columns):
-                column_name = df.columns[turn]
-                sr = df[column_name]
-                data_y = sr.to_numpy(dtype=np.float32)
-                inside_strings = re.findall(r"\(([^)]+)", column_name)
-                if len(inside_strings) == 0:
-                    color = "#AAAAAA"
-                else:
-                    color = inside_strings[0]
-
-                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
-                    widget.setPen(color)
-                    widget.setData(data_x, data_y)
-
-                if stop_flag.find(task_name, task_id):
-                    return
-                core.window.undertake(job, False)
-            else:
-                if stop_flag.find(task_name, task_id):
-                    return
-                core.window.undertake(lambda w=widget: w.clear(), False)
 
         # price movement
         index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
@@ -1212,34 +1140,6 @@ class Transactor:
             return
         core.window.undertake(job, False)
 
-        # trade volume indicators
-        df = indicators[symbol]["Volume"]
-        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-        data_x += 5
-        line_list = core.window.transaction_lines["volume_indicators"]
-        for turn, widget in enumerate(line_list):
-            if turn < len(df.columns):
-                column_name = df.columns[turn]
-                sr = df[column_name]
-                data_y = sr.to_numpy(dtype=np.float32)
-                inside_strings = re.findall(r"\(([^)]+)", column_name)
-                if len(inside_strings) == 0:
-                    color = "#AAAAAA"
-                else:
-                    color = inside_strings[0]
-
-                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
-                    widget.setPen(color)
-                    widget.setData(data_x, data_y)
-
-                if stop_flag.find(task_name, task_id):
-                    return
-                core.window.undertake(job, False)
-            else:
-                if stop_flag.find(task_name, task_id):
-                    return
-                core.window.undertake(lambda w=widget: w.clear(), False)
-
         # trade volume
         sr = candle_data[(symbol, "Volume")]
         sr = sr.fillna(value=0)
@@ -1253,34 +1153,6 @@ class Transactor:
         if stop_flag.find(task_name, task_id):
             return
         core.window.undertake(job, False)
-
-        # abstract indicators
-        df = indicators[symbol]["Abstract"]
-        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-        data_x += 5
-        line_list = core.window.transaction_lines["abstract_indicators"]
-        for turn, widget in enumerate(line_list):
-            if turn < len(df.columns):
-                column_name = df.columns[turn]
-                sr = df[column_name]
-                data_y = sr.to_numpy(dtype=np.float32)
-                inside_strings = re.findall(r"\(([^)]+)", column_name)
-                if len(inside_strings) == 0:
-                    color = "#AAAAAA"
-                else:
-                    color = inside_strings[0]
-
-                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
-                    widget.setPen(color)
-                    widget.setData(data_x, data_y)
-
-                if stop_flag.find(task_name, task_id):
-                    return
-                core.window.undertake(job, False)
-            else:
-                if stop_flag.find(task_name, task_id):
-                    return
-                core.window.undertake(lambda w=widget: w.clear(), False)
 
         # asset
         data_x = asset_record["Result Asset"].index.to_numpy(dtype=np.int64) / 10**9
@@ -1344,6 +1216,112 @@ class Transactor:
 
         duration = (datetime.now(timezone.utc) - task_start_time).total_seconds()
         remember_task_durations.add(task_name, duration)
+
+        # ■■■■■ make indicators ■■■■■
+
+        indicators_script = strategy["indicators_script"]
+        compiled_indicators_script = compile(indicators_script, "<string>", "exec")
+        target_symbols = user_settings.get_data_settings()["target_symbols"]
+
+        indicators = process_toss.apply(
+            make_indicators.do,
+            target_symbols=target_symbols,
+            candle_data=candle_data,
+            compiled_indicators_script=compiled_indicators_script,
+        )
+
+        indicators = indicators[slice_from:]
+
+        # ■■■■■ delete indicator data if strategy wants ■■■■■
+
+        if strategy["hide_indicators"]:
+            indicators = indicators.iloc[0:0]
+
+        # ■■■■■ draw strategy lines ■■■■■
+
+        # price indicators
+        df = indicators[symbol]["Price"]
+        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
+        data_x += 5
+        line_list = core.window.transaction_lines["price_indicators"]
+        for turn, widget in enumerate(line_list):
+            if turn < len(df.columns):
+                column_name = df.columns[turn]
+                sr = df[column_name]
+                data_y = sr.to_numpy(dtype=np.float32)
+                inside_strings = re.findall(r"\(([^)]+)", column_name)
+                if len(inside_strings) == 0:
+                    color = "#AAAAAA"
+                else:
+                    color = inside_strings[0]
+
+                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
+                    widget.setPen(color)
+                    widget.setData(data_x, data_y)
+
+                if stop_flag.find(task_name, task_id):
+                    return
+                core.window.undertake(job, False)
+            else:
+                if stop_flag.find(task_name, task_id):
+                    return
+                core.window.undertake(lambda w=widget: w.clear(), False)
+
+        # trade volume indicators
+        df = indicators[symbol]["Volume"]
+        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
+        data_x += 5
+        line_list = core.window.transaction_lines["volume_indicators"]
+        for turn, widget in enumerate(line_list):
+            if turn < len(df.columns):
+                column_name = df.columns[turn]
+                sr = df[column_name]
+                data_y = sr.to_numpy(dtype=np.float32)
+                inside_strings = re.findall(r"\(([^)]+)", column_name)
+                if len(inside_strings) == 0:
+                    color = "#AAAAAA"
+                else:
+                    color = inside_strings[0]
+
+                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
+                    widget.setPen(color)
+                    widget.setData(data_x, data_y)
+
+                if stop_flag.find(task_name, task_id):
+                    return
+                core.window.undertake(job, False)
+            else:
+                if stop_flag.find(task_name, task_id):
+                    return
+                core.window.undertake(lambda w=widget: w.clear(), False)
+
+        # abstract indicators
+        df = indicators[symbol]["Abstract"]
+        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
+        data_x += 5
+        line_list = core.window.transaction_lines["abstract_indicators"]
+        for turn, widget in enumerate(line_list):
+            if turn < len(df.columns):
+                column_name = df.columns[turn]
+                sr = df[column_name]
+                data_y = sr.to_numpy(dtype=np.float32)
+                inside_strings = re.findall(r"\(([^)]+)", column_name)
+                if len(inside_strings) == 0:
+                    color = "#AAAAAA"
+                else:
+                    color = inside_strings[0]
+
+                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
+                    widget.setPen(color)
+                    widget.setData(data_x, data_y)
+
+                if stop_flag.find(task_name, task_id):
+                    return
+                core.window.undertake(job, False)
+            else:
+                if stop_flag.find(task_name, task_id):
+                    return
+                core.window.undertake(lambda w=widget: w.clear(), False)
 
     def toggle_frequent_draw(self, *args, **kwargs):
         is_checked = args[0]
@@ -1423,10 +1401,6 @@ class Transactor:
         if not self.automation_settings["should_transact"]:
             return
 
-        # ■■■■■ get strategy details ■■■■■
-
-        strategy_code = self.automation_settings["strategy_code"]
-
         # ■■■■■ play the progress bar ■■■■■
 
         is_cycle_done = False
@@ -1501,20 +1475,22 @@ class Transactor:
 
         target_symbols = user_settings.get_data_settings()["target_symbols"]
 
-        indicators_script = strategist.me.indicators_script
+        strategy_index = self.automation_settings["strategy_index"]
+        strategy = strategist.me.strategies[strategy_index]
+
+        indicators_script = strategy["indicators_script"]
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
         indicators = process_toss.apply(
             make_indicators.do,
             target_symbols=target_symbols,
             candle_data=partial_candle_data,
-            strategy_code=strategy_code,
-            compiled_custom_script=compiled_indicators_script,
+            compiled_indicators_script=compiled_indicators_script,
         )
 
         current_candle_data = partial_candle_data.to_records()[-1]
         current_indicators = indicators.to_records()[-1]
-        decision_script = strategist.me.decision_script
+        decision_script = strategy["decision_script"]
         compiled_decision_script = compile(decision_script, "<string>", "exec")
 
         decision, scribbles = process_toss.apply(
@@ -1523,10 +1499,9 @@ class Transactor:
             current_moment=current_moment,
             current_candle_data=current_candle_data,
             current_indicators=current_indicators,
-            strategy_code=strategy_code,
             account_state=copy.deepcopy(self.account_state),
             scribbles=self.scribbles,
-            compiled_custom_script=compiled_decision_script,
+            compiled_decision_script=compiled_decision_script,
         )
         self.scribbles = scribbles
 

@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime, timezone
+import random
 
 from module.recipe import user_settings
 
@@ -55,3 +56,23 @@ def asset_record():
 
 def unrealized_changes():
     return pd.Series(index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32)
+
+
+def strategy():
+    ingredients = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    code_name = "".join(random.choice(ingredients) for _ in range(6))
+    return {
+        "code_name": code_name,
+        "readable_name": "A new blank strategy",
+        "version": "1.0",
+        "description": "A blank strategy template before being written",
+        "risk_level": 0,
+        "parallelized_simulation": True,
+        "chunk_division": 30,
+        "fee_address": "",
+        "hide_indicators": False,
+        "editable": True,
+        "removeable": True,
+        "indicators_script": "pass",
+        "decision_script": "pass",
+    }

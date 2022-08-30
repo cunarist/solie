@@ -1,11 +1,16 @@
 import os
-import json
+
+from PySide6 import QtGui, QtWidgets
 
 from module import core
-from module.worker import transactor
-from module.worker import simulator
 from module.recipe import check_internet
 from module.recipe import user_settings
+from module.recipe import encrypted_pickle
+from module.recipe import standardize
+from module.recipe import outsource
+from module.shelf.strategy_basic_input import StrategyBasicInput
+from module.shelf.strategy_develop_input import StrategyDevelopInput
+from module.shelf.strategy_info_view import StrategyInfoView
 
 
 class Strategiest:
@@ -21,49 +26,21 @@ class Strategiest:
 
         # ■■■■■ remember and display ■■■■■
 
-        # decision script
-        filepath = self.workerpath + "/decision_script.txt"
-        if os.path.isfile(filepath):
-            with open(filepath, "r", encoding="utf8") as file:
-                script = file.read()
-        else:
-            script = ""
-        self.decision_script = script
-        core.window.undertake(
-            lambda s=script: core.window.plainTextEdit_2.setPlainText(s), False
-        )
-
-        # indicators script
-        filepath = self.workerpath + "/indicators_script.txt"
-        if os.path.isfile(filepath):
-            with open(filepath, "r", encoding="utf8") as file:
-                script = file.read()
-        else:
-            script = ""
-        self.indicators_script = script
-        core.window.undertake(
-            lambda s=script: core.window.plainTextEdit_3.setPlainText(s), False
-        )
-
-        # strategy details
+        # custom strategies
         try:
-            filepath = self.workerpath + "/details.json"
-            with open(filepath, "r", encoding="utf8") as file:
-                details = json.load(file)
-                self.details = details
+            filepath = self.workerpath + "/strategies.slslsc"
+            self.strategies = encrypted_pickle.read(filepath)
         except FileNotFoundError:
-            details = [True, 30]
-            self.details = details
-        core.window.undertake(
-            lambda d=details: core.window.checkBox_7.setChecked(d[0]),
-            False,
-        )
-        core.window.undertake(
-            lambda d=details: core.window.spinBox_3.setValue(d[1]),
-            False,
-        )
+            filepath = "./static/strategies.slslsc"
+            self.strategies = encrypted_pickle.read(filepath)
+        self.strategy_cards = []
 
-        # ■■■■■ default executions ■■■■■
+        self.red_pixmap = QtGui.QPixmap()
+        self.red_pixmap.load("./static/icon/traffic_light_red.png")
+        self.yellow_pixmap = QtGui.QPixmap()
+        self.yellow_pixmap.load("./static/icon/traffic_light_yellow.png")
+        self.green_pixmap = QtGui.QPixmap()
+        self.green_pixmap.load("./static/icon/traffic_light_green.png")
 
         # ■■■■■ repetitive schedules ■■■■■
 
@@ -79,101 +56,191 @@ class Strategiest:
         disconnected_functions = []
         check_internet.add_disconnected_functions(disconnected_functions)
 
-    def save_scripts(self, *args, **kwargs):
-        # decision script
-        filepath = self.workerpath + "/decision_script.txt"
-        script = core.window.undertake(
-            lambda: core.window.plainTextEdit_2.toPlainText(), True
-        )
-        with open(filepath, "w", encoding="utf8") as file:
-            file.write(script)
-        self.decision_script = script
+    def save_strategies(self, *args, **kwargs):
+        filepath = self.workerpath + "/strategies.slslsc"
+        encrypted_pickle.save(self.strategies, filepath)
 
-        # indicators script
-        filepath = self.workerpath + "/indicators_script.txt"
-        script = core.window.undertake(
-            lambda: core.window.plainTextEdit_3.toPlainText(), True
-        )
-        with open(filepath, "w", encoding="utf8") as file:
-            file.write(script)
-        self.indicators_script = script
+    def display_strategies(self, *args, **kwargs):
+        def job():
+            core.window.comboBox_2.clear()
+            core.window.comboBox.clear()
+            for strategy_card in self.strategy_cards:
+                strategy_card.setParent(None)
+            self.strategy_cards = []
 
-        # strategy details
-        filepath = self.workerpath + "/details.json"
+        core.window.undertake(job, False)
+
+        for strategy in self.strategies:
+
+            def job(strategy=strategy):
+                if strategy["risk_level"] == 0:
+                    icon_pixmap = self.red_pixmap
+                elif strategy["risk_level"] == 1:
+                    icon_pixmap = self.yellow_pixmap
+                elif strategy["risk_level"] == 2:
+                    icon_pixmap = self.green_pixmap
+                text = f"{strategy['code_name']} {strategy['version']}"
+                text += f" - {strategy['readable_name']}"
+                traffic_light_icon = QtGui.QIcon()
+                traffic_light_icon.addPixmap(icon_pixmap)
+
+                core.window.comboBox_2.addItem(traffic_light_icon, text)
+                core.window.comboBox.addItem(traffic_light_icon, text)
+
+                strategy_card = QtWidgets.QGroupBox()
+                core.window.verticalLayout_16.addWidget(strategy_card)
+                self.strategy_cards.append(strategy_card)
+                card_layout = QtWidgets.QHBoxLayout(strategy_card)
+
+                icon_label = QtWidgets.QLabel("")
+                card_layout.addWidget(icon_label)
+                icon_label.setPixmap(icon_pixmap)
+                icon_label.setScaledContents(True)
+                icon_label.setFixedSize(16, 16)
+
+                text_label = QtWidgets.QLabel(text)
+                card_layout.addWidget(text_label)
+
+                spacer = QtWidgets.QSpacerItem(
+                    0,
+                    0,
+                    QtWidgets.QSizePolicy.Policy.Expanding,
+                    QtWidgets.QSizePolicy.Policy.Minimum,
+                )
+                card_layout.addItem(spacer)
+
+                if strategy["editable"]:
+
+                    def job(strategy=strategy):
+                        before_selections = self.remember_strategy_selections()
+                        formation = [
+                            "Develop your strategy",
+                            StrategyDevelopInput,
+                            True,
+                            strategy,
+                        ]
+                        core.window.overlap(formation)
+                        self.display_strategies()
+                        self.save_strategies()
+                        self.restore_strategy_selections(before_selections)
+
+                    edit_button = QtWidgets.QPushButton("Develop")
+                    card_layout.addWidget(edit_button)
+                    outsource.do(edit_button.clicked, job)
+
+                    def job(strategy=strategy):
+                        before_selections = self.remember_strategy_selections()
+                        formation = [
+                            "Edit your strategy's basic information",
+                            StrategyBasicInput,
+                            True,
+                            strategy,
+                        ]
+                        core.window.overlap(formation)
+                        self.display_strategies()
+                        self.save_strategies()
+                        self.restore_strategy_selections(before_selections)
+
+                    edit_button = QtWidgets.QPushButton("Edit basic info")
+                    card_layout.addWidget(edit_button)
+                    outsource.do(edit_button.clicked, job)
+
+                else:
+
+                    def job(strategy=strategy):
+                        formation = [
+                            "This is the strategy's basic information",
+                            StrategyInfoView,
+                            True,
+                            strategy,
+                        ]
+                        core.window.overlap(formation)
+
+                    edit_button = QtWidgets.QPushButton("Show basic info")
+                    card_layout.addWidget(edit_button)
+                    outsource.do(edit_button.clicked, job)
+
+                if strategy["removeable"]:
+
+                    def job(strategy=strategy):
+                        question = [
+                            "Remove this strategy?",
+                            "If you remove this strategy, it is impossible to recover"
+                            " unless uploaded on the store.",
+                            ["Remove"],
+                        ]
+                        answer = core.window.ask(question)
+                        if answer == 0:
+                            return
+                        before_selections = self.remember_strategy_selections()
+                        self.strategies.remove(strategy)
+                        self.display_strategies()
+                        self.save_strategies()
+                        self.restore_strategy_selections(before_selections)
+
+                    edit_button = QtWidgets.QPushButton("Remove")
+                    card_layout.addWidget(edit_button)
+                    outsource.do(edit_button.clicked, job)
+
+                def job(strategy=strategy):
+                    before_selections = self.remember_strategy_selections()
+                    original_index = self.strategies.index(strategy)
+                    after_index = original_index + 1
+                    self.strategies.pop(original_index)
+                    self.strategies.insert(after_index, strategy)
+                    self.display_strategies()
+                    self.save_strategies()
+                    self.restore_strategy_selections(before_selections)
+
+                edit_button = QtWidgets.QPushButton("▼")
+                card_layout.addWidget(edit_button)
+                outsource.do(edit_button.clicked, job)
+
+                def job(strategy=strategy):
+                    before_selections = self.remember_strategy_selections()
+                    original_index = self.strategies.index(strategy)
+                    after_index = original_index - 1
+                    self.strategies.pop(original_index)
+                    self.strategies.insert(after_index, strategy)
+                    self.display_strategies()
+                    self.save_strategies()
+                    self.restore_strategy_selections(before_selections)
+
+                edit_button = QtWidgets.QPushButton("▲")
+                card_layout.addWidget(edit_button)
+                outsource.do(edit_button.clicked, job)
+
+            core.window.undertake(job, False)
+
+    def add_blank_strategy(self, *args, **kwargs):
+        new_strategy = standardize.strategy()
+        self.strategies.append(new_strategy)
+        self.display_strategies()
+
+    def remember_strategy_selections(self, *args, **kwargs):
+        def job():
+            before_selections = {}
+            before_index = core.window.comboBox_2.currentIndex()
+            before_selections["transactor"] = self.strategies[before_index]
+            before_index = core.window.comboBox.currentIndex()
+            before_selections["simulator"] = self.strategies[before_index]
+            return before_selections
+
+        before_selections = core.window.undertake(job, True)
+        return before_selections
+
+    def restore_strategy_selections(self, *args, **kwargs):
+        before_selections = args[0]
 
         def job():
-            return (
-                core.window.checkBox_7.isChecked(),
-                core.window.spinBox_3.value(),
-            )
-
-        retuned = core.window.undertake(job, True)
-
-        details = [retuned[0], retuned[1]]
-        with open(filepath, "w", encoding="utf8") as file:
-            json.dump(details, file, indent=4)
-        self.details = details
-
-        # display to graphs
-        if transactor.me.automation_settings["strategy_code"] == 0:
-            transactor.me.display_lines()
-        if simulator.me.calculation_settings["strategy_code"] == 0:
-            simulator.me.display_lines()
-
-    def revert_scripts(self, *args, **kwargs):
-        # decision script
-        def job(script=self.decision_script):
-            core.window.plainTextEdit_2.setPlainText(script)
+            if before_selections["transactor"] in self.strategies:
+                new_index = self.strategies.index(before_selections["transactor"])
+                core.window.comboBox_2.setCurrentIndex(new_index)
+            if before_selections["simulator"] in self.strategies:
+                new_index = self.strategies.index(before_selections["simulator"])
+                core.window.comboBox.setCurrentIndex(new_index)
 
         core.window.undertake(job, False)
-
-        # indicators script
-        def job(script=self.indicators_script):
-            core.window.plainTextEdit_3.setPlainText(script)
-
-        core.window.undertake(job, False)
-
-        # strategy details
-        def job(details=self.details):
-            core.window.checkBox_7.setChecked(details[0])
-            core.window.spinBox_3.setValue(details[1])
-
-        core.window.undertake(job, False)
-
-    def fill_with_sample(self, *args, **kwargs):
-        # decision script
-        filepath = "./static/sample_decision_script.txt"
-        with open(filepath, "r", encoding="utf8") as file:
-            script = file.read()
-
-        def job(script=script):
-            core.window.plainTextEdit_2.setPlainText(script)
-
-        core.window.undertake(job, False)
-
-        # indicators script
-        filepath = "./static/sample_indicators_script.txt"
-        with open(filepath, "r", encoding="utf8") as file:
-            script = file.read()
-
-        def job(script=script):
-            core.window.plainTextEdit_3.setPlainText(script)
-
-        core.window.undertake(job, False)
-
-        # strategy details
-        def job():
-            core.window.checkBox_7.setChecked(True)
-            core.window.spinBox_3.setValue(30)
-
-        core.window.undertake(job, False)
-
-        question = [
-            "Sample strategy applied",
-            "It is not yet saved. Use it as you want.",
-            ["Okay"],
-        ]
-        core.window.ask(question)
 
 
 me = None

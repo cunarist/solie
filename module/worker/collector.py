@@ -94,15 +94,6 @@ class Collector:
         dtpye = [("index", "datetime64[ns]")] + dtype
         self.aggregate_trades = np.recarray(shape=(0,), dtype=dtpye)
 
-        # ■■■■■ default executions ■■■■■
-
-        core.window.initialize_functions.append(
-            lambda: self.get_exchange_information(),
-        )
-        core.window.finalize_functions.append(
-            lambda: self.save_candle_data(),
-        )
-
         # ■■■■■ repetitive schedules ■■■■■
 
         core.window.scheduler.add_job(

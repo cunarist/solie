@@ -20,6 +20,7 @@ dependencies:
       - getmac==0.8.3
       - yapf==0.32.0
       - tendo==0.2.15
+      - cryptography=37.0.4
       # only for developers
       - black
       - pyarmor

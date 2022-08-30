@@ -43,7 +43,7 @@ class Simulator:
 
         self.calculation_settings = {
             "year": datetime.now(timezone.utc).year,
-            "strategy_code": "SLSLDS",
+            "strategy_index": 0,
         }
         self.presentation_settings = {
             "maker_fee": 0.02,
@@ -63,15 +63,6 @@ class Simulator:
 
         text = "Nothing drawn"
         core.window.undertake(lambda t=text: core.window.label_19.setText(t), False)
-
-        # ■■■■■ default executions ■■■■■
-
-        core.window.initialize_functions.append(
-            lambda: self.display_lines(),
-        )
-        core.window.initialize_functions.append(
-            lambda: self.display_year_range(),
-        )
 
         # ■■■■■ repetitive schedules ■■■■■
 
@@ -120,8 +111,7 @@ class Simulator:
             self.display_year_range()
 
         index = core.window.undertake(lambda: core.window.comboBox.currentIndex(), True)
-        strategy_code = core.window.strategy_tuples[index][0]
-        self.calculation_settings["strategy_code"] = strategy_code
+        self.calculation_settings["strategy_index"] = index
 
         self.display_lines()
 
@@ -187,7 +177,8 @@ class Simulator:
         # ■■■■■ check things ■■■■■
 
         symbol = self.viewing_symbol
-        strategy_code = self.calculation_settings["strategy_code"]
+        strategy_index = self.calculation_settings["strategy_index"]
+        strategy = strategist.me.strategies[strategy_index]
 
         # ■■■■■ get light data ■■■■■
 
@@ -377,24 +368,7 @@ class Simulator:
                 before_asset = None
             asset_record = asset_record.copy()
 
-        # ■■■■■ make indicators ■■■■■
-
-        indicators_script = strategist.me.indicators_script
-        compiled_indicators_script = compile(indicators_script, "<string>", "exec")
-        target_symbols = user_settings.get_data_settings()["target_symbols"]
-
-        indicators = process_toss.apply(
-            make_indicators.do,
-            target_symbols=target_symbols,
-            candle_data=candle_data,
-            strategy_code=strategy_code,
-            compiled_custom_script=compiled_indicators_script,
-        )
-
-        # ■■■■■ range cut ■■■■■
-
         candle_data = candle_data[slice_from:]
-        indicators = indicators[slice_from:]
 
         # ■■■■■ maniuplate heavy data ■■■■■
 
@@ -421,34 +395,6 @@ class Simulator:
             asset_record = asset_record.sort_index()
 
         # ■■■■■ draw heavy lines ■■■■■
-
-        # price indicators
-        df = indicators[symbol]["Price"]
-        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-        data_x += 5
-        line_list = core.window.simulation_lines["price_indicators"]
-        for turn, widget in enumerate(line_list):
-            if turn < len(df.columns):
-                column_name = df.columns[turn]
-                sr = df[column_name]
-                data_y = sr.to_numpy(dtype=np.float32)
-                inside_strings = re.findall(r"\(([^)]+)", column_name)
-                if len(inside_strings) == 0:
-                    color = "#AAAAAA"
-                else:
-                    color = inside_strings[0]
-
-                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
-                    widget.setPen(color)
-                    widget.setData(data_x, data_y)
-
-                if stop_flag.find(task_name, task_id):
-                    return
-                core.window.undertake(job, False)
-            else:
-                if stop_flag.find(task_name, task_id):
-                    return
-                core.window.undertake(lambda w=widget: w.clear(), False)
 
         # price movement
         index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
@@ -599,34 +545,6 @@ class Simulator:
             return
         core.window.undertake(job, False)
 
-        # trade volume indicators
-        df = indicators[symbol]["Volume"]
-        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-        data_x += 5
-        line_list = core.window.simulation_lines["volume_indicators"]
-        for turn, widget in enumerate(line_list):
-            if turn < len(df.columns):
-                column_name = df.columns[turn]
-                sr = df[column_name]
-                data_y = sr.to_numpy(dtype=np.float32)
-                inside_strings = re.findall(r"\(([^)]+)", column_name)
-                if len(inside_strings) == 0:
-                    color = "#AAAAAA"
-                else:
-                    color = inside_strings[0]
-
-                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
-                    widget.setPen(color)
-                    widget.setData(data_x, data_y)
-
-                if stop_flag.find(task_name, task_id):
-                    return
-                core.window.undertake(job, False)
-            else:
-                if stop_flag.find(task_name, task_id):
-                    return
-                core.window.undertake(lambda w=widget: w.clear(), False)
-
         # trade volume
         sr = candle_data[(symbol, "Volume")]
         sr = sr.fillna(value=0)
@@ -640,34 +558,6 @@ class Simulator:
         if stop_flag.find(task_name, task_id):
             return
         core.window.undertake(job, False)
-
-        # abstract indicators
-        df = indicators[symbol]["Abstract"]
-        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-        data_x += 5
-        line_list = core.window.simulation_lines["abstract_indicators"]
-        for turn, widget in enumerate(line_list):
-            if turn < len(df.columns):
-                column_name = df.columns[turn]
-                sr = df[column_name]
-                data_y = sr.to_numpy(dtype=np.float32)
-                inside_strings = re.findall(r"\(([^)]+)", column_name)
-                if len(inside_strings) == 0:
-                    color = "#AAAAAA"
-                else:
-                    color = inside_strings[0]
-
-                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
-                    widget.setPen(color)
-                    widget.setData(data_x, data_y)
-
-                if stop_flag.find(task_name, task_id):
-                    return
-                core.window.undertake(job, False)
-            else:
-                if stop_flag.find(task_name, task_id):
-                    return
-                core.window.undertake(lambda w=widget: w.clear(), False)
 
         # asset
         data_x = asset_record["Result Asset"].index.to_numpy(dtype=np.int64) / 10**9
@@ -730,6 +620,112 @@ class Simulator:
         # ■■■■■ record task duration ■■■■■
 
         pass
+
+        # ■■■■■ make indicators ■■■■■
+
+        indicators_script = strategy["indicators_script"]
+        compiled_indicators_script = compile(indicators_script, "<string>", "exec")
+        target_symbols = user_settings.get_data_settings()["target_symbols"]
+
+        indicators = process_toss.apply(
+            make_indicators.do,
+            target_symbols=target_symbols,
+            candle_data=candle_data,
+            compiled_indicators_script=compiled_indicators_script,
+        )
+
+        indicators = indicators[slice_from:]
+
+        # ■■■■■ delete indicator data if strategy wants ■■■■■
+
+        if strategy["hide_indicators"]:
+            indicators = indicators.iloc[0:0]
+
+        # ■■■■■ draw strategy lines ■■■■■
+
+        # price indicators
+        df = indicators[symbol]["Price"]
+        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
+        data_x += 5
+        line_list = core.window.simulation_lines["price_indicators"]
+        for turn, widget in enumerate(line_list):
+            if turn < len(df.columns):
+                column_name = df.columns[turn]
+                sr = df[column_name]
+                data_y = sr.to_numpy(dtype=np.float32)
+                inside_strings = re.findall(r"\(([^)]+)", column_name)
+                if len(inside_strings) == 0:
+                    color = "#AAAAAA"
+                else:
+                    color = inside_strings[0]
+
+                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
+                    widget.setPen(color)
+                    widget.setData(data_x, data_y)
+
+                if stop_flag.find(task_name, task_id):
+                    return
+                core.window.undertake(job, False)
+            else:
+                if stop_flag.find(task_name, task_id):
+                    return
+                core.window.undertake(lambda w=widget: w.clear(), False)
+
+        # trade volume indicators
+        df = indicators[symbol]["Volume"]
+        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
+        data_x += 5
+        line_list = core.window.simulation_lines["volume_indicators"]
+        for turn, widget in enumerate(line_list):
+            if turn < len(df.columns):
+                column_name = df.columns[turn]
+                sr = df[column_name]
+                data_y = sr.to_numpy(dtype=np.float32)
+                inside_strings = re.findall(r"\(([^)]+)", column_name)
+                if len(inside_strings) == 0:
+                    color = "#AAAAAA"
+                else:
+                    color = inside_strings[0]
+
+                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
+                    widget.setPen(color)
+                    widget.setData(data_x, data_y)
+
+                if stop_flag.find(task_name, task_id):
+                    return
+                core.window.undertake(job, False)
+            else:
+                if stop_flag.find(task_name, task_id):
+                    return
+                core.window.undertake(lambda w=widget: w.clear(), False)
+
+        # abstract indicators
+        df = indicators[symbol]["Abstract"]
+        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
+        data_x += 5
+        line_list = core.window.simulation_lines["abstract_indicators"]
+        for turn, widget in enumerate(line_list):
+            if turn < len(df.columns):
+                column_name = df.columns[turn]
+                sr = df[column_name]
+                data_y = sr.to_numpy(dtype=np.float32)
+                inside_strings = re.findall(r"\(([^)]+)", column_name)
+                if len(inside_strings) == 0:
+                    color = "#AAAAAA"
+                else:
+                    color = inside_strings[0]
+
+                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
+                    widget.setPen(color)
+                    widget.setData(data_x, data_y)
+
+                if stop_flag.find(task_name, task_id):
+                    return
+                core.window.undertake(job, False)
+            else:
+                if stop_flag.find(task_name, task_id):
+                    return
+                core.window.undertake(lambda w=widget: w.clear(), False)
 
     def erase(self, *args, **kwargs):
         self.raw_account_state = standardize.account_state()
@@ -940,9 +936,15 @@ class Simulator:
         # ■■■■■ default values and the strategy ■■■■■
 
         year = self.calculation_settings["year"]
-        strategy_code = self.calculation_settings["strategy_code"]
+        strategy_index = self.calculation_settings["strategy_index"]
 
-        path_start = f"{self.workerpath}/{strategy_code}_{year}"
+        strategy = strategist.me.strategies[strategy_index]
+        strategy_code_name = strategy["code_name"]
+        strategy_version = strategy["version"]
+        should_parallelize = strategy["parallelized_simulation"]
+        chunk_length = strategy["chunk_division"]
+
+        path_start = f"{self.workerpath}/{strategy_code_name}_{strategy_version}_{year}"
         asset_record_path = path_start + "_asset_record.pickle"
         unrealized_changes_path = path_start + "_unrealized_changes.pickle"
         scribbles_path = path_start + "_scribbles.pickle"
@@ -950,15 +952,6 @@ class Simulator:
         virtual_state_path = path_start + "_virtual_state.pickle"
 
         target_symbols = user_settings.get_data_settings()["target_symbols"]
-
-        if strategy_code == "CSMSTR":
-            strategy_details = strategist.me.details
-        else:
-            for strategy_tuple in core.window.strategy_tuples:
-                if strategy_tuple[0] == strategy_code:
-                    strategy_details = strategy_tuple[2]
-        should_parallalize = strategy_details[0]
-        chunk_length = strategy_details[1]
 
         prepare_step = 2
 
@@ -1057,8 +1050,8 @@ class Simulator:
         # ■■■■■ prepare per chunk data ■■■■■
 
         if should_calculate:
-            decision_script = strategist.me.decision_script
-            indicators_script = strategist.me.indicators_script
+            decision_script = strategy["decision_script"]
+            indicators_script = strategy["indicators_script"]
             compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
             # a little more data for generation
@@ -1067,8 +1060,7 @@ class Simulator:
                 make_indicators.do,
                 target_symbols=target_symbols,
                 candle_data=year_candle_data[provide_from:calculate_until],
-                strategy_code=strategy_code,
-                compiled_custom_script=compiled_indicators_script,
+                compiled_indicators_script=compiled_indicators_script,
             )
 
             # range cut
@@ -1076,7 +1068,7 @@ class Simulator:
             needed_index = needed_candle_data.index
             needed_indicators = year_indicators.reindex(needed_index)
 
-            if should_parallalize:
+            if should_parallelize:
                 division = timedelta(days=chunk_length)
                 chunk_candle_data_list = [
                     chunk_candle_data
@@ -1110,7 +1102,6 @@ class Simulator:
                     dataset = {
                         "progress_list": progress_list,
                         "target_progress": turn,
-                        "strategy_code": strategy_code,
                         "target_symbols": target_symbols,
                         "calculation_index": chunk_index,
                         "chunk_candle_data": chunk_candle_data,
@@ -1131,7 +1122,6 @@ class Simulator:
                 dataset = {
                     "progress_list": progress_list,
                     "target_progress": 0,
-                    "strategy_code": strategy_code,
                     "target_symbols": target_symbols,
                     "calculation_index": needed_index,
                     "chunk_candle_data": needed_candle_data,
@@ -1204,7 +1194,11 @@ class Simulator:
         self.raw_unrealized_changes = unrealized_changes
         self.raw_scribbles = scribbles
         self.raw_account_state = account_state
-        self.about_viewing = {"year": year, "strategy_code": strategy_code}
+        self.about_viewing = {
+            "year": year,
+            "strategy_code_name": strategy_code_name,
+            "strategy_version": strategy_version,
+        }
         self.present()
 
         # ■■■■■ save if properly calculated ■■■■■
@@ -1233,22 +1227,17 @@ class Simulator:
         # ■■■■■ get strategy details ■■■■
 
         if self.about_viewing is None:
-            should_parallalize = False
+            should_parallelize = False
             chunk_length = 0
         else:
-            strategy_code = self.about_viewing["strategy_code"]
-            if strategy_code == "CSMSTR":
-                strategy_details = strategist.me.details
-            else:
-                for strategy_tuple in core.window.strategy_tuples:
-                    if strategy_tuple[0] == strategy_code:
-                        strategy_details = strategy_tuple[2]
-            should_parallalize = strategy_details[0]
-            chunk_length = strategy_details[1]
+            strategy_index = self.calculation_settings["strategy_index"]
+            strategy = strategist.me.strategies[strategy_index]
+            should_parallelize = strategy["parallelized_simulation"]
+            chunk_length = strategy["chunk_division"]
 
         # ■■■■■ apply other factors to the asset trace ■■■■
 
-        if should_parallalize:
+        if should_parallelize:
             division = timedelta(days=chunk_length)
             grouped = asset_record.groupby(pd.Grouper(freq=division, origin="epoch"))
             chunk_asset_record_list = [r.dropna() for _, r in grouped]
@@ -1322,11 +1311,14 @@ class Simulator:
             core.window.undertake(lambda t=text: core.window.label_19.setText(t), False)
         else:
             year = self.about_viewing["year"]
-            strategy_code = self.about_viewing["strategy_code"]
+            strategy_code_name = self.about_viewing["strategy_code_name"]
+            strategy_version = self.about_viewing["strategy_version"]
             text = ""
             text += f"Target year {year}"
             text += "  ⦁  "
-            text += f"Strategy code {strategy_code}"
+            text += f"Strategy code name {strategy_code_name}"
+            text += "  ⦁  "
+            text += f"Strategy version {strategy_version}"
             core.window.undertake(lambda t=text: core.window.label_19.setText(t), False)
 
     def display_year_range(self, *args, **kwargs):
@@ -1353,9 +1345,13 @@ class Simulator:
 
     def delete_calculation_data(self, *args, **kwargs):
         year = self.calculation_settings["year"]
-        strategy_code = self.calculation_settings["strategy_code"]
+        strategy_index = self.calculation_settings["strategy_index"]
 
-        path_start = f"{self.workerpath}/{strategy_code}_{year}"
+        strategy = strategist.me.strategies[strategy_index]
+        strategy_code_name = strategy["code_name"]
+        strategy_version = strategy["version"]
+
+        path_start = f"{self.workerpath}/{strategy_code_name}_{strategy_version}_{year}"
         asset_record_path = path_start + "_asset_record.pickle"
         unrealized_changes_path = path_start + "_unrealized_changes.pickle"
         scribbles_path = path_start + "_scribbles.pickle"
@@ -1378,8 +1374,8 @@ class Simulator:
         if not does_file_exist:
             question = [
                 "No calculation data on this combination",
-                f"You should calculate first on year {year} with strategy code"
-                f" {strategy_code}.",
+                f"You should calculate first on year {year} with strategy code name"
+                f" {strategy_code_name} version {strategy_version}.",
                 ["Okay"],
             ]
             core.window.ask(question)
@@ -1388,9 +1384,9 @@ class Simulator:
             question = [
                 "Are you sure you want to delete calculation data on this combination?",
                 "If you do, you should perform the calculation again to see the"
-                f" prediction on year {year} with strategy code"
-                f" {strategy_code}. Calculation data of other combinations does not get"
-                " affected.",
+                f" prediction on year {year} with strategy code name"
+                f" {strategy_code_name} version {strategy_version}. Calculation data of"
+                " other combinations does not get affected.",
                 ["Cancel", "Delete"],
             ]
             answer = core.window.ask(question)
@@ -1422,9 +1418,13 @@ class Simulator:
 
     def draw(self, *args, **kwargs):
         year = self.calculation_settings["year"]
-        strategy_code = self.calculation_settings["strategy_code"]
+        strategy_index = self.calculation_settings["strategy_index"]
 
-        path_start = f"{self.workerpath}/{strategy_code}_{year}"
+        strategy = strategist.me.strategies[strategy_index]
+        strategy_code_name = strategy["code_name"]
+        strategy_version = strategy["version"]
+
+        path_start = f"{self.workerpath}/{strategy_code_name}_{strategy_version}_{year}"
         asset_record_path = path_start + "_asset_record.pickle"
         unrealized_changes_path = path_start + "_unrealized_changes.pickle"
         scribbles_path = path_start + "_scribbles.pickle"
@@ -1438,13 +1438,17 @@ class Simulator:
                     self.raw_scribbles = pickle.load(file)
                 with open(account_state_path, "rb") as file:
                     self.raw_account_state = pickle.load(file)
-            self.about_viewing = {"year": year, "strategy_code": strategy_code}
+            self.about_viewing = {
+                "year": year,
+                "strategy_code_name": strategy_code_name,
+                "strategy_version": strategy_version,
+            }
             self.present()
         except FileNotFoundError:
             question = [
                 "No calculation data on this combination",
-                f"You should calculate first on year {year} with strategy code"
-                f" {strategy_code}.",
+                f"You should calculate first on year {year} with strategy code name"
+                f" {strategy_code_name} version {strategy_version}.",
                 ["Okay"],
             ]
             core.window.ask(question)

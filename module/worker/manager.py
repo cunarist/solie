@@ -57,15 +57,6 @@ class Manager:
             lambda s=script: core.window.plainTextEdit.setPlainText(s), False
         )
 
-        # ■■■■■ default executions ■■■■■
-
-        core.window.initialize_functions.append(
-            lambda: self.check_binance_limits(),
-        )
-        core.window.initialize_functions.append(
-            lambda: self.occupy_license_key(),
-        )
-
         # ■■■■■ repetitive schedules ■■■■■
 
         core.window.scheduler.add_job(

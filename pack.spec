@@ -21,6 +21,7 @@ packages_to_complete = [
     "pygments",
     "yapf",
     "tendo",
+    "cryptography",
 ]
 for package in packages_to_complete:
     new_lists = hooks.collect_all(package)

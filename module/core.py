@@ -106,12 +106,12 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.scheduler.shutdown()
             ApiStreamer.close_all_forever()
 
-            def job(function):
-                nonlocal done_steps
-                function()
+            for finalize_function in self.finalize_functions:
+                try:
+                    finalize_function()
+                except Exception:
+                    pass
                 done_steps += 1
-
-            thread_toss.map(job, self.finalize_functions)
 
         thread_toss.apply_async(job)
 
@@ -930,45 +930,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.undertake(job, True)
 
-        # ■■■■■ intergrated strategies ■■■■■
-
-        # is parallel calculation / divided chunk length
-        self.strategy_tuples = [
-            ("SLSLDS", "Solsol default strategy", [True, 30]),
-            ("MKRNDM", "Make random orders", [True, 7]),
-            ("CSMSTR", "Custom strategy"),
-        ]
-
-        red_pixmap = QtGui.QPixmap()
-        red_pixmap.load("./static/icon/traffic_light_red.png")
-        yellow_pixmap = QtGui.QPixmap()
-        yellow_pixmap.load("./static/icon/traffic_light_yellow.png")
-        green_pixmap = QtGui.QPixmap()
-        green_pixmap.load("./static/icon/traffic_light_green.png")
-
-        for strategy_tuple in self.strategy_tuples:
-            strategy_code = strategy_tuple[0]
-            strategy_name = strategy_tuple[1]
-            text = f"{strategy_code} - {strategy_name}"
-
-            traffic_light_icon = QtGui.QIcon()
-            if strategy_code == "SLSLDS":
-                traffic_light_icon.addPixmap(green_pixmap)
-            elif strategy_code == "MKRNDM":
-                traffic_light_icon.addPixmap(red_pixmap)
-            elif strategy_code == "CSMSTR":
-                traffic_light_icon.addPixmap(yellow_pixmap)
-
-            def job(text=text):
-                self.comboBox.addItem(traffic_light_icon, text)
-                self.comboBox_2.addItem(traffic_light_icon, text)
-
-            self.undertake(job, True)
-
         # ■■■■■ prepare auto executions ■■■■■
 
-        self.initialize_functions = []
-        self.finalize_functions = []
         self.scheduler = BlockingScheduler(timezone="UTC")
         self.scheduler.add_executor(ThreadPoolExecutor(), "thread_pool_executor")
 
@@ -979,6 +942,59 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         simulator.bring_to_life()
         strategist.bring_to_life()
         manager.bring_to_life()
+
+        # ■■■■■ initialize functions ■■■■■
+
+        self.initialize_functions = []
+        self.initialize_functions.append(
+            lambda: collector.me.get_exchange_information(),
+        )
+        self.initialize_functions.append(
+            lambda: strategist.me.display_strategies(),
+        )
+        self.initialize_functions.append(
+            lambda: transactor.me.display_strategy_index(),
+        )
+        self.initialize_functions.append(
+            lambda: transactor.me.watch_binance(),
+        )
+        self.initialize_functions.append(
+            lambda: transactor.me.update_user_data_stream(),
+        )
+        self.initialize_functions.append(
+            lambda: transactor.me.display_lines(),
+        )
+        self.initialize_functions.append(
+            lambda: transactor.me.display_day_range(),
+        )
+        self.initialize_functions.append(
+            lambda: simulator.me.display_lines(),
+        )
+        self.initialize_functions.append(
+            lambda: simulator.me.display_year_range(),
+        )
+        self.initialize_functions.append(
+            lambda: manager.me.check_binance_limits(),
+        )
+        self.initialize_functions.append(
+            lambda: manager.me.occupy_license_key(),
+        )
+
+        # ■■■■■ finalize functions ■■■■■
+
+        self.finalize_functions = []
+        self.finalize_functions.append(
+            lambda: transactor.me.save_unrealized_changes(),
+        )
+        self.finalize_functions.append(
+            lambda: transactor.me.save_scribbles(),
+        )
+        self.finalize_functions.append(
+            lambda: strategist.me.save_strategies(),
+        )
+        self.finalize_functions.append(
+            lambda: collector.me.save_candle_data(),
+        )
 
         # ■■■■■ change logging settings ■■■■■
 
@@ -1006,9 +1022,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
             # normal widgets
             job = simulator.me.update_calculation_settings
-            outsource.do(self.comboBox.activated, job)
+            outsource.do(self.comboBox.currentIndexChanged, job)
             job = transactor.me.update_automation_settings
-            outsource.do(self.comboBox_2.activated, job)
+            outsource.do(self.comboBox_2.currentIndexChanged, job)
             job = transactor.me.update_automation_settings
             outsource.do(self.checkBox.toggled, job)
             job = simulator.me.calculate
@@ -1024,7 +1040,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             job = simulator.me.erase
             outsource.do(self.pushButton_4.clicked, job)
             job = simulator.me.update_calculation_settings
-            outsource.do(self.comboBox_5.activated, job)
+            outsource.do(self.comboBox_5.currentIndexChanged, job)
             job = transactor.me.update_keys
             outsource.do(self.lineEdit_4.editingFinished, job)
             job = transactor.me.update_keys
@@ -1043,12 +1059,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             outsource.do(self.pushButton_16.clicked, job)
             job = simulator.me.draw
             outsource.do(self.pushButton_17.clicked, job)
-            job = strategist.me.revert_scripts
-            outsource.do(self.pushButton_19.clicked, job)
-            job = strategist.me.save_scripts
-            outsource.do(self.pushButton_20.clicked, job)
             job = transactor.me.update_keys
-            outsource.do(self.comboBox_3.activated, job)
+            outsource.do(self.comboBox_3.currentIndexChanged, job)
             job = collector.me.download_fill_candle_data
             outsource.do(self.pushButton_2.clicked, job)
             job = transactor.me.update_mode_settings
@@ -1058,11 +1070,13 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             job = manager.me.reset_datapath
             outsource.do(self.pushButton_22.clicked, job)
             job = transactor.me.update_viewing_symbol
-            outsource.do(self.comboBox_4.activated, job)
+            outsource.do(self.comboBox_4.currentIndexChanged, job)
             job = simulator.me.update_viewing_symbol
-            outsource.do(self.comboBox_6.activated, job)
+            outsource.do(self.comboBox_6.currentIndexChanged, job)
             job = manager.me.open_documentation
             outsource.do(self.pushButton_7.clicked, job)
+            job = strategist.me.add_blank_strategy
+            outsource.do(self.pushButton_5.clicked, job)
 
         self.undertake(job, True)
 
@@ -1136,13 +1150,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             outsource.do(new_action.triggered, job)
 
             action_menu = QtWidgets.QMenu(self)
-            self.pushButton_9.setMenu(action_menu)
-            text = "Apply sample strategy"
-            job = strategist.me.fill_with_sample
-            new_action = action_menu.addAction(text)
-            outsource.do(new_action.triggered, job)
-
-            action_menu = QtWidgets.QMenu(self)
             self.pushButton_10.setMenu(action_menu)
             text = "Make a small error on purpose"
             job = manager.me.make_small_exception
@@ -1168,12 +1175,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         def job(function):
             function()
 
-        map_result = thread_toss.map_async(job, self.initialize_functions)
-
-        for _ in range(100):
-            if map_result.ready() and map_result.successful():
-                break
-            time.sleep(0.1)
+        for initialize_function in self.initialize_functions:
+            try:
+                initialize_function()
+            except Exception:
+                pass
 
         # ■■■■■ start repetitive timer ■■■■■
 

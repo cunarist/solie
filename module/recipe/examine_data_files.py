@@ -125,6 +125,19 @@ def do():
     except Exception:
         pass
 
+    # 6.0: use strategy index instead of strategy code
+    try:
+        filepath = f"{datapath}/transactor/automation_settings.json"
+        with open(filepath, "r", encoding="utf8") as file:
+            automation_settings = json.load(file)
+        if ["strategy_code"] in automation_settings.keys():
+            automation_settings.pop("strategy_code")
+            automation_settings["strategy_index"] = 0
+        with open(filepath, "w", encoding="utf8") as file:
+            json.dump(automation_settings, file, indent=4)
+    except Exception:
+        pass
+
 
 def do_first():
     # 5.0: app settings
