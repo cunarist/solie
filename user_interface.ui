@@ -84,8 +84,8 @@ PopupBox {
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 0.4em;
     background: #2B2B2B;
-    margin: 2em;
-    padding: 2em;
+    margin: 1.2em;
+    padding: 1.2em;
 }
 
 BrandLabel {
@@ -1103,8 +1103,8 @@ HorizontalDivider, VerticalDivider {
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>280</width>
-                <height>65</height>
+                <width>1216</width>
+                <height>605</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_19">
@@ -1749,7 +1749,7 @@ HorizontalDivider, VerticalDivider {
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>80</width>
+                 <width>63</width>
                  <height>20</height>
                 </rect>
                </property>

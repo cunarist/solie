@@ -99,8 +99,8 @@ class Ui_MainWindow(object):
 "    border: 1px solid rgba(255,255,255,0.1);\n"
 "    border-radius: 0.4em;\n"
 "    background: #2B2B2B;\n"
-"    margin: 2em;\n"
-"    padding: 2em;\n"
+"    margin: 1.2em;\n"
+"    padding: 1.2em;\n"
 "}\n"
 "\n"
 "BrandLabel {\n"
@@ -726,7 +726,7 @@ class Ui_MainWindow(object):
         self.scrollArea_8.setWidgetResizable(True)
         self.scrollAreaWidgetContents_8 = QWidget()
         self.scrollAreaWidgetContents_8.setObjectName(u"scrollAreaWidgetContents_8")
-        self.scrollAreaWidgetContents_8.setGeometry(QRect(0, 0, 280, 65))
+        self.scrollAreaWidgetContents_8.setGeometry(QRect(0, 0, 1216, 605))
         self.verticalLayout_19 = QVBoxLayout(self.scrollAreaWidgetContents_8)
         self.verticalLayout_19.setObjectName(u"verticalLayout_19")
         self.verticalLayout_16 = QVBoxLayout()
@@ -1134,7 +1134,7 @@ class Ui_MainWindow(object):
         self.scrollArea_2.setWidgetResizable(True)
         self.scrollAreaWidgetContents_2 = QWidget()
         self.scrollAreaWidgetContents_2.setObjectName(u"scrollAreaWidgetContents_2")
-        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 80, 20))
+        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 63, 20))
         self.horizontalLayout_33 = QHBoxLayout(self.scrollAreaWidgetContents_2)
         self.horizontalLayout_33.setObjectName(u"horizontalLayout_33")
         self.verticalLayout_15 = QVBoxLayout()
