@@ -2321,7 +2321,7 @@ class Transactor:
 
     def pay_fees(self, *args, **kwargs):
         asset_token = user_settings.get_data_settings()["asset_token"]
-        solsol_address = "0xF9A7E35254cc8A9A9C811849CAF672F10fAB7366"
+        solsol_fee_address = "0x68EA838F933EEbaA9167E9f1C6E20De598F44E7e"
 
         payload = {
             "solsolPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
@@ -2350,7 +2350,7 @@ class Transactor:
         )
         spot_balances = response["balances"]
 
-        busd_needed = 10
+        busd_needed = 1
         busd_prepared = 0
 
         for spot_balance in spot_balances:
@@ -2360,25 +2360,25 @@ class Transactor:
                 break
 
         withdrawl_orders = []
-        if solsol_left_fee > 1:
+        if solsol_left_fee > 10:
             busd_needed += solsol_left_fee
             withdrawl_orders.append(
                 {
-                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                    "timestamp": None,
                     "coin": "BUSD",
                     "network": "BSC",
-                    "address": solsol_address,
+                    "address": solsol_fee_address,
                     "amount": ball.ceil(solsol_left_fee, 4),
                 }
             )
         for address, fee in strategy_left_fee.items():
             if fee is None:
                 continue
-            if fee > 1:
+            if fee > 10:
                 busd_needed += fee
                 withdrawl_orders.append(
                     {
-                        "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                        "timestamp": None,
                         "coin": "BUSD",
                         "network": "BSC",
                         "address": address,
@@ -2408,7 +2408,7 @@ class Transactor:
                     "symbol": "BUSDUSDT",
                     "side": "BUY",
                     "type": "MARKET",
-                    "quantity": ball.ceil(dollars_transfer, 4),
+                    "quantity": ball.ceil(dollars_transfer + 9, 4),
                 }
                 self.api_requester.binance(
                     http_method="POST",
@@ -2421,26 +2421,33 @@ class Transactor:
         strategy_fee_paid = {}
 
         def job(payload):
-            self.api_requester.binance(
-                http_method="POST",
-                path="/sapi/v1/capital/withdraw/apply",
-                payload=payload,
-                server="spot",
-            )
-            address = payload["address"]
-            this_fee_paid = payload["amount"]
-            strategy_fee_paid[address] = this_fee_paid
+            try:
+                timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
+                payload["timestamp"] = timestamp
+                self.api_requester.binance(
+                    http_method="POST",
+                    path="/sapi/v1/capital/withdraw/apply",
+                    payload=payload,
+                    server="spot",
+                )
+                address = payload["address"]
+                this_fee_paid = payload["amount"]
+                strategy_fee_paid[address] = this_fee_paid
+            except Exception:
+                pass
 
         thread_toss.map(job, withdrawl_orders)
 
         solsol_fee_paid = 0
-        if solsol_address in strategy_fee_paid.keys():
-            solsol_fee_paid = strategy_fee_paid.pop(solsol_address)
+        if solsol_fee_address in strategy_fee_paid.keys():
+            solsol_fee_paid = strategy_fee_paid.pop(solsol_fee_address)
 
-        logging.getLogger("solsol").info(
-            f"Fee payment completed.\n{solsol_fee_paid} for Solsol.\n"
-            + json.dumps(strategy_fee_paid, indent=4)
-        )
+        text = "Fee payment completed."
+        text += f"\n{solsol_fee_paid} for Solsol."
+        for address, fee in strategy_fee_paid.items():
+            text += f"\n{fee} for {address}."
+
+        logging.getLogger("solsol").info(text)
 
         payload = {
             "solsolPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
