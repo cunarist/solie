@@ -2391,7 +2391,7 @@ class Transactor:
             payload = {
                 "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                 "type": "UMFUTURE_MAIN",
-                "amount": ball.ceil(dollars_transfer, 4),
+                "amount": ball.ceil(dollars_transfer + 10, 4),
                 "asset": asset_token,
             }
             self.api_requester.binance(
