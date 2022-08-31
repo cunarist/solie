@@ -11,6 +11,7 @@ import logging
 
 import pandas as pd
 import numpy as np
+import getmac
 
 from module import core
 from module import process_toss
@@ -111,18 +112,10 @@ class Transactor:
             core.window.undertake(
                 lambda t=text: core.window.lineEdit_6.setText(t), False
             )
-            if keys["server"] == "real":
-                index = 0
-            elif keys["server"] == "testnet":
-                index = 1
-            core.window.undertake(
-                lambda i=index: core.window.comboBox_3.setCurrentIndex(i), False
-            )
             self.keys = keys
             self.api_requester.update_keys(keys)
         except FileNotFoundError:
             self.keys = {
-                "server": "real",
                 "binance_api": "",
                 "binance_secret": "",
             }
@@ -501,6 +494,19 @@ class Transactor:
                         filepath = self.workerpath + "/auto_order_record.pickle"
                         self.auto_order_record.to_pickle(filepath)
 
+                strategy_index = self.automation_settings["strategy_index"]
+                strategy = strategist.me.strategies[strategy_index]
+                fee_address = strategy["fee_address"]
+                payload = {
+                    "solsolPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
+                    "deviceIdentifier": getmac.get_mac_address(),
+                    "addedRevenue": net_profit,
+                    "feeAddress": fee_address,
+                }
+                self.api_requester.cunarist(
+                    "POST", "/api/solsol/automated-revenue", payload
+                )
+
         # ■■■■■ cancel conflicting orders ■■■■■
 
         self.cancel_conflicting_orders()
@@ -524,9 +530,10 @@ class Transactor:
         webbrowser.open("https://www.binance.com/en/my/settings/api-management")
 
     def update_keys(self, *args, **kwargs):
+        server = kwargs.get("server", "real")
+
         def job():
             return (
-                core.window.comboBox_3.currentIndex(),
                 core.window.lineEdit_4.text(),
                 core.window.lineEdit_6.text(),
             )
@@ -534,19 +541,19 @@ class Transactor:
         returned = core.window.undertake(job, True)
 
         new_keys = {}
-        if returned[0] == 0:
-            server = "real"
-        elif returned[0] == 1:
-            server = "testnet"
-        new_keys["server"] = server
-        new_keys["binance_api"] = returned[1]
-        new_keys["binance_secret"] = returned[2]
+        new_keys["binance_api"] = returned[0]
+        new_keys["binance_secret"] = returned[1]
 
         self.keys = new_keys
 
         filepath = self.workerpath + "/keys.json"
         with open(filepath, "w", encoding="utf8") as file:
             json.dump(new_keys, file, indent=4)
+
+        new_keys = {}
+        new_keys["server"] = server
+        new_keys["binance_api"] = returned[0]
+        new_keys["binance_secret"] = returned[1]
 
         self.api_requester.update_keys(new_keys)
         self.update_user_data_stream()

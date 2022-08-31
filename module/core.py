@@ -1044,8 +1044,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             outsource.do(self.pushButton_16.clicked, job)
             job = simulator.me.draw
             outsource.do(self.pushButton_17.clicked, job)
-            job = transactor.me.update_keys
-            outsource.do(self.comboBox_3.currentIndexChanged, job)
             job = collector.me.download_fill_candle_data
             outsource.do(self.pushButton_2.clicked, job)
             job = transactor.me.update_mode_settings

@@ -456,39 +456,6 @@ HorizontalDivider, VerticalDivider {
               </spacer>
              </item>
              <item>
-              <widget class="QLabel" name="label_31">
-               <property name="text">
-                <string>Server</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="comboBox_3">
-               <property name="minimumSize">
-                <size>
-                 <width>100</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>100</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <item>
-                <property name="text">
-                 <string>Real</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Testnet</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
               <widget class="QLabel" name="label">
                <property name="text">
                 <string>API key</string>
@@ -1136,8 +1103,8 @@ HorizontalDivider, VerticalDivider {
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>1216</width>
-                <height>605</height>
+                <width>280</width>
+                <height>65</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_19">
@@ -1539,7 +1506,7 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>24</width>
+                   <width>81</width>
                    <height>34</height>
                   </rect>
                  </property>
@@ -1568,7 +1535,7 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>24</width>
+                   <width>81</width>
                    <height>34</height>
                   </rect>
                  </property>
@@ -1597,7 +1564,7 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>24</width>
+                   <width>81</width>
                    <height>34</height>
                   </rect>
                  </property>
@@ -1626,7 +1593,7 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>24</width>
+                   <width>81</width>
                    <height>34</height>
                   </rect>
                  </property>
@@ -1655,7 +1622,7 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>24</width>
+                   <width>81</width>
                    <height>34</height>
                   </rect>
                  </property>
@@ -1684,7 +1651,7 @@ HorizontalDivider, VerticalDivider {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>24</width>
+                   <width>81</width>
                    <height>34</height>
                   </rect>
                  </property>
@@ -1782,7 +1749,7 @@ HorizontalDivider, VerticalDivider {
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>63</width>
+                 <width>80</width>
                  <height>20</height>
                 </rect>
                </property>
