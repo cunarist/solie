@@ -220,11 +220,10 @@ class Transactor:
             executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
-            self.display_lines,
+            self.pay_fees,
             trigger="cron",
             hour="*",
             executor="thread_pool_executor",
-            kwargs={"periodic": True},
         )
 
         # ■■■■■ websocket streamings ■■■■■
@@ -2322,6 +2321,117 @@ class Transactor:
             widget.setXRange(range_start + 10, range_end + 10, padding=0)
 
         core.window.undertake(job, False)
+
+    def pay_fees(self, *args, **kwargs):
+        asset_token = user_settings.get_data_settings()["asset_token"]
+        solsol_address = "0xF9A7E35254cc8A9A9C811849CAF672F10fAB7366"
+
+        payload = {
+            "solsolPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
+            "deviceIdentifier": getmac.get_mac_address(),
+        }
+        response = self.api_requester.cunarist(
+            "GET", "/api/solsol/automated-revenue", payload
+        )
+        should_pay_now = response["shouldPayNow"]
+        solsol_left_fee = response["solsolLeftFee"]
+        strategy_left_fee = response["strategyLeftFee"]
+
+        if not should_pay_now:
+            return
+
+        payload = {
+            "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+        }
+        response = self.api_requester.binance("GET", "/api/v3/account", payload)
+        spot_balances = response["balances"]
+        dollars_prepared = 0
+        for spot_balance in spot_balances:
+            if spot_balance["asset"] == "BUSD":
+                dollars_prepared = spot_balance["free"]
+                break
+
+        dollars_needed = 0
+
+        if solsol_left_fee > 10:
+            dollars_needed += solsol_left_fee + 10
+            # more for binance withdrawl fee
+        for fee in strategy_left_fee.values():
+            if fee > 10:
+                dollars_needed += fee + 10
+
+        dollars_transfer = dollars_needed - dollars_prepared
+        if dollars_transfer > 0:
+            payload = {
+                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                "type": "UMFUTURE_MAIN",
+                "amount": ball.ceil(dollars_transfer, 4),
+                "asset": asset_token,
+            }
+            self.api_requester.binance("POST", "/sapi/v1/asset/transfer", payload)
+
+        if asset_token == "USDT":
+            payload = {
+                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                "symbol": "BUSDUSDT",
+                "side": "BUY",
+                "type": "MARKET",
+                "quantity": ball.ceil(dollars_transfer, 4),
+            }
+            self.api_requester.binance("POST", "/api/v3/order", payload)
+
+        new_orders = []
+        new_orders.append(
+            {
+                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                "coin": "BUSD",
+                "network": "BSC",
+                "address": solsol_address,
+                "amount": ball.ceil(solsol_left_fee, 4),
+            }
+        )
+        for address, fee in strategy_left_fee.items():
+            new_orders.append(
+                {
+                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                    "coin": "BUSD",
+                    "network": "BSC",
+                    "address": address,
+                    "amount": ball.ceil(fee, 4),
+                }
+            )
+
+        strategy_fee_paid = {}
+
+        def job(payload):
+            self.api_requester.binance(
+                http_method="POST",
+                path="/sapi/v1/capital/withdraw/apply",
+                payload=payload,
+            )
+            address = payload["address"]
+            this_fee_paid = payload["amount"]
+            strategy_fee_paid[address] = this_fee_paid
+
+        thread_toss.map(job, new_orders)
+
+        logging.getLogger("solsol").info(
+            "Fee payment completed.\n" + json.dumps(strategy_fee_paid, indent=4)
+        )
+
+        solsol_fee_paid = 0
+        if solsol_address in strategy_fee_paid.keys():
+            solsol_fee_paid = strategy_fee_paid.pop(solsol_address)
+
+        payload = {
+            "solsolPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
+            "deviceIdentifier": getmac.get_mac_address(),
+            "solsolFeePaid": solsol_fee_paid,
+            "strategyFeePaid": strategy_fee_paid,
+        }
+        response = self.api_requester.cunarist(
+            "PUT", "/api/solsol/automated-revenue", payload
+        )
 
 
 me = None
