@@ -2360,7 +2360,7 @@ class Transactor:
                 break
 
         withdrawl_orders = []
-        if solsol_left_fee > 10:
+        if solsol_left_fee > 1:
             busd_needed += solsol_left_fee
             withdrawl_orders.append(
                 {
@@ -2374,7 +2374,7 @@ class Transactor:
         for address, fee in strategy_left_fee.items():
             if fee is None:
                 continue
-            if fee > 10:
+            if fee > 1:
                 busd_needed += fee
                 withdrawl_orders.append(
                     {
