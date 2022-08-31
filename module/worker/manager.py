@@ -178,19 +178,10 @@ class Manager:
                 text = f"{limit_type}: {limit_value}"
                 texts.append(text)
 
-            used_rates = self.api_requester.used_rates["real"]
+            used_rates = self.api_requester.used_rates
             if len(used_rates) > 0:
                 texts.append("")
-                texts.append("Real server usage")
-                for used_type, used_tuple in used_rates.items():
-                    time_string = used_tuple[1].strftime("%m-%d %H:%M:%S")
-                    text = f"{used_type}: {used_tuple[0]}({time_string})"
-                    texts.append(text)
-
-            used_rates = self.api_requester.used_rates["testnet"]
-            if len(used_rates) > 0:
-                texts.append("")
-                texts.append("Testnet server usage")
+                texts.append("Usage")
                 for used_type, used_tuple in used_rates.items():
                     time_string = used_tuple[1].strftime("%m-%d %H:%M:%S")
                     text = f"{used_type}: {used_tuple[0]}({time_string})"

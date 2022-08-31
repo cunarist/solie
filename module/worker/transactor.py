@@ -255,8 +255,6 @@ class Transactor:
         if not check_internet.connected():
             return
 
-        server = self.keys["server"]
-
         try:
             payload = {}
             response = self.api_requester.binance(
@@ -270,10 +268,7 @@ class Transactor:
         listen_key = response["listenKey"]
 
         api_streamer = self.api_streamers[0]
-        if server == "real":
-            url = "wss://fstream.binance.com/ws/" + listen_key
-        elif server == "testnet":
-            url = "wss://fstream.binancefuture.com/ws/" + listen_key
+        url = "wss://fstream.binance.com/ws/" + listen_key
         api_streamer.update_url(url)
 
     def listen_to_account(self, *args, **kwargs):

@@ -12,12 +12,11 @@ from module.recipe import datalocks
 
 class ApiRequester:
     _SESSION_COUNT = 16
-    used_rates = {"real": {}, "testnet": {}}
+    used_rates = {}
     _sessions = [requests.Session() for _ in range(_SESSION_COUNT)]
 
     def __init__(self):
         self.keys = {
-            "server": "real",
             "binance_api": "",
             "binance_secret": "",
         }
@@ -46,8 +45,6 @@ class ApiRequester:
         self.keys.update(keys)
 
     def binance(self, http_method, path, payload={}):
-        server = self.keys["server"]
-
         query_string = urlencode(payload)
         # replace single quote to double quote
         query_string = query_string.replace("%27", "%22")
@@ -59,10 +56,7 @@ class ApiRequester:
         ).hexdigest()
         headers = {"X-MBX-APIKEY": self.keys["binance_api"]}
 
-        if server == "real":
-            url = "https://fapi.binance.com" + path
-        elif server == "testnet":
-            url = "https://testnet.binancefuture.com" + path
+        url = "https://fapi.binance.com" + path
         url += "?" + query_string + "&signature=" + signature
 
         parameters = {"url": url, "headers": headers}
@@ -82,7 +76,7 @@ class ApiRequester:
             if "X-MBX" in header_key:
                 write_value = raw_response.headers[header_key]
                 current_time = datetime.now(timezone.utc)
-                self.used_rates[server][header_key] = (write_value, current_time)
+                self.used_rates[header_key] = (write_value, current_time)
 
         # check if the response contains error message
         if "code" in response and response["code"] != 200:
