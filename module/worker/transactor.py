@@ -2350,7 +2350,7 @@ class Transactor:
         )
         spot_balances = response["balances"]
 
-        busd_needed = 0
+        busd_needed = 10
         busd_prepared = 0
 
         for spot_balance in spot_balances:
@@ -2361,7 +2361,7 @@ class Transactor:
 
         withdrawl_orders = []
         if solsol_left_fee > 10:
-            busd_needed += solsol_left_fee + 10
+            busd_needed += solsol_left_fee
             withdrawl_orders.append(
                 {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2375,7 +2375,7 @@ class Transactor:
             if fee is None:
                 continue
             if fee > 10:
-                busd_needed += fee + 10
+                busd_needed += fee
                 withdrawl_orders.append(
                     {
                         "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2391,7 +2391,7 @@ class Transactor:
             payload = {
                 "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                 "type": "UMFUTURE_MAIN",
-                "amount": ball.ceil(dollars_transfer + 10, 4),
+                "amount": ball.ceil(dollars_transfer, 4),
                 "asset": asset_token,
             }
             self.api_requester.binance(
@@ -2408,7 +2408,7 @@ class Transactor:
                     "symbol": "BUSDUSDT",
                     "side": "BUY",
                     "type": "MARKET",
-                    "quantity": ball.ceil(dollars_transfer, 2),
+                    "quantity": ball.ceil(dollars_transfer, 4),
                 }
                 self.api_requester.binance(
                     http_method="POST",
