@@ -486,25 +486,27 @@ class Transactor:
                 with datalocks.hold("transactor_auto_order_record"):
                     df = self.auto_order_record
                     symbol_df = df[df["Symbol"] == symbol]
-                    if order_id in symbol_df["Order ID"].unique():
+                    unique_order_ids = symbol_df["Order ID"].unique()
+                    if order_id in unique_order_ids:
                         mask_sr = symbol_df["Order ID"] == order_id
                         index = symbol_df.index[mask_sr][0]
                         self.auto_order_record.loc[index, "Net Profit"] += net_profit
                         filepath = self.workerpath + "/auto_order_record.pickle"
                         self.auto_order_record.to_pickle(filepath)
 
-                strategy_index = self.automation_settings["strategy_index"]
-                strategy = strategist.me.strategies[strategy_index]
-                fee_address = strategy["fee_address"]
-                payload = {
-                    "solsolPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
-                    "deviceIdentifier": getmac.get_mac_address(),
-                    "addedRevenue": net_profit,
-                    "feeAddress": fee_address,
-                }
-                self.api_requester.cunarist(
-                    "POST", "/api/solsol/automated-revenue", payload
-                )
+                if order_id in unique_order_ids:
+                    strategy_index = self.automation_settings["strategy_index"]
+                    strategy = strategist.me.strategies[strategy_index]
+                    fee_address = strategy["fee_address"]
+                    payload = {
+                        "solsolPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
+                        "deviceIdentifier": getmac.get_mac_address(),
+                        "addedRevenue": net_profit,
+                        "feeAddress": fee_address,
+                    }
+                    self.api_requester.cunarist(
+                        "POST", "/api/solsol/automated-revenue", payload
+                    )
 
         # ■■■■■ cancel conflicting orders ■■■■■
 
