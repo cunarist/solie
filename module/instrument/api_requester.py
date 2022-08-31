@@ -44,7 +44,7 @@ class ApiRequester:
     def update_keys(self, keys):
         self.keys.update(keys)
 
-    def binance(self, http_method, path, payload={}):
+    def binance(self, http_method, path, payload={}, server="futures"):
         query_string = urlencode(payload)
         # replace single quote to double quote
         query_string = query_string.replace("%27", "%22")
@@ -56,7 +56,11 @@ class ApiRequester:
         ).hexdigest()
         headers = {"X-MBX-APIKEY": self.keys["binance_api"]}
 
-        url = "https://fapi.binance.com" + path
+        if server == "spot":
+            url = "https://api.binance.com"
+        elif server == "futures":
+            url = "https://fapi.binance.com"
+        url += path
         url += "?" + query_string + "&signature=" + signature
 
         parameters = {"url": url, "headers": headers}

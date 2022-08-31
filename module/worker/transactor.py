@@ -2328,7 +2328,9 @@ class Transactor:
             "deviceIdentifier": getmac.get_mac_address(),
         }
         response = self.api_requester.cunarist(
-            "GET", "/api/solsol/automated-revenue", payload
+            http_method="GET",
+            path="/api/solsol/automated-revenue",
+            payload=payload,
         )
         should_pay_now = response["shouldPayNow"]
         solsol_left_fee = response["solsolLeftFee"]
@@ -2340,63 +2342,81 @@ class Transactor:
         payload = {
             "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
         }
-        response = self.api_requester.binance("GET", "/api/v3/account", payload)
+        response = self.api_requester.binance(
+            http_method="GET",
+            path="/api/v3/account",
+            payload=payload,
+            server="spot",
+        )
         spot_balances = response["balances"]
-        dollars_prepared = 0
+
+        busd_needed = 0
+        busd_prepared = 0
+
         for spot_balance in spot_balances:
             if spot_balance["asset"] == "BUSD":
-                dollars_prepared = spot_balance["free"]
+                busd_prepared = spot_balance["free"]
+                busd_prepared = float(busd_prepared)
                 break
 
-        dollars_needed = 0
-
+        withdrawl_orders = []
         if solsol_left_fee > 10:
-            dollars_needed += solsol_left_fee + 10
-            # more for binance withdrawl fee
-        for fee in strategy_left_fee.values():
-            if fee > 10:
-                dollars_needed += fee + 10
-
-        dollars_transfer = dollars_needed - dollars_prepared
-        if dollars_transfer > 0:
-            payload = {
-                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                "type": "UMFUTURE_MAIN",
-                "amount": ball.ceil(dollars_transfer, 4),
-                "asset": asset_token,
-            }
-            self.api_requester.binance("POST", "/sapi/v1/asset/transfer", payload)
-
-        if asset_token == "USDT":
-            payload = {
-                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                "symbol": "BUSDUSDT",
-                "side": "BUY",
-                "type": "MARKET",
-                "quantity": ball.ceil(dollars_transfer, 4),
-            }
-            self.api_requester.binance("POST", "/api/v3/order", payload)
-
-        new_orders = []
-        new_orders.append(
-            {
-                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                "coin": "BUSD",
-                "network": "BSC",
-                "address": solsol_address,
-                "amount": ball.ceil(solsol_left_fee, 4),
-            }
-        )
-        for address, fee in strategy_left_fee.items():
-            new_orders.append(
+            busd_needed += solsol_left_fee + 10
+            withdrawl_orders.append(
                 {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "coin": "BUSD",
                     "network": "BSC",
-                    "address": address,
-                    "amount": ball.ceil(fee, 4),
+                    "address": solsol_address,
+                    "amount": ball.ceil(solsol_left_fee, 4),
                 }
             )
+        for address, fee in strategy_left_fee.items():
+            if fee is None:
+                continue
+            if fee > 10:
+                busd_needed += fee + 10
+                withdrawl_orders.append(
+                    {
+                        "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                        "coin": "BUSD",
+                        "network": "BSC",
+                        "address": address,
+                        "amount": ball.ceil(fee, 4),
+                    }
+                )
+
+        dollars_transfer = busd_needed - busd_prepared
+        if dollars_transfer > 0.001:
+            payload = {
+                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                "type": "UMFUTURE_MAIN",
+                "amount": ball.ceil(dollars_transfer + 10, 4),
+                "asset": asset_token,
+            }
+            self.api_requester.binance(
+                http_method="POST",
+                path="/sapi/v1/asset/transfer",
+                payload=payload,
+                server="spot",
+            )
+            time.sleep(5)
+
+            if asset_token == "USDT":
+                payload = {
+                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                    "symbol": "BUSDUSDT",
+                    "side": "BUY",
+                    "type": "MARKET",
+                    "quantity": ball.ceil(dollars_transfer, 2),
+                }
+                self.api_requester.binance(
+                    http_method="POST",
+                    path="/api/v3/order",
+                    payload=payload,
+                    server="spot",
+                )
+                time.sleep(5)
 
         strategy_fee_paid = {}
 
@@ -2405,20 +2425,22 @@ class Transactor:
                 http_method="POST",
                 path="/sapi/v1/capital/withdraw/apply",
                 payload=payload,
+                server="spot",
             )
             address = payload["address"]
             this_fee_paid = payload["amount"]
             strategy_fee_paid[address] = this_fee_paid
 
-        thread_toss.map(job, new_orders)
-
-        logging.getLogger("solsol").info(
-            "Fee payment completed.\n" + json.dumps(strategy_fee_paid, indent=4)
-        )
+        thread_toss.map(job, withdrawl_orders)
 
         solsol_fee_paid = 0
         if solsol_address in strategy_fee_paid.keys():
             solsol_fee_paid = strategy_fee_paid.pop(solsol_address)
+
+        logging.getLogger("solsol").info(
+            f"Fee payment completed.\n{solsol_fee_paid} for Solsol.\n"
+            + json.dumps(strategy_fee_paid, indent=4)
+        )
 
         payload = {
             "solsolPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
@@ -2427,7 +2449,9 @@ class Transactor:
             "strategyFeePaid": strategy_fee_paid,
         }
         response = self.api_requester.cunarist(
-            "PUT", "/api/solsol/automated-revenue", payload
+            http_method="PUT",
+            path="/api/solsol/automated-revenue",
+            payload=payload,
         )
 
 
