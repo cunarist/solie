@@ -1112,6 +1112,10 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             job = transactor.me.match_graph_range
             new_action = action_menu.addAction(text)
             outsource.do(new_action.triggered, job)
+            text = "Update fee settings"
+            job = transactor.me.update_fee_settings
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
 
             action_menu = QtWidgets.QMenu(self)
             self.pushButton_11.setMenu(action_menu)

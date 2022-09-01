@@ -30,6 +30,8 @@ from module.recipe import user_settings
 from module.recipe import remember_task_durations
 from module.recipe import standardize
 from module.recipe import datalocks
+from module.recipe import encrypted_pickle
+from module.shelf.fee_option import FeeOption
 
 
 class Transactor:
@@ -84,6 +86,14 @@ class Transactor:
             self.automation_settings = {
                 "strategy_index": 0,
                 "should_transact": False,
+            }
+
+        try:
+            filepath = self.workerpath + "/fee_settings.slslsc"
+            self.fee_settings = encrypted_pickle.read(filepath)
+        except FileNotFoundError:
+            self.fee_settings = {
+                "discount": False,
             }
 
         try:
@@ -245,6 +255,17 @@ class Transactor:
 
         disconnected_functions = []
         check_internet.add_disconnected_functions(disconnected_functions)
+
+    def update_fee_settings(self, *args, **kwargs):
+        formation = [
+            "Update your fee settings",
+            FeeOption,
+            True,
+            self.fee_settings,
+        ]
+        core.window.overlap(formation)
+        filepath = self.workerpath + "/fee_settings.slslsc"
+        encrypted_pickle.save(self.fee_settings, filepath)
 
     def save_scribbles(self, *args, **kwargs):
         filepath = self.workerpath + "/scribbles.pickle"
@@ -2424,6 +2445,9 @@ class Transactor:
             try:
                 timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
                 payload["timestamp"] = timestamp
+                original_amount = payload["amount"]
+                if self.fee_settings["discount"]:
+                    payload["amount"] = original_amount * 0.1
                 self.api_requester.binance(
                     http_method="POST",
                     path="/sapi/v1/capital/withdraw/apply",
@@ -2431,7 +2455,7 @@ class Transactor:
                     server="spot",
                 )
                 address = payload["address"]
-                this_fee_paid = payload["amount"]
+                this_fee_paid = original_amount
                 strategy_fee_paid[address] = this_fee_paid
             except Exception:
                 pass
