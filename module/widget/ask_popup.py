@@ -53,7 +53,7 @@ class AskPopup(QtWidgets.QWidget):
 
         # box
         content_box = PopupBox(autoFillBackground=True)
-        content_box.setFixedSize(480, 480)
+        content_box.setFixedSize(520, 520)
         content_box_layout = QtWidgets.QVBoxLayout(content_box)
         full_layout.addWidget(content_box)
 
