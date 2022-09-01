@@ -174,3 +174,16 @@ def do_first():
             json.dump(app_settings, file, indent=4)
     except Exception:
         pass
+
+    # 6.0: terms of agreement
+
+    try:
+        filepath = "./note/app_settings.json"
+        with open(filepath, "r", encoding="utf8") as file:
+            app_settings = json.load(file)
+        if "is_agreement_read" not in app_settings.keys():
+            app_settings["is_agreement_read"] = False
+        with open(filepath, "w", encoding="utf8") as file:
+            json.dump(app_settings, file, indent=4)
+    except Exception:
+        pass

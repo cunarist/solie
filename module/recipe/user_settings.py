@@ -4,6 +4,7 @@ import json
 
 _app_settings = {
     "datapath": None,
+    "is_agreement_read": False,
 }
 _data_settings = {
     "asset_token": None,
