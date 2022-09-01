@@ -1239,7 +1239,8 @@ class Simulator:
 
         if should_parallelize:
             division = timedelta(days=chunk_length)
-            grouped = asset_record.groupby(pd.Grouper(freq=division, origin="epoch"))
+            grouper = pd.Grouper(freq=division, origin="epoch")
+            grouped = asset_record.groupby(grouper)
             chunk_asset_record_list = [r.dropna() for _, r in grouped]
             chunk_count = len(chunk_asset_record_list)
 
@@ -1284,6 +1285,25 @@ class Simulator:
         year_asset_changes = pd.concat(chunk_asset_changes_list).sort_index()
         if len(year_asset_changes) > 0:
             year_asset_changes.iloc[0] = float(1)
+
+        # solsol and strategy fees
+        cycle_length = timedelta(days=7)
+        grouper = pd.Grouper(freq=cycle_length, origin="epoch")
+        grouped = year_asset_changes.groupby(grouper)
+        cycle_asset_changes_list = [(s, r.dropna()) for s, r in grouped]
+        if len(cycle_asset_changes_list) > 0:
+            for cycle_start, cycle_asset_changes in cycle_asset_changes_list:
+                cycle_asset_change = 1
+                if len(cycle_asset_changes) > 0:
+                    cycle_asset_change = np.product(cycle_asset_changes)
+                if cycle_asset_change <= 1:
+                    continue
+                asset_change_due_to_fee = 1 / ((cycle_asset_change - 1) * 0.2 + 1)
+                fee_pay_time = cycle_start + cycle_length - timedelta(seconds=10)
+                cycle_asset_changes[fee_pay_time] = asset_change_due_to_fee
+            only_cycle_asset_changes_list = [r for _, r in cycle_asset_changes_list]
+            year_asset_changes = pd.concat(only_cycle_asset_changes_list).sort_index()
+
         asset_record = asset_record.reindex(year_asset_changes.index)
         asset_record["Result Asset"] = year_asset_changes.cumprod()
 
