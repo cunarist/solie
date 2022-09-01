@@ -1375,6 +1375,7 @@ class Transactor:
             text = (
                 "Solsol and strategy fees were not paid more than 21 days. Auto"
                 " transaction is disabled."
+            )
             core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
             return
 
