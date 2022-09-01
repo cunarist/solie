@@ -130,8 +130,9 @@ def do():
         filepath = f"{datapath}/transactor/automation_settings.json"
         with open(filepath, "r", encoding="utf8") as file:
             automation_settings = json.load(file)
-        if ["strategy_code"] in automation_settings.keys():
+        if "strategy_code" in automation_settings.keys():
             automation_settings.pop("strategy_code")
+        if "strategy_index" not in automation_settings.keys():
             automation_settings["strategy_index"] = 0
         with open(filepath, "w", encoding="utf8") as file:
             json.dump(automation_settings, file, indent=4)
