@@ -2374,13 +2374,15 @@ class Transactor:
         solsol_left_fee = response["solsolLeftFee"]
         strategy_left_fee = response["strategyLeftFee"]
 
-        if not should_pay_now:
-            return
-
         fee_paid_at = datetime.fromtimestamp(fee_paid_at / 1000, tz=timezone.utc)
         time_passed = datetime.now(timezone.utc) - fee_paid_at
         if time_passed > timedelta(days=21):
             self.secret_memory["was_fee_paid"] = False
+        else:
+            self.secret_memory["was_fee_paid"] = True
+
+        if not should_pay_now:
+            return
 
         payload = {
             "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2506,6 +2508,8 @@ class Transactor:
             path="/api/solsol/automated-revenue",
             payload=payload,
         )
+
+        self.secret_memory["was_fee_paid"] = True
 
 
 me = None

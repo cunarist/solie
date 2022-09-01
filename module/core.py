@@ -964,6 +964,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.initialize_functions.append(
             lambda: manager.me.check_binance_limits(),
         )
+        self.initialize_functions.append(
+            lambda: transactor.me.pay_fees(),
+        )
 
         # ■■■■■ finalize functions ■■■■■
 
