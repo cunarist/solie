@@ -50,6 +50,7 @@ class Transactor:
             "quantity_precisions": {},
             "maximum_leverages": {},
             "leverages": {},
+            "was_fee_paid": True,
         }
 
         # ■■■■■ remember and display ■■■■■
@@ -1368,6 +1369,15 @@ class Transactor:
         self.display_range_information()
 
     def display_asset_information(self, *args, **kwargs):
+        # ■■■■■ was fee paid? ■■■■■
+
+        if not self.secret_memory["was_fee_paid"]:
+            text = (
+                "Solsol and strategy fees were not paid more than 21 days. Auto"
+                " transaction is disabled."
+            core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
+            return
+
         # ■■■■■ is it the recent information? ■■■■■
 
         time_passed = datetime.now(timezone.utc) - self.account_state["observed_until"]
@@ -1423,6 +1433,11 @@ class Transactor:
         # ■■■■■ stop if the automation is turned off ■■■■■
 
         if not self.automation_settings["should_transact"]:
+            return
+
+        # ■■■■■ stop if the fee was not paid properly ■■■■■
+
+        if not self.secret_memory["was_fee_paid"]:
             return
 
         # ■■■■■ play the progress bar ■■■■■
@@ -2354,11 +2369,17 @@ class Transactor:
             payload=payload,
         )
         should_pay_now = response["shouldPayNow"]
+        fee_paid_at = response["feePaidAt"]
         solsol_left_fee = response["solsolLeftFee"]
         strategy_left_fee = response["strategyLeftFee"]
 
         if not should_pay_now:
             return
+
+        fee_paid_at = datetime.fromtimestamp(fee_paid_at / 1000, tz=timezone.utc)
+        time_passed = datetime.now(timezone.utc) - fee_paid_at
+        if time_passed > timedelta(days=21):
+            self.secret_memory["was_fee_paid"] = False
 
         payload = {
             "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
