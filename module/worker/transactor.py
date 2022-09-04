@@ -1373,7 +1373,7 @@ class Transactor:
 
         if not self.secret_memory["was_fee_paid"]:
             text = (
-                "Solsol and strategy fees were not paid for more than 21 days. Auto"
+                "App fee and strategy fees were not paid for more than 3 weeks. Auto"
                 " transaction is disabled."
             )
             core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
