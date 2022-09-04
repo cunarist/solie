@@ -58,7 +58,7 @@ class Strategiest:
 
     def save_strategies(self, *args, **kwargs):
         filepath = self.workerpath + "/strategies.slslsc"
-        encrypted_pickle.save(self.strategies, filepath)
+        encrypted_pickle.write(self.strategies, filepath)
 
     def display_strategies(self, *args, **kwargs):
         def job():

@@ -287,7 +287,7 @@ class Transactor:
         ]
         core.window.overlap(formation)
         filepath = self.workerpath + "/fee_settings.slslsc"
-        encrypted_pickle.save(self.fee_settings, filepath)
+        encrypted_pickle.write(self.fee_settings, filepath)
         self.update_discount_rate()
 
     def save_scribbles(self, *args, **kwargs):

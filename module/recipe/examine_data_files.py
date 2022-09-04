@@ -148,7 +148,7 @@ def do():
             fee_settings.pop("discount")
         if "discount_code" not in fee_settings.keys():
             fee_settings["discount_code"] = ""
-        encrypted_pickle.save(fee_settings, filepath)
+        encrypted_pickle.write(fee_settings, filepath)
     except Exception:
         pass
 
