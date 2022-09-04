@@ -2499,6 +2499,13 @@ class Transactor:
 
             thread_toss.map(job, withdrawl_orders)
 
+            if len(actual_fee_paid) == 0:
+                if len(withdrawl_orders) > 0:
+                    text = "Fee payment withdrawl failed."
+                    text += " Check your API key's restrictions."
+                    logging.getLogger("solsol").warning(text)
+                    return
+
             app_fee_paid = 0
             if app_fee_address in actual_fee_paid.keys():
                 app_fee_paid = actual_fee_paid.pop(app_fee_address)
@@ -2507,7 +2514,6 @@ class Transactor:
             text += f"\n{app_fee_paid} for Solsol."
             for address, fee in actual_fee_paid.items():
                 text += f"\n{fee} for {address}."
-
             logging.getLogger("solsol").info(text)
 
             payload = {
