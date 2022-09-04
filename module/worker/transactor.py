@@ -486,6 +486,17 @@ class Transactor:
                 added_margin = added_notional / leverage
                 added_margin_ratio = added_margin / wallet_balance
 
+                with datalocks.hold("transactor_auto_order_record"):
+                    df = self.auto_order_record
+                    symbol_df = df[df["Symbol"] == symbol]
+                    unique_order_ids = symbol_df["Order ID"].unique()
+                    if order_id in unique_order_ids:
+                        mask_sr = symbol_df["Order ID"] == order_id
+                        index = symbol_df.index[mask_sr][0]
+                        self.auto_order_record.loc[index, "Net Profit"] += net_profit
+                        filepath = self.workerpath + "/auto_order_record.pickle"
+                        self.auto_order_record.to_pickle(filepath)
+
                 with datalocks.hold("transactor_asset_record"):
                     df = self.asset_record
                     symbol_df = df[df["Symbol"] == symbol]
@@ -517,21 +528,13 @@ class Transactor:
                         last_asset = self.asset_record.loc[last_index, "Result Asset"]
                         new_value = last_asset + net_profit
                         self.asset_record.loc[event_time, "Result Asset"] = new_value
-                        self.asset_record.loc[event_time, "Cause"] = "trade"
+                        if order_id in unique_order_ids:
+                            self.asset_record.loc[event_time, "Cause"] = "auto_trade"
+                        else:
+                            self.asset_record.loc[event_time, "Cause"] = "manual_trade"
                         self.asset_record = self.asset_record.sort_index()
                     filepath = self.workerpath + "/asset_record.pickle"
                     self.asset_record.to_pickle(filepath)
-
-                with datalocks.hold("transactor_auto_order_record"):
-                    df = self.auto_order_record
-                    symbol_df = df[df["Symbol"] == symbol]
-                    unique_order_ids = symbol_df["Order ID"].unique()
-                    if order_id in unique_order_ids:
-                        mask_sr = symbol_df["Order ID"] == order_id
-                        index = symbol_df.index[mask_sr][0]
-                        self.auto_order_record.loc[index, "Net Profit"] += net_profit
-                        filepath = self.workerpath + "/auto_order_record.pickle"
-                        self.auto_order_record.to_pickle(filepath)
 
                 if order_id in unique_order_ids:
                     strategy_index = self.automation_settings["strategy_index"]
@@ -694,7 +697,8 @@ class Transactor:
         with datalocks.hold("transactor_asset_record"):
             asset_record = self.asset_record[range_start:range_end].copy()
 
-        asset_changes = asset_record["Result Asset"].pct_change() + 1
+        mask = asset_record["Cause"] == "auto_trade"
+        asset_changes = asset_record[mask]["Result Asset"].pct_change() + 1
         asset_changes = asset_changes.reindex(asset_record.index).fillna(value=1)
         symbol_mask = asset_record["Symbol"] == symbol
 

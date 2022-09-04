@@ -422,7 +422,7 @@ def do(dataset):
                 original_size = asset_record_ar.shape[0]
                 asset_record_ar.resize(original_size + 1)
                 asset_record_ar[-1]["index"] = fill_time
-                asset_record_ar[-1]["Cause"] = "trade"
+                asset_record_ar[-1]["Cause"] = "auto_trade"
                 asset_record_ar[-1]["Symbol"] = symbol
                 asset_record_ar[-1]["Side"] = side
                 asset_record_ar[-1]["Fill Price"] = fill_price
