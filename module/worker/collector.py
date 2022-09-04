@@ -121,6 +121,12 @@ class Collector:
             executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
+            self.check_data_integrity,
+            trigger="cron",
+            minute="*",
+            executor="thread_pool_executor",
+        )
+        core.window.scheduler.add_job(
             self.get_exchange_information,
             trigger="cron",
             minute="*",
@@ -162,6 +168,15 @@ class Collector:
             lambda: self.clear_aggregate_trades(),
         ]
         check_internet.add_disconnected_functions(disconnected_functions)
+
+    def check_data_integrity(self, *args, **kwargs):
+        should_organize = False
+        with datalocks.hold("collector_candle_data"):
+            df = self.candle_data
+            if not df.index.is_monotonic_increasing:
+                should_organize = True
+        if should_organize:
+            self.organize_everything()
 
     def get_exchange_information(self, *args, **kwargs):
         if not check_internet.connected():
