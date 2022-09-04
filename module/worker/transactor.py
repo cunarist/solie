@@ -52,6 +52,7 @@ class Transactor:
             "maximum_leverages": {},
             "leverages": {},
             "was_fee_paid": True,
+            "discount_rate": 0,
         }
 
         # ■■■■■ remember and display ■■■■■
@@ -95,7 +96,7 @@ class Transactor:
             self.fee_settings = encrypted_pickle.read(filepath)
         except FileNotFoundError:
             self.fee_settings = {
-                "discount": False,
+                "discount_code": "",
             }
 
         try:
@@ -237,6 +238,12 @@ class Transactor:
             hour="*",
             executor="thread_pool_executor",
         )
+        core.window.scheduler.add_job(
+            self.update_discount_rate,
+            trigger="cron",
+            hour="*",
+            executor="thread_pool_executor",
+        )
 
         # ■■■■■ websocket streamings ■■■■■
 
@@ -258,6 +265,19 @@ class Transactor:
         disconnected_functions = []
         check_internet.add_disconnected_functions(disconnected_functions)
 
+    def update_discount_rate(self, *args, **kwargs):
+        discount_code = self.fee_settings["discount_code"]
+        payload = {
+            "discountCode": discount_code,
+        }
+        response = self.api_requester.cunarist(
+            http_method="GET",
+            path="/api/solsol/discount-code",
+            payload=payload,
+        )
+        discount_rate = response["discountRate"]
+        self.secret_memory["discount_rate"] = discount_rate
+
     def update_fee_settings(self, *args, **kwargs):
         formation = [
             "Update your fee settings",
@@ -268,6 +288,7 @@ class Transactor:
         core.window.overlap(formation)
         filepath = self.workerpath + "/fee_settings.slslsc"
         encrypted_pickle.save(self.fee_settings, filepath)
+        self.update_discount_rate()
 
     def save_scribbles(self, *args, **kwargs):
         filepath = self.workerpath + "/scribbles.pickle"
@@ -2399,10 +2420,11 @@ class Transactor:
             if not doc_item["weekNumber"] < current_week_number:
                 continue
 
-            if self.fee_settings["discount"]:
-                app_left_fee *= 0.1
+            if self.secret_memory["discount_rate"] > 0:
+                discount_rate = self.secret_memory["discount_rate"]
+                app_left_fee *= 1 - discount_rate
                 for address in strategy_left_fee.keys():
-                    strategy_left_fee[address] *= 0.1
+                    strategy_left_fee[address] *= 1 - discount_rate
 
             payload = {
                 "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),

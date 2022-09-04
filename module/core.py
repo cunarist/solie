@@ -979,6 +979,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.initialize_functions.append(
             lambda: transactor.me.pay_fees(),
         )
+        self.initialize_functions.append(
+            lambda: transactor.me.update_discount_rate(),
+        )
 
         # ■■■■■ finalize functions ■■■■■
 

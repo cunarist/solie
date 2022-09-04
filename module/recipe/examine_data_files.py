@@ -6,6 +6,7 @@ import shutil
 import pandas as pd
 
 from module.recipe import user_settings
+from module.recipe import encrypted_pickle
 
 
 def do():
@@ -136,6 +137,18 @@ def do():
             automation_settings["strategy_index"] = 0
         with open(filepath, "w", encoding="utf8") as file:
             json.dump(automation_settings, file, indent=4)
+    except Exception:
+        pass
+
+    # 6.1: discount code
+    try:
+        filepath = f"{datapath}/transactor/fee_settings.slslsc"
+        fee_settings = encrypted_pickle.read(filepath)
+        if "discount" in fee_settings.keys():
+            fee_settings.pop("discount")
+        if "discount_code" not in fee_settings.keys():
+            fee_settings["discount_code"] = ""
+        encrypted_pickle.save(fee_settings, filepath)
     except Exception:
         pass
 

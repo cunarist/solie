@@ -1,9 +1,6 @@
 from PySide6 import QtWidgets, QtCore, QtGui
 
-from module import core
-from module.instrument.api_requester import ApiRequester
 from module.widget.horizontal_divider import HorizontalDivider
-from module.recipe import outsource
 
 
 class FeeOption(QtWidgets.QWidget):
@@ -15,7 +12,6 @@ class FeeOption(QtWidgets.QWidget):
         # ■■■■■ prepare things ■■■■■
 
         fee_settings = payload
-        api_requester = ApiRequester()
 
         # ■■■■■ full layout ■■■■■
 
@@ -74,42 +70,18 @@ class FeeOption(QtWidgets.QWidget):
         card_layout.addLayout(this_layout)
         discount_code_input = QtWidgets.QLineEdit()
         discount_code_input.setFixedWidth(360)
+        discount_code_input.setText(fee_settings["discount_code"])
         this_layout.addWidget(discount_code_input)
 
         def job():
-            discount_code = discount_code_input.text()
-            payload = {
-                "discountCode": discount_code,
-            }
-            response = api_requester.cunarist(
-                http_method="GET",
-                path="/api/solsol/discount-code",
-                payload=payload,
-            )
-
-            if response["isCodeCorrect"]:
-                fee_settings["discount"] = True
-                done_event.set()
-                question = [
-                    "Special discount is now applied",
-                    "Thank you for contributing to Solsol development.",
-                    ["Okay"],
-                ]
-                core.window.ask(question)
-
-            else:
-                question = [
-                    "Discount code is wrong",
-                    "Enter the correct discount code to get the special discount.",
-                    ["Okay"],
-                ]
-                core.window.ask(question)
+            fee_settings["discount_code"] = discount_code_input.text()
+            done_event.set()
 
         # submit button
         this_layout = QtWidgets.QHBoxLayout()
         card_layout.addLayout(this_layout)
         submit_button = QtWidgets.QPushButton("Apply discount code", card)
-        outsource.do(submit_button.clicked, job)
+        submit_button.clicked.connect(job)
         submit_button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,
