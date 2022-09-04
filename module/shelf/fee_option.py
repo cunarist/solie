@@ -1,5 +1,8 @@
 from PySide6 import QtWidgets, QtCore, QtGui
 
+from module import core
+from module.instrument.api_requester import ApiRequester
+from module.recipe import outsource
 from module.widget.horizontal_divider import HorizontalDivider
 
 
@@ -12,6 +15,7 @@ class FeeOption(QtWidgets.QWidget):
         # ■■■■■ prepare things ■■■■■
 
         fee_settings = payload
+        api_requester = ApiRequester()
 
         # ■■■■■ full layout ■■■■■
 
@@ -69,19 +73,37 @@ class FeeOption(QtWidgets.QWidget):
         this_layout = QtWidgets.QHBoxLayout()
         card_layout.addLayout(this_layout)
         discount_code_input = QtWidgets.QLineEdit()
+        discount_code_input.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         discount_code_input.setFixedWidth(360)
         discount_code_input.setText(fee_settings["discount_code"])
         this_layout.addWidget(discount_code_input)
 
         def job():
-            fee_settings["discount_code"] = discount_code_input.text()
+            payload = (discount_code_input.text,)
+            discount_code = core.window.undertake(lambda p=payload: p[0](), True)
+            fee_settings["discount_code"] = discount_code
+            payload = {
+                "discountCode": discount_code,
+            }
+            response = api_requester.cunarist(
+                http_method="GET",
+                path="/api/solsol/discount-code",
+                payload=payload,
+            )
+            discount_rate = response["discountRate"]
+            question = [
+                f"Fee discount rate is {discount_rate*100:.0f}%",
+                "Now you get to pay fees with this amount of reduction.",
+                ["Okay"],
+            ]
+            core.window.ask(question)
             done_event.set()
 
         # submit button
         this_layout = QtWidgets.QHBoxLayout()
         card_layout.addLayout(this_layout)
         submit_button = QtWidgets.QPushButton("Apply discount code", card)
-        submit_button.clicked.connect(job)
+        outsource.do(submit_button.clicked, job)
         submit_button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,
