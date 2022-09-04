@@ -70,6 +70,47 @@ class StrategyInfoView(QtWidgets.QWidget):
         detail_text.setWordWrap(True)
         card_layout.addWidget(detail_text)
 
+        # ■■■■■ a card ■■■■■
+
+        # card structure
+        card = QtWidgets.QGroupBox()
+        card.setFixedWidth(720)
+        card_layout = QtWidgets.QVBoxLayout(card)
+        card_layout.setContentsMargins(80, 40, 80, 40)
+        cards_layout.addWidget(card)
+
+        # explanation
+        detail_text = QtWidgets.QLabel(
+            "BUSD(BSC) fee address",
+            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
+        )
+        detail_text.setWordWrap(True)
+        card_layout.addWidget(detail_text)
+
+        # spacing
+        spacing_text = QtWidgets.QLabel("")
+        spacing_text_font = QtGui.QFont()
+        spacing_text_font.setPointSize(3)
+        spacing_text.setFont(spacing_text_font)
+        card_layout.addWidget(spacing_text)
+
+        # divider
+        divider = HorizontalDivider(self)
+        card_layout.addWidget(divider)
+
+        # spacing
+        spacing_text = QtWidgets.QLabel("")
+        spacing_text_font = QtGui.QFont()
+        spacing_text_font.setPointSize(3)
+        spacing_text.setFont(spacing_text_font)
+        card_layout.addWidget(spacing_text)
+
+        # explanation
+        detail_text = QtWidgets.QLabel(strategy["fee_address"])
+        detail_text.setWordWrap(True)
+        detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        card_layout.addWidget(detail_text)
+
         # ■■■■■ spacing ■■■■■
 
         # spacing
