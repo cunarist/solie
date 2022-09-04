@@ -38,7 +38,7 @@ class TermsOfAgreement(QtWidgets.QWidget):
         # open button
         def job():
             nonlocal did_open
-            webbrowser.open("https://cunarist.com/solsol/terms-of-agreement")
+            webbrowser.open("https://cunarist.com/solsol/terms-of-service")
             did_open = True
 
         this_layout = QtWidgets.QHBoxLayout()
