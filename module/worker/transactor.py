@@ -32,6 +32,7 @@ from module.recipe import standardize
 from module.recipe import datalocks
 from module.recipe import encrypted_pickle
 from module.shelf.fee_option import FeeOption
+from module.shelf.fee_revenue_view import FeeRevenueView
 
 
 class Transactor:
@@ -2528,6 +2529,15 @@ class Transactor:
                 path="/api/solsol/automated-revenue",
                 payload=payload,
             )
+
+    def show_fees_and_revenues(self, *args, **kwargs):
+        formation = [
+            "These are revenues and fees on this device",
+            FeeRevenueView,
+            True,
+            getmac.get_mac_address(),
+        ]
+        core.window.overlap(formation)
 
 
 me = None

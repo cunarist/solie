@@ -1075,6 +1075,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             outsource.do(self.pushButton_7.clicked, job)
             job = strategist.me.add_blank_strategy
             outsource.do(self.pushButton_5.clicked, job)
+            job = transactor.me.show_fees_and_revenues
+            outsource.do(self.pushButton_9.clicked, job)
 
         self.undertake(job, True)
 
