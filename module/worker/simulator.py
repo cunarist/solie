@@ -104,6 +104,8 @@ class Simulator:
 
     def update_calculation_settings(self, *args, **kwargs):
         text = core.window.undertake(lambda: core.window.comboBox_5.currentText(), True)
+        if text == "":
+            return
         from_year = self.calculation_settings["year"]
         to_year = int(text)
         self.calculation_settings["year"] = to_year
