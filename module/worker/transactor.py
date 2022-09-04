@@ -2358,7 +2358,7 @@ class Transactor:
 
     def pay_fees(self, *args, **kwargs):
         asset_token = user_settings.get_data_settings()["asset_token"]
-        solsol_fee_address = "0x68EA838F933EEbaA9167E9f1C6E20De598F44E7e"
+        app_fee_address = "0x68EA838F933EEbaA9167E9f1C6E20De598F44E7e"
 
         payload = {
             "solsolPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
@@ -2369,147 +2369,159 @@ class Transactor:
             path="/api/solsol/automated-revenue",
             payload=payload,
         )
-        should_pay_now = response["shouldPayNow"]
-        fee_paid_at = response["feePaidAt"]
-        solsol_left_fee = response["solsolLeftFee"]
-        strategy_left_fee = response["strategyLeftFee"]
+        doc_items = response
 
-        fee_paid_at = datetime.fromtimestamp(fee_paid_at / 1000, tz=timezone.utc)
-        time_passed = datetime.now(timezone.utc) - fee_paid_at
-        if time_passed > timedelta(days=21):
+        timestamp = datetime.now(timezone.utc).timestamp()
+        days_from_first_monday = timestamp / (24 * 60 * 60) - 4
+        current_week_number = math.ceil(days_from_first_monday / 7)
+
+        weeks_not_paid = 0
+        for doc_item in doc_items:
+            if not doc_item["isFeePaid"]:
+                if doc_item["weekNumber"] < current_week_number:
+                    weeks_not_paid += 1
+
+        if weeks_not_paid >= 3:
             self.secret_memory["was_fee_paid"] = False
         else:
             self.secret_memory["was_fee_paid"] = True
 
-        if not should_pay_now:
-            return
+        for doc_item in doc_items:
+            week_number = doc_item["weekNumber"]
+            is_fee_paid = doc_item["isFeePaid"]
+            app_left_fee = doc_item["appFee"]
+            strategy_left_fee = doc_item["strategyFee"]
 
-        payload = {
-            "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-        }
-        response = self.api_requester.binance(
-            http_method="GET",
-            path="/api/v3/account",
-            payload=payload,
-            server="spot",
-        )
-        spot_balances = response["balances"]
-
-        busd_needed = 1
-        busd_prepared = 0
-
-        for spot_balance in spot_balances:
-            if spot_balance["asset"] == "BUSD":
-                busd_prepared = spot_balance["free"]
-                busd_prepared = float(busd_prepared)
-                break
-
-        withdrawl_orders = []
-        if solsol_left_fee > 10:
-            busd_needed += solsol_left_fee
-            withdrawl_orders.append(
-                {
-                    "timestamp": None,
-                    "coin": "BUSD",
-                    "network": "BSC",
-                    "address": solsol_fee_address,
-                    "amount": ball.ceil(solsol_left_fee, 4),
-                }
-            )
-        for address, fee in strategy_left_fee.items():
-            if fee is None:
+            if is_fee_paid:
                 continue
-            if fee > 10:
-                busd_needed += fee
+
+            if not doc_item["weekNumber"] < current_week_number:
+                continue
+
+            if self.fee_settings["discount"]:
+                app_left_fee *= 0.1
+                for address in strategy_left_fee.keys():
+                    strategy_left_fee[address] *= 0.1
+
+            payload = {
+                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+            }
+            response = self.api_requester.binance(
+                http_method="GET",
+                path="/api/v3/account",
+                payload=payload,
+                server="spot",
+            )
+            spot_balances = response["balances"]
+
+            busd_needed = 0.1
+            busd_prepared = 0
+
+            for spot_balance in spot_balances:
+                if spot_balance["asset"] == "BUSD":
+                    busd_prepared = spot_balance["free"]
+                    busd_prepared = float(busd_prepared)
+                    break
+
+            withdrawl_orders = []
+            if app_left_fee > 10:
+                busd_needed += app_left_fee
                 withdrawl_orders.append(
                     {
                         "timestamp": None,
                         "coin": "BUSD",
                         "network": "BSC",
-                        "address": address,
-                        "amount": ball.ceil(fee, 4),
+                        "address": app_fee_address,
+                        "amount": ball.ceil(app_left_fee, 4),
                     }
                 )
+            for address, fee in strategy_left_fee.items():
+                if fee > 10:
+                    busd_needed += fee
+                    withdrawl_orders.append(
+                        {
+                            "timestamp": None,
+                            "coin": "BUSD",
+                            "network": "BSC",
+                            "address": address,
+                            "amount": ball.ceil(fee, 4),
+                        }
+                    )
 
-        dollars_transfer = busd_needed - busd_prepared
-        if dollars_transfer > 0.001:
-            payload = {
-                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                "type": "UMFUTURE_MAIN",
-                "amount": ball.ceil(dollars_transfer + 10, 4),
-                "asset": asset_token,
-            }
-            self.api_requester.binance(
-                http_method="POST",
-                path="/sapi/v1/asset/transfer",
-                payload=payload,
-                server="spot",
-            )
-            time.sleep(5)
-
-            if asset_token == "USDT":
+            dollars_transfer = busd_needed - busd_prepared
+            if dollars_transfer > 0.0001:
                 payload = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                    "symbol": "BUSDUSDT",
-                    "side": "BUY",
-                    "type": "MARKET",
-                    "quantity": ball.ceil(dollars_transfer + 9, 4),
+                    "type": "UMFUTURE_MAIN",
+                    "amount": ball.ceil(max(dollars_transfer, 10) + 0.2, 4),
+                    "asset": asset_token,
                 }
                 self.api_requester.binance(
                     http_method="POST",
-                    path="/api/v3/order",
+                    path="/sapi/v1/asset/transfer",
                     payload=payload,
                     server="spot",
                 )
                 time.sleep(5)
 
-        strategy_fee_paid = {}
+                if asset_token == "USDT":
+                    payload = {
+                        "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                        "symbol": "BUSDUSDT",
+                        "side": "BUY",
+                        "type": "MARKET",
+                        "quantity": ball.ceil(max(dollars_transfer, 10) + 0.1, 4),
+                    }
+                    self.api_requester.binance(
+                        http_method="POST",
+                        path="/api/v3/order",
+                        payload=payload,
+                        server="spot",
+                    )
+                    time.sleep(5)
 
-        def job(payload):
-            try:
-                timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
-                payload["timestamp"] = timestamp
-                original_amount = payload["amount"]
-                if self.fee_settings["discount"]:
-                    payload["amount"] = original_amount * 0.1
-                self.api_requester.binance(
-                    http_method="POST",
-                    path="/sapi/v1/capital/withdraw/apply",
-                    payload=payload,
-                    server="spot",
-                )
-                address = payload["address"]
-                this_fee_paid = original_amount
-                strategy_fee_paid[address] = this_fee_paid
-            except Exception:
-                pass
+            actual_fee_paid = {}
 
-        thread_toss.map(job, withdrawl_orders)
+            def job(payload):
+                try:
+                    timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
+                    payload["timestamp"] = timestamp
+                    self.api_requester.binance(
+                        http_method="POST",
+                        path="/sapi/v1/capital/withdraw/apply",
+                        payload=payload,
+                        server="spot",
+                    )
+                    address = payload["address"]
+                    actual_fee_paid[address] = payload["amount"]
+                except Exception:
+                    pass
 
-        solsol_fee_paid = 0
-        if solsol_fee_address in strategy_fee_paid.keys():
-            solsol_fee_paid = strategy_fee_paid.pop(solsol_fee_address)
+            thread_toss.map(job, withdrawl_orders)
 
-        text = "Fee payment completed."
-        text += f"\n{solsol_fee_paid} for Solsol."
-        for address, fee in strategy_fee_paid.items():
-            text += f"\n{fee} for {address}."
+            app_fee_paid = 0
+            if app_fee_address in actual_fee_paid.keys():
+                app_fee_paid = actual_fee_paid.pop(app_fee_address)
 
-        logging.getLogger("solsol").info(text)
+            text = f"Fee payment completed for week number {week_number}."
+            text += f"\n{app_fee_paid} for Solsol."
+            for address, fee in actual_fee_paid.items():
+                text += f"\n{fee} for {address}."
 
-        payload = {
-            "solsolPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
-            "deviceIdentifier": getmac.get_mac_address(),
-            "solsolFeePaid": solsol_fee_paid,
-            "strategyFeePaid": strategy_fee_paid,
-        }
-        response = self.api_requester.cunarist(
-            http_method="PUT",
-            path="/api/solsol/automated-revenue",
-            payload=payload,
-        )
+            logging.getLogger("solsol").info(text)
 
-        self.secret_memory["was_fee_paid"] = True
+            payload = {
+                "solsolPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
+                "deviceIdentifier": getmac.get_mac_address(),
+                "weekNumber": week_number,
+                "isFeePaid": True,
+                "strategyFeePaid": actual_fee_paid,
+            }
+            response = self.api_requester.cunarist(
+                http_method="PUT",
+                path="/api/solsol/automated-revenue",
+                payload=payload,
+            )
 
 
 me = None
