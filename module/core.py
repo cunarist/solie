@@ -1132,7 +1132,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             job = transactor.me.match_graph_range
             new_action = action_menu.addAction(text)
             outsource.do(new_action.triggered, job)
-            text = "Update fee settings"
+            text = "Change fee settings"
             job = transactor.me.update_fee_settings
             new_action = action_menu.addAction(text)
             outsource.do(new_action.triggered, job)

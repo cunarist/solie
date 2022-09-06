@@ -273,7 +273,8 @@ class Manager:
         self.online_status["server_time_differences"].append(time_difference)
 
     def display_system_status(self, *args, **kwargs):
-        time = datetime.now(timezone.utc).replace(microsecond=0)
+        time = datetime.now(timezone.utc)
+        time_text = time.strftime("%Y-%m-%d %H:%M:%S")
         internet_connected = check_internet.connected()
         ping = self.online_status["ping"]
 
@@ -284,7 +285,7 @@ class Manager:
             mean_difference = 0
 
         text = ""
-        text += "Current time " + str(time)
+        text += f"Current time UTC±0 {time_text}"
         text += "  ⦁  "
         if internet_connected:
             text += "Connected to the internet"

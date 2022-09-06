@@ -45,7 +45,7 @@ class FeeOption(QtWidgets.QWidget):
 
         # explanation
         detail_text = QtWidgets.QLabel(
-            "Enter discount code",
+            "Discount code",
             alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
         )
         detail_text.setWordWrap(True)
@@ -102,7 +102,7 @@ class FeeOption(QtWidgets.QWidget):
         # submit button
         this_layout = QtWidgets.QHBoxLayout()
         card_layout.addLayout(this_layout)
-        submit_button = QtWidgets.QPushButton("Apply discount code", card)
+        submit_button = QtWidgets.QPushButton("Apply", card)
         outsource.do(submit_button.clicked, job)
         submit_button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
