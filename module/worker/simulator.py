@@ -803,8 +803,9 @@ class Simulator:
         with datalocks.hold("simulator_asset_record"):
             asset_record = self.asset_record[range_start:range_end].copy()
 
-        mask = asset_record["Cause"] == "auto_trade"
-        asset_changes = asset_record[mask]["Result Asset"].pct_change() + 1
+        auto_trade_mask = asset_record["Cause"] == "auto_trade"
+        asset_changes = asset_record["Result Asset"].pct_change() + 1
+        asset_record = asset_record[auto_trade_mask]
         asset_changes = asset_changes.reindex(asset_record.index).fillna(value=1)
         symbol_mask = asset_record["Symbol"] == symbol
 
