@@ -2407,7 +2407,7 @@ class Transactor:
                 if doc_item["weekNumber"] < current_week_number:
                     weeks_not_paid += 1
 
-        if weeks_not_paid >= 3:
+        if weeks_not_paid >= 2:
             self.secret_memory["was_fee_paid"] = False
         else:
             self.secret_memory["was_fee_paid"] = True
