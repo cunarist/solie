@@ -114,7 +114,7 @@ class FeeRevenueView(QtWidgets.QWidget):
             week_end = week_start + timedelta(days=7)
             week_start_text = week_start.strftime("%Y-%m-%d %H:%M:%S")
             week_end_text = week_end.strftime("%Y-%m-%d %H:%M:%S")
-            text = f"UTC±0 {week_start_text} ~ {week_end_text} (Week {week_number})"
+            text = f"UTC {week_start_text} ~ {week_end_text} (Week {week_number})"
             detail_text = QtWidgets.QLabel(
                 text,
                 alignment=QtCore.Qt.AlignmentFlag.AlignCenter,

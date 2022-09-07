@@ -285,7 +285,7 @@ class Manager:
             mean_difference = 0
 
         text = ""
-        text += f"Current time UTC±0 {time_text}"
+        text += f"Current time UTC {time_text}"
         text += "  ⦁  "
         if internet_connected:
             text += "Connected to the internet"
