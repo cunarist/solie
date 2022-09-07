@@ -152,6 +152,15 @@ def do():
     except Exception:
         pass
 
+    # 6.3: auto_trade and manual_trade
+    try:
+        filepath = f"{datapath}/transactor/asset_record.pickle"
+        asset_record = pd.read_pickle(filepath)
+        asset_record["Cause"] = asset_record["Cause"].replace("trade", "auto_trade")
+        asset_record.to_pickle(filepath)
+    except Exception:
+        pass
+
 
 def do_first():
     # 5.0: app settings
