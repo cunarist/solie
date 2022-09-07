@@ -109,7 +109,7 @@ class FeeRevenueView(QtWidgets.QWidget):
 
             # explanation
             week_number = doc_item["weekNumber"]
-            timestamp = (week_number * 7 + 4) * 24 * 60 * 60
+            timestamp = ((week_number - 1) * 7 + 4) * 24 * 60 * 60
             week_start = datetime.fromtimestamp(timestamp, tz=timezone.utc)
             week_end = week_start + timedelta(days=7)
             week_start_text = week_start.strftime("%Y-%m-%d %H:%M:%S")
