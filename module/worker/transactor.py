@@ -53,6 +53,7 @@ class Transactor:
             "leverages": {},
             "was_fee_paid": True,
             "discount_rate": 0,
+            "is_key_restrictions_satisfied": True,
         }
 
         # ■■■■■ remember and display ■■■■■
@@ -1396,7 +1397,16 @@ class Transactor:
         self.display_range_information()
 
     def display_asset_information(self, *args, **kwargs):
-        # ■■■■■ was fee paid? ■■■■■
+        # ■■■■■ Display important things first ■■■■■
+
+        time_passed = datetime.now(timezone.utc) - self.account_state["observed_until"]
+        if time_passed > timedelta(seconds=30):
+            text = (
+                "Couldn't get the latest info on your Binance account due to a problem"
+                " with your key or connection to the Binance server."
+            )
+            core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
+            return
 
         if not self.secret_memory["was_fee_paid"]:
             text = (
@@ -1406,13 +1416,10 @@ class Transactor:
             core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
             return
 
-        # ■■■■■ is it the recent information? ■■■■■
-
-        time_passed = datetime.now(timezone.utc) - self.account_state["observed_until"]
-        if time_passed > timedelta(seconds=30):
+        if not self.secret_memory["is_key_restrictions_satisfied"]:
             text = (
-                "Couldn't get the latest info on your Binance account due to a problem"
-                " with your key or connection to the Binance server."
+                "API key's restrictions are not satisfied. Auto transaction is"
+                " disabled."
             )
             core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
             return
@@ -1463,9 +1470,26 @@ class Transactor:
         if not self.automation_settings["should_transact"]:
             return
 
-        # ■■■■■ stop if the fee was not paid properly ■■■■■
+        # ■■■■■ stop if conditions are not met ■■■■■
 
         if not self.secret_memory["was_fee_paid"]:
+            return
+
+        if not self.secret_memory["is_key_restrictions_satisfied"]:
+            text = "You need to enable the restrictions below:"
+            text += "\n"
+            text += "\nEnable Spot & Margin Trading"
+            text += "\nEnable Withdrawls"
+            text += "\nEnable Futures"
+            text += "\nPermits Universal Transfer"
+            question = [
+                "API key's restrictions are not satisfied.",
+                text,
+                ["Open the management page"],
+            ]
+            answer = core.window.ask(question)
+            if answer == 1:
+                self.open_api_management_page()
             return
 
         # ■■■■■ play the progress bar ■■■■■
@@ -2048,6 +2072,32 @@ class Transactor:
             except ApiRequestError:
                 pass
 
+        # ■■■■■ check API key restrictions ■■■■■
+
+        payload = {
+            "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+        }
+        response = self.api_requester.binance(
+            http_method="GET",
+            path="/sapi/v1/account/apiRestrictions",
+            payload=payload,
+            server="spot",
+        )
+        api_restrictions = response
+
+        is_satisfied = True
+        enable_required_restrictions = [
+            "enableSpotAndMarginTrading",
+            "enableWithdrawals",
+            "enableFutures",
+            "permitsUniversalTransfer",
+        ]
+        for restriction_name in enable_required_restrictions:
+            is_enabled = api_restrictions[restriction_name]
+            if not is_enabled:
+                is_satisfied = False
+        self.secret_memory["is_key_restrictions_satisfied"] = is_satisfied
+
     def place_order(self, *args, **kwargs):
         task_start_time = datetime.now(timezone.utc)
 
@@ -2552,7 +2602,7 @@ class Transactor:
                 "isFeePaid": True,
                 "strategyFeePaid": actual_fee_paid,
             }
-            response = self.api_requester.cunarist(
+            self.api_requester.cunarist(
                 http_method="PUT",
                 path="/api/solsol/automated-revenue",
                 payload=payload,
