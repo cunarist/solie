@@ -1419,7 +1419,8 @@ class Transactor:
         if not self.secret_memory["is_key_restrictions_satisfied"]:
             text = (
                 "API key's restrictions are not satisfied. Auto transaction is"
-                " disabled."
+                " disabled. Go to your Binance API managements webpage to change"
+                " the restrictions."
             )
             core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
             return
@@ -1476,20 +1477,6 @@ class Transactor:
             return
 
         if not self.secret_memory["is_key_restrictions_satisfied"]:
-            text = "You need to enable the restrictions below:"
-            text += "\n"
-            text += "\nEnable Spot & Margin Trading"
-            text += "\nEnable Withdrawls"
-            text += "\nEnable Futures"
-            text += "\nPermits Universal Transfer"
-            question = [
-                "API key's restrictions are not satisfied.",
-                text,
-                ["Open the management page"],
-            ]
-            answer = core.window.ask(question)
-            if answer == 1:
-                self.open_api_management_page()
             return
 
         # ■■■■■ play the progress bar ■■■■■
@@ -2446,7 +2433,7 @@ class Transactor:
             path="/api/solsol/automated-revenue",
             payload=payload,
         )
-        doc_items = response
+        about_automated_revenues = response
 
         now_datetime = datetime.now(timezone.utc)
         current_year = now_datetime.year
@@ -2454,9 +2441,9 @@ class Transactor:
         current_cycle_number = (current_year - 1970) * 12 + current_month
 
         cycles_not_paid = 0
-        for doc_item in doc_items:
-            if not doc_item["isFeePaid"]:
-                if doc_item["cycleNumber"] < current_cycle_number:
+        for about_automated_revenue in about_automated_revenues:
+            if not about_automated_revenue["isFeePaid"]:
+                if about_automated_revenue["cycleNumber"] < current_cycle_number:
                     cycles_not_paid += 1
 
         if cycles_not_paid >= 2:
@@ -2464,24 +2451,7 @@ class Transactor:
         else:
             self.secret_memory["was_fee_paid"] = True
 
-        for doc_item in doc_items:
-            cycle_number = doc_item["cycleNumber"]
-            is_fee_paid = doc_item["isFeePaid"]
-            app_left_fee = doc_item["appFee"]
-            strategy_left_fee = doc_item["strategyFee"]
-
-            if is_fee_paid:
-                continue
-
-            if not doc_item["cycleNumber"] < current_cycle_number:
-                continue
-
-            if self.secret_memory["discount_rate"] > 0:
-                discount_rate = self.secret_memory["discount_rate"]
-                app_left_fee *= 1 - discount_rate
-                for address in strategy_left_fee.keys():
-                    strategy_left_fee[address] *= 1 - discount_rate
-
+        try:
             payload = {
                 "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
             }
@@ -2492,6 +2462,27 @@ class Transactor:
                 server="spot",
             )
             spot_balances = response["balances"]
+        except ApiRequestError:
+            # when API keys are not entered
+            return
+
+        for about_automated_revenue in about_automated_revenues:
+            cycle_number = about_automated_revenue["cycleNumber"]
+            is_fee_paid = about_automated_revenue["isFeePaid"]
+            app_left_fee = about_automated_revenue["appFee"]
+            strategy_left_fee = about_automated_revenue["strategyFee"]
+
+            if is_fee_paid:
+                continue
+
+            if not about_automated_revenue["cycleNumber"] < current_cycle_number:
+                continue
+
+            if self.secret_memory["discount_rate"] > 0:
+                discount_rate = self.secret_memory["discount_rate"]
+                app_left_fee *= 1 - discount_rate
+                for address in strategy_left_fee.keys():
+                    strategy_left_fee[address] *= 1 - discount_rate
 
             busd_needed = 0.1
             busd_prepared = 0

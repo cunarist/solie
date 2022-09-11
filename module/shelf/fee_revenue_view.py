@@ -25,8 +25,12 @@ class FeeRevenueView(QtWidgets.QWidget):
             path="/api/solsol/automated-revenue",
             payload=payload,
         )
-        doc_items = response
-        doc_items = sorted(doc_items, key=lambda d: d["cycleNumber"], reverse=True)
+        about_automated_revenues = response
+        about_automated_revenues = sorted(
+            about_automated_revenues,
+            key=lambda d: d["cycleNumber"],
+            reverse=True,
+        )
 
         # ■■■■■ full layout ■■■■■
 
@@ -99,7 +103,7 @@ class FeeRevenueView(QtWidgets.QWidget):
 
         # ■■■■■ cards ■■■■■
 
-        for doc_item in doc_items:
+        for about_automated_revenue in about_automated_revenues:
             # card structure
             card = QtWidgets.QGroupBox()
             card.setFixedWidth(720)
@@ -108,7 +112,7 @@ class FeeRevenueView(QtWidgets.QWidget):
             cards_layout.addWidget(card)
 
             # explanation
-            cycle_number = doc_item["cycleNumber"]
+            cycle_number = about_automated_revenue["cycleNumber"]
             quotient, remainder = divmod(cycle_number - 1, 12)
             cycle_year = quotient + 1970
             cycle_month = remainder + 1
@@ -160,14 +164,16 @@ class FeeRevenueView(QtWidgets.QWidget):
 
             # explanation
             text = ""
-            text += "Fee paid" if doc_item["isFeePaid"] else "Fee not paid"
+            is_fee_paid = about_automated_revenue["isFeePaid"]
+            text += "Fee paid" if is_fee_paid else "Fee not paid"
             text += "\n"
-            text += f"Sum of automated revenue: ${doc_item['sumRevenue']:.4f}"
+            sum_revenue = about_automated_revenue["sumRevenue"]
+            text += f"Sum of automated revenue: ${sum_revenue:.4f}"
             text += "\n"
-            app_fee = doc_item["appFee"]
+            app_fee = about_automated_revenue["appFee"]
             app_fee = 0 if app_fee < 10 else app_fee
             text += f"App fee: ${app_fee:.4f}"
-            for address, fee in doc_item["strategyFee"].items():
+            for address, fee in about_automated_revenue["strategyFee"].items():
                 fee = 0 if fee < 10 else fee
                 text += "\n"
                 text += f"Fee for BUSD(BSC) wallet {address}: ${fee:.4f}"
