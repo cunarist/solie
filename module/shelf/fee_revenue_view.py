@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 
 from PySide6 import QtWidgets, QtCore, QtGui
 
@@ -17,7 +17,7 @@ class FeeRevenueView(QtWidgets.QWidget):
         device_identifier = payload
         api_requester = ApiRequester()
         payload = {
-            "solsolPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
+            "appPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
             "deviceIdentifier": device_identifier,
         }
         response = api_requester.cunarist(
@@ -26,7 +26,7 @@ class FeeRevenueView(QtWidgets.QWidget):
             payload=payload,
         )
         doc_items = response
-        doc_items = sorted(doc_items, key=lambda d: d["weekNumber"], reverse=True)
+        doc_items = sorted(doc_items, key=lambda d: d["cycleNumber"], reverse=True)
 
         # ■■■■■ full layout ■■■■■
 
@@ -83,12 +83,12 @@ class FeeRevenueView(QtWidgets.QWidget):
 
         # explanation
         text = (
-            "In short, 20% of the total automated revenue gets paid as fees every"
-            " week. 10% of the automated revenue goes to the strategy creator and"
-            " another 10% goes to Cunarist each week. If the automated revenue is below"
-            " zero or is too little, the amount of fee for that week is $0. Effect of"
-            " discount code is not shown in these values, though it still works as it"
-            " should when fees actually get paid."
+            "In short, 20% of the total automated revenue gets paid as fees every first"
+            " day of the month. 10% of the automated revenue goes to the strategy"
+            " creator and another 10% goes to Cunarist each week. If the automated"
+            " revenue is below zero or is too little, the amount of fee for that month"
+            " is $0. Effect of discount code is not shown in these values, though it"
+            " still works as it should when fees actually get paid."
         )
         detail_text = QtWidgets.QLabel(
             text,
@@ -108,13 +108,31 @@ class FeeRevenueView(QtWidgets.QWidget):
             cards_layout.addWidget(card)
 
             # explanation
-            week_number = doc_item["weekNumber"]
-            timestamp = ((week_number - 1) * 7 + 4) * 24 * 60 * 60
-            week_start = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-            week_end = week_start + timedelta(days=7)
-            week_start_text = week_start.strftime("%Y-%m-%d %H:%M:%S")
-            week_end_text = week_end.strftime("%Y-%m-%d %H:%M:%S")
-            text = f"UTC {week_start_text} ~ {week_end_text} (Week {week_number})"
+            cycle_number = doc_item["cycleNumber"]
+            quotient, remainder = divmod(cycle_number - 1, 12)
+            cycle_year = quotient + 1970
+            cycle_month = remainder + 1
+            cycle_start = datetime(
+                year=cycle_year,
+                month=cycle_month,
+                day=1,
+                tzinfo=timezone.utc,
+            )
+            next_cycle_number = cycle_number + 1
+            quotient, remainder = divmod(next_cycle_number - 1, 12)
+            next_cycle_year = quotient + 1970
+            next_cycle_month = remainder + 1
+            cycle_end = datetime(
+                year=next_cycle_year,
+                month=next_cycle_month,
+                day=1,
+                tzinfo=timezone.utc,
+            )
+            cycle_start_text = cycle_start.strftime("%Y-%m-%d %H:%M:%S")
+            cycle_end_text = cycle_end.strftime("%Y-%m-%d %H:%M:%S")
+            text = (
+                f"UTC {cycle_start_text} ~ {cycle_end_text} (Fee cycle {cycle_number})"
+            )
             detail_text = QtWidgets.QLabel(
                 text,
                 alignment=QtCore.Qt.AlignmentFlag.AlignCenter,

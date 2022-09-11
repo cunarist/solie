@@ -541,7 +541,7 @@ class Transactor:
                     strategy = strategist.me.strategies[strategy_index]
                     fee_address = strategy["fee_address"]
                     payload = {
-                        "solsolPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
+                        "appPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
                         "deviceIdentifier": getmac.get_mac_address(),
                         "addedRevenue": net_profit,
                         "feeAddress": fee_address,
@@ -2388,7 +2388,7 @@ class Transactor:
         app_fee_address = "0x68EA838F933EEbaA9167E9f1C6E20De598F44E7e"
 
         payload = {
-            "solsolPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
+            "appPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
             "deviceIdentifier": getmac.get_mac_address(),
         }
         response = self.api_requester.cunarist(
@@ -2398,14 +2398,15 @@ class Transactor:
         )
         doc_items = response
 
-        timestamp = datetime.now(timezone.utc).timestamp()
-        days_from_first_monday = timestamp / (24 * 60 * 60) - 4
-        current_week_number = math.ceil(days_from_first_monday / 7)
+        now_datetime = datetime.now(timezone.utc)
+        current_year = now_datetime.year
+        current_month = now_datetime.month
+        current_cycle_number = (current_year - 1970) * 12 + current_month
 
         weeks_not_paid = 0
         for doc_item in doc_items:
             if not doc_item["isFeePaid"]:
-                if doc_item["weekNumber"] < current_week_number:
+                if doc_item["cycleNumber"] < current_cycle_number:
                     weeks_not_paid += 1
 
         if weeks_not_paid >= 2:
@@ -2414,7 +2415,7 @@ class Transactor:
             self.secret_memory["was_fee_paid"] = True
 
         for doc_item in doc_items:
-            week_number = doc_item["weekNumber"]
+            cycle_number = doc_item["cycleNumber"]
             is_fee_paid = doc_item["isFeePaid"]
             app_left_fee = doc_item["appFee"]
             strategy_left_fee = doc_item["strategyFee"]
@@ -2422,7 +2423,7 @@ class Transactor:
             if is_fee_paid:
                 continue
 
-            if not doc_item["weekNumber"] < current_week_number:
+            if not doc_item["cycleNumber"] < current_cycle_number:
                 continue
 
             if self.secret_memory["discount_rate"] > 0:
@@ -2538,16 +2539,16 @@ class Transactor:
             if app_fee_address in actual_fee_paid.keys():
                 app_fee_paid = actual_fee_paid.pop(app_fee_address)
 
-            text = f"Fee payment completed for week number {week_number}."
+            text = f"Fee payment completed for cycle number {cycle_number}."
             text += f"\n{app_fee_paid} for Solsol."
             for address, fee in actual_fee_paid.items():
                 text += f"\n{fee} for {address}."
             logging.getLogger("solsol").info(text)
 
             payload = {
-                "solsolPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
+                "appPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
                 "deviceIdentifier": getmac.get_mac_address(),
-                "weekNumber": week_number,
+                "cycleNumber": cycle_number,
                 "isFeePaid": True,
                 "strategyFeePaid": actual_fee_paid,
             }
