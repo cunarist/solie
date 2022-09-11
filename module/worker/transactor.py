@@ -2403,13 +2403,13 @@ class Transactor:
         current_month = now_datetime.month
         current_cycle_number = (current_year - 1970) * 12 + current_month
 
-        weeks_not_paid = 0
+        cycles_not_paid = 0
         for doc_item in doc_items:
             if not doc_item["isFeePaid"]:
                 if doc_item["cycleNumber"] < current_cycle_number:
-                    weeks_not_paid += 1
+                    cycles_not_paid += 1
 
-        if weeks_not_paid >= 2:
+        if cycles_not_paid >= 2:
             self.secret_memory["was_fee_paid"] = False
         else:
             self.secret_memory["was_fee_paid"] = True
