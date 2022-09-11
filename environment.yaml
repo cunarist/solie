@@ -6,7 +6,7 @@ dependencies:
   - pip=22.0.3
   - ta-lib=0.4.19
   - numpy=1.22.2
-  - pandas=1.4.1
+  - pandas=1.4.4
   - scipy=1.8.0
   - pip:
       - pyside6==6.3.1
