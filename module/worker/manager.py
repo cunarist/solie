@@ -93,12 +93,6 @@ class Manager:
             hour="*",
             executor="thread_pool_executor",
         )
-        core.window.scheduler.add_job(
-            self.notify_update,
-            trigger="cron",
-            hour="*",
-            executor="thread_pool_executor",
-        )
 
         # ■■■■■ websocket streamings ■■■■■
 
@@ -356,14 +350,9 @@ class Manager:
 
     def prepare_update(self, *args, **kwargs):
         find_goodies.prepare()
-
-    def notify_update(self, *args, **kwargs):
-        run_duration = datetime.now(timezone.utc) - self.executed_time
-        did_run_long = run_duration > timedelta(hours=12)
-
         is_prepared = find_goodies.get_updater_status()
 
-        if is_prepared and did_run_long:
+        if is_prepared:
             question = [
                 "Update is ready",
                 "Shut down Solsol and wait for a while. Update will be automatically"
