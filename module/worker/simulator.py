@@ -4,6 +4,7 @@ import os
 import time
 import re
 import pickle
+import calendar
 
 import pandas as pd
 import numpy as np
@@ -1255,7 +1256,6 @@ class Simulator:
         chunk_asset_changes_list = []
         for turn in range(chunk_count):
             chunk_asset_record = chunk_asset_record_list[turn]
-
             # leverage
             chunk_result_asset_sr = chunk_asset_record["Result Asset"]
             chunk_asset_shifts = chunk_result_asset_sr.diff()
@@ -1267,7 +1267,6 @@ class Simulator:
             chunk_asset_changes_by_leverage = (
                 1 + chunk_asset_shifts / lazy_chunk_result_asset * leverage
             )
-
             # fee
             chunk_fees = chunk_asset_record["Role"].copy()
             chunk_fees[chunk_fees == "maker"] = maker_fee
@@ -1277,7 +1276,6 @@ class Simulator:
             chunk_asset_changes_by_fee = (
                 1 - (chunk_fees / 100) * chunk_margin_ratios * leverage
             )
-
             # altogether
             chunk_asset_changes = (
                 chunk_asset_changes_by_leverage * chunk_asset_changes_by_fee
@@ -1291,20 +1289,34 @@ class Simulator:
             year_asset_changes.iloc[0] = float(1)
 
         # solsol and strategy fees
-        cycle_length = timedelta(days=7)
-        grouper = pd.Grouper(freq=cycle_length, origin="epoch")
+        grouper = pd.Grouper(freq="M")
         grouped = year_asset_changes.groupby(grouper)
-        cycle_asset_changes_list = [(s, r.dropna()) for s, r in grouped]
+        cycle_asset_changes_list = [(n, r.dropna()) for n, r in grouped]
         if len(cycle_asset_changes_list) > 0:
-            for cycle_start, cycle_asset_changes in cycle_asset_changes_list:
+            for cycle_name, cycle_asset_changes in cycle_asset_changes_list:
+                # about cycle
+                cycle_year = cycle_name.year
+                cycle_month = cycle_name.month
+                cycle_start = datetime(
+                    year=cycle_name.year,
+                    month=cycle_name.month,
+                    day=1,
+                    tzinfo=timezone.utc,
+                )
+                _, days_in_month = calendar.monthrange(cycle_year, cycle_month)
+                cycle_length = timedelta(days=days_in_month)
+                cycle_end = cycle_start + cycle_length
+                # fee calcuation
                 cycle_asset_change = 1
                 if len(cycle_asset_changes) > 0:
                     cycle_asset_change = np.product(cycle_asset_changes)
                 if cycle_asset_change <= 1:
                     continue
                 asset_change_due_to_fee = 1 / ((cycle_asset_change - 1) * 0.2 + 1)
-                fee_pay_time = cycle_start + cycle_length - timedelta(seconds=10)
-                cycle_asset_changes[fee_pay_time] = asset_change_due_to_fee
+                # fee application
+                if asset_change_due_to_fee < 1:
+                    fee_pay_time = cycle_end - timedelta(seconds=10)
+                    cycle_asset_changes[fee_pay_time] = asset_change_due_to_fee
             only_cycle_asset_changes_list = [r for _, r in cycle_asset_changes_list]
             year_asset_changes = pd.concat(only_cycle_asset_changes_list).sort_index()
 
