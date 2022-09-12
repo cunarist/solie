@@ -29,7 +29,7 @@ def prepare():
 
     api_requester = ApiRequester()
     payload = {"id": "version"}
-    response = api_requester.cunarist("GET", "/api/solsol/latest-information", payload)
+    response = api_requester.cunarist("GET", "/api/solsol/latest-version", payload)
     _latest_version = response["value"]
 
     if _is_prepared:
