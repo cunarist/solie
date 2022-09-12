@@ -541,11 +541,13 @@ class Transactor:
                     strategy_index = self.automation_settings["strategy_index"]
                     strategy = strategist.me.strategies[strategy_index]
                     fee_address = strategy["fee_address"]
+                    discount_rate = self.secret_memory["discount_rate"]
                     payload = {
                         "appPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
                         "deviceIdentifier": getmac.get_mac_address(),
                         "addedRevenue": net_profit,
                         "feeAddress": fee_address,
+                        "discountRate": discount_rate,
                     }
                     self.api_requester.cunarist(
                         "POST", "/api/solsol/automated-revenue", payload
@@ -2477,12 +2479,6 @@ class Transactor:
 
             if not about_automated_revenue["cycleNumber"] < current_cycle_number:
                 continue
-
-            if self.secret_memory["discount_rate"] > 0:
-                discount_rate = self.secret_memory["discount_rate"]
-                app_left_fee *= 1 - discount_rate
-                for address in strategy_left_fee.keys():
-                    strategy_left_fee[address] *= 1 - discount_rate
 
             busd_needed = 0.1
             busd_prepared = 0
