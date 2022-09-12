@@ -281,7 +281,7 @@ class Transactor:
 
     def update_fee_settings(self, *args, **kwargs):
         formation = [
-            "Update your fee settings",
+            "Change your fee settings",
             FeeOption,
             True,
             self.fee_settings,
