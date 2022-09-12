@@ -91,7 +91,7 @@ class FeeRevenueView(QtWidgets.QWidget):
             " day of the month. 10% of the automated revenue goes to the strategy"
             " creator and another 10% goes to Cunarist each month. If the automated"
             " revenue is below zero or is too little, the amount of fee for that month"
-            " is $0. Effect of your discount code is also applied in these values."
+            " is $0. Effect of your discount code is already applied in these values."
         )
         detail_text = QtWidgets.QLabel(
             text,
