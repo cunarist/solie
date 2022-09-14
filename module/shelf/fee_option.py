@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from PySide6 import QtWidgets, QtCore, QtGui
 
 from module import core
@@ -91,9 +93,18 @@ class FeeOption(QtWidgets.QWidget):
                 payload=payload,
             )
             discount_rate = response["discountRate"]
+            expire = response["expire"]
+            if expire is None:
+                expire_text = "doesn't expire"
+            else:
+                expire_date = datetime.fromtimestamp(expire / 1000, tz=timezone.utc)
+                expire_text = "expires at UTC " + expire_date.strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
             question = [
-                f"Fee discount rate is {discount_rate*100:.0f}%",
-                "Now you get to pay fees with this amount of reduction.",
+                "About your discount code",
+                f"Fee discount rate is {discount_rate*100:.0f}% and {expire_text}. Now"
+                " you get to pay fees with this amount of reduction.",
                 ["Okay"],
             ]
             core.window.ask(question)
