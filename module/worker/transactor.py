@@ -52,7 +52,6 @@ class Transactor:
             "maximum_leverages": {},
             "leverages": {},
             "was_fee_paid": True,
-            "discount_rate": 0,
             "is_key_restrictions_satisfied": True,
         }
 
@@ -239,12 +238,6 @@ class Transactor:
             hour="*",
             executor="thread_pool_executor",
         )
-        core.window.scheduler.add_job(
-            self.update_discount_rate,
-            trigger="cron",
-            hour="*",
-            executor="thread_pool_executor",
-        )
 
         # ■■■■■ websocket streamings ■■■■■
 
@@ -266,19 +259,6 @@ class Transactor:
         disconnected_functions = []
         check_internet.add_disconnected_functions(disconnected_functions)
 
-    def update_discount_rate(self, *args, **kwargs):
-        discount_code = self.fee_settings["discount_code"]
-        payload = {
-            "discountCode": discount_code,
-        }
-        response = self.api_requester.cunarist(
-            http_method="GET",
-            path="/api/solsol/discount-code",
-            payload=payload,
-        )
-        discount_rate = response["discountRate"]
-        self.secret_memory["discount_rate"] = discount_rate
-
     def update_fee_settings(self, *args, **kwargs):
         formation = [
             "Change your fee settings",
@@ -289,7 +269,6 @@ class Transactor:
         core.window.overlap(formation)
         filepath = self.workerpath + "/fee_settings.slslsc"
         encrypted_pickle.write(self.fee_settings, filepath)
-        self.update_discount_rate()
 
     def save_scribbles(self, *args, **kwargs):
         filepath = self.workerpath + "/scribbles.pickle"
@@ -541,13 +520,13 @@ class Transactor:
                     strategy_index = self.automation_settings["strategy_index"]
                     strategy = strategist.me.strategies[strategy_index]
                     fee_address = strategy["fee_address"]
-                    discount_rate = self.secret_memory["discount_rate"]
+                    discount_code = self.fee_settings["discount_code"]
                     payload = {
                         "appPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
                         "deviceIdentifier": getmac.get_mac_address(),
                         "addedRevenue": net_profit,
                         "feeAddress": fee_address,
-                        "discountRate": discount_rate,
+                        "discountCode": discount_code,
                     }
                     self.api_requester.cunarist(
                         "POST", "/api/solsol/automated-revenue", payload
