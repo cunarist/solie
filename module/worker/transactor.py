@@ -2490,7 +2490,7 @@ class Transactor:
                     break
 
             withdrawl_orders = []
-            if app_left_fee > 10:
+            if app_left_fee > 0:
                 busd_needed += app_left_fee
                 withdrawl_orders.append(
                     {
@@ -2502,7 +2502,7 @@ class Transactor:
                     }
                 )
             for address, fee in strategy_left_fee.items():
-                if fee > 10:
+                if fee > 0:
                     busd_needed += fee
                     withdrawl_orders.append(
                         {
