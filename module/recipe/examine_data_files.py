@@ -202,6 +202,27 @@ def do():
 
     thread_toss.map(lambda j: j(), jobs)
 
+    # 6.8: fee address column in auto order record
+    def job():
+        try:
+            filepath = f"{datapath}/transactor/auto_order_record.pickle"
+            auto_order_record = pd.read_pickle(filepath)
+            is_something_done = False
+            if "Net Profit" in auto_order_record.columns:
+                auto_order_record = auto_order_record.drop(["Net Profit"], axis=1)
+                is_something_done = True
+            if "Fee Address" not in auto_order_record.columns:
+                auto_order_record["Fee Address"] = ""
+                is_something_done = True
+            if is_something_done:
+                auto_order_record.to_pickle(filepath)
+        except Exception:
+            pass
+
+    jobs.append(job)
+
+    thread_toss.map(lambda j: j(), jobs)
+
 
 def do_first():
     # 5.0: app settings

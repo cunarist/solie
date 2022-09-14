@@ -157,7 +157,7 @@ class Transactor:
                 columns=[
                     "Symbol",
                     "Order ID",
-                    "Net Profit",
+                    "Fee Address",
                 ],
                 index=pd.DatetimeIndex([], tz="UTC"),
             )
@@ -227,7 +227,7 @@ class Transactor:
             executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
-            self.save_unrealized_changes,
+            self.save_large_files,
             trigger="cron",
             hour="*",
             executor="thread_pool_executor",
@@ -461,7 +461,7 @@ class Transactor:
 
             # when the order is filled
             if execution_type == "TRADE":
-                net_profit = realized_profit - commission
+                added_revenue = realized_profit - commission
                 added_notional = last_filled_price * last_filled_quantity
                 added_margin = added_notional / leverage
                 added_margin_ratio = added_margin / wallet_balance
@@ -473,9 +473,7 @@ class Transactor:
                     if order_id in unique_order_ids:
                         mask_sr = symbol_df["Order ID"] == order_id
                         index = symbol_df.index[mask_sr][0]
-                        self.auto_order_record.loc[index, "Net Profit"] += net_profit
-                        filepath = self.workerpath + "/auto_order_record.pickle"
-                        self.auto_order_record.to_pickle(filepath)
+                        fee_address = self.auto_order_record.loc[index, "Fee Address"]
 
                 with datalocks.hold("transactor_asset_record"):
                     df = self.asset_record
@@ -490,7 +488,7 @@ class Transactor:
                         new_value = recorded_value + added_margin_ratio
                         self.asset_record.loc[recorded_time, "Margin Ratio"] = new_value
                         last_asset = self.asset_record.loc[last_index, "Result Asset"]
-                        new_value = last_asset + net_profit
+                        new_value = last_asset + added_revenue
                         self.asset_record.loc[last_index, "Result Asset"] = new_value
                     else:
                         new_value = symbol
@@ -506,7 +504,7 @@ class Transactor:
                         new_value = order_id
                         self.asset_record.loc[event_time, "Order ID"] = new_value
                         last_asset = self.asset_record.loc[last_index, "Result Asset"]
-                        new_value = last_asset + net_profit
+                        new_value = last_asset + added_revenue
                         self.asset_record.loc[event_time, "Result Asset"] = new_value
                         if order_id in unique_order_ids:
                             self.asset_record.loc[event_time, "Cause"] = "auto_trade"
@@ -517,14 +515,11 @@ class Transactor:
                     self.asset_record.to_pickle(filepath)
 
                 if order_id in unique_order_ids:
-                    strategy_index = self.automation_settings["strategy_index"]
-                    strategy = strategist.me.strategies[strategy_index]
-                    fee_address = strategy["fee_address"]
                     discount_code = self.fee_settings["discount_code"]
                     payload = {
                         "appPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
                         "deviceIdentifier": getmac.get_mac_address(),
-                        "addedRevenue": net_profit,
+                        "addedRevenue": added_revenue,
                         "feeAddress": fee_address,
                         "discountCode": discount_code,
                     }
@@ -536,13 +531,18 @@ class Transactor:
 
         self.cancel_conflicting_orders()
 
-    def save_unrealized_changes(self, *args, **kwargs):
+    def save_large_files(self, *args, **kwargs):
         with datalocks.hold("transactor_unrealized_changes"):
             sr = self.unrealized_changes.sort_index()
             sr = sr.astype(np.float32)
             unrealized_changes = sr.copy()
             self.unrealized_changes = sr
         unrealized_changes.to_pickle(self.workerpath + "/unrealized_changes.pickle")
+
+        with datalocks.hold("transactor_auto_order_record"):
+            df = self.auto_order_record.iloc[-65536:]
+            auto_order_record = df.copy()
+        auto_order_record.to_pickle(self.workerpath + "/auto_order_record.pickle")
 
     def open_exchange(self, *args, **kwargs):
         symbol = self.viewing_symbol
@@ -1419,12 +1419,6 @@ class Transactor:
         for each_position in self.account_state["positions"].values():
             margin_sum += each_position["margin"]
 
-        with datalocks.hold("transactor_auto_order_record"):
-            if len(self.auto_order_record) > 0:
-                total_profit = self.auto_order_record["Net Profit"].sum()
-            else:
-                total_profit = 0
-
         text = ""
         text += "Total asset"
         text += f" ＄{self.account_state['wallet_balance']:.4f}"
@@ -1436,8 +1430,6 @@ class Transactor:
         text += "  ⦁  "
         text += "Entry price"
         text += f" ＄{position['entry_price']:.4f}"
-        text += "  ⦁  "
-        text += f"Automated revenue ＄{total_profit:+.4f}"
 
         core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
 
@@ -2304,10 +2296,13 @@ class Transactor:
                 order_id = response["orderId"]
                 timestamp = response["updateTime"] / 1000
                 update_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+                strategy_index = self.automation_settings["strategy_index"]
+                strategy = strategist.me.strategies[strategy_index]
+                fee_address = strategy["fee_address"]
                 with datalocks.hold("transactor_auto_order_record"):
                     self.auto_order_record.loc[update_time, "Symbol"] = order_symbol
                     self.auto_order_record.loc[update_time, "Order ID"] = order_id
-                    self.auto_order_record.loc[update_time, "Net Profit"] = 0
+                    self.auto_order_record.loc[update_time, "Fee Address"] = fee_address
                     self.auto_order_record = self.auto_order_record.sort_index()
 
             thread_toss.apply_async(job)

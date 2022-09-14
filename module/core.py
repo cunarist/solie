@@ -987,7 +987,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.finalize_functions = []
         self.finalize_functions.append(
-            lambda: transactor.me.save_unrealized_changes(),
+            lambda: transactor.me.save_large_files(),
         )
         self.finalize_functions.append(
             lambda: transactor.me.save_scribbles(),
