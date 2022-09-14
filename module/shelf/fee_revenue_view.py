@@ -170,10 +170,8 @@ class FeeRevenueView(QtWidgets.QWidget):
             text += f"Sum of automated revenue: ${sum_revenue:.4f}"
             text += "\n"
             app_fee = about_automated_revenue["appFee"]
-            app_fee = 0 if app_fee < 10 else app_fee
             text += f"App fee: ${app_fee:.4f}"
             for address, fee in about_automated_revenue["strategyFee"].items():
-                fee = 0 if fee < 10 else fee
                 text += "\n"
                 text += f"Fee for BUSD(BSC) wallet {address}: ${fee:.4f}"
             detail_text = QtWidgets.QLabel(text)
