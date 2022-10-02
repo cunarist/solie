@@ -1,4 +1,4 @@
-from PySide6 import QtWidgets, QtCore
+from PySide6 import QtWidgets
 
 from module.recipe import outsource
 
@@ -48,8 +48,7 @@ class DownloadFillOption(QtWidgets.QWidget):
         explain_label = QtWidgets.QLabel(
             "Solsol will fill the candle data with historical data provided by"
             " Binance. The more you fill, the longer it takes. Amount of a few days"
-            " only takes few minutes while amount of a few years can take hours.",
-            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
+            " only takes few minutes while amount of a few years can take hours."
         )
         explain_label.setWordWrap(True)
         card_layout.addWidget(explain_label)
