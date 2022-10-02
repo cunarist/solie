@@ -94,6 +94,10 @@ BrandLabel {
 
 HorizontalDivider, VerticalDivider {
     border: 8px solid #464646;
+}
+
+TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
+    background: transparent;
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">

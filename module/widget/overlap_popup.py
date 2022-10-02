@@ -3,6 +3,7 @@ import threading
 from PySide6 import QtWidgets, QtCore, QtGui
 
 from module.widget.popup_box import PopupBox
+from module.widget.transparent_scroll_area import TransparentScrollArea
 
 # https://stackoverflow.com/questions/67029993/pyqt-creating-a-popup-in-the-window
 
@@ -86,7 +87,7 @@ class OverlapPopup(QtWidgets.QWidget):
         content_box_layout.addLayout(this_layout)
 
         # scroll area
-        scroll_area = QtWidgets.QScrollArea()
+        scroll_area = TransparentScrollArea()
         scroll_widget = formation[1](self.done_event, formation[3])
 
         scroll_area.setWidget(scroll_widget)

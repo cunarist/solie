@@ -109,6 +109,10 @@ class Ui_MainWindow(object):
 "\n"
 "HorizontalDivider, VerticalDivider {\n"
 "    border: 8px solid #464646;\n"
+"}\n"
+"\n"
+"TransparentScrollArea, TransparentScrollArea > QWidget > QWidget {\n"
+"    background: transparent;\n"
 "}")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
