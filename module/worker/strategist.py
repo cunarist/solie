@@ -68,11 +68,7 @@ class Strategiest:
                 strategy_card.setParent(None)
             self.strategy_cards = []
 
-        core.window.undertake(job, False)
-
-        for strategy in self.strategies:
-
-            def job(strategy=strategy):
+            for strategy in self.strategies:
                 if strategy["risk_level"] == 0:
                     icon_pixmap = self.red_pixmap
                 elif strategy["risk_level"] == 1:
@@ -210,7 +206,7 @@ class Strategiest:
                 card_layout.addWidget(edit_button)
                 outsource.do(edit_button.clicked, job)
 
-            core.window.undertake(job, False)
+        core.window.undertake(job, False)
 
     def add_blank_strategy(self, *args, **kwargs):
         new_strategy = standardize.strategy()
