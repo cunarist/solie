@@ -649,13 +649,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                     pen=pyqtgraph.mkPen("#FFBB00"),
                     connect="finite",
                 ),
-                "boundaries": [
-                    plot_item.plot(
-                        pen=pyqtgraph.mkPen("#D0E200"),
-                        connect="finite",
-                    )
-                    for _ in range(20)
-                ],
                 "wobbles": [
                     plot_item.plot(
                         pen=pyqtgraph.mkPen("#888888"),
@@ -855,13 +848,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                     pen=pyqtgraph.mkPen("#FFBB00"),
                     connect="finite",
                 ),
-                "boundaries": [
-                    plot_item_2.plot(
-                        pen=pyqtgraph.mkPen("#D0E200"),
-                        connect="finite",
-                    )
-                    for _ in range(20)
-                ],
                 "wobbles": [
                     plot_item_2.plot(
                         pen=pyqtgraph.mkPen("#888888"),

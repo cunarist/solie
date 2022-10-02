@@ -905,34 +905,6 @@ class Transactor:
             return
         core.window.undertake(job, False)
 
-        # open orders
-        boundaries = [
-            open_order["boundary"]
-            for open_order in self.account_state["open_orders"][symbol].values()
-            if "boundary" in open_order
-        ]
-        first_moment = self.account_state["observed_until"] - timedelta(hours=12)
-        last_moment = self.account_state["observed_until"] + timedelta(hours=12)
-        for turn, widget in enumerate(core.window.transaction_lines["boundaries"]):
-            if turn < len(boundaries):
-                boundary = boundaries[turn]
-                data_x = np.linspace(
-                    first_moment.timestamp(), last_moment.timestamp(), num=1000
-                )
-                data_y = np.linspace(boundary, boundary, num=1000)
-                widget = core.window.transaction_lines["boundaries"][turn]
-
-                def job(widget=widget, data_x=data_x, data_y=data_y):
-                    widget.setData(data_x, data_y)
-
-                if stop_flag.find(task_name, task_id):
-                    return
-                core.window.undertake(job, False)
-            else:
-                if stop_flag.find(task_name, task_id):
-                    return
-                core.window.undertake(lambda w=widget: w.clear(), False)
-
         # entry price
         entry_price = self.account_state["positions"][symbol]["entry_price"]
         first_moment = self.account_state["observed_until"] - timedelta(hours=12)
