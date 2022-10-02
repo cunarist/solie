@@ -93,10 +93,7 @@ class FeeRevenueView(QtWidgets.QWidget):
             " revenue is below zero or is too little, the amount of fee for that month"
             " is $0. Effect of your discount code is already applied in these values."
         )
-        detail_text = QtWidgets.QLabel(
-            text,
-            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-        )
+        detail_text = QtWidgets.QLabel(text)
         detail_text.setWordWrap(True)
         card_layout.addWidget(detail_text)
 
