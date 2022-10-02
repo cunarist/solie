@@ -4,7 +4,7 @@ import time
 from module import core
 from module import thread_toss
 from module.worker import manager
-from module.shelf.full_log_view import FullLogView
+from module.shelf.long_text_view import LongTextView
 
 
 class LogHandler(logging.Handler):
@@ -35,7 +35,7 @@ class LogHandler(logging.Handler):
             def job(text=text):
                 formation = [
                     "There was an error",
-                    FullLogView,
+                    LongTextView,
                     False,
                     [text],
                 ]

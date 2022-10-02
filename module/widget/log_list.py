@@ -2,7 +2,7 @@ from PySide6 import QtWidgets, QtGui
 
 from module import core
 from module import thread_toss
-from module.shelf.full_log_view import FullLogView
+from module.shelf.long_text_view import LongTextView
 
 
 class LogList(QtWidgets.QListWidget):
@@ -35,7 +35,7 @@ class LogList(QtWidgets.QListWidget):
         fulltext = selected_item.fulltext
 
         def job():
-            formation = ["This is the full log", FullLogView, True, [fulltext]]
+            formation = ["This is the full log", LongTextView, True, [fulltext]]
             core.window.overlap(formation)
 
         thread_toss.apply_async(job)

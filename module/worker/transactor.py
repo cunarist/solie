@@ -33,6 +33,7 @@ from module.recipe import datalocks
 from module.recipe import encrypted_pickle
 from module.shelf.fee_option import FeeOption
 from module.shelf.fee_revenue_view import FeeRevenueView
+from module.shelf.long_text_view import LongTextView
 
 
 class Transactor:
@@ -2547,6 +2548,24 @@ class Transactor:
             FeeRevenueView,
             True,
             getmac.get_mac_address(),
+        ]
+        core.window.overlap(formation)
+
+    def show_raw_account_state_object(self, *args, **kwargs):
+        text = ""
+
+        time = datetime.now(timezone.utc)
+        time_text = time.strftime("%Y-%m-%d %H:%M:%S")
+        text += f"At UTC {time_text}"
+
+        text += "\n\n"
+        text += json.dumps(self.account_state, indent=4, default=str)
+
+        formation = [
+            "This is the raw account state object",
+            LongTextView,
+            True,
+            [text],
         ]
         core.window.overlap(formation)
 

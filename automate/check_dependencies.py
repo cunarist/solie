@@ -46,4 +46,4 @@ for package_key in included_packages:
             package_license = license_item["License"]
     new_data = [package_name, package_version, package_license, package_url]
     inclusion_information.append(new_data)
-sys.stdout.write(json.dumps(inclusion_information, indent=4))
+sys.stdout.write(json.dumps(inclusion_information, indent=4, default=str))

@@ -1123,6 +1123,10 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             job = transactor.me.update_fee_settings
             new_action = action_menu.addAction(text)
             outsource.do(new_action.triggered, job)
+            text = "Show Raw Account State Object"
+            job = transactor.me.show_raw_account_state_object
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
 
             action_menu = QtWidgets.QMenu(self)
             self.pushButton_11.setMenu(action_menu)

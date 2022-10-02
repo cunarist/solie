@@ -54,7 +54,7 @@ class ApiStreamer:
                 logger = logging.getLogger("solsol")
                 logger.exception(
                     "Exception occured from a streamer\nBelow is the received data\n"
-                    + json.dumps(received, indent=4)
+                    + json.dumps(received, indent=4, default=str)
                 )
 
         def on_close(*args):

@@ -1,7 +1,7 @@
 from PySide6 import QtWidgets, QtGui
 
 
-class FullLogView(QtWidgets.QWidget):
+class LongTextView(QtWidgets.QWidget):
     def __init__(self, done_event, payload):
         # ■■■■■ the basic ■■■■■
 
