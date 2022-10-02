@@ -511,8 +511,6 @@ class Transactor:
                         else:
                             self.asset_record.loc[event_time, "Cause"] = "manual_trade"
                         self.asset_record = self.asset_record.sort_index()
-                    filepath = self.workerpath + "/asset_record.pickle"
-                    self.asset_record.to_pickle(filepath)
 
                 if order_id in unique_order_ids:
                     discount_code = self.fee_settings["discount_code"]
@@ -543,6 +541,10 @@ class Transactor:
             df = self.auto_order_record.iloc[-65536:]
             auto_order_record = df.copy()
         auto_order_record.to_pickle(self.workerpath + "/auto_order_record.pickle")
+
+        with datalocks.hold("transactor_asset_record"):
+            asset_record = self.asset_record.copy()
+        asset_record.to_pickle(self.workerpath + "/asset_record.pickle")
 
     def open_exchange(self, *args, **kwargs):
         symbol = self.viewing_symbol
@@ -1911,7 +1913,6 @@ class Transactor:
                 current_time = datetime.now(timezone.utc)
                 self.asset_record.loc[current_time, "Cause"] = "other"
                 self.asset_record.loc[current_time, "Result Asset"] = wallet_balance
-                self.asset_record.to_pickle(self.workerpath + "/asset_record.pickle")
 
         # ■■■■■ when the wallet balance changed for no good reason ■■■■■
 
@@ -1933,7 +1934,6 @@ class Transactor:
                 current_time = datetime.now(timezone.utc)
                 self.asset_record.loc[current_time, "Cause"] = "other"
                 self.asset_record.loc[current_time, "Result Asset"] = wallet_balance
-                self.asset_record.to_pickle(self.workerpath + "/asset_record.pickle")
                 self.asset_record = self.asset_record.sort_index()
         else:
             # when the difference is small enough to consider as an numeric error

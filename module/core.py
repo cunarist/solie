@@ -986,6 +986,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ finalize functions ■■■■■
 
         self.finalize_functions = []
+
         self.finalize_functions.append(
             lambda: transactor.me.save_large_files(),
         )
