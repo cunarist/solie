@@ -166,8 +166,6 @@ def do():
 
     jobs.append(job)
 
-    thread_toss.map(lambda j: j(), jobs)
-
     # 6.8: fee address column in auto order record
     def job():
         filepath = f"{datapath}/transactor/auto_order_record.pickle"
@@ -184,7 +182,14 @@ def do():
 
     jobs.append(job)
 
-    thread_toss.map(lambda j: j(), jobs)
+    # run jobs in parallel
+    def job(job_function):
+        try:
+            job_function()
+        except Exception:
+            pass
+
+    thread_toss.map(job, jobs)
 
 
 def do_first():
@@ -237,4 +242,11 @@ def do_first():
 
     jobs.append(job)
 
-    thread_toss.map(lambda j: j(), jobs)
+    # run jobs in parallel
+    def job(job_function):
+        try:
+            job_function()
+        except Exception:
+            pass
+
+    thread_toss.map(job, jobs)
