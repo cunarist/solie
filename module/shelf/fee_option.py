@@ -2,9 +2,7 @@ from datetime import datetime, timezone
 
 from PySide6 import QtWidgets, QtCore, QtGui
 
-from module import core
 from module.instrument.api_requester import ApiRequester
-from module.recipe import outsource
 from module.widget.horizontal_divider import HorizontalDivider
 
 
@@ -18,6 +16,7 @@ class FeeOption(QtWidgets.QWidget):
 
         fee_settings = payload
         api_requester = ApiRequester()
+        discount_code = fee_settings["discount_code"]
 
         # ■■■■■ full layout ■■■■■
 
@@ -77,12 +76,19 @@ class FeeOption(QtWidgets.QWidget):
         discount_code_input = QtWidgets.QLineEdit()
         discount_code_input.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         discount_code_input.setFixedWidth(360)
-        discount_code_input.setText(fee_settings["discount_code"])
+        discount_code_input.setText(discount_code)
         this_layout.addWidget(discount_code_input)
 
+        # rate text
+        rate_label = QtWidgets.QLabel(
+            "",
+            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
+        )
+        rate_label.setWordWrap(True)
+        card_layout.addWidget(rate_label)
+
         def job():
-            payload = (discount_code_input.text,)
-            discount_code = core.window.undertake(lambda p=payload: p[0](), True)
+            discount_code = discount_code_input.text()
             fee_settings["discount_code"] = discount_code
             payload = {
                 "discountCode": discount_code,
@@ -98,23 +104,18 @@ class FeeOption(QtWidgets.QWidget):
                 expire_text = "doesn't expire"
             else:
                 expire_date = datetime.fromtimestamp(expire / 1000, tz=timezone.utc)
-                expire_text = "expires at UTC " + expire_date.strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                )
-            question = [
-                "About your discount code",
-                f"Fee discount rate is {discount_rate*100:.0f}% and {expire_text}. Now"
-                " you get to pay fees with this amount of reduction.",
-                ["Okay"],
-            ]
-            core.window.ask(question)
-            done_event.set()
+                date_text = expire_date.strftime("%Y-%m-%d %H:%M:%S")
+                expire_text = f"expires at UTC {date_text}"
+            text = f"Fee discount rate is {discount_rate*100:.0f}% and {expire_text}."
+            rate_label.setText(text)
+
+        job()
 
         # submit button
         this_layout = QtWidgets.QHBoxLayout()
         card_layout.addLayout(this_layout)
         submit_button = QtWidgets.QPushButton("Apply", card)
-        outsource.do(submit_button.clicked, job)
+        submit_button.clicked.connect(job)
         submit_button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,
