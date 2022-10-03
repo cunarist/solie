@@ -2437,7 +2437,8 @@ class Transactor:
                     break
 
             withdrawl_orders = []
-            if app_left_fee > 0:
+            if app_left_fee > 10:
+                app_left_fee = ball.ceil(app_left_fee, 4)
                 busd_needed += app_left_fee
                 withdrawl_orders.append(
                     {
@@ -2445,11 +2446,12 @@ class Transactor:
                         "coin": "BUSD",
                         "network": "BSC",
                         "address": app_fee_address,
-                        "amount": ball.ceil(app_left_fee, 4),
+                        "amount": app_left_fee,
                     }
                 )
             for address, fee in strategy_left_fee.items():
-                if fee > 0:
+                if fee > 10:
+                    fee = ball.ceil(fee, 4)
                     busd_needed += fee
                     withdrawl_orders.append(
                         {
@@ -2457,16 +2459,20 @@ class Transactor:
                             "coin": "BUSD",
                             "network": "BSC",
                             "address": address,
-                            "amount": ball.ceil(fee, 4),
+                            "amount": fee,
                         }
                     )
 
             dollars_transfer = busd_needed - busd_prepared
-            if dollars_transfer > 0.0001:
+
+            if dollars_transfer > 0:
+                payload_amount = max(dollars_transfer, 10)
+                payload_amount *= 1.002
+                payload_amount += 0.2
                 payload = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "type": "UMFUTURE_MAIN",
-                    "amount": ball.ceil(max(dollars_transfer, 10) + 0.2, 4),
+                    "amount": ball.ceil(payload_amount, 4),
                     "asset": asset_token,
                 }
                 self.api_requester.binance(
@@ -2478,12 +2484,15 @@ class Transactor:
                 time.sleep(5)
 
                 if asset_token == "USDT":
+                    payload_quote_order_quantity = max(dollars_transfer, 10)
+                    payload_quote_order_quantity *= 1.001
+                    payload_quote_order_quantity += 0.1
                     payload = {
                         "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                         "symbol": "BUSDUSDT",
                         "side": "BUY",
                         "type": "MARKET",
-                        "quantity": ball.ceil(max(dollars_transfer, 10) + 0.1, 4),
+                        "quoteOrderQty": ball.ceil(payload_quote_order_quantity, 4),
                     }
                     self.api_requester.binance(
                         http_method="POST",
@@ -2496,26 +2505,22 @@ class Transactor:
             actual_fee_paid = {}
 
             def job(payload):
-                try:
-                    timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
-                    payload["timestamp"] = timestamp
-                    self.api_requester.binance(
-                        http_method="POST",
-                        path="/sapi/v1/capital/withdraw/apply",
-                        payload=payload,
-                        server="spot",
-                    )
-                    address = payload["address"]
-                    actual_fee_paid[address] = payload["amount"]
-                except Exception:
-                    pass
+                timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
+                payload["timestamp"] = timestamp
+                self.api_requester.binance(
+                    http_method="POST",
+                    path="/sapi/v1/capital/withdraw/apply",
+                    payload=payload,
+                    server="spot",
+                )
+                address = payload["address"]
+                actual_fee_paid[address] = payload["amount"]
 
             thread_toss.map(job, withdrawl_orders)
 
             if len(actual_fee_paid) == 0:
                 if len(withdrawl_orders) > 0:
                     text = "Fee payment withdrawl failed."
-                    text += " Check your API key's restrictions."
                     logging.getLogger("solsol").warning(text)
                     return
 
