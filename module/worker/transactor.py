@@ -2467,12 +2467,12 @@ class Transactor:
                 # trade quantity can be only integers and value should be higher than 10
 
                 if asset_token == "BUSD":
-                    dollars = busd_obtain
+                    real_busd_obtain = busd_obtain
 
                     payload = {
                         "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                         "type": "UMFUTURE_MAIN",
-                        "amount": ball.ceil(dollars, 4),
+                        "amount": ball.ceil(real_busd_obtain, 4),
                         "asset": "BUSD",
                     }
                     self.api_requester.binance(
@@ -2484,12 +2484,12 @@ class Transactor:
                     time.sleep(5)
 
                 elif asset_token == "USDT":
-                    dollars = math.ceil(max(busd_obtain, 10 + 1))
+                    real_busd_obtain = math.ceil(max(busd_obtain, 10 + 1))
 
                     payload = {
                         "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                         "type": "UMFUTURE_MAIN",
-                        "amount": ball.ceil(dollars * 1.001, 4),
+                        "amount": ball.ceil(real_busd_obtain * 1.001, 4),
                         "asset": "USDT",
                     }
                     self.api_requester.binance(
@@ -2505,7 +2505,7 @@ class Transactor:
                         "symbol": "BUSDUSDT",
                         "side": "BUY",
                         "type": "MARKET",
-                        "quantity": dollars,
+                        "quantity": real_busd_obtain,
                     }
                     self.api_requester.binance(
                         http_method="POST",
