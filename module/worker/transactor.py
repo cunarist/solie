@@ -2432,13 +2432,11 @@ class Transactor:
 
             for spot_balance in spot_balances:
                 if spot_balance["asset"] == "BUSD":
-                    busd_prepared = spot_balance["free"]
-                    busd_prepared = float(busd_prepared)
+                    busd_prepared = float(spot_balance["free"])
                     break
 
             withdrawl_orders = []
             if app_left_fee > 10:
-                app_left_fee = ball.ceil(app_left_fee, 4)
                 busd_needed += app_left_fee
                 withdrawl_orders.append(
                     {
@@ -2446,12 +2444,11 @@ class Transactor:
                         "coin": "BUSD",
                         "network": "BSC",
                         "address": app_fee_address,
-                        "amount": app_left_fee,
+                        "amount": ball.ceil(app_left_fee, 4),
                     }
                 )
             for address, fee in strategy_left_fee.items():
                 if fee > 10:
-                    fee = ball.ceil(fee, 4)
                     busd_needed += fee
                     withdrawl_orders.append(
                         {
@@ -2459,40 +2456,56 @@ class Transactor:
                             "coin": "BUSD",
                             "network": "BSC",
                             "address": address,
-                            "amount": fee,
+                            "amount": ball.ceil(fee, 4),
                         }
                     )
 
-            dollars_transfer = busd_needed - busd_prepared
+            busd_obtain = busd_needed - busd_prepared
 
-            if dollars_transfer > 0:
-                payload_amount = max(dollars_transfer, 10)
-                payload_amount *= 1.002
-                payload_amount += 0.2
-                payload = {
-                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                    "type": "UMFUTURE_MAIN",
-                    "amount": ball.ceil(payload_amount, 4),
-                    "asset": asset_token,
-                }
-                self.api_requester.binance(
-                    http_method="POST",
-                    path="/sapi/v1/asset/transfer",
-                    payload=payload,
-                    server="spot",
-                )
-                time.sleep(5)
+            if busd_obtain > 0:
+                # transfer amount can have many decimal places with no minimum value
+                # trade quantity can be only integers and value should be higher than 10
 
-                if asset_token == "USDT":
-                    payload_quote_order_quantity = max(dollars_transfer, 10)
-                    payload_quote_order_quantity *= 1.001
-                    payload_quote_order_quantity += 0.1
+                if asset_token == "BUSD":
+                    dollars = busd_obtain
+
+                    payload = {
+                        "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                        "type": "UMFUTURE_MAIN",
+                        "amount": ball.ceil(dollars, 4),
+                        "asset": "BUSD",
+                    }
+                    self.api_requester.binance(
+                        http_method="POST",
+                        path="/sapi/v1/asset/transfer",
+                        payload=payload,
+                        server="spot",
+                    )
+                    time.sleep(5)
+
+                elif asset_token == "USDT":
+                    dollars = math.ceil(max(busd_obtain, 10 + 1))
+
+                    payload = {
+                        "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                        "type": "UMFUTURE_MAIN",
+                        "amount": ball.ceil(dollars * 1.001, 4),
+                        "asset": "USDT",
+                    }
+                    self.api_requester.binance(
+                        http_method="POST",
+                        path="/sapi/v1/asset/transfer",
+                        payload=payload,
+                        server="spot",
+                    )
+                    time.sleep(5)
+
                     payload = {
                         "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                         "symbol": "BUSDUSDT",
                         "side": "BUY",
                         "type": "MARKET",
-                        "quoteOrderQty": ball.ceil(payload_quote_order_quantity, 4),
+                        "quantity": dollars,
                     }
                     self.api_requester.binance(
                         http_method="POST",
