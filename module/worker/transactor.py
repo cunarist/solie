@@ -2370,8 +2370,12 @@ class Transactor:
         core.window.undertake(job, False)
 
     def pay_fees(self, *args, **kwargs):
+        # ■■■■■ prepare basic things ■■■■■
+
         asset_token = user_settings.get_data_settings()["asset_token"]
         app_fee_address = "0x68EA838F933EEbaA9167E9f1C6E20De598F44E7e"
+
+        # ■■■■■ get fee data ■■■■■
 
         payload = {
             "appPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
@@ -2383,6 +2387,8 @@ class Transactor:
             payload=payload,
         )
         about_automated_revenues = response
+
+        # ■■■■■ check if fees were paid properly previously ■■■■■
 
         now_datetime = datetime.now(timezone.utc)
         current_year = now_datetime.year
@@ -2400,6 +2406,8 @@ class Transactor:
         else:
             self.secret_memory["was_fee_paid"] = True
 
+        # ■■■■■ analyze spot wallet ■■■■■
+
         try:
             payload = {
                 "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2415,17 +2423,25 @@ class Transactor:
             # when API keys are not entered
             return
 
+        # ■■■■■ pay fees for fee cycles that were not done ■■■■■
+
         for about_automated_revenue in about_automated_revenues:
+            # get information about this fee cycle
+
             cycle_number = about_automated_revenue["cycleNumber"]
             is_fee_paid = about_automated_revenue["isFeePaid"]
             app_left_fee = about_automated_revenue["appFee"]
             strategy_left_fee = about_automated_revenue["strategyFee"]
+
+            # determine if fee payment should be performed
 
             if is_fee_paid:
                 continue
 
             if not about_automated_revenue["cycleNumber"] < current_cycle_number:
                 continue
+
+            # calculate and prepare fee orders
 
             busd_needed = 0.1
             busd_prepared = 0
@@ -2462,7 +2478,9 @@ class Transactor:
 
             busd_obtain = busd_needed - busd_prepared
 
-            if busd_obtain > 0:
+            # make spot wallet's BUSD balance sufficient
+
+            if len(withdrawl_orders) > 0 and busd_obtain > 0:
                 # transfer amount can have many decimal places with no minimum value
                 # trade quantity can be only integers and value should be higher than 10
 
@@ -2515,6 +2533,8 @@ class Transactor:
                     )
                     time.sleep(5)
 
+            # withdraw to target wallets
+
             actual_fee_paid = {}
 
             def job(payload):
@@ -2531,6 +2551,8 @@ class Transactor:
 
             thread_toss.map(job, withdrawl_orders)
 
+            # add log
+
             if len(actual_fee_paid) == 0:
                 if len(withdrawl_orders) > 0:
                     text = "Fee payment withdrawl failed."
@@ -2546,6 +2568,8 @@ class Transactor:
             for address, fee in actual_fee_paid.items():
                 text += f"\n{fee} for {address}."
             logging.getLogger("solsol").info(text)
+
+            # report to the server
 
             payload = {
                 "appPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
