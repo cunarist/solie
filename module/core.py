@@ -985,6 +985,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.finalize_functions.append(
             lambda: collector.me.save_candle_data(),
         )
+        self.finalize_functions.append(
+            lambda: transactor.me.report_automated_revenues(),
+        )
 
         # ■■■■■ change logging settings ■■■■■
 

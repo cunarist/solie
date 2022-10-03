@@ -54,6 +54,7 @@ class Transactor:
             "leverages": {},
             "was_fee_paid": True,
             "is_key_restrictions_satisfied": True,
+            "automated_revenues": {},
         }
 
         # ■■■■■ remember and display ■■■■■
@@ -223,6 +224,12 @@ class Transactor:
         )
         core.window.scheduler.add_job(
             self.update_user_data_stream,
+            trigger="cron",
+            minute="*/10",
+            executor="thread_pool_executor",
+        )
+        core.window.scheduler.add_job(
+            self.report_automated_revenues,
             trigger="cron",
             minute="*/10",
             executor="thread_pool_executor",
@@ -514,17 +521,10 @@ class Transactor:
                         self.asset_record = self.asset_record.sort_index()
 
                 if order_id in unique_order_ids:
-                    discount_code = self.fee_settings["discount_code"]
-                    payload = {
-                        "appPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
-                        "deviceIdentifier": getmac.get_mac_address(),
-                        "addedRevenue": added_revenue,
-                        "feeAddress": fee_address,
-                        "discountCode": discount_code,
-                    }
-                    self.api_requester.cunarist(
-                        "POST", "/api/solsol/automated-revenue", payload
-                    )
+                    automated_revenues = self.secret_memory["automated_revenues"]
+                    if fee_address not in automated_revenues.keys():
+                        automated_revenues[fee_address] = 0
+                    automated_revenues[fee_address] += added_revenue
 
         # ■■■■■ cancel conflicting orders ■■■■■
 
@@ -2610,6 +2610,23 @@ class Transactor:
             [text],
         ]
         core.window.overlap(formation)
+
+    def report_automated_revenues(self, *args, **kwargs):
+        automated_revenues = self.secret_memory["automated_revenues"]
+        for fee_address, added_revenue in automated_revenues.items():
+            payload = {
+                "appPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
+                "deviceIdentifier": getmac.get_mac_address(),
+                "addedRevenue": added_revenue,
+                "feeAddress": fee_address,
+                "discountCode": self.fee_settings["discount_code"],
+            }
+            self.api_requester.cunarist(
+                "POST",
+                "/api/solsol/automated-revenue",
+                payload,
+            )
+        self.secret_memory["automated_revenues"] = {}
 
 
 me = None
