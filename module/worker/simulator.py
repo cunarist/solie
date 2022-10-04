@@ -1255,10 +1255,7 @@ class Simulator:
             chunk_asset_changes_list.append(chunk_asset_changes)
 
         unrealized_changes = unrealized_changes * leverage
-
         year_asset_changes = pd.concat(chunk_asset_changes_list).sort_index()
-        if len(year_asset_changes) > 0:
-            year_asset_changes.iloc[0] = float(1)
 
         # solsol and strategy fees
         grouper = pd.Grouper(freq="M")
@@ -1288,10 +1285,16 @@ class Simulator:
                 # fee application
                 if asset_change_due_to_fee < 1:
                     fee_pay_time = cycle_end - timedelta(seconds=10)
-                    cycle_asset_changes[fee_pay_time] = asset_change_due_to_fee
+                    last_index = cycle_asset_changes.index[-1]
+                    if fee_pay_time < last_index:
+                        cycle_asset_changes[fee_pay_time] = asset_change_due_to_fee
             only_cycle_asset_changes_list = [r for _, r in cycle_asset_changes_list]
             year_asset_changes = pd.concat(only_cycle_asset_changes_list).sort_index()
 
+        if len(asset_record) > 0:
+            start_point = asset_record.index[0]
+            year_asset_changes[start_point] = float(1)
+            year_asset_changes = year_asset_changes.sort_index()
         asset_record = asset_record.reindex(year_asset_changes.index)
         asset_record["Result Asset"] = year_asset_changes.cumprod()
 
