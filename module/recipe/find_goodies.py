@@ -52,31 +52,25 @@ def prepare():
             return
 
         platform_system = platform.system()
+        temp_folder = tempfile.gettempdir()
 
         if platform_system == "Windows":
-            platform_name = "Windows"
+            blob_demand = "SOLSOL_INSTALLER_WINDOWS"
+            filepath = temp_folder + "/SolsolWindowsSetup.exe"
         elif platform_system == "Linux":
-            platform_name = "Linux"
+            blob_demand = "SOLSOL_INSTALLER_LINUX"
+            filepath = ""
         elif platform_system == "Darwin":
-            platform_name = "macOS"
-
-        blob_name = f"Solsol{platform_name}Setup.exe"
+            blob_demand = "SOLSOL_INSTALLER_MAC"
+            filepath = ""
 
         api_requester = ApiRequester()
 
-        payload = {"blobName": blob_name}
-        response = api_requester.cunarist("GET", "/api/solsol/installer-url", payload)
+        payload = {"blobDemand": blob_demand}
+        response = api_requester.cunarist("GET", "/api/general/blob-url", payload)
         blob_url = response["blobUrl"]
 
         download_data = request.urlopen(blob_url).read()
-        temp_folder = tempfile.gettempdir()
-
-        if platform.system() == "Windows":
-            filepath = temp_folder + "/SolsolWindowsSetup.exe"
-        elif platform.system() == "Linux":
-            pass
-        elif platform.system() == "Darwin":  # macOS
-            pass
 
         with open(filepath, mode="wb") as file:
             file.write(download_data)
