@@ -223,6 +223,12 @@ class Transactor:
             executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
+            self.organize_data,
+            trigger="cron",
+            minute="*",
+            executor="thread_pool_executor",
+        )
+        core.window.scheduler.add_job(
             self.update_user_data_stream,
             trigger="cron",
             minute="*/10",
@@ -266,6 +272,14 @@ class Transactor:
 
         disconnected_functions = []
         check_internet.add_disconnected_functions(disconnected_functions)
+
+    def organize_data(self, *args, **kwargs):
+        with datalocks.hold("transactor_unrealized_changes"):
+            original_index = self.unrealized_changes.index
+            unique_index = original_index.drop_duplicates()
+            sr = self.unrealized_changes.reindex(unique_index)
+            sr = sr.sort_index()
+            self.unrealized_changes = sr.copy()
 
     def update_fee_settings(self, *args, **kwargs):
         formation = [

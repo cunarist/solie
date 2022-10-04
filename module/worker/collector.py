@@ -115,7 +115,7 @@ class Collector:
             executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
-            self.organize_everything,
+            self.organize_data,
             trigger="cron",
             minute="*",
             executor="thread_pool_executor",
@@ -176,7 +176,7 @@ class Collector:
             if not df.index.is_monotonic_increasing:
                 should_organize = True
         if should_organize:
-            self.organize_everything()
+            self.organize_data()
 
     def get_exchange_information(self, *args, **kwargs):
         if not check_internet.connected():
@@ -675,7 +675,7 @@ class Collector:
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
         remember_task_durations.add("add_aggregate_trades", duration)
 
-    def organize_everything(self, *args, **kwargs):
+    def organize_data(self, *args, **kwargs):
         start_time = datetime.now(timezone.utc)
 
         with datalocks.hold("collector_candle_data"):
@@ -697,7 +697,7 @@ class Collector:
             self.aggregate_trades = self.aggregate_trades[mask].copy()
 
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
-        remember_task_durations.add("organize_everything", duration)
+        remember_task_durations.add("collector_organize_data", duration)
 
     def clear_aggregate_trades(self, *args, **kwargs):
         with datalocks.hold("collector_aggregate_trades"):
