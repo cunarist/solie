@@ -1285,7 +1285,7 @@ class Simulator:
                 # fee application
                 if asset_change_due_to_fee < 1:
                     fee_pay_time = cycle_end - timedelta(seconds=10)
-                    last_index = cycle_asset_changes.index[-1]
+                    last_index = asset_record.index[-1]
                     if fee_pay_time < last_index:
                         cycle_asset_changes[fee_pay_time] = asset_change_due_to_fee
             only_cycle_asset_changes_list = [r for _, r in cycle_asset_changes_list]
