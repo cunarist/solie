@@ -5,7 +5,6 @@ import json
 import shutil
 import pandas as pd
 
-from module import thread_toss
 from module.recipe import user_settings
 from module.recipe import encrypted_pickle
 
@@ -182,14 +181,12 @@ def do():
 
     jobs.append(job)
 
-    # run jobs in parallel
-    def job(job_function):
+    # run jobs
+    for job in jobs:
         try:
-            job_function()
+            job()
         except Exception:
             pass
-
-    thread_toss.map(job, jobs)
 
 
 def do_first():
@@ -242,11 +239,9 @@ def do_first():
 
     jobs.append(job)
 
-    # run jobs in parallel
-    def job(job_function):
+    # run jobs
+    for job in jobs:
         try:
-            job_function()
+            job()
         except Exception:
             pass
-
-    thread_toss.map(job, jobs)
