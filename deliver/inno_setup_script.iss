@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Solsol"
-#define MyAppVersion "6.14"
+#define MyAppVersion "6.15"
 #define MyAppPublisher "Cunarist"
 #define MyAppURL "https://cunarist.com/solsol"
 #define MyAppExeName "Solsol.exe"
