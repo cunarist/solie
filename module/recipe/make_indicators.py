@@ -1,5 +1,5 @@
 import itertools
-from datetime import timedelta
+from datetime import datetime, timezone, timedelta
 
 import talib
 import pandas as pd
@@ -22,8 +22,12 @@ def do(**kwargs):
 
     # ■■■■■ make dummy row to avoid talib error with all nan series ■■■■■
 
-    last_index = candle_data.index[-1]
-    candle_data.loc[last_index + timedelta(seconds=1)] = 0
+    if len(candle_data) > 0:
+        dummy_index = candle_data.index[-1] + timedelta(seconds=1)
+    else:
+        dummy_index = datetime.fromtimestamp(0, tz=timezone.utc)
+
+    candle_data.loc[dummy_index] = 0
 
     # ■■■■■ basic values ■■■■■
 
