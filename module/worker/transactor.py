@@ -2302,8 +2302,8 @@ class Transactor:
 
             thread_toss.apply_async(job)
 
-        for cancelorder in cancel_orders:
-            payload = cancelorder
+        for cancel_order in cancel_orders:
+            payload = cancel_order
 
             def job(payload=payload):
                 self.api_requester.binance(
