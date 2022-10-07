@@ -617,17 +617,9 @@ class Transactor:
         )
 
         if is_checked:
-            current_moment = datetime.now(timezone.utc).replace(microsecond=0)
-            current_moment = current_moment - timedelta(
-                seconds=current_moment.second % 10
-            )
-            count_start_time = current_moment - timedelta(hours=24)
-            with datalocks.hold("collector_candle_data"):
-                df = collector.me.candle_data
-                cumulated_moments = len(df[count_start_time:].dropna())
-            needed_moments = 24 * 60 * 60 / 10
-            ratio = cumulated_moments / needed_moments
-            if ratio < 1:
+            cumulation_rate = collector.me.get_candle_data_cumulation_rate()
+
+            if cumulation_rate < 1:
                 is_insufficient = True
             else:
                 is_insufficient = False

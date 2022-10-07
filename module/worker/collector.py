@@ -326,17 +326,7 @@ class Collector:
                 core.window.undertake(lambda w=widget, t=text: w.setText(t), False)
 
         # bottom information
-        current_moment = datetime.now(timezone.utc).replace(microsecond=0)
-        current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
-        count_start_moment = current_moment - timedelta(hours=24)
-
-        # add one to ignore temporarily missing candle
-        with datalocks.hold("collector_candle_data"):
-            df = self.candle_data
-            cumulated_moments = len(df[count_start_moment:].dropna())
-        needed_moments = 24 * 60 * 60 / 10
-        ratio = min(float(1), (cumulated_moments + 1) / needed_moments)
-
+        cumulation_rate = self.get_candle_data_cumulation_rate()
         chunk_count = len(self.realtime_data_chunks)
         first_written_time = None
         last_written_time = None
@@ -362,11 +352,22 @@ class Collector:
         written_length_text = f"{range_days}d {range_hours}h {range_minutes}m"
 
         text = ""
-        text += f"24h candle data accumulation rate {ratio * 100:.2f}%"
+        text += f"24h candle data accumulation rate {cumulation_rate * 100:.2f}%"
         text += "  ⦁  "
         text += f"Realtime data length {written_length_text}"
 
         core.window.undertake(lambda t=text: core.window.label_6.setText(t), False)
+
+    def get_candle_data_cumulation_rate(self, *args, **kwargs):
+        current_moment = datetime.now(timezone.utc).replace(microsecond=0)
+        current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
+        count_start_moment = current_moment - timedelta(hours=24)
+        with datalocks.hold("collector_candle_data"):
+            df = self.candle_data
+            cumulated_moments = len(df[count_start_moment:].dropna())
+        needed_moments = 24 * 60 * 60 / 10
+        cumulation_rate = min(float(1), (cumulated_moments + 1) / needed_moments)
+        return cumulation_rate
 
     def open_binance_data_page(self, *args, **kwargs):
         webbrowser.open("https://www.binance.com/en/landing/data")
