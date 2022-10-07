@@ -560,8 +560,8 @@ class Transactor:
                             self.asset_record.loc[event_time, "Cause"] = "auto_trade"
                         else:
                             self.asset_record.loc[event_time, "Cause"] = "manual_trade"
-                        if not self.asset_record.index.is_monotonic_increasing:
-                            self.asset_record = self.asset_record.sort_index()
+                    if not self.asset_record.index.is_monotonic_increasing:
+                        self.asset_record = self.asset_record.sort_index()
 
                 if order_id in unique_order_ids:
                     automated_revenues = self.secret_memory["automated_revenues"]
