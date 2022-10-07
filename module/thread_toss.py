@@ -2,7 +2,7 @@ from multiprocessing.pool import ThreadPool
 import logging
 import threading
 
-_pool = ThreadPool(64)
+_pool = ThreadPool(256)
 
 
 def _error_callback(error):
