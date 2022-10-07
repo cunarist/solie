@@ -1101,12 +1101,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             job = transactor.me.open_exchange
             new_action = action_menu.addAction(text)
             outsource.do(new_action.triggered, job)
-            self.pushButton_12.setMenu(action_menu)
-            text = "Open binance testnet exchange"
-            job = transactor.me.open_testnet_exchange
-            new_action = action_menu.addAction(text)
-            outsource.do(new_action.triggered, job)
-            text = "Open binance wallet"
+            text = "Open binance futures wallet"
             job = transactor.me.open_futures_wallet_page
             new_action = action_menu.addAction(text)
             outsource.do(new_action.triggered, job)

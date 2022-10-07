@@ -1552,10 +1552,6 @@ class Transactor:
 
         core.window.undertake(job, False)
 
-    def open_testnet_exchange(self, *args, **kwargs):
-        symbol = self.viewing_symbol
-        webbrowser.open(f"https://testnet.binancefuture.com/en/futures/{symbol}")
-
     def match_graph_range(self, *args, **kwargs):
         range_start = core.window.undertake(
             lambda: core.window.plot_widget_2.getAxis("bottom").range[0], True
