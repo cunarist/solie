@@ -1114,8 +1114,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             job = transactor.me.open_api_management_page
             new_action = action_menu.addAction(text)
             outsource.do(new_action.triggered, job)
-            text = "Cancel all open orders on this symbol"
-            job = transactor.me.cancel_symbol_orders
+            text = "Clear all positions and open orders"
+            job = transactor.me.clear_positions_and_open_orders
             new_action = action_menu.addAction(text)
             outsource.do(new_action.triggered, job)
             text = "Display same range as simulation graph"

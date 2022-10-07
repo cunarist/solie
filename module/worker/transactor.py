@@ -2089,7 +2089,7 @@ class Transactor:
                 elif self.account_state["positions"][symbol]["direction"] == "short":
                     side = "BUY"
                 else:
-                    raise ValueError("There is no position to close")
+                    side = "NONE"
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
@@ -2135,7 +2135,8 @@ class Transactor:
                     new_order_side = "BUY"
                     new_order_type = "STOP_MARKET"
                 else:
-                    raise ValueError("There is no position to close")
+                    new_order_side = "NONE"
+                    new_order_type = "NONE"
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
@@ -2155,7 +2156,8 @@ class Transactor:
                     new_order_side = "BUY"
                     new_order_type = "TAKE_PROFIT_MARKET"
                 else:
-                    raise ValueError("There is no position to close")
+                    new_order_side = "NONE"
+                    new_order_type = "NONE"
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
@@ -2303,13 +2305,13 @@ class Transactor:
         duration = duration.total_seconds()
         remember_task_durations.add("place_order", duration)
 
-    def cancel_symbol_orders(self, *args, **kwargs):
-        symbol = self.viewing_symbol
-        decision = {
-            symbol: {
+    def clear_positions_and_open_orders(self, *args, **kwargs):
+        decision = {}
+        for symbol in user_settings.get_data_settings()["target_symbols"]:
+            decision[symbol] = {
                 "cancel_all": {},
-            },
-        }
+                "now_close": {},
+            }
         self.place_order(decision)
 
     def cancel_conflicting_orders(self, *args, **kwargs):
