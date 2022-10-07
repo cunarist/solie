@@ -285,6 +285,7 @@ class Transactor:
             unique_index = original_index.drop_duplicates()
             df = df.reindex(unique_index)
             df = df.sort_index()
+            df = df.iloc[-(2**16) :].copy()
             self.auto_order_record = df
 
         with datalocks.hold("transactor_asset_record"):
@@ -301,8 +302,7 @@ class Transactor:
         unrealized_changes.to_pickle(self.workerpath + "/unrealized_changes.pickle")
 
         with datalocks.hold("transactor_auto_order_record"):
-            df = self.auto_order_record.iloc[-65536:]
-            auto_order_record = df.copy()
+            auto_order_record = self.auto_order_record.copy()
         auto_order_record.to_pickle(self.workerpath + "/auto_order_record.pickle")
 
         with datalocks.hold("transactor_asset_record"):
