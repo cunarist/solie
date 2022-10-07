@@ -66,11 +66,8 @@ class Collector:
             more_df = pd.read_pickle(filepath)
             divided_datas.append(more_df)
         self.candle_data = pd.concat(divided_datas)
-        self.candle_data = self.candle_data[~self.candle_data.index.duplicated()]
-        self.candle_data = self.candle_data.sort_index(axis="index")
-        self.candle_data = self.candle_data.sort_index(axis="columns")
-        self.candle_data = self.candle_data.asfreq("10S")
-        self.candle_data = self.candle_data.astype(np.float32)
+        if not self.candle_data.index.is_monotonic_increasing:
+            self.candle_data = self.candle_data.sort_index()
 
         # realtime data chunks
         field_names = itertools.product(
@@ -168,6 +165,100 @@ class Collector:
             lambda: self.clear_aggregate_trades(),
         ]
         check_internet.add_disconnected_functions(disconnected_functions)
+
+    def organize_data(self, *args, **kwargs):
+        start_time = datetime.now(timezone.utc)
+
+        with datalocks.hold("collector_candle_data"):
+            df = self.candle_data
+            original_index = self.candle_data.index
+            unique_index = original_index.drop_duplicates()
+            df = df.reindex(unique_index)
+            df = df.sort_index()
+            df = df.asfreq("10S")
+            df = df.astype(np.float32)
+            self.candle_data = df
+
+        with datalocks.hold("collector_realtime_data_chunks"):
+            self.realtime_data_chunks[-1].sort(order="index")
+            if len(self.realtime_data_chunks[-1]) > 2**16:
+                new_chunk = self.realtime_data_chunks[-1][0:0].copy()
+                self.realtime_data_chunks.append(new_chunk)
+                del new_chunk
+
+        with datalocks.hold("collector_aggregate_trades"):
+            self.aggregate_trades.sort(order="index")
+            last_index = self.aggregate_trades[-1]["index"]
+            slice_from = last_index - np.timedelta64(60, "s")
+            mask = self.aggregate_trades["index"] > slice_from
+            self.aggregate_trades = self.aggregate_trades[mask].copy()
+
+        duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+        remember_task_durations.add("collector_organize_data", duration)
+
+    def save_candle_data(self, *args, **kwargs):
+        # ■■■■■ default values ■■■■■
+
+        current_year = datetime.now(timezone.utc).year
+        filepath = f"{self.workerpath}/candle_data_{current_year}.pickle"
+
+        with datalocks.hold("collector_candle_data"):
+            df = self.candle_data
+            year_df = df[df.index.year == current_year].copy()
+
+        # ■■■■■ make a new file ■■■■■
+
+        year_df.to_pickle(filepath + ".new")
+
+        # ■■■■■ safely replace the existing file ■■■■■
+
+        try:
+            new_size = os.path.getsize(filepath + ".new")
+        except FileNotFoundError:
+            new_size = 0
+
+        try:
+            original_size = os.path.getsize(filepath)
+        except FileNotFoundError:
+            original_size = 0
+
+        try:
+            backup_size = os.path.getsize(filepath + ".backup")
+        except FileNotFoundError:
+            backup_size = 0
+
+        if backup_size <= original_size and original_size <= new_size:
+            try:
+                os.remove(filepath + ".backup")
+            except FileNotFoundError:
+                pass
+
+            try:
+                os.rename(filepath, filepath + ".backup")
+            except FileNotFoundError:
+                pass
+
+            try:
+                os.rename(filepath + ".new", filepath)
+            except FileNotFoundError:
+                pass
+        elif original_size <= new_size:
+            try:
+                os.remove(filepath)
+            except FileNotFoundError:
+                pass
+
+    def save_all_years_candle_data(self, *args, **kwargs):
+        with datalocks.hold("collector_candle_data"):
+            years_sr = self.candle_data.index.year.drop_duplicates()
+        years = years_sr.tolist()
+
+        for year in years:
+            with datalocks.hold("collector_candle_data"):
+                df = self.candle_data
+                year_df = df[df.index.year == year].copy()
+            filepath = f"{self.workerpath}/candle_data_{year}.pickle"
+            year_df.to_pickle(filepath)
 
     def check_data_integrity(self, *args, **kwargs):
         should_organize = False
@@ -295,8 +386,7 @@ class Collector:
             # read the data again
             temp_df = df[df.index >= split_moment]
             recent_candle_data = recent_candle_data.combine_first(temp_df)
-            recent_candle_data = recent_candle_data.sort_index(axis="index")
-            recent_candle_data = recent_candle_data.sort_index(axis="columns")
+            recent_candle_data = recent_candle_data.sort_index()
             candle_data = pd.concat([original_candle_data, recent_candle_data])
             self.candle_data = candle_data
 
@@ -371,70 +461,6 @@ class Collector:
 
     def open_binance_data_page(self, *args, **kwargs):
         webbrowser.open("https://www.binance.com/en/landing/data")
-
-    def save_candle_data(self, *args, **kwargs):
-        # ■■■■■ default values ■■■■■
-
-        current_year = datetime.now(timezone.utc).year
-        filepath = f"{self.workerpath}/candle_data_{current_year}.pickle"
-
-        with datalocks.hold("collector_candle_data"):
-            df = self.candle_data
-            year_df = df[df.index.year == current_year].copy()
-
-        # ■■■■■ make a new file ■■■■■
-
-        year_df.to_pickle(filepath + ".new")
-
-        # ■■■■■ safely replace the existing file ■■■■■
-
-        try:
-            new_size = os.path.getsize(filepath + ".new")
-        except FileNotFoundError:
-            new_size = 0
-
-        try:
-            original_size = os.path.getsize(filepath)
-        except FileNotFoundError:
-            original_size = 0
-
-        try:
-            backup_size = os.path.getsize(filepath + ".backup")
-        except FileNotFoundError:
-            backup_size = 0
-
-        if backup_size <= original_size and original_size <= new_size:
-            try:
-                os.remove(filepath + ".backup")
-            except FileNotFoundError:
-                pass
-
-            try:
-                os.rename(filepath, filepath + ".backup")
-            except FileNotFoundError:
-                pass
-
-            try:
-                os.rename(filepath + ".new", filepath)
-            except FileNotFoundError:
-                pass
-        elif original_size <= new_size:
-            try:
-                os.remove(filepath)
-            except FileNotFoundError:
-                pass
-
-    def save_all_years_history(self, *args, **kwargs):
-        with datalocks.hold("collector_candle_data"):
-            years_sr = self.candle_data.index.year.drop_duplicates()
-        years = years_sr.tolist()
-
-        for year in years:
-            with datalocks.hold("collector_candle_data"):
-                df = self.candle_data
-                year_df = df[df.index.year == year].copy()
-            filepath = f"{self.workerpath}/candle_data_{year}.pickle"
-            year_df.to_pickle(filepath)
 
     def download_fill_candle_data(self, *args, **kwargs):
         # ■■■■■ ask filling type ■■■■■
@@ -608,7 +634,7 @@ class Collector:
 
         # ■■■■■ save ■■■■■
 
-        self.save_all_years_history()
+        self.save_all_years_candle_data()
 
         # ■■■■■ add to log ■■■■■
 
@@ -675,30 +701,6 @@ class Collector:
             self.aggregate_trades[-1][str((symbol, "Volume"))] = volume
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
         remember_task_durations.add("add_aggregate_trades", duration)
-
-    def organize_data(self, *args, **kwargs):
-        start_time = datetime.now(timezone.utc)
-
-        with datalocks.hold("collector_candle_data"):
-            df = self.candle_data.asfreq("10S")
-            self.candle_data = df.astype(np.float32)
-
-        with datalocks.hold("collector_realtime_data_chunks"):
-            self.realtime_data_chunks[-1].sort(order="index")
-            if len(self.realtime_data_chunks[-1]) > 2**16:
-                new_chunk = self.realtime_data_chunks[-1][0:0].copy()
-                self.realtime_data_chunks.append(new_chunk)
-                del new_chunk
-
-        with datalocks.hold("collector_aggregate_trades"):
-            self.aggregate_trades.sort(order="index")
-            last_index = self.aggregate_trades[-1]["index"]
-            slice_from = last_index - np.timedelta64(60, "s")
-            mask = self.aggregate_trades["index"] > slice_from
-            self.aggregate_trades = self.aggregate_trades[mask].copy()
-
-        duration = (datetime.now(timezone.utc) - start_time).total_seconds()
-        remember_task_durations.add("collector_organize_data", duration)
 
     def clear_aggregate_trades(self, *args, **kwargs):
         with datalocks.hold("collector_aggregate_trades"):
@@ -770,6 +772,8 @@ class Collector:
         with datalocks.hold("collector_candle_data"):
             for column_name, new_data_value in new_datas.items():
                 self.candle_data.loc[before_moment, column_name] = new_data_value
+            if not self.candle_data.index.is_monotonic_increasing:
+                self.candle_data = self.candle_data.sort_index()
 
         duration = (datetime.now(timezone.utc) - current_moment).total_seconds()
         remember_task_durations.add("add_candle_data", duration)

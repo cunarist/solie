@@ -138,22 +138,18 @@ class Transactor:
         try:
             filepath = self.workerpath + "/unrealized_changes.pickle"
             self.unrealized_changes = pd.read_pickle(filepath)
-            self.unrealized_changes = self.unrealized_changes.sort_index()
-            self.unrealized_changes = self.unrealized_changes.astype(np.float32)
         except FileNotFoundError:
             self.unrealized_changes = standardize.unrealized_changes()
 
         try:
             filepath = self.workerpath + "/asset_record.pickle"
             self.asset_record = pd.read_pickle(filepath)
-            self.asset_record = self.asset_record.sort_index()
         except FileNotFoundError:
             self.asset_record = standardize.asset_record()
 
         try:
             filepath = self.workerpath + "/auto_order_record.pickle"
             self.auto_order_record = pd.read_pickle(filepath)
-            self.auto_order_record = self.auto_order_record.sort_index()
         except FileNotFoundError:
             self.auto_order_record = pd.DataFrame(
                 columns=[
@@ -241,7 +237,7 @@ class Transactor:
             executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
-            self.save_large_files,
+            self.save_large_data,
             trigger="cron",
             hour="*",
             executor="thread_pool_executor",
@@ -275,11 +271,43 @@ class Transactor:
 
     def organize_data(self, *args, **kwargs):
         with datalocks.hold("transactor_unrealized_changes"):
-            original_index = self.unrealized_changes.index
+            sr = self.unrealized_changes
+            original_index = sr.index
             unique_index = original_index.drop_duplicates()
-            sr = self.unrealized_changes.reindex(unique_index)
+            sr = sr.reindex(unique_index)
             sr = sr.sort_index()
-            self.unrealized_changes = sr.copy()
+            sr = sr.astype(np.float32)
+            self.unrealized_changes = sr
+
+        with datalocks.hold("transactor_auto_order_record"):
+            df = self.auto_order_record
+            original_index = df.index
+            unique_index = original_index.drop_duplicates()
+            df = df.reindex(unique_index)
+            df = df.sort_index()
+            self.auto_order_record = df
+
+        with datalocks.hold("transactor_asset_record"):
+            df = self.asset_record
+            original_index = df.index
+            unique_index = original_index.drop_duplicates()
+            df = df.reindex(unique_index)
+            df = df.sort_index()
+            self.asset_record = df
+
+    def save_large_data(self, *args, **kwargs):
+        with datalocks.hold("transactor_unrealized_changes"):
+            unrealized_changes = self.unrealized_changes.copy()
+        unrealized_changes.to_pickle(self.workerpath + "/unrealized_changes.pickle")
+
+        with datalocks.hold("transactor_auto_order_record"):
+            df = self.auto_order_record.iloc[-65536:]
+            auto_order_record = df.copy()
+        auto_order_record.to_pickle(self.workerpath + "/auto_order_record.pickle")
+
+        with datalocks.hold("transactor_asset_record"):
+            asset_record = self.asset_record.copy()
+        asset_record.to_pickle(self.workerpath + "/asset_record.pickle")
 
     def update_fee_settings(self, *args, **kwargs):
         formation = [
@@ -532,7 +560,8 @@ class Transactor:
                             self.asset_record.loc[event_time, "Cause"] = "auto_trade"
                         else:
                             self.asset_record.loc[event_time, "Cause"] = "manual_trade"
-                        self.asset_record = self.asset_record.sort_index()
+                        if not self.asset_record.index.is_monotonic_increasing:
+                            self.asset_record = self.asset_record.sort_index()
 
                 if order_id in unique_order_ids:
                     automated_revenues = self.secret_memory["automated_revenues"]
@@ -543,23 +572,6 @@ class Transactor:
         # ■■■■■ cancel conflicting orders ■■■■■
 
         self.cancel_conflicting_orders()
-
-    def save_large_files(self, *args, **kwargs):
-        with datalocks.hold("transactor_unrealized_changes"):
-            sr = self.unrealized_changes.sort_index()
-            sr = sr.astype(np.float32)
-            unrealized_changes = sr.copy()
-            self.unrealized_changes = sr
-        unrealized_changes.to_pickle(self.workerpath + "/unrealized_changes.pickle")
-
-        with datalocks.hold("transactor_auto_order_record"):
-            df = self.auto_order_record.iloc[-65536:]
-            auto_order_record = df.copy()
-        auto_order_record.to_pickle(self.workerpath + "/auto_order_record.pickle")
-
-        with datalocks.hold("transactor_asset_record"):
-            asset_record = self.asset_record.copy()
-        asset_record.to_pickle(self.workerpath + "/asset_record.pickle")
 
     def open_exchange(self, *args, **kwargs):
         symbol = self.viewing_symbol
@@ -1877,6 +1889,8 @@ class Transactor:
 
         with datalocks.hold("transactor_unrealized_changes"):
             self.unrealized_changes[before_moment] = unrealized_change
+            if not self.unrealized_changes.index.is_monotonic_increasing:
+                self.unrealized_changes = self.unrealized_changes.sort_index()
 
         # ■■■■■ make an asset trace if it's blank ■■■■■
 
@@ -1907,13 +1921,14 @@ class Transactor:
         if wallet_balance == 0:
             pass
         elif abs(wallet_balance - last_asset) / wallet_balance > 10**-9:
-            # when the difference is bigger than one billionth
+            # when the difference is bigger than a billionth
             # referal fee, funding fee, wallet transfer, etc..
             with datalocks.hold("transactor_asset_record"):
                 current_time = datetime.now(timezone.utc)
                 self.asset_record.loc[current_time, "Cause"] = "other"
                 self.asset_record.loc[current_time, "Result Asset"] = wallet_balance
-                self.asset_record = self.asset_record.sort_index()
+                if not self.asset_record.index.is_monotonic_increasing:
+                    self.asset_record = self.asset_record.sort_index()
         else:
             # when the difference is small enough to consider as an numeric error
             with datalocks.hold("transactor_asset_record"):
@@ -2282,7 +2297,8 @@ class Transactor:
                     self.auto_order_record.loc[update_time, "Symbol"] = order_symbol
                     self.auto_order_record.loc[update_time, "Order ID"] = order_id
                     self.auto_order_record.loc[update_time, "Fee Address"] = fee_address
-                    self.auto_order_record = self.auto_order_record.sort_index()
+                    if not self.auto_order_record.index.is_monotonic_increasing:
+                        self.auto_order_record = self.auto_order_record.sort_index()
 
             thread_toss.apply_async(job)
 

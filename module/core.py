@@ -1083,7 +1083,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             new_action = action_menu.addAction(text)
             outsource.do(new_action.triggered, job)
             text = "Save every year's candle data"
-            job = collector.me.save_all_years_history
+            job = collector.me.save_all_years_candle_data
             new_action = action_menu.addAction(text)
             outsource.do(new_action.triggered, job)
             text = "Open binance historical data webpage"
