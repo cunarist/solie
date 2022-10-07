@@ -94,7 +94,7 @@ class Collector:
         # ■■■■■ repetitive schedules ■■■■■
 
         core.window.scheduler.add_job(
-            self.display_information,
+            self.display_status_information,
             trigger="cron",
             second="*",
             executor="thread_pool_executor",
@@ -390,7 +390,7 @@ class Collector:
             candle_data = pd.concat([original_candle_data, recent_candle_data])
             self.candle_data = candle_data
 
-    def display_information(self, *args, **kwargs):
+    def display_status_information(self, *args, **kwargs):
         with datalocks.hold("collector_candle_data"):
             if len(self.candle_data) == 0:
                 # when the app is executed for the first time

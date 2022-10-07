@@ -170,7 +170,7 @@ class Transactor:
             kwargs={"only_light_lines": True, "frequent": True},
         )
         core.window.scheduler.add_job(
-            self.display_asset_information,
+            self.display_status_information,
             trigger="cron",
             second="*",
             executor="thread_pool_executor",
@@ -627,28 +627,8 @@ class Transactor:
         is_checked = core.window.undertake(
             lambda: core.window.checkBox.isChecked(), True
         )
-
         if is_checked:
-            cumulation_rate = collector.me.get_candle_data_cumulation_rate()
-
-            if cumulation_rate < 1:
-                is_insufficient = True
-            else:
-                is_insufficient = False
-
-            if is_insufficient:
-                question = [
-                    "Cumulation rate is not 100%",
-                    "For auto transaction to work, the past 24"
-                    " hour accumulation rate of candle data must be 100%. Even if"
-                    " auto transaction is turned on, nothing happens until the"
-                    " cumulation rate reaches 100%.",
-                    ["Okay"],
-                ]
-                core.window.ask(question)
-
             self.automation_settings["should_transact"] = True
-
         else:
             self.automation_settings["should_transact"] = False
 
@@ -1367,10 +1347,10 @@ class Transactor:
         self.viewing_symbol = symbol
 
         self.display_lines()
-        self.display_asset_information()
+        self.display_status_information()
         self.display_range_information()
 
-    def display_asset_information(self, *args, **kwargs):
+    def display_status_information(self, *args, **kwargs):
         # ■■■■■ Display important things first ■■■■■
 
         time_passed = datetime.now(timezone.utc) - self.account_state["observed_until"]
@@ -1395,6 +1375,15 @@ class Transactor:
                 "API key's restrictions are not satisfied. Auto transaction is"
                 " disabled. Go to your Binance API managements webpage to change"
                 " the restrictions."
+            )
+            core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
+            return
+
+        cumulation_rate = collector.me.get_candle_data_cumulation_rate()
+        if cumulation_rate < 1:
+            text = (
+                "For auto transaction to work, the past 24 hour accumulation rate of"
+                " candle data must be 100%. Auto transaction is paused."
             )
             core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
             return
@@ -1497,14 +1486,8 @@ class Transactor:
 
         # ■■■■■ stop if the accumulation rate is not 100% ■■■■■
 
-        count_start_time = current_moment - timedelta(hours=24)
-
-        with datalocks.hold("collector_candle_data"):
-            df = collector.me.candle_data
-            cumulated_moments = len(df[count_start_time:].dropna())
-        needed_moments = 24 * 60 * 60 / 10
-        ratio = cumulated_moments / needed_moments
-        if ratio < 1:
+        cumulation_rate = collector.me.get_candle_data_cumulation_rate()
+        if cumulation_rate < 1:
             is_cycle_done = True
             return
 
