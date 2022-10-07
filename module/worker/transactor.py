@@ -1434,6 +1434,13 @@ class Transactor:
         if not self.secret_memory["is_key_restrictions_satisfied"]:
             return
 
+        # ■■■■■ stop if the accumulation rate is not 100% ■■■■■
+
+        cumulation_rate = collector.me.get_candle_data_cumulation_rate()
+        if cumulation_rate < 1:
+            is_cycle_done = True
+            return
+
         # ■■■■■ play the progress bar ■■■■■
 
         is_cycle_done = False
@@ -1483,13 +1490,6 @@ class Transactor:
                 if last_index == before_moment:
                     break
             time.sleep(0.1)
-
-        # ■■■■■ stop if the accumulation rate is not 100% ■■■■■
-
-        cumulation_rate = collector.me.get_candle_data_cumulation_rate()
-        if cumulation_rate < 1:
-            is_cycle_done = True
-            return
 
         # ■■■■■ get the candle data ■■■■■
 
