@@ -1015,9 +1015,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
             # normal widgets
             job = simulator.me.update_calculation_settings
-            outsource.do(self.comboBox.currentIndexChanged, job)
+            outsource.do(self.comboBox.activated, job)
             job = transactor.me.update_automation_settings
-            outsource.do(self.comboBox_2.currentIndexChanged, job)
+            outsource.do(self.comboBox_2.activated, job)
             job = transactor.me.update_automation_settings
             outsource.do(self.checkBox.toggled, job)
             job = simulator.me.calculate
@@ -1033,7 +1033,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             job = simulator.me.erase
             outsource.do(self.pushButton_4.clicked, job)
             job = simulator.me.update_calculation_settings
-            outsource.do(self.comboBox_5.currentIndexChanged, job)
+            outsource.do(self.comboBox_5.activated, job)
             job = transactor.me.update_keys
             outsource.do(self.lineEdit_4.editingFinished, job)
             job = transactor.me.update_keys
