@@ -11,7 +11,7 @@ from module.recipe import datalocks
 
 
 class ApiRequester:
-    _SESSION_COUNT = 16
+    _SESSION_COUNT = 64
     used_rates = {}
     _sessions = [requests.Session() for _ in range(_SESSION_COUNT)]
 
