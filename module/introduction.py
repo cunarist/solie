@@ -1,7 +1,5 @@
 CURRENT_VERSION = "6.18"
 
-CODE_SOURCES = []
-
 DEPENDENCIES = [
     ["pytz", "2022.1", "MIT License", "http://pythonhosted.org/pytz"],
     ["getmac", "0.8.3", "MIT License", "https://github.com/GhostofGoes/getmac"],
