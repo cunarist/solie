@@ -32,10 +32,10 @@ class LogList(QtWidgets.QListWidget):
         selected_index = self.currentRow()
 
         selected_item = self.item(selected_index)
-        fulltext = selected_item.fulltext
+        text = "\n".join(selected_item.fulltext.split("\n")[1:])
 
         def job():
-            formation = ["This is the full log", LongTextView, True, [fulltext]]
+            formation = ["This is the full log", LongTextView, True, [text]]
             core.window.overlap(formation)
 
         thread_toss.apply_async(job)
