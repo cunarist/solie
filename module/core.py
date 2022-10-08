@@ -4,7 +4,6 @@ import time
 import logging
 import urllib
 import math
-import webbrowser
 import os
 
 from PySide6 import QtGui, QtWidgets, QtCore
@@ -484,19 +483,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 )
                 this_layout.addItem(spacer)
 
-                def job(dependency_url=dependency_url):
-                    webbrowser.open(dependency_url)
-
                 if dependency_url.startswith("http"):
-                    text = dependency_url
-                    link_button = QtWidgets.QPushButton(text, self)
-                    outsource.do(link_button.clicked, job)
-                    this_layout.addWidget(link_button)
-                else:
-                    text = "No URL provided"
-                    link_button = QtWidgets.QPushButton(text, self)
-                    link_button.setDisabled(True)
-                    this_layout.addWidget(link_button)
+                    text = f"<a href='{dependency_url}'>{dependency_url}</a>"
+                    link_label = QtWidgets.QLabel(text, self)
+                    link_label.setOpenExternalLinks(True)
+                    this_layout.addWidget(link_label)
 
                 self.verticalLayout_15.addLayout(this_layout)
 
