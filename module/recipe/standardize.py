@@ -23,7 +23,7 @@ def candle_data():
 def account_state():
     target_symbols = user_settings.get_data_settings()["target_symbols"]
     return {
-        "observed_until": datetime.now(timezone.utc),
+        "observed_until": datetime.fromtimestamp(0, tz=timezone.utc),
         "wallet_balance": 1,
         "positions": {
             symbol: {
