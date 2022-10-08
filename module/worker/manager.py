@@ -222,12 +222,6 @@ class Manager:
             job()
             time.sleep(0.1)
 
-    def make_small_exception(self, *args, **kwargs):
-        variable_1 = "text"
-        variable_2 = 5
-        variable_3 = variable_1 + variable_2
-        return variable_3
-
     def run_script(self, *args, **kwargs):
         widget = core.window.plainTextEdit
         script_text = core.window.undertake(lambda w=widget: w.toPlainText(), True)
@@ -290,18 +284,6 @@ class Manager:
         text += "  ⦁  "
         text += f"Time difference with server {mean_difference:+.3f}s"
         core.window.undertake(lambda t=text: core.window.gauge.setText(t), False)
-
-    def open_sample_ask_popup(self, *args, **kwargs):
-        question = [
-            "Where is the capital of italy?",
-            "This is a question solely for testing purposes.",
-            ["Rome", "Seoul", "New York"],
-        ]
-        answer = core.window.ask(question)
-
-        text = f"You chose answer {answer} from the test popup"
-        logger = logging.getLogger("solsol")
-        logger.info(text)
 
     def match_system_time(self, *args, **kwargs):
         server_time_differences = self.online_status["server_time_differences"]

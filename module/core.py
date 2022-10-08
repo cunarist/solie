@@ -1147,14 +1147,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
             action_menu = QtWidgets.QMenu(self)
             self.pushButton_10.setMenu(action_menu)
-            text = "Make a small error on purpose"
-            job = manager.me.make_small_exception
-            new_action = action_menu.addAction(text)
-            outsource.do(new_action.triggered, job)
-            text = "Show test popup"
-            job = manager.me.open_sample_ask_popup
-            new_action = action_menu.addAction(text)
-            outsource.do(new_action.triggered, job)
             text = "Match system time with binance server"
             job = manager.me.match_system_time
             new_action = action_menu.addAction(text)
