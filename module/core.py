@@ -931,63 +931,29 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ initialize functions ■■■■■
 
-        self.initialize_functions = []
-        self.initialize_functions.append(
+        self.initialize_functions = [
             lambda: collector.me.get_exchange_information(),
-        )
-        self.initialize_functions.append(
             lambda: strategist.me.display_strategies(),
-        )
-        self.initialize_functions.append(
             lambda: transactor.me.display_strategy_index(),
-        )
-        self.initialize_functions.append(
             lambda: transactor.me.watch_binance(),
-        )
-        self.initialize_functions.append(
             lambda: transactor.me.update_user_data_stream(),
-        )
-        self.initialize_functions.append(
             lambda: transactor.me.display_lines(),
-        )
-        self.initialize_functions.append(
             lambda: transactor.me.display_day_range(),
-        )
-        self.initialize_functions.append(
             lambda: simulator.me.display_lines(),
-        )
-        self.initialize_functions.append(
             lambda: simulator.me.display_year_range(),
-        )
-        self.initialize_functions.append(
             lambda: manager.me.check_binance_limits(),
-        )
-        self.initialize_functions.append(
             lambda: transactor.me.pay_fees(),
-        )
-        self.initialize_functions.append(
-            lambda: transactor.me.update_discount_rate(),
-        )
+        ]
 
         # ■■■■■ finalize functions ■■■■■
 
-        self.finalize_functions = []
-
-        self.finalize_functions.append(
-            lambda: transactor.me.save_large_files(),
-        )
-        self.finalize_functions.append(
+        self.finalize_functions = [
+            lambda: transactor.me.save_large_data(),
             lambda: transactor.me.save_scribbles(),
-        )
-        self.finalize_functions.append(
             lambda: strategist.me.save_strategies(),
-        )
-        self.finalize_functions.append(
             lambda: collector.me.save_candle_data(),
-        )
-        self.finalize_functions.append(
             lambda: transactor.me.report_automated_revenues(),
-        )
+        ]
 
         # ■■■■■ change logging settings ■■■■■
 
