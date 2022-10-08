@@ -702,6 +702,10 @@ class Simulator:
                     return
                 core.window.undertake(lambda w=widget: w.clear(), False)
 
+        # ■■■■■ set minimum view range ■■■■■
+
+        self.set_minimum_view_range()
+
     def erase(self, *args, **kwargs):
         self.raw_account_state = standardize.account_state()
         self.raw_scribbles = {}

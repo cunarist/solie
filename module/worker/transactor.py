@@ -1330,6 +1330,10 @@ class Transactor:
                     return
                 core.window.undertake(lambda w=widget: w.clear(), False)
 
+        # ■■■■■ set minimum view range ■■■■■
+
+        self.set_minimum_view_range()
+
     def toggle_frequent_draw(self, *args, **kwargs):
         is_checked = args[0]
         if is_checked:
