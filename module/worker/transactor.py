@@ -1387,12 +1387,12 @@ class Transactor:
         if cumulation_rate < 1:
             text = (
                 "For auto transaction to work, the past 24 hour accumulation rate of"
-                " candle data must be 100%. Auto transaction is paused."
+                " candle data must be 100%. Auto transaction is disabled."
             )
             core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
             return
 
-        # ■■■■■ display the information ■■■■■
+        # ■■■■■ display assets and positions information ■■■■■
 
         position = self.account_state["positions"][self.viewing_symbol]
         if position["direction"] == "long":
@@ -1405,6 +1405,12 @@ class Transactor:
         for each_position in self.account_state["positions"].values():
             margin_sum += each_position["margin"]
 
+        open_orders = self.account_state["open_orders"]
+        open_orders_count = len(open_orders[self.viewing_symbol])
+        all_open_orders_count = 0
+        for symbol_open_orders in open_orders.values():
+            all_open_orders_count += len(symbol_open_orders)
+
         text = ""
         text += "Total asset"
         text += f" ＄{self.account_state['wallet_balance']:.4f}"
@@ -1416,6 +1422,10 @@ class Transactor:
         text += "  ⦁  "
         text += "Entry price"
         text += f" ＄{position['entry_price']:.4f}"
+        text += "  ⦁  "
+        text += "Open orders "
+        text += f" ＄{open_orders_count}"
+        text += f"({all_open_orders_count})"
 
         core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
 
