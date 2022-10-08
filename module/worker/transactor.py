@@ -195,7 +195,7 @@ class Transactor:
             kwargs={"periodic": True, "frequent": True},
         )
         core.window.scheduler.add_job(
-            self.move_view_range,
+            self.pan_view_range,
             trigger="cron",
             second="*/10",
             executor="thread_pool_executor",
@@ -2367,7 +2367,7 @@ class Transactor:
 
             thread_toss.apply_async(job)
 
-    def move_view_range(self, *args, **kwargs):
+    def pan_view_range(self, *args, **kwargs):
         if not self.should_draw_frequently:
             return
 
