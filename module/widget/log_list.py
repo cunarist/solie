@@ -12,12 +12,12 @@ class LogList(QtWidgets.QListWidget):
         self.setFont(self.fixed_width_font)
         self.itemClicked.connect(self.show_fulltext)
 
-    def addItem(self, fulltext):  # noqa:N802
+    def addItem(self, summarization, log_content):  # noqa:N802
         maximum_item_limit = 1024
 
         new_item = QtWidgets.QListWidgetItem(self)
-        new_item.fulltext = fulltext
-        new_item.setText(fulltext.split("\n")[0])
+        new_item.log_content = log_content
+        new_item.setText(summarization)
 
         super().addItem(new_item)
 
@@ -32,7 +32,7 @@ class LogList(QtWidgets.QListWidget):
         selected_index = self.currentRow()
 
         selected_item = self.item(selected_index)
-        text = "\n".join(selected_item.fulltext.split("\n")[1:])
+        text = selected_item.log_content
 
         def job():
             formation = ["This is the full log", LongTextView, True, [text]]

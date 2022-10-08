@@ -117,12 +117,13 @@ class Manager:
 
     def add_log_output(self, *args, **kwargs):
         # get the data
-        log_text = args[0]
+        summarization = args[0]
+        log_content = args[1]
 
         # add to log list
         job = core.window.listWidget.addItem
-        payload = (job, log_text)
-        core.window.undertake(lambda p=payload: p[0](p[1]), False)
+        payload = (job, summarization, log_content)
+        core.window.undertake(lambda p=payload: p[0](p[1], p[2]), False)
 
         # save to file
         task_start_time = datetime.now(timezone.utc)
@@ -133,7 +134,8 @@ class Manager:
         filepath = filepath.replace("+", "_")
         filepath = self.workerpath + "/log_outputs_" + filepath + ".txt"
         with open(filepath, "a", encoding="utf8") as file:
-            file.write(f"{log_text}\n\n")
+            file.write(f"{summarization}\n")
+            file.write(f"{log_content}\n\n")
         duration = datetime.now(timezone.utc) - task_start_time
         duration = duration.total_seconds()
         remember_task_durations.add("write_log", duration)

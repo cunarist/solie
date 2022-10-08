@@ -17,33 +17,37 @@ class LogHandler(logging.Handler):
         self.setFormatter(log_formatter)
 
     def emit(self, log_record):
-        text = self.format(log_record)
-        lines = text.split("\n")
-        message = log_record.getMessage()
+        formatted = self.format(log_record)
+        lines = formatted.split("\n")
+
+        if len(lines) > 1:
+            summarization = lines[0]
+            log_content = "\n".join(lines[1:])
+        else:
+            summarization = formatted
+            log_content = log_record.getMessage()
+
         if log_record.exc_info is None:
-            plain_message = message.split("\n")[0]
-            lines[0] += f" - {plain_message}"
+            plain_message = log_content.split("\n")[0]
+            summarization += f" - {plain_message}"
         else:
             exc_type = log_record.exc_info[0].__name__
-            lines[0] += f" - {exc_type}"
-        lines.insert(1, message)
-        lines[0] = lines[0][:80]
-        text = "\n".join(lines)
+            summarization += f" - {exc_type}"
+
+        summarization = summarization[:60]
 
         if core.window.should_overlap_error:
 
-            def job(text=text):
+            def job(log_content=log_content):
                 formation = [
                     "There was an error",
                     LongTextView,
                     False,
-                    [text],
+                    [log_content],
                 ]
                 core.window.overlap(formation)
 
+            thread_toss.apply_async(job)
+
         else:
-
-            def job(text=text):
-                manager.me.add_log_output(text)
-
-        thread_toss.apply_async(job)
+            manager.me.add_log_output(summarization, log_content)
