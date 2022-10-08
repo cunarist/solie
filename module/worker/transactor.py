@@ -1424,7 +1424,7 @@ class Transactor:
         text += f" ＄{position['entry_price']:.4f}"
         text += "  ⦁  "
         text += "Open orders"
-        text += f" ＄{open_orders_count}"
+        text += f" {open_orders_count}"
         text += f"({all_open_orders_count})"
 
         core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
