@@ -18,23 +18,21 @@ class LogHandler(logging.Handler):
 
     def emit(self, log_record):
         formatted = self.format(log_record)
-        lines = formatted.split("\n")
 
-        if len(lines) > 1:
+        # when this is from exception
+        if log_record.exc_info is not None:
+            lines = formatted.split("\n")
             summarization = lines[0]
             log_content = "\n".join(lines[1:])
+            exc_type = log_record.exc_info[0].__name__
+            summarization += f" - {exc_type}"
+        # when this is a normal log
         else:
             summarization = formatted
             log_content = log_record.getMessage()
-
-        if log_record.exc_info is None:
-            plain_message = log_content.split("\n")[0]
-            summarization += f" - {plain_message}"
-        else:
-            exc_type = log_record.exc_info[0].__name__
-            summarization += f" - {exc_type}"
-
-        summarization = summarization[:60]
+            first_line_content = log_content.split("\n")[0]
+            summarization += f" - {first_line_content}"
+            summarization = summarization[:60]
 
         if core.window.should_overlap_error:
 
