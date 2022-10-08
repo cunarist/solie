@@ -30,9 +30,9 @@ class LogHandler(logging.Handler):
         else:
             summarization = formatted
             log_content = log_record.getMessage()
-            first_line_content = log_content.split("\n")[0]
+            first_line_content = log_content.split("\n")[0].strip()
             summarization += f" - {first_line_content}"
-            summarization = summarization[:60]
+            summarization = summarization[:80]
 
         if core.window.should_overlap_error:
 

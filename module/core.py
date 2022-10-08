@@ -140,10 +140,10 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
     def boot(self):
         # ■■■■■ global settings of packages ■■■■■
 
-        os.get_terminal_size = lambda *args: os.terminal_size((120, 90))
+        os.get_terminal_size = lambda *args: os.terminal_size((150, 90))
         pd.set_option("display.precision", 6)
-        pd.set_option("display.min_rows", 20)
-        pd.set_option("display.max_rows", 20)
+        pd.set_option("display.min_rows", 100)
+        pd.set_option("display.max_rows", 100)
         pyqtgraph.setConfigOptions(antialias=True)
         logging.getLogger().addHandler(LogHandler())
 
