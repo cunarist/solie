@@ -141,7 +141,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ global settings of packages ■■■■■
 
         os.get_terminal_size = lambda *args: os.terminal_size((120, 90))
-        pd.set_option("display.precision", 3)
+        pd.set_option("display.precision", 6)
         pd.set_option("display.min_rows", 20)
         pd.set_option("display.max_rows", 20)
         pyqtgraph.setConfigOptions(antialias=True)
