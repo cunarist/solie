@@ -372,7 +372,11 @@ class Manager:
             is_not_okay = False
 
             commands = ["sc", "qc", "wuauserv"]
-            output = subprocess.check_output(commands).decode()
+            output = subprocess.run(
+                commands,
+                stdout=subprocess.PIPE,
+                universal_newlines=True,
+            ).stdout
             lines = output.split("\n")
             for line in lines:
                 if "START_TYPE" in line:
@@ -381,7 +385,11 @@ class Manager:
                 is_not_okay = True
 
             commands = ["sc", "query", "wuauserv"]
-            output = subprocess.check_output(commands).decode()
+            output = subprocess.run(
+                commands,
+                stdout=subprocess.PIPE,
+                universal_newlines=True,
+            ).stdout
             lines = output.split("\n")
             for line in lines:
                 if "STATE" in line:

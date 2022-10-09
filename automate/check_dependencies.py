@@ -5,11 +5,19 @@ import sys
 from importlib import metadata
 
 commands = ["pip-licenses", "--format=json"]
-output = subprocess.check_output(commands).decode()
+output = subprocess.run(
+    commands,
+    stdout=subprocess.PIPE,
+    universal_newlines=True,
+).stdout
 all_licenses = json.loads(output)
 
 commands = ["pipdeptree", "--json"]
-output = subprocess.check_output(commands).decode()
+output = subprocess.run(
+    commands,
+    stdout=subprocess.PIPE,
+    universal_newlines=True,
+).stdout
 tree = json.loads(output)
 
 environment_string = ""
