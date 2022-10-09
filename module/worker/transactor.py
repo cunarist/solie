@@ -2352,24 +2352,22 @@ class Transactor:
                         if order_id != latest_id:
                             conflicting_order_tuples.append((symbol, order_id))
 
-        for conflicting_order_tuple in conflicting_order_tuples:
-            payload = {
-                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                "symbol": conflicting_order_tuple[0],
-                "orderId": conflicting_order_tuple[1],
-            }
+        def job(conflicting_order_tuple):
+            try:
+                payload = {
+                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                    "symbol": conflicting_order_tuple[0],
+                    "orderId": conflicting_order_tuple[1],
+                }
+                self.api_requester.binance(
+                    http_method="DELETE",
+                    path="/fapi/v1/order",
+                    payload=payload,
+                )
+            except ApiRequestError:
+                pass
 
-            def job(payload=payload):
-                try:
-                    self.api_requester.binance(
-                        http_method="DELETE",
-                        path="/fapi/v1/order",
-                        payload=payload,
-                    )
-                except ApiRequestError:
-                    pass
-
-            thread_toss.apply_async(job)
+        thread_toss.map_async(job, conflicting_order_tuples)
 
     def pan_view_range(self, *args, **kwargs):
         if not self.should_draw_frequently:
