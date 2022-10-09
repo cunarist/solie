@@ -8,7 +8,6 @@ import re
 import pickle
 import copy
 import logging
-import threading
 
 import pandas as pd
 import numpy as np
@@ -64,9 +63,6 @@ class Transactor:
 
         self.viewing_symbol = user_settings.get_data_settings()["target_symbols"][0]
         self.should_draw_frequently = True
-
-        self.is_not_placing_orders = threading.Event()
-        self.is_not_placing_orders.set()
 
         self.account_state = standardize.account_state()
 
@@ -367,8 +363,6 @@ class Transactor:
             logger = logging.getLogger("solsol")
             logger.warning(text)
             self.update_user_data_stream()
-
-        self.is_not_placing_orders.wait(10)
 
         if event_type == "ACCOUNT_UPDATE":
             about_update = received["a"]
@@ -2278,8 +2272,6 @@ class Transactor:
 
         # ■■■■■ actually place orders ■■■■■
 
-        self.is_not_placing_orders.clear()
-
         def job(payload):
             response = self.api_requester.binance(
                 http_method="POST",
@@ -2300,7 +2292,7 @@ class Transactor:
                 if not self.auto_order_record.index.is_monotonic_increasing:
                     self.auto_order_record = self.auto_order_record.sort_index()
 
-        thread_toss.map(job, new_orders)
+        thread_toss.map_async(job, new_orders)
 
         def job(payload):
             self.api_requester.binance(
@@ -2309,9 +2301,7 @@ class Transactor:
                 payload=payload,
             )
 
-        thread_toss.map(job, cancel_orders)
-
-        self.is_not_placing_orders.set()
+        thread_toss.map_async(job, cancel_orders)
 
         # ■■■■■ record task duration ■■■■■
 
