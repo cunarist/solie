@@ -2272,42 +2272,36 @@ class Transactor:
 
         # ■■■■■ actually place orders ■■■■■
 
-        for new_order in new_orders:
-            payload = new_order
+        def job(payload):
+            response = self.api_requester.binance(
+                http_method="POST",
+                path="/fapi/v1/order",
+                payload=payload,
+            )
+            order_symbol = response["symbol"]
+            order_id = response["orderId"]
+            timestamp = response["updateTime"] / 1000
+            update_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+            strategy_index = self.automation_settings["strategy_index"]
+            strategy = strategist.me.strategies[strategy_index]
+            fee_address = strategy["fee_address"]
+            with datalocks.hold("transactor_auto_order_record"):
+                self.auto_order_record.loc[update_time, "Symbol"] = order_symbol
+                self.auto_order_record.loc[update_time, "Order ID"] = order_id
+                self.auto_order_record.loc[update_time, "Fee Address"] = fee_address
+                if not self.auto_order_record.index.is_monotonic_increasing:
+                    self.auto_order_record = self.auto_order_record.sort_index()
 
-            def job(payload=payload):
-                response = self.api_requester.binance(
-                    http_method="POST",
-                    path="/fapi/v1/order",
-                    payload=payload,
-                )
-                order_symbol = response["symbol"]
-                order_id = response["orderId"]
-                timestamp = response["updateTime"] / 1000
-                update_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-                strategy_index = self.automation_settings["strategy_index"]
-                strategy = strategist.me.strategies[strategy_index]
-                fee_address = strategy["fee_address"]
-                with datalocks.hold("transactor_auto_order_record"):
-                    self.auto_order_record.loc[update_time, "Symbol"] = order_symbol
-                    self.auto_order_record.loc[update_time, "Order ID"] = order_id
-                    self.auto_order_record.loc[update_time, "Fee Address"] = fee_address
-                    if not self.auto_order_record.index.is_monotonic_increasing:
-                        self.auto_order_record = self.auto_order_record.sort_index()
+        thread_toss.map_async(job, new_orders)
 
-            thread_toss.apply_async(job)
+        def job(payload):
+            self.api_requester.binance(
+                http_method="DELETE",
+                path="/fapi/v1/allOpenOrders",
+                payload=payload,
+            )
 
-        for cancel_order in cancel_orders:
-            payload = cancel_order
-
-            def job(payload=payload):
-                self.api_requester.binance(
-                    http_method="DELETE",
-                    path="/fapi/v1/allOpenOrders",
-                    payload=payload,
-                )
-
-            thread_toss.apply_async(job)
+        thread_toss.map_async(job, cancel_orders)
 
         # ■■■■■ record task duration ■■■■■
 
