@@ -1557,7 +1557,7 @@ class Transactor:
 
         # ■■■■■ place order ■■■■■
 
-        self.place_order(decision)
+        self.place_orders(decision)
 
     def display_day_range(self, *args, **kwargs):
         range_start = (datetime.now(timezone.utc) - timedelta(hours=24)).timestamp()
@@ -1977,7 +1977,7 @@ class Transactor:
                                 "now_close": {},
                             },
                         }
-                        self.place_order(decision)
+                        self.place_orders(decision)
 
                     # change to crossed margin mode
                     timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
@@ -2048,7 +2048,7 @@ class Transactor:
                 is_satisfied = False
         self.secret_memory["is_key_restrictions_satisfied"] = is_satisfied
 
-    def place_order(self, *args, **kwargs):
+    def place_orders(self, *args, **kwargs):
         task_start_time = datetime.now(timezone.utc)
 
         decision = args[0]
@@ -2312,7 +2312,7 @@ class Transactor:
 
         duration = datetime.now(timezone.utc) - task_start_time
         duration = duration.total_seconds()
-        remember_task_durations.add("place_order", duration)
+        remember_task_durations.add("place_orders", duration)
 
     def clear_positions_and_open_orders(self, *args, **kwargs):
         decision = {}
@@ -2321,7 +2321,7 @@ class Transactor:
                 "cancel_all": {},
                 "now_close": {},
             }
-        self.place_order(decision)
+        self.place_orders(decision)
 
     def cancel_conflicting_orders(self, *args, **kwargs):
         if not self.automation_settings["should_transact"]:
