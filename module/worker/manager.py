@@ -407,14 +407,9 @@ class Manager:
                     question = [
                         "Windows update is already disabled",
                         "Your PC will not reboot on its own unless the power is out.",
-                        ["No", "Yes"],
+                        ["Okay"],
                     ]
-                    answer = core.window.ask(question)
-                    if answer == 2:
-                        commands = ["sc", "stop", "wuauserv"]
-                        subprocess.run(commands)
-                        commands = ["sc", "config", "wuauserv", "start=disabled"]
-                        subprocess.run(commands)
+                    core.window.ask(question)
 
         elif platform.system() == "Linux":
             pass
