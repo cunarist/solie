@@ -541,25 +541,28 @@ class Transactor:
                         new_value = last_asset + added_revenue
                         self.asset_record.loc[last_index, "Result Asset"] = new_value
                     else:
+                        record_time = event_time
+                        while record_time in self.asset_record.index:
+                            record_time += timedelta(milliseconds=1)
                         new_value = symbol
-                        self.asset_record.loc[event_time, "Symbol"] = new_value
+                        self.asset_record.loc[record_time, "Symbol"] = new_value
                         new_value = "sell" if side == "SELL" else "buy"
-                        self.asset_record.loc[event_time, "Side"] = new_value
+                        self.asset_record.loc[record_time, "Side"] = new_value
                         new_value = last_filled_price
-                        self.asset_record.loc[event_time, "Fill Price"] = new_value
+                        self.asset_record.loc[record_time, "Fill Price"] = new_value
                         new_value = "maker" if is_maker else "taker"
-                        self.asset_record.loc[event_time, "Role"] = new_value
+                        self.asset_record.loc[record_time, "Role"] = new_value
                         new_value = added_margin_ratio
-                        self.asset_record.loc[event_time, "Margin Ratio"] = new_value
+                        self.asset_record.loc[record_time, "Margin Ratio"] = new_value
                         new_value = order_id
-                        self.asset_record.loc[event_time, "Order ID"] = new_value
+                        self.asset_record.loc[record_time, "Order ID"] = new_value
                         last_asset = self.asset_record.loc[last_index, "Result Asset"]
                         new_value = last_asset + added_revenue
-                        self.asset_record.loc[event_time, "Result Asset"] = new_value
+                        self.asset_record.loc[record_time, "Result Asset"] = new_value
                         if order_id in unique_order_ids:
-                            self.asset_record.loc[event_time, "Cause"] = "auto_trade"
+                            self.asset_record.loc[record_time, "Cause"] = "auto_trade"
                         else:
-                            self.asset_record.loc[event_time, "Cause"] = "manual_trade"
+                            self.asset_record.loc[record_time, "Cause"] = "manual_trade"
                     if not self.asset_record.index.is_monotonic_increasing:
                         self.asset_record = self.asset_record.sort_index()
 
@@ -2286,6 +2289,8 @@ class Transactor:
             strategy = strategist.me.strategies[strategy_index]
             fee_address = strategy["fee_address"]
             with datalocks.hold("transactor_auto_order_record"):
+                while update_time in self.auto_order_record.index:
+                    update_time += timedelta(milliseconds=1)
                 self.auto_order_record.loc[update_time, "Symbol"] = order_symbol
                 self.auto_order_record.loc[update_time, "Order ID"] = order_id
                 self.auto_order_record.loc[update_time, "Fee Address"] = fee_address
