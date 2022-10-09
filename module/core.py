@@ -931,6 +931,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             lambda: simulator.me.display_year_range(),
             lambda: manager.me.check_binance_limits(),
             lambda: transactor.me.pay_fees(),
+            lambda: manager.me.disable_system_auto_update(skip_if_okay=True),
         ]
 
         # ■■■■■ finalize functions ■■■■■
@@ -1103,6 +1104,10 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.pushButton_10.setMenu(action_menu)
             text = "Match system time with binance server"
             job = manager.me.match_system_time
+            new_action = action_menu.addAction(text)
+            outsource.do(new_action.triggered, job)
+            text = "Disable system's auto update"
+            job = manager.me.disable_system_auto_update
             new_action = action_menu.addAction(text)
             outsource.do(new_action.triggered, job)
 

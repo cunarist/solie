@@ -5,6 +5,8 @@ import time
 import statistics
 import logging
 import webbrowser
+import platform
+import subprocess
 
 import timesetter
 
@@ -362,6 +364,62 @@ class Manager:
             if answer in (0, 1):
                 return
             core.window.undertake(lambda: core.window.board.setEnabled(True), False)
+
+    def disable_system_auto_update(self, *args, **kwargs):
+        skip_if_okay = kwargs.get("skip_if_okay", False)
+
+        if platform.system() == "Windows":
+            is_not_okay = False
+
+            commands = ["sc", "qc", "wuauserv"]
+            output = subprocess.check_output(commands).decode()
+            lines = output.split("\n")
+            for line in lines:
+                if "START_TYPE" in line:
+                    important_line = line
+            if "DISABLED" not in important_line:
+                is_not_okay = True
+
+            commands = ["sc", "query", "wuauserv"]
+            output = subprocess.check_output(commands).decode()
+            lines = output.split("\n")
+            for line in lines:
+                if "STATE" in line:
+                    important_line = line
+            if "STOPPED" not in important_line:
+                is_not_okay = True
+
+            if is_not_okay:
+                question = [
+                    "Do you want to disable Windows update?",
+                    "Windows update is currently enabled. This might lead to unwanted"
+                    " reboot of your PC. Solsol can handle this for you.",
+                    ["No", "Yes"],
+                ]
+                answer = core.window.ask(question)
+                if answer == 2:
+                    commands = ["sc", "stop", "wuauserv"]
+                    subprocess.run(commands)
+                    commands = ["sc", "config", "wuauserv", "start=disabled"]
+                    subprocess.run(commands)
+            else:
+                if not skip_if_okay:
+                    question = [
+                        "Windows update is already disabled",
+                        "Your PC will not reboot on its own unless the power is out.",
+                        ["No", "Yes"],
+                    ]
+                    answer = core.window.ask(question)
+                    if answer == 2:
+                        commands = ["sc", "stop", "wuauserv"]
+                        subprocess.run(commands)
+                        commands = ["sc", "config", "wuauserv", "start=disabled"]
+                        subprocess.run(commands)
+
+        elif platform.system() == "Linux":
+            pass
+        elif platform.system() == "Darwin":  # macOS
+            pass
 
 
 me = None
