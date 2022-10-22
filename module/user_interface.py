@@ -36,7 +36,7 @@ class Ui_MainWindow(object):
         MainWindow.resize(1280, 720)
         MainWindow.setMinimumSize(QSize(1280, 720))
         icon = QIcon()
-        icon.addFile(u"static/product_icon_solsol.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon.addFile(u"static/product_icon.png", QSize(), QIcon.Normal, QIcon.Off)
         MainWindow.setWindowIcon(icon)
         MainWindow.setStyleSheet(u"QPushButton, QComboBox, QLineEdit, QCheckBox, QSpinBox, QDoubleSpinBox {\n"
 "	height: 1.8em;\n"

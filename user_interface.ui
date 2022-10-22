@@ -21,7 +21,7 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>static/product_icon_solsol.png</normaloff>static/product_icon_solsol.png</iconset>
+    <normaloff>static/product_icon.png</normaloff>static/product_icon.png</iconset>
   </property>
   <property name="styleSheet">
    <string notr="true">QPushButton, QComboBox, QLineEdit, QCheckBox, QSpinBox, QDoubleSpinBox {

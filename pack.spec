@@ -71,7 +71,7 @@ exe = EXE(  # type:ignore # noqa:F821
     codesign_identity=None,
     entitlements_file=None,
     uac_admin=True,
-    icon="./static/product_icon_solsol.ico",
+    icon="./static/product_icon.ico",
 )
 
 coll = COLLECT(  # type:ignore # noqa:F821
