@@ -7,6 +7,7 @@ import logging
 import webbrowser
 import platform
 import subprocess
+import json
 
 import timesetter
 
@@ -21,6 +22,15 @@ from module.recipe import user_settings
 from module.recipe import find_goodies
 from module.recipe import remember_task_durations
 from module.recipe import datalocks
+from module.recipe import value_to
+
+WINDOW_LOCK_OPTIONS = (
+    "NEVER",
+    "10_SECOND",
+    "1_MINUTE",
+    "10_MINUTE",
+    "1_HOUR",
+)
 
 
 class Manager:
@@ -39,13 +49,38 @@ class Manager:
         self.api_requester = ApiRequester()
 
         self.executed_time = datetime.now(timezone.utc).replace(microsecond=0)
-        self.is_terminal_visible = False
 
         self.online_status = {
             "ping": 0,
             "server_time_differences": deque(maxlen=120),
         }
         self.binance_limits = {}
+
+        filepath = self.workerpath + "/settings.json"
+        if os.path.isfile(filepath):
+            with open(filepath, "r", encoding="utf8") as file:
+                self.settings = json.load(file)
+        else:
+            self.settings = {
+                "match_system_time": True,
+                "disable_system_update": False,
+                "lock_window": "NEVER",
+            }
+        payload = (
+            core.window.checkBox_12.setChecked,
+            self.settings["match_system_time"],
+        )
+        core.window.undertake(lambda p=payload: p[0](p[1]), False)
+        payload = (
+            core.window.checkBox_13.setChecked,
+            self.settings["disable_system_update"],
+        )
+        core.window.undertake(lambda p=payload: p[0](p[1]), False)
+        payload = (
+            core.window.comboBox_3.setCurrentIndex,
+            value_to.indexes(WINDOW_LOCK_OPTIONS, self.settings["lock_window"])[0],
+        )
+        core.window.undertake(lambda p=payload: p[0](p[1]), False)
 
         filepath = self.workerpath + "/python_script.txt"
         if os.path.isfile(filepath):
@@ -59,6 +94,12 @@ class Manager:
 
         # ■■■■■ repetitive schedules ■■■■■
 
+        core.window.scheduler.add_job(
+            self.lock_board,
+            trigger="cron",
+            second="*",
+            executor="thread_pool_executor",
+        )
         core.window.scheduler.add_job(
             self.check_online_status,
             trigger="cron",
@@ -75,6 +116,12 @@ class Manager:
             self.display_internal_status,
             trigger="cron",
             second="*",
+            executor="thread_pool_executor",
+        )
+        core.window.scheduler.add_job(
+            self.disable_system_auto_update,
+            trigger="cron",
+            minute="*",
             executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
@@ -107,6 +154,23 @@ class Manager:
 
         disconnected_functions = []
         check_internet.add_disconnected_functions(disconnected_functions)
+
+    def change_settings(self, *args, **kwargs):
+        payload = (core.window.checkBox_12.isChecked,)
+        is_checked = core.window.undertake(lambda p=payload: p[0](), True)
+        self.settings["match_system_time"] = True if is_checked else False
+
+        payload = (core.window.checkBox_13.isChecked,)
+        is_checked = core.window.undertake(lambda p=payload: p[0](), True)
+        self.settings["disable_system_update"] = True if is_checked else False
+
+        payload = (core.window.comboBox_3.currentIndex,)
+        current_index = core.window.undertake(lambda p=payload: p[0](), True)
+        self.settings["lock_window"] = WINDOW_LOCK_OPTIONS[current_index]
+
+        filepath = self.workerpath + "/settings.json"
+        with open(filepath, "w", encoding="utf8") as file:
+            json.dump(self.settings, file, indent=4)
 
     def open_datapath(self, *args, **kwargs):
         os.startfile(user_settings.get_app_settings()["datapath"])
@@ -269,6 +333,8 @@ class Manager:
         time_text = time.strftime("%Y-%m-%d %H:%M:%S")
         internet_connected = check_internet.connected()
         ping = self.online_status["ping"]
+        payload = (core.window.board.isEnabled,)
+        board_enabled = core.window.undertake(lambda p=payload: p[0](), True)
 
         deque_data = self.online_status["server_time_differences"]
         if len(deque_data) > 0:
@@ -287,9 +353,14 @@ class Manager:
         text += f"Ping {ping:.3f}s"
         text += "  ⦁  "
         text += f"Time difference with server {mean_difference:+.3f}s"
+        text += "  ⦁  "
+        text += f"Board {('unlocked' if board_enabled else 'locked')}"
         core.window.undertake(lambda t=text: core.window.gauge.setText(t), False)
 
     def match_system_time(self, *args, **kwargs):
+        if not self.settings["match_system_time"]:
+            return
+
         server_time_differences = self.online_status["server_time_differences"]
         if len(server_time_differences) < 60:
             return
@@ -350,81 +421,42 @@ class Manager:
     def open_documentation(self, *args, **kwargs):
         webbrowser.open("https://cunarist.com/solsol")
 
-    def toggle_board_availability(self, *args, **kwargs):
-        is_enabled = core.window.undertake(lambda: core.window.board.isEnabled(), True)
-        if is_enabled:
-            core.window.undertake(lambda: core.window.board.setEnabled(False), False)
-        else:
-            question = [
-                "Unlock the board?",
-                "You will be able to manipulate the board again.",
-                ["No", "Yes"],
-            ]
-            answer = core.window.ask(question)
-            if answer in (0, 1):
-                return
-            core.window.undertake(lambda: core.window.board.setEnabled(True), False)
-
     def disable_system_auto_update(self, *args, **kwargs):
-        skip_if_okay = kwargs.get("skip_if_okay", False)
+        if not self.settings["disable_system_update"]:
+            return
 
         if platform.system() == "Windows":
-            is_okay = True
-
-            commands = ["sc", "qc", "wuauserv"]
-            output = subprocess.run(
-                commands,
-                stdout=subprocess.PIPE,
-                universal_newlines=True,
-            ).stdout
-            lines = output.split("\n")
-            is_satisfied = False
-            for line in lines:
-                if "4" in line and "DISABLED" in line:
-                    is_satisfied = True
-            if not is_satisfied:
-                is_okay = False
-
-            commands = ["sc", "query", "wuauserv"]
-            output = subprocess.run(
-                commands,
-                stdout=subprocess.PIPE,
-                universal_newlines=True,
-            ).stdout
-            lines = output.split("\n")
-            is_satisfied = False
-            for line in lines:
-                if "1" in line and "STOPPED" in line:
-                    is_satisfied = True
-            if not is_satisfied:
-                is_okay = False
-
-            if is_okay:
-                if not skip_if_okay:
-                    question = [
-                        "Windows update is already disabled",
-                        "Your PC will not reboot on its own unless the power is out.",
-                        ["Okay"],
-                    ]
-                    core.window.ask(question)
-            else:
-                question = [
-                    "Do you want to disable Windows update?",
-                    "Windows update is currently enabled. This might lead to unwanted"
-                    " reboot of your PC. Solsol can handle this for you.",
-                    ["No", "Yes"],
-                ]
-                answer = core.window.ask(question)
-                if answer == 2:
-                    commands = ["sc", "stop", "wuauserv"]
-                    subprocess.run(commands)
-                    commands = ["sc", "config", "wuauserv", "start=disabled"]
-                    subprocess.run(commands)
+            commands = ["sc", "stop", "wuauserv"]
+            subprocess.run(commands)
+            commands = ["sc", "config", "wuauserv", "start=disabled"]
+            subprocess.run(commands)
 
         elif platform.system() == "Linux":
             pass
         elif platform.system() == "Darwin":  # macOS
             pass
+
+    def lock_board(self, *args, **kwargs):
+        lock_window_setting = self.settings["lock_window"]
+
+        if lock_window_setting == "NEVER":
+            return
+        elif lock_window_setting == "10_SECOND":
+            wait_time = timedelta(seconds=10)
+        elif lock_window_setting == "1_MINUTE":
+            wait_time = timedelta(minutes=1)
+        elif lock_window_setting == "10_MINUTE":
+            wait_time = timedelta(minutes=10)
+        elif lock_window_setting == "1_HOUR":
+            wait_time = timedelta(hours=1)
+
+        last_interaction_time = core.window.last_interaction
+        if datetime.now(timezone.utc) < last_interaction_time + wait_time:
+            return
+
+        is_enabled = core.window.undertake(lambda: core.window.board.isEnabled(), True)
+        if is_enabled:
+            core.window.undertake(lambda: core.window.board.setEnabled(False), False)
 
 
 me = None

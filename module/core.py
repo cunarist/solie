@@ -5,6 +5,7 @@ import logging
 import urllib
 import math
 import os
+from datetime import datetime, timezone
 
 from PySide6 import QtGui, QtWidgets, QtCore
 import pyqtgraph
@@ -114,9 +115,35 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         thread_toss.apply_async(job)
 
+    def mouseMoveEvent(self, event):  # noqa:N802
+        self.last_interaction = datetime.now(timezone.utc)
+
+    def mousePressEvent(self, event):  # noqa:N802
+        self.last_interaction = datetime.now(timezone.utc)
+
+    def mouseReleaseEvent(self, event):  # noqa:N802
+        self.last_interaction = datetime.now(timezone.utc)
+        is_enabled = self.board.isEnabled()
+        if is_enabled:
+            return
+
+        def job():
+            question = [
+                "Board is locked. Do you want to unlock it?",
+                "You will be able to manipulate the board again.",
+                ["No", "Yes"],
+            ]
+            answer = self.ask(question)
+            if answer in (0, 1):
+                return
+            self.undertake(lambda: self.board.setEnabled(True), False)
+
+        thread_toss.apply_async(job)
+
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+        self.setMouseTracking(True)
 
         # ■■■■■ basic sizing ■■■■■
 
@@ -129,6 +156,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.should_finalize = False
         self.should_confirm_closing = True
         self.should_overlap_error = True
+        self.last_interaction = datetime.now(timezone.utc)
 
         # ■■■■■ hide the main widgets and go on to boot phase ■■■■■
 
@@ -285,7 +313,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         token_pixmap.loadFromData(image_data)
 
         def job():
-            self.lineEdit.setText(user_settings.get_app_settings()["datapath"])
+            text = user_settings.get_app_settings()["datapath"]
+            self.lineEdit.setText(text)
+            self.lineEdit.setCursorPosition(len(text))
 
             icon_label = QtWidgets.QLabel(
                 "",
@@ -931,7 +961,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             lambda: simulator.me.display_year_range(),
             lambda: manager.me.check_binance_limits(),
             lambda: transactor.me.pay_fees(),
-            lambda: manager.me.disable_system_auto_update(skip_if_okay=True),
         ]
 
         # ■■■■■ finalize functions ■■■■■
@@ -954,10 +983,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ connect events to functions ■■■■■
 
         def job():
-            # gauge
-            job = manager.me.toggle_board_availability
-            outsource.do(self.gauge.clicked, job)
-
             # special widgets
             job = transactor.me.display_range_information
             outsource.do(self.plot_widget.sigRangeChanged, job)
@@ -1025,6 +1050,12 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             outsource.do(self.pushButton_5.clicked, job)
             job = transactor.me.show_fees_and_revenues
             outsource.do(self.pushButton_9.clicked, job)
+            job = manager.me.change_settings
+            outsource.do(self.checkBox_12.toggled, job)
+            job = manager.me.change_settings
+            outsource.do(self.checkBox_13.toggled, job)
+            job = manager.me.change_settings
+            outsource.do(self.comboBox_3.currentIndexChanged, job)
 
         self.undertake(job, True)
 
@@ -1097,17 +1128,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             outsource.do(new_action.triggered, job)
             text = "Display same range as transaction graph"
             job = simulator.me.match_graph_range
-            new_action = action_menu.addAction(text)
-            outsource.do(new_action.triggered, job)
-
-            action_menu = QtWidgets.QMenu(self)
-            self.pushButton_10.setMenu(action_menu)
-            text = "Match system time with binance server"
-            job = manager.me.match_system_time
-            new_action = action_menu.addAction(text)
-            outsource.do(new_action.triggered, job)
-            text = "Disable system's auto update"
-            job = manager.me.disable_system_auto_update
             new_action = action_menu.addAction(text)
             outsource.do(new_action.triggered, job)
 
