@@ -358,9 +358,10 @@ class Simulator:
         if last_asset is not None:
             observed_until = self.account_state["observed_until"]
             if len(asset_record) == 0 or asset_record.index[-1] < observed_until:
-                asset_record.loc[observed_until, "Cause"] = "other"
-                asset_record.loc[observed_until, "Result Asset"] = last_asset
-                asset_record = asset_record.sort_index()
+                if slice_from < observed_until:
+                    asset_record.loc[observed_until, "Cause"] = "other"
+                    asset_record.loc[observed_until, "Result Asset"] = last_asset
+                    asset_record = asset_record.sort_index()
 
         # add the left end
 
