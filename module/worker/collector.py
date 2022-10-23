@@ -213,40 +213,19 @@ class Collector:
         # ■■■■■ safely replace the existing file ■■■■■
 
         try:
-            new_size = os.path.getsize(filepath + ".new")
+            os.remove(filepath + ".backup")
         except FileNotFoundError:
-            new_size = 0
+            pass
 
         try:
-            original_size = os.path.getsize(filepath)
+            os.rename(filepath, filepath + ".backup")
         except FileNotFoundError:
-            original_size = 0
+            pass
 
         try:
-            backup_size = os.path.getsize(filepath + ".backup")
+            os.rename(filepath + ".new", filepath)
         except FileNotFoundError:
-            backup_size = 0
-
-        if backup_size <= original_size and original_size <= new_size:
-            try:
-                os.remove(filepath + ".backup")
-            except FileNotFoundError:
-                pass
-
-            try:
-                os.rename(filepath, filepath + ".backup")
-            except FileNotFoundError:
-                pass
-
-            try:
-                os.rename(filepath + ".new", filepath)
-            except FileNotFoundError:
-                pass
-        elif original_size <= new_size:
-            try:
-                os.remove(filepath)
-            except FileNotFoundError:
-                pass
+            pass
 
     def save_all_years_candle_data(self, *args, **kwargs):
         with datalocks.hold("collector_candle_data"):
