@@ -1,3 +1,1 @@
-# Solsol
-
-Finding the rules of cryptos
+https://cunarist.com/solsol
