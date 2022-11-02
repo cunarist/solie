@@ -1064,14 +1064,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         def job():
             action_menu = QtWidgets.QMenu(self)
             self.pushButton_13.setMenu(action_menu)
-            text = "Save candle data"
-            job = collector.me.save_candle_data
-            new_action = action_menu.addAction(text)
-            outsource.do(new_action.triggered, job)
-            text = "Save every year's candle data"
-            job = collector.me.save_all_years_candle_data
-            new_action = action_menu.addAction(text)
-            outsource.do(new_action.triggered, job)
             text = "Open binance historical data webpage"
             job = collector.me.open_binance_data_page
             new_action = action_menu.addAction(text)
