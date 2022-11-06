@@ -1,4 +1,4 @@
-CURRENT_VERSION = "6.25"
+CURRENT_VERSION = "6.26"
 
 DEPENDENCIES = [
     ["pytz", "2022.1", "MIT License", "http://pythonhosted.org/pytz"],
