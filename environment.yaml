@@ -13,7 +13,7 @@ dependencies:
       - pyqtgraph==0.12.4
       - requests==2.27.1
       - apscheduler==3.9.1
-      - timesetter==1.3
+      - timesetter==1.7
       - websocket-client==1.3.1
       - pygments==2.11.2
       - dill==0.3.4
