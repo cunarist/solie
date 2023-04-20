@@ -43,6 +43,7 @@ class Collector:
 
         self.secret_memory = {
             "price_precisions": {},
+            "markets_gone": [],
         }
 
         # ■■■■■ remember and display ■■■■■
@@ -269,6 +270,7 @@ class Collector:
 
         # ■■■■■ fill holes ■■■■■
 
+        markets_gone = []
         full_symbols = []
         request_count = 0
 
@@ -325,6 +327,10 @@ class Collector:
                         payload=payload,
                     )
                     request_count += 1
+                    if len(response) == 0:
+                        if symbol not in markets_gone:
+                            markets_gone.append(symbol)
+                        break
                     for aggtrade in response:
                         aggtrade_id = aggtrade["a"]
                         aggtrades[aggtrade_id] = aggtrade
@@ -341,6 +347,7 @@ class Collector:
                     moment_to_fill_from,
                     last_fetched_time,
                 )
+        self.secret_memory["markets_gone"] = markets_gone
 
         # combine
         with datalocks.hold("collector_candle_data"):
@@ -376,39 +383,48 @@ class Collector:
                 price_precision = price_precisions[symbol]
                 latest_price = temp_ar[-1]
                 text = f"＄{latest_price:.{price_precision}f}"
-                widget = core.window.price_labels[symbol]
-                core.window.undertake(lambda w=widget, t=text: w.setText(t), False)
+            else:
+                text = "Unavailable"
+            widget = core.window.price_labels[symbol]
+            core.window.undertake(lambda w=widget, t=text: w.setText(t), False)
 
         # bottom information
-        cumulation_rate = self.get_candle_data_cumulation_rate()
-        chunk_count = len(self.realtime_data_chunks)
-        first_written_time = None
-        last_written_time = None
-        for turn in range(chunk_count):
-            with datalocks.hold("collector_realtime_data_chunks"):
-                if len(self.realtime_data_chunks[turn]) > 0:
-                    if first_written_time is None:
-                        first_record = self.realtime_data_chunks[turn][0]
-                        first_written_time = first_record["index"]
-                        del first_record
-                    last_record = self.realtime_data_chunks[turn][-1]
-                    last_written_time = last_record["index"]
-                    del last_record
-        if first_written_time is not None and last_written_time is not None:
-            written_seconds = last_written_time - first_written_time
-            written_seconds = written_seconds.astype(np.int64) / 10**9
-        else:
-            written_seconds = 0
-        written_length = timedelta(seconds=written_seconds)
-        range_days = written_length.days
-        range_hours, remains = divmod(written_length.seconds, 3600)
-        range_minutes, remains = divmod(remains, 60)
-        written_length_text = f"{range_days}d {range_hours}h {range_minutes}m"
+        if len(self.secret_memory["markets_gone"]) == 0:
+            cumulation_rate = self.get_candle_data_cumulation_rate()
+            chunk_count = len(self.realtime_data_chunks)
+            first_written_time = None
+            last_written_time = None
+            for turn in range(chunk_count):
+                with datalocks.hold("collector_realtime_data_chunks"):
+                    if len(self.realtime_data_chunks[turn]) > 0:
+                        if first_written_time is None:
+                            first_record = self.realtime_data_chunks[turn][0]
+                            first_written_time = first_record["index"]
+                            del first_record
+                        last_record = self.realtime_data_chunks[turn][-1]
+                        last_written_time = last_record["index"]
+                        del last_record
+            if first_written_time is not None and last_written_time is not None:
+                written_seconds = last_written_time - first_written_time
+                written_seconds = written_seconds.astype(np.int64) / 10**9
+            else:
+                written_seconds = 0
+            written_length = timedelta(seconds=written_seconds)
+            range_days = written_length.days
+            range_hours, remains = divmod(written_length.seconds, 3600)
+            range_minutes, remains = divmod(remains, 60)
+            written_length_text = f"{range_days}d {range_hours}h {range_minutes}m"
 
-        text = ""
-        text += f"24h candle data accumulation rate {cumulation_rate * 100:.2f}%"
-        text += "  ⦁  "
-        text += f"Realtime data length {written_length_text}"
+            text = ""
+            text += f"24h candle data accumulation rate {cumulation_rate * 100:.2f}%"
+            text += "  ⦁  "
+            text += f"Realtime data length {written_length_text}"
+        else:
+            markets_gone = self.secret_memory["markets_gone"]
+            if len(markets_gone) == 1:
+                text = f"It seems that {markets_gone[0]} market is removed by Binance. You should make a new data folder."
+            else:
+                text = f"It seems that {', '.join(markets_gone)} markets are removed by Binance. You should make a new data folder."
 
         core.window.undertake(lambda t=text: core.window.label_6.setText(t), False)
 
