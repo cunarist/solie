@@ -1262,7 +1262,7 @@ class Simulator:
         unrealized_changes = unrealized_changes * leverage
         year_asset_changes = pd.concat(chunk_asset_changes_list).sort_index()
 
-        # solsol and strategy fees
+        # solie and strategy fees
         grouper = pd.Grouper(freq="M")
         grouped = year_asset_changes.groupby(grouper)
         cycle_asset_changes_list = [(n, r.dropna()) for n, r in grouped]

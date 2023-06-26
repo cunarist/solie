@@ -42,7 +42,7 @@ class DatapathInput(QtWidgets.QWidget):
 
         # explanation
         detail_text = QtWidgets.QLabel(
-            "All the data that Solsol produces will go in this folder.",
+            "All the data that Solie produces will go in this folder.",
             alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
         )
         detail_text.setWordWrap(True)

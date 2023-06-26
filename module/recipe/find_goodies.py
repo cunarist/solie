@@ -29,14 +29,14 @@ def prepare():
 
     api_requester = ApiRequester()
     payload = {"id": "version"}
-    response = api_requester.cunarist("GET", "/api/solsol/latest-version", payload)
+    response = api_requester.cunarist("GET", "/api/solie/latest-version", payload)
     _latest_version = response["value"]
 
     if _is_prepared:
         temp_folder = tempfile.gettempdir()
 
         if platform.system() == "Windows":
-            filepath = temp_folder + "/SolsolWindowsSetup.exe"
+            filepath = temp_folder + "/SolieWindowsSetup.exe"
         elif platform.system() == "Linux":
             pass
         elif platform.system() == "Darwin":  # macOS
@@ -56,7 +56,7 @@ def prepare():
 
         if platform_system == "Windows":
             blob_demand = "SOLSOL_INSTALLER_WINDOWS"
-            filepath = temp_folder + "/SolsolWindowsSetup.exe"
+            filepath = temp_folder + "/SolieWindowsSetup.exe"
         elif platform_system == "Linux":
             blob_demand = "SOLSOL_INSTALLER_LINUX"
             filepath = ""
@@ -76,7 +76,7 @@ def prepare():
             file.write(download_data)
 
         text = "Downloaded update installer."
-        logger = logging.getLogger("solsol")
+        logger = logging.getLogger("solie")
         logger.info(text)
 
         _prepared_version = _latest_version
@@ -87,7 +87,7 @@ def apply():
     if _is_prepared:
         if platform.system() == "Windows":
             temp_folder = tempfile.gettempdir()
-            filepath = temp_folder + "/SolsolWindowsSetup.exe"
+            filepath = temp_folder + "/SolieWindowsSetup.exe"
             if os.path.isfile(filepath):
                 commands = [f"{filepath} /SILENT"]
                 subprocess.Popen(

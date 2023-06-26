@@ -33,7 +33,7 @@ class ApiStreamer:
         elif did_change:
             self._websocket_app.close()
             text = f"Websocket address replaced from {before_url} to {url}"
-            logger = logging.getLogger("solsol")
+            logger = logging.getLogger("solie")
             logger.info(text)
 
     @classmethod
@@ -51,7 +51,7 @@ class ApiStreamer:
                 # because thread pool is even slower with frequent messages
                 self._when_received(received=received)
             except Exception:
-                logger = logging.getLogger("solsol")
+                logger = logging.getLogger("solie")
                 logger.exception(
                     "Exception occured from a streamer\nBelow is the received data\n"
                     + json.dumps(received, indent=4, default=str)

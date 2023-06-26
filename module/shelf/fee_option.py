@@ -95,7 +95,7 @@ class FeeOption(QtWidgets.QWidget):
             }
             response = api_requester.cunarist(
                 http_method="GET",
-                path="/api/solsol/discount-code",
+                path="/api/solie/discount-code",
                 payload=payload,
             )
             discount_rate = response["discountRate"]

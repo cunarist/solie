@@ -32,7 +32,7 @@ for package in packages_to_complete:
 # ■■■■■ analysis ■■■■■
 
 a = Analysis(  # type:ignore # noqa:F821,VNE001
-    ["Solsol.py"],
+    ["Solie.py"],
     pathex=[],
     datas=datas,
     binaries=binaries,
@@ -60,7 +60,7 @@ exe = EXE(  # type:ignore # noqa:F821
     a.scripts,
     [],
     exclude_binaries=True,
-    name="Solsol",
+    name="Solie",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -82,5 +82,5 @@ coll = COLLECT(  # type:ignore # noqa:F821
     strip=False,
     upx=True,
     upx_exclude=[],
-    name="Solsol",
+    name="Solie",
 )

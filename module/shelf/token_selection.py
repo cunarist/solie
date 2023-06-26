@@ -178,7 +178,7 @@ class TokenSelection(QtWidgets.QWidget):
             if is_symbol_count_ok:
                 question = [
                     "Okay to proceed?",
-                    "Solsol will treat this token as your asset.",
+                    "Solie will treat this token as your asset.",
                     ["No", "Yes"],
                 ]
                 answer = core.window.ask(question)

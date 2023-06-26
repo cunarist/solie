@@ -1,1 +1,1 @@
-pyarmor pack -s pack.spec Solsol.py
+pyarmor pack -s pack.spec Solie.py

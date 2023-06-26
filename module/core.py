@@ -57,8 +57,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             if self.should_confirm_closing:
                 question = [
                     "Really quit?",
-                    "If Solsol is not turned on, data collection gets stopped as well."
-                    " Solsol will proceed to finalizations such as closing network"
+                    "If Solie is not turned on, data collection gets stopped as well."
+                    " Solie will proceed to finalizations such as closing network"
                     " connections and saving data.",
                     ["Cancel", "Shut down"],
                 ]
@@ -198,7 +198,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         while not check_internet.connected():
             question = [
                 "No internet connection",
-                "Internet connection is necessary for Solsol to start up.",
+                "Internet connection is necessary for Solie to start up.",
                 ["Okay"],
             ]
             self.ask(question)
@@ -976,7 +976,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ change logging settings ■■■■■
 
         self.should_overlap_error = False
-        logger = logging.getLogger("solsol")
+        logger = logging.getLogger("solie")
         logger.setLevel("DEBUG")
         logger.info("Started up")
 
@@ -1170,7 +1170,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 returned = job()
                 holder[1] = returned
             except Exception:
-                logger = logging.getLogger("solsol")
+                logger = logging.getLogger("solie")
                 logger.exception("Exception occured from the main thread")
             holder[0].set()
 

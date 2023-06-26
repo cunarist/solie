@@ -46,7 +46,7 @@ class DownloadFillOption(QtWidgets.QWidget):
 
         # explanation
         explain_label = QtWidgets.QLabel(
-            "Solsol will fill the candle data with historical data provided by"
+            "Solie will fill the candle data with historical data provided by"
             " Binance. The more you fill, the longer it takes. Amount of a few days"
             " only takes few minutes while amount of a few years can take hours."
         )

@@ -45,11 +45,11 @@ def start_monitoring():
             if _was_connected and not is_connected:
                 for job in _disconnected_functions:
                     thread_toss.apply_async(job)
-                logging.getLogger("solsol").warning("Internet disconnected")
+                logging.getLogger("solie").warning("Internet disconnected")
             elif not _was_connected and is_connected:
                 for job in _connected_functions:
                     thread_toss.apply_async(job)
-                logging.getLogger("solsol").info("Internet connected")
+                logging.getLogger("solie").info("Internet connected")
             # remember connection state
             _was_connected = is_connected
             _is_ready.set()

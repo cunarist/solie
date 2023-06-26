@@ -304,7 +304,7 @@ class Manager:
         filepath = self.workerpath + "/python_script.txt"
         with open(filepath, "w", encoding="utf8") as file:
             file.write(script_text)
-        namespace = {"window": core.window, "logger": logging.getLogger("solsol")}
+        namespace = {"window": core.window, "logger": logging.getLogger("solie")}
         exec(script_text, namespace)
 
     def check_online_status(self, *args, **kwargs):
@@ -391,8 +391,8 @@ class Manager:
     def reset_datapath(self, *args, **kwargs):
         question = [
             "Are you sure you want to change the data folder?",
-            "Solsol will shut down shortly. You will get to choose the new data folder"
-            " when you start Solsol again. Previous data folder does not get deleted.",
+            "Solie will shut down shortly. You will get to choose the new data folder"
+            " when you start Solie again. Previous data folder does not get deleted.",
             ["No", "Yes"],
         ]
         answer = core.window.ask(question)
@@ -412,14 +412,14 @@ class Manager:
         if is_prepared:
             question = [
                 "Update is ready",
-                "Shut down Solsol and wait for a while. Update will be automatically"
+                "Shut down Solie and wait for a while. Update will be automatically"
                 " installed.",
                 ["Okay"],
             ]
             core.window.ask(question)
 
     def open_documentation(self, *args, **kwargs):
-        webbrowser.open("https://cunarist.com/solsol")
+        webbrowser.open("https://cunarist.com/solie")
 
     def disable_system_auto_update(self, *args, **kwargs):
         if not self.settings["disable_system_update"]:

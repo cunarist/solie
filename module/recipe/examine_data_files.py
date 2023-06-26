@@ -83,7 +83,7 @@ def do():
 
     jobs.append(job)
 
-    # 4.0: solsol default strategy now has code number 2
+    # 4.0: solie default strategy now has code number 2
     def job():
         filepath = f"{datapath}/transactor/automation_settings.json"
         with open(filepath, "r", encoding="utf8") as file:
@@ -117,7 +117,7 @@ def do():
 
     jobs.append(job)
 
-    # 5.0: solsol default strategy now has strategy code SLSLDS
+    # 5.0: solie default strategy now has strategy code SLSLDS
     def job():
         filepath = f"{datapath}/transactor/automation_settings.json"
         with open(filepath, "r", encoding="utf8") as file:
@@ -213,7 +213,7 @@ def do_first():
 
     jobs.append(job)
 
-    # 6.0: remove solsol license key
+    # 6.0: remove solie license key
 
     def job():
         filepath = "./note/app_settings.json"

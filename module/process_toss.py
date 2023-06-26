@@ -19,7 +19,7 @@ def _error_callback(error):
     try:
         raise error
     except Exception:
-        logger = logging.getLogger("solsol")
+        logger = logging.getLogger("solie")
         logger.exception("Exception occured from the process pool")
 
 

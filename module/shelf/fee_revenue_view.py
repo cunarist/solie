@@ -22,7 +22,7 @@ class FeeRevenueView(QtWidgets.QWidget):
         }
         response = api_requester.cunarist(
             http_method="GET",
-            path="/api/solsol/automated-revenue",
+            path="/api/solie/automated-revenue",
             payload=payload,
         )
         about_automated_revenues = response

@@ -360,7 +360,7 @@ class Transactor:
 
         if event_type == "listenKeyExpired":
             text = "Binance user data stream listen key got expired"
-            logger = logging.getLogger("solsol")
+            logger = logging.getLogger("solie")
             logger.warning(text)
             self.update_user_data_stream()
 
@@ -2398,7 +2398,7 @@ class Transactor:
         }
         response = self.api_requester.cunarist(
             http_method="GET",
-            path="/api/solsol/automated-revenue",
+            path="/api/solie/automated-revenue",
             payload=payload,
         )
         about_automated_revenues = response
@@ -2571,7 +2571,7 @@ class Transactor:
             if len(actual_fee_paid) == 0:
                 if len(withdrawl_orders) > 0:
                     text = "Fee payment withdrawl failed."
-                    logging.getLogger("solsol").warning(text)
+                    logging.getLogger("solie").warning(text)
                     return
 
             app_fee_paid = 0
@@ -2579,10 +2579,10 @@ class Transactor:
                 app_fee_paid = actual_fee_paid.pop(app_fee_address)
 
             text = f"Fee payment completed for cycle number {cycle_number}."
-            text += f"\n{app_fee_paid} for Solsol."
+            text += f"\n{app_fee_paid} for Solie."
             for address, fee in actual_fee_paid.items():
                 text += f"\n{fee} for {address}."
-            logging.getLogger("solsol").info(text)
+            logging.getLogger("solie").info(text)
 
             # report to the server
 
@@ -2595,7 +2595,7 @@ class Transactor:
             }
             self.api_requester.cunarist(
                 http_method="PUT",
-                path="/api/solsol/automated-revenue",
+                path="/api/solie/automated-revenue",
                 payload=payload,
             )
 
@@ -2638,7 +2638,7 @@ class Transactor:
             }
             self.api_requester.cunarist(
                 "POST",
-                "/api/solsol/automated-revenue",
+                "/api/solie/automated-revenue",
                 payload,
             )
         self.secret_memory["automated_revenues"] = {}

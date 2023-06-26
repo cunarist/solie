@@ -619,7 +619,7 @@ class Collector:
         # ■■■■■ add to log ■■■■■
 
         text = "Filled the candle data with the history data downloaded from Binance"
-        logger = logging.getLogger("solsol")
+        logger = logging.getLogger("solie")
         logger.info(text)
 
         # ■■■■■ display to graphs ■■■■■
