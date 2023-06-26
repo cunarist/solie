@@ -2038,10 +2038,7 @@ class Transactor:
 
         is_satisfied = True
         enable_required_restrictions = [
-            "enableSpotAndMarginTrading",
-            "enableWithdrawals",
             "enableFutures",
-            "permitsUniversalTransfer",
         ]
         for restriction_name in enable_required_restrictions:
             is_enabled = api_restrictions[restriction_name]
