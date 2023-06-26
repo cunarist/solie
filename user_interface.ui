@@ -2000,8 +2000,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>98</width>
-                   <height>40</height>
+                   <width>379</width>
+                   <height>245</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_6">
@@ -2029,8 +2029,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>98</width>
-                   <height>40</height>
+                   <width>378</width>
+                   <height>245</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_7">
@@ -2058,8 +2058,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>98</width>
-                   <height>40</height>
+                   <width>379</width>
+                   <height>245</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_4">
@@ -2087,8 +2087,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>98</width>
-                   <height>40</height>
+                   <width>379</width>
+                   <height>245</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_8">
@@ -2116,8 +2116,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>98</width>
-                   <height>40</height>
+                   <width>378</width>
+                   <height>245</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_5">
@@ -2145,8 +2145,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>98</width>
-                   <height>40</height>
+                   <width>379</width>
+                   <height>245</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_9">
@@ -2225,35 +2225,6 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                </widget>
               </item>
              </layout>
-            </item>
-           </layout>
-          </widget>
-          <widget class="QWidget" name="tab_8">
-           <attribute name="title">
-            <string>License</string>
-           </attribute>
-           <layout class="QHBoxLayout" name="horizontalLayout_32">
-            <item>
-             <widget class="QScrollArea" name="scrollArea_2">
-              <property name="widgetResizable">
-               <bool>true</bool>
-              </property>
-              <widget class="QWidget" name="scrollAreaWidgetContents_2">
-               <property name="geometry">
-                <rect>
-                 <x>0</x>
-                 <y>0</y>
-                 <width>58</width>
-                 <height>26</height>
-                </rect>
-               </property>
-               <layout class="QHBoxLayout" name="horizontalLayout_33">
-                <item>
-                 <layout class="QVBoxLayout" name="verticalLayout_15"/>
-                </item>
-               </layout>
-              </widget>
-             </widget>
             </item>
            </layout>
           </widget>

@@ -186,7 +186,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ start basic things ■■■■■
 
-        examine_data_files.do_first()
         user_settings.load()
         examine_data_files.do()
         user_settings.load()
@@ -481,55 +480,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             text = introduction.CURRENT_VERSION
             label = BrandLabel(self, text, 24)
             this_layout.addWidget(label)
-
-        self.undertake(job, True)
-
-        # ■■■■■ show package licenses ■■■■■
-
-        def job():
-            for dependency in introduction.DEPENDENCIES:
-                dependency_name = dependency[0]
-                dependency_version = dependency[1]
-                dependency_license = dependency[2]
-                dependency_url = dependency[3]
-
-                text = dependency_name
-                text += f" ({dependency_version})"
-                text += f" - {dependency_license}"
-
-                # unit structure
-                this_layout = QtWidgets.QHBoxLayout()
-                license_label = QtWidgets.QLabel(
-                    text,
-                    alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-                )
-                this_layout.addWidget(license_label)
-                spacer = QtWidgets.QSpacerItem(
-                    0,
-                    0,
-                    QtWidgets.QSizePolicy.Policy.Expanding,
-                    QtWidgets.QSizePolicy.Policy.Minimum,
-                )
-                this_layout.addItem(spacer)
-
-                if dependency_url.startswith("http"):
-                    text = f"<a href='{dependency_url}'>{dependency_url}</a>"
-                    link_label = QtWidgets.QLabel(text, self)
-                    link_label.setOpenExternalLinks(True)
-                    this_layout.addWidget(link_label)
-
-                self.verticalLayout_15.addLayout(this_layout)
-
-                divider = HorizontalDivider(self)
-                self.verticalLayout_15.addWidget(divider)
-
-            spacer = QtWidgets.QSpacerItem(
-                0,
-                0,
-                QtWidgets.QSizePolicy.Policy.Minimum,
-                QtWidgets.QSizePolicy.Policy.Expanding,
-            )
-            self.verticalLayout_15.addItem(spacer)
 
         self.undertake(job, True)
 
