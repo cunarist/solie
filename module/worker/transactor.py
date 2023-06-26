@@ -31,8 +31,6 @@ from module.recipe import remember_task_durations
 from module.recipe import standardize
 from module.recipe import datalocks
 from module.recipe import encrypted_pickle
-from module.shelf.fee_option import FeeOption
-from module.shelf.fee_revenue_view import FeeRevenueView
 from module.shelf.long_text_view import LongTextView
 
 
@@ -52,9 +50,7 @@ class Transactor:
             "quantity_precisions": {},
             "maximum_leverages": {},
             "leverages": {},
-            "was_fee_paid": True,
             "is_key_restrictions_satisfied": True,
-            "automated_revenues": {},
         }
 
         # ■■■■■ remember and display ■■■■■
@@ -91,14 +87,6 @@ class Transactor:
             self.automation_settings = {
                 "strategy_index": 0,
                 "should_transact": False,
-            }
-
-        try:
-            filepath = self.workerpath + "/fee_settings.slslsc"
-            self.fee_settings = encrypted_pickle.read(filepath)
-        except FileNotFoundError:
-            self.fee_settings = {
-                "discount_code": "",
             }
 
         try:
@@ -155,7 +143,6 @@ class Transactor:
                 columns=[
                     "Symbol",
                     "Order ID",
-                    "Fee Address",
                 ],
                 index=pd.DatetimeIndex([], tz="UTC"),
             )
@@ -231,19 +218,7 @@ class Transactor:
             executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
-            self.report_automated_revenues,
-            trigger="cron",
-            minute="*/10",
-            executor="thread_pool_executor",
-        )
-        core.window.scheduler.add_job(
             self.save_large_data,
-            trigger="cron",
-            hour="*",
-            executor="thread_pool_executor",
-        )
-        core.window.scheduler.add_job(
-            self.pay_fees,
             trigger="cron",
             hour="*",
             executor="thread_pool_executor",
@@ -308,17 +283,6 @@ class Transactor:
         with datalocks.hold("transactor_asset_record"):
             asset_record = self.asset_record.copy()
         asset_record.to_pickle(self.workerpath + "/asset_record.pickle")
-
-    def update_fee_settings(self, *args, **kwargs):
-        formation = [
-            "Change your fee settings",
-            FeeOption,
-            True,
-            self.fee_settings,
-        ]
-        core.window.overlap(formation)
-        filepath = self.workerpath + "/fee_settings.slslsc"
-        encrypted_pickle.write(self.fee_settings, filepath)
 
     def save_scribbles(self, *args, **kwargs):
         filepath = self.workerpath + "/scribbles.pickle"
@@ -523,7 +487,6 @@ class Transactor:
                     if order_id in unique_order_ids:
                         mask_sr = symbol_df["Order ID"] == order_id
                         index = symbol_df.index[mask_sr][0]
-                        fee_address = self.auto_order_record.loc[index, "Fee Address"]
 
                 with datalocks.hold("transactor_asset_record"):
                     df = self.asset_record
@@ -565,12 +528,6 @@ class Transactor:
                             self.asset_record.loc[record_time, "Cause"] = "manual_trade"
                     if not self.asset_record.index.is_monotonic_increasing:
                         self.asset_record = self.asset_record.sort_index()
-
-                if order_id in unique_order_ids:
-                    automated_revenues = self.secret_memory["automated_revenues"]
-                    if fee_address not in automated_revenues.keys():
-                        automated_revenues[fee_address] = 0
-                    automated_revenues[fee_address] += added_revenue
 
         # ■■■■■ cancel conflicting orders ■■■■■
 
@@ -1243,11 +1200,6 @@ class Transactor:
 
         indicators = indicators[slice_from:]
 
-        # ■■■■■ delete indicator data if strategy wants ■■■■■
-
-        if strategy["hide_indicators"]:
-            indicators = indicators.iloc[0:0]
-
         # ■■■■■ draw strategy lines ■■■■■
 
         # price indicators
@@ -1370,14 +1322,6 @@ class Transactor:
             core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
             return
 
-        if not self.secret_memory["was_fee_paid"]:
-            text = (
-                "App fee and strategy fees were not paid for more than 2 months. Auto"
-                " transaction is disabled."
-            )
-            core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
-            return
-
         if not self.secret_memory["is_key_restrictions_satisfied"]:
             text = (
                 "API key's restrictions are not satisfied. Auto transaction is"
@@ -1445,9 +1389,6 @@ class Transactor:
             return
 
         # ■■■■■ stop if conditions are not met ■■■■■
-
-        if not self.secret_memory["was_fee_paid"]:
-            return
 
         if not self.secret_memory["is_key_restrictions_satisfied"]:
             return
@@ -2285,13 +2226,11 @@ class Transactor:
             update_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
             strategy_index = self.automation_settings["strategy_index"]
             strategy = strategist.me.strategies[strategy_index]
-            fee_address = strategy["fee_address"]
             with datalocks.hold("transactor_auto_order_record"):
                 while update_time in self.auto_order_record.index:
                     update_time += timedelta(milliseconds=1)
                 self.auto_order_record.loc[update_time, "Symbol"] = order_symbol
                 self.auto_order_record.loc[update_time, "Order ID"] = order_id
-                self.auto_order_record.loc[update_time, "Fee Address"] = fee_address
                 if not self.auto_order_record.index.is_monotonic_increasing:
                     self.auto_order_record = self.auto_order_record.sort_index()
 
@@ -2381,230 +2320,6 @@ class Transactor:
 
         core.window.undertake(job, False)
 
-    def pay_fees(self, *args, **kwargs):
-        # ■■■■■ prepare basic things ■■■■■
-
-        asset_token = user_settings.get_data_settings()["asset_token"]
-        app_fee_address = "0x68EA838F933EEbaA9167E9f1C6E20De598F44E7e"
-
-        # ■■■■■ get fee data ■■■■■
-
-        payload = {
-            "appPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
-            "deviceIdentifier": getmac.get_mac_address(),
-        }
-        response = self.api_requester.cunarist(
-            http_method="GET",
-            path="/api/solie/automated-revenue",
-            payload=payload,
-        )
-        about_automated_revenues = response
-
-        # ■■■■■ check if fees were paid properly previously ■■■■■
-
-        now_datetime = datetime.now(timezone.utc)
-        current_year = now_datetime.year
-        current_month = now_datetime.month
-        current_cycle_number = (current_year - 1970) * 12 + current_month
-
-        cycles_not_paid = 0
-        for about_automated_revenue in about_automated_revenues:
-            if not about_automated_revenue["isFeePaid"]:
-                if about_automated_revenue["cycleNumber"] < current_cycle_number:
-                    cycles_not_paid += 1
-
-        if cycles_not_paid >= 2:
-            self.secret_memory["was_fee_paid"] = False
-        else:
-            self.secret_memory["was_fee_paid"] = True
-
-        # ■■■■■ analyze spot wallet ■■■■■
-
-        try:
-            payload = {
-                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-            }
-            response = self.api_requester.binance(
-                http_method="GET",
-                path="/api/v3/account",
-                payload=payload,
-                server="spot",
-            )
-            spot_balances = response["balances"]
-        except ApiRequestError:
-            # when API keys are not entered
-            return
-
-        # ■■■■■ pay fees for fee cycles that were not done ■■■■■
-
-        for about_automated_revenue in about_automated_revenues:
-            # get information about this fee cycle
-
-            cycle_number = about_automated_revenue["cycleNumber"]
-            is_fee_paid = about_automated_revenue["isFeePaid"]
-            app_left_fee = about_automated_revenue["appFee"]
-            strategy_left_fee = about_automated_revenue["strategyFee"]
-
-            # determine if fee payment should be performed
-
-            if is_fee_paid:
-                continue
-
-            if not about_automated_revenue["cycleNumber"] < current_cycle_number:
-                continue
-
-            # calculate and prepare fee orders
-
-            busd_needed = 0.1
-            busd_prepared = 0
-
-            for spot_balance in spot_balances:
-                if spot_balance["asset"] == "BUSD":
-                    busd_prepared = float(spot_balance["free"])
-                    break
-
-            withdrawl_orders = []
-            if app_left_fee > 10:
-                busd_needed += app_left_fee
-                withdrawl_orders.append(
-                    {
-                        "timestamp": None,
-                        "coin": "BUSD",
-                        "network": "BSC",
-                        "address": app_fee_address,
-                        "amount": ball.ceil(app_left_fee, 4),
-                    }
-                )
-            for address, fee in strategy_left_fee.items():
-                if fee > 10:
-                    busd_needed += fee
-                    withdrawl_orders.append(
-                        {
-                            "timestamp": None,
-                            "coin": "BUSD",
-                            "network": "BSC",
-                            "address": address,
-                            "amount": ball.ceil(fee, 4),
-                        }
-                    )
-
-            busd_obtain = busd_needed - busd_prepared
-
-            # make spot wallet's BUSD balance sufficient
-
-            if len(withdrawl_orders) > 0 and busd_obtain > 0:
-                # transfer amount can have many decimal places with no minimum value
-                # trade quantity can be only integers and value should be higher than 10
-
-                if asset_token == "BUSD":
-                    real_busd_obtain = busd_obtain
-
-                    payload = {
-                        "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                        "type": "UMFUTURE_MAIN",
-                        "amount": ball.ceil(real_busd_obtain, 4),
-                        "asset": "BUSD",
-                    }
-                    self.api_requester.binance(
-                        http_method="POST",
-                        path="/sapi/v1/asset/transfer",
-                        payload=payload,
-                        server="spot",
-                    )
-                    time.sleep(5)
-
-                elif asset_token == "USDT":
-                    real_busd_obtain = math.ceil(max(busd_obtain, 10 + 1))
-
-                    payload = {
-                        "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                        "type": "UMFUTURE_MAIN",
-                        "amount": ball.ceil(real_busd_obtain * 1.001, 4),
-                        "asset": "USDT",
-                    }
-                    self.api_requester.binance(
-                        http_method="POST",
-                        path="/sapi/v1/asset/transfer",
-                        payload=payload,
-                        server="spot",
-                    )
-                    time.sleep(5)
-
-                    payload = {
-                        "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                        "symbol": "BUSDUSDT",
-                        "side": "BUY",
-                        "type": "MARKET",
-                        "quantity": real_busd_obtain,
-                    }
-                    self.api_requester.binance(
-                        http_method="POST",
-                        path="/api/v3/order",
-                        payload=payload,
-                        server="spot",
-                    )
-                    time.sleep(5)
-
-            # withdraw to target wallets
-
-            actual_fee_paid = {}
-
-            def job(payload):
-                timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
-                payload["timestamp"] = timestamp
-                self.api_requester.binance(
-                    http_method="POST",
-                    path="/sapi/v1/capital/withdraw/apply",
-                    payload=payload,
-                    server="spot",
-                )
-                address = payload["address"]
-                actual_fee_paid[address] = payload["amount"]
-
-            thread_toss.map(job, withdrawl_orders)
-
-            # add log
-
-            if len(actual_fee_paid) == 0:
-                if len(withdrawl_orders) > 0:
-                    text = "Fee payment withdrawl failed."
-                    logging.getLogger("solie").warning(text)
-                    return
-
-            app_fee_paid = 0
-            if app_fee_address in actual_fee_paid.keys():
-                app_fee_paid = actual_fee_paid.pop(app_fee_address)
-
-            text = f"Fee payment completed for cycle number {cycle_number}."
-            text += f"\n{app_fee_paid} for Solie."
-            for address, fee in actual_fee_paid.items():
-                text += f"\n{fee} for {address}."
-            logging.getLogger("solie").info(text)
-
-            # report to the server
-
-            payload = {
-                "appPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
-                "deviceIdentifier": getmac.get_mac_address(),
-                "cycleNumber": cycle_number,
-                "isFeePaid": True,
-                "strategyFeePaid": actual_fee_paid,
-            }
-            self.api_requester.cunarist(
-                http_method="PUT",
-                path="/api/solie/automated-revenue",
-                payload=payload,
-            )
-
-    def show_fees_and_revenues(self, *args, **kwargs):
-        formation = [
-            "These are revenues and fees on this device",
-            FeeRevenueView,
-            True,
-            getmac.get_mac_address(),
-        ]
-        core.window.overlap(formation)
-
     def show_raw_account_state_object(self, *args, **kwargs):
         text = ""
 
@@ -2622,23 +2337,6 @@ class Transactor:
             [text],
         ]
         core.window.overlap(formation)
-
-    def report_automated_revenues(self, *args, **kwargs):
-        automated_revenues = self.secret_memory["automated_revenues"]
-        for fee_address, added_revenue in automated_revenues.items():
-            payload = {
-                "appPasscode": "SBJyXScaIEIteBPcqpMTMAG3T6B75rb4",
-                "deviceIdentifier": getmac.get_mac_address(),
-                "addedRevenue": added_revenue,
-                "feeAddress": fee_address,
-                "discountCode": self.fee_settings["discount_code"],
-            }
-            self.api_requester.cunarist(
-                "POST",
-                "/api/solie/automated-revenue",
-                payload,
-            )
-        self.secret_memory["automated_revenues"] = {}
 
 
 me = None

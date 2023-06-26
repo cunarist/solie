@@ -12,7 +12,6 @@ from module.recipe import decide
 
 def do(dataset):
     # leverage is treated as 1
-    # fee is treated as 0
     # because those are going to be applied at the presentation phase
 
     # ■■■■■ get data ■■■■■

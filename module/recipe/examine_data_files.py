@@ -144,40 +144,12 @@ def do():
 
     jobs.append(job)
 
-    # 6.1: discount code
-    def job():
-        filepath = f"{datapath}/transactor/fee_settings.slslsc"
-        fee_settings = encrypted_pickle.read(filepath)
-        if "discount" in fee_settings.keys():
-            fee_settings.pop("discount")
-        if "discount_code" not in fee_settings.keys():
-            fee_settings["discount_code"] = ""
-        encrypted_pickle.write(fee_settings, filepath)
-
-    jobs.append(job)
-
     # 6.3: auto_trade and manual_trade
     def job():
         filepath = f"{datapath}/transactor/asset_record.pickle"
         asset_record = pd.read_pickle(filepath)
         asset_record["Cause"] = asset_record["Cause"].replace("trade", "auto_trade")
         asset_record.to_pickle(filepath)
-
-    jobs.append(job)
-
-    # 6.8: fee address column in auto order record
-    def job():
-        filepath = f"{datapath}/transactor/auto_order_record.pickle"
-        auto_order_record = pd.read_pickle(filepath)
-        is_something_done = False
-        if "Net Profit" in auto_order_record.columns:
-            auto_order_record = auto_order_record.drop(["Net Profit"], axis=1)
-            is_something_done = True
-        if "Fee Address" not in auto_order_record.columns:
-            auto_order_record["Fee Address"] = ""
-            is_something_done = True
-        if is_something_done:
-            auto_order_record.to_pickle(filepath)
 
     jobs.append(job)
 

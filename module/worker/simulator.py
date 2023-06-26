@@ -612,11 +612,6 @@ class Simulator:
 
         indicators = indicators[slice_from:]
 
-        # ■■■■■ delete indicator data if strategy wants ■■■■■
-
-        if strategy["hide_indicators"]:
-            indicators = indicators.iloc[0:0]
-
         # ■■■■■ draw strategy lines ■■■■■
 
         # price indicators
@@ -1261,40 +1256,6 @@ class Simulator:
 
         unrealized_changes = unrealized_changes * leverage
         year_asset_changes = pd.concat(chunk_asset_changes_list).sort_index()
-
-        # solie and strategy fees
-        grouper = pd.Grouper(freq="M")
-        grouped = year_asset_changes.groupby(grouper)
-        cycle_asset_changes_list = [(n, r.dropna()) for n, r in grouped]
-        if len(cycle_asset_changes_list) > 0:
-            for cycle_name, cycle_asset_changes in cycle_asset_changes_list:
-                # about cycle
-                cycle_year = cycle_name.year
-                cycle_month = cycle_name.month
-                cycle_start = datetime(
-                    year=cycle_name.year,
-                    month=cycle_name.month,
-                    day=1,
-                    tzinfo=timezone.utc,
-                )
-                _, days_in_month = calendar.monthrange(cycle_year, cycle_month)
-                cycle_length = timedelta(days=days_in_month)
-                cycle_end = cycle_start + cycle_length
-                # fee calcuation
-                cycle_asset_change = 1
-                if len(cycle_asset_changes) > 0:
-                    cycle_asset_change = np.product(cycle_asset_changes)
-                if cycle_asset_change <= 1:
-                    continue
-                asset_change_due_to_fee = 1 / ((cycle_asset_change - 1) * 0.2 + 1)
-                # fee application
-                if asset_change_due_to_fee < 1:
-                    fee_pay_time = cycle_end - timedelta(seconds=10)
-                    last_index = asset_record.index[-1]
-                    if fee_pay_time < last_index:
-                        cycle_asset_changes[fee_pay_time] = asset_change_due_to_fee
-            only_cycle_asset_changes_list = [r for _, r in cycle_asset_changes_list]
-            year_asset_changes = pd.concat(only_cycle_asset_changes_list).sort_index()
 
         if len(asset_record) > 0:
             start_point = asset_record.index[0]

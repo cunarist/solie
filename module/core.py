@@ -959,7 +959,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             lambda: simulator.me.display_lines(),
             lambda: simulator.me.display_year_range(),
             lambda: manager.me.check_binance_limits(),
-            lambda: transactor.me.pay_fees(),
         ]
 
         # ■■■■■ finalize functions ■■■■■
@@ -1047,8 +1046,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             outsource.do(self.pushButton_7.clicked, job)
             job = strategist.me.add_blank_strategy
             outsource.do(self.pushButton_5.clicked, job)
-            job = transactor.me.show_fees_and_revenues
-            outsource.do(self.pushButton_9.clicked, job)
             job = manager.me.change_settings
             outsource.do(self.checkBox_12.toggled, job)
             job = manager.me.change_settings
@@ -1092,10 +1089,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             outsource.do(new_action.triggered, job)
             text = "Display same range as simulation graph"
             job = transactor.me.match_graph_range
-            new_action = action_menu.addAction(text)
-            outsource.do(new_action.triggered, job)
-            text = "Change fee settings"
-            job = transactor.me.update_fee_settings
             new_action = action_menu.addAction(text)
             outsource.do(new_action.triggered, job)
             text = "Show Raw Account State Object"

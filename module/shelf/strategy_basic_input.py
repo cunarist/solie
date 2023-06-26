@@ -154,54 +154,6 @@ class StrategyBasicInput(QtWidgets.QWidget):
         # card structure
         card = QtWidgets.QGroupBox()
         card.setFixedWidth(720)
-        card_layout = QtWidgets.QVBoxLayout(card)
-        card_layout.setContentsMargins(80, 40, 80, 40)
-        cards_layout.addWidget(card)
-
-        # explanation
-        detail_text = QtWidgets.QLabel(
-            "Showing off to the public",
-            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-        )
-        detail_text.setWordWrap(True)
-        card_layout.addWidget(detail_text)
-
-        # spacing
-        spacing_text = QtWidgets.QLabel("")
-        spacing_text_font = QtGui.QFont()
-        spacing_text_font.setPointSize(3)
-        spacing_text.setFont(spacing_text_font)
-        card_layout.addWidget(spacing_text)
-
-        # divider
-        divider = HorizontalDivider(self)
-        card_layout.addWidget(divider)
-
-        # spacing
-        spacing_text = QtWidgets.QLabel("")
-        spacing_text_font = QtGui.QFont()
-        spacing_text_font.setPointSize(3)
-        spacing_text.setFont(spacing_text_font)
-        card_layout.addWidget(spacing_text)
-
-        # input
-        this_layout = QtWidgets.QFormLayout()
-        card_layout.addLayout(this_layout)
-        fee_address_input = QtWidgets.QLineEdit()
-        fee_address_font = QtGui.QFont()
-        fee_address_font.setPointSize(5)
-        fee_address_input.setFont(fee_address_font)
-        fee_address_input.setText(strategy["fee_address"])
-        this_layout.addRow("BUSD(BSC) fee address", fee_address_input)
-        hide_indicators_input = QtWidgets.QCheckBox()
-        hide_indicators_input.setChecked(strategy["hide_indicators"])
-        this_layout.addRow("Hide indicators", hide_indicators_input)
-
-        # ■■■■■ a card ■■■■■
-
-        # card structure
-        card = QtWidgets.QGroupBox()
-        card.setFixedWidth(720)
         card_layout = QtWidgets.QHBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
         cards_layout.addWidget(card)
@@ -217,8 +169,6 @@ class StrategyBasicInput(QtWidgets.QWidget):
                     risk_level_input.currentIndex(),
                     parallelized_simulation_input.isChecked(),
                     chunk_division_input.value(),
-                    fee_address_input.text(),
-                    hide_indicators_input.isChecked(),
                 )
 
             returned = core.window.undertake(job, True)
@@ -260,8 +210,6 @@ class StrategyBasicInput(QtWidgets.QWidget):
             strategy["risk_level"] = returned[4]
             strategy["parallelized_simulation"] = returned[5]
             strategy["chunk_division"] = returned[6]
-            strategy["fee_address"] = returned[7]
-            strategy["hide_indicators"] = returned[8]
             done_event.set()
 
         # confirm button

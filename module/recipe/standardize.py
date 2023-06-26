@@ -69,10 +69,6 @@ def strategy():
         "risk_level": 0,
         "parallelized_simulation": True,
         "chunk_division": 30,
-        "fee_address": "",
-        "hide_indicators": False,
-        "editable": True,
-        "removeable": True,
         "indicators_script": "pass",
         "decision_script": "pass",
     }

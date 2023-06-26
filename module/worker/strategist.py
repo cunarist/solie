@@ -105,78 +105,59 @@ class Strategiest:
                 )
                 card_layout.addItem(spacer)
 
-                if strategy["editable"]:
+                def job(strategy=strategy):
+                    before_selections = self.remember_strategy_selections()
+                    formation = [
+                        "Develop your strategy",
+                        StrategyDevelopInput,
+                        True,
+                        strategy,
+                    ]
+                    core.window.overlap(formation)
+                    self.display_strategies()
+                    self.save_strategies()
+                    self.restore_strategy_selections(before_selections)
 
-                    def job(strategy=strategy):
-                        before_selections = self.remember_strategy_selections()
-                        formation = [
-                            "Develop your strategy",
-                            StrategyDevelopInput,
-                            True,
-                            strategy,
-                        ]
-                        core.window.overlap(formation)
-                        self.display_strategies()
-                        self.save_strategies()
-                        self.restore_strategy_selections(before_selections)
+                edit_button = QtWidgets.QPushButton("Develop")
+                card_layout.addWidget(edit_button)
+                outsource.do(edit_button.clicked, job)
 
-                    edit_button = QtWidgets.QPushButton("Develop")
-                    card_layout.addWidget(edit_button)
-                    outsource.do(edit_button.clicked, job)
+                def job(strategy=strategy):
+                    before_selections = self.remember_strategy_selections()
+                    formation = [
+                        "Edit your strategy's basic information",
+                        StrategyBasicInput,
+                        True,
+                        strategy,
+                    ]
+                    core.window.overlap(formation)
+                    self.display_strategies()
+                    self.save_strategies()
+                    self.restore_strategy_selections(before_selections)
 
-                    def job(strategy=strategy):
-                        before_selections = self.remember_strategy_selections()
-                        formation = [
-                            "Edit your strategy's basic information",
-                            StrategyBasicInput,
-                            True,
-                            strategy,
-                        ]
-                        core.window.overlap(formation)
-                        self.display_strategies()
-                        self.save_strategies()
-                        self.restore_strategy_selections(before_selections)
+                edit_button = QtWidgets.QPushButton("Edit basic info")
+                card_layout.addWidget(edit_button)
+                outsource.do(edit_button.clicked, job)
 
-                    edit_button = QtWidgets.QPushButton("Edit basic info")
-                    card_layout.addWidget(edit_button)
-                    outsource.do(edit_button.clicked, job)
+                def job(strategy=strategy):
+                    question = [
+                        "Remove this strategy?",
+                        "If you remove this strategy, it cannot be recovered"
+                        + " unless a new data folder is made.",
+                        ["Remove"],
+                    ]
+                    answer = core.window.ask(question)
+                    if answer == 0:
+                        return
+                    before_selections = self.remember_strategy_selections()
+                    self.strategies.remove(strategy)
+                    self.display_strategies()
+                    self.save_strategies()
+                    self.restore_strategy_selections(before_selections)
 
-                else:
-
-                    def job(strategy=strategy):
-                        formation = [
-                            "This is the strategy's basic information",
-                            StrategyInfoView,
-                            True,
-                            strategy,
-                        ]
-                        core.window.overlap(formation)
-
-                    edit_button = QtWidgets.QPushButton("Show basic info")
-                    card_layout.addWidget(edit_button)
-                    outsource.do(edit_button.clicked, job)
-
-                if strategy["removeable"]:
-
-                    def job(strategy=strategy):
-                        question = [
-                            "Remove this strategy?",
-                            "If you remove this strategy, it is impossible to recover"
-                            " unless uploaded on the store.",
-                            ["Remove"],
-                        ]
-                        answer = core.window.ask(question)
-                        if answer == 0:
-                            return
-                        before_selections = self.remember_strategy_selections()
-                        self.strategies.remove(strategy)
-                        self.display_strategies()
-                        self.save_strategies()
-                        self.restore_strategy_selections(before_selections)
-
-                    edit_button = QtWidgets.QPushButton("Remove")
-                    card_layout.addWidget(edit_button)
-                    outsource.do(edit_button.clicked, job)
+                edit_button = QtWidgets.QPushButton("Remove")
+                card_layout.addWidget(edit_button)
+                outsource.do(edit_button.clicked, job)
 
                 def job(strategy=strategy):
                     before_selections = self.remember_strategy_selections()
