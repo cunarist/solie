@@ -475,7 +475,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             spacing_text_font.setPointSize(8)
             spacing_text.setFont(spacing_text_font)
             this_layout.addWidget(spacing_text)
-            title_label = BrandLabel(self, "SOLSOL", 48)
+            title_label = BrandLabel(self, "SOLIE", 48)
             this_layout.addWidget(title_label)
             text = introduction.CURRENT_VERSION
             label = BrandLabel(self, text, 24)
