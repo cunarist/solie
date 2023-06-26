@@ -63,7 +63,7 @@ def strategy():
     code_name = "".join(random.choice(ingredients) for _ in range(6))
     return {
         "code_name": code_name,
-        "readable_name": "A new blank strategy",
+        "readable_name": "A New Blank Strategy",
         "version": "1.0",
         "description": "A blank strategy template before being written",
         "risk_level": 0,

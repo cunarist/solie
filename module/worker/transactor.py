@@ -30,7 +30,6 @@ from module.recipe import user_settings
 from module.recipe import remember_task_durations
 from module.recipe import standardize
 from module.recipe import datalocks
-from module.recipe import encrypted_pickle
 from module.shelf.long_text_view import LongTextView
 
 

@@ -1,11 +1,11 @@
 import os
+import json
 
 from PySide6 import QtGui, QtWidgets
 
 from module import core
 from module.recipe import check_internet
 from module.recipe import user_settings
-from module.recipe import encrypted_pickle
 from module.recipe import standardize
 from module.recipe import outsource
 from module.shelf.strategy_basic_input import StrategyBasicInput
@@ -28,11 +28,27 @@ class Strategiest:
 
         # custom strategies
         try:
-            filepath = self.workerpath + "/strategies.slslsc"
-            self.strategies = encrypted_pickle.read(filepath)
+            filepath = self.workerpath + "/strategies.json"
+            with open(filepath, "r", encoding="utf8") as file:
+                self.strategies = json.load(file)
         except FileNotFoundError:
-            filepath = "./static/strategies.slslsc"
-            self.strategies = encrypted_pickle.read(filepath)
+            first_strategy = standardize.strategy()
+            first_strategy["code_name"] = "SLIESS"
+            first_strategy["readable_name"] = "Sample Strategy"
+            first_strategy["description"] = (
+                "Not for real investment."
+                + " This strategy is only for demonstration purposes."
+            )
+            first_strategy["risk_level"] = 2
+            filepath = "./static/sample_indicators_script.txt"
+            with open(filepath, "r", encoding="utf8") as file:
+                read_data = file.read()
+                first_strategy["indicators_script"] = read_data
+            filepath = "./static/sample_decision_script.txt"
+            with open(filepath, "r", encoding="utf8") as file:
+                read_data = file.read()
+                first_strategy["decision_script"] = read_data
+            self.strategies = [first_strategy]
         self.strategy_cards = []
 
         self.red_pixmap = QtGui.QPixmap()
@@ -57,8 +73,9 @@ class Strategiest:
         check_internet.add_disconnected_functions(disconnected_functions)
 
     def save_strategies(self, *args, **kwargs):
-        filepath = self.workerpath + "/strategies.slslsc"
-        encrypted_pickle.write(self.strategies, filepath)
+        filepath = self.workerpath + "/strategies.json"
+        with open(filepath, "w", encoding="utf8") as file:
+            json.dump(self.strategies, file, indent=4)
 
     def display_strategies(self, *args, **kwargs):
         def job():

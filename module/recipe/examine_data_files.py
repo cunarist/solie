@@ -6,7 +6,6 @@ import shutil
 import pandas as pd
 
 from module.recipe import user_settings
-from module.recipe import encrypted_pickle
 
 
 def do():
