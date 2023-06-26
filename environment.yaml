@@ -18,13 +18,10 @@ dependencies:
       - pygments==2.11.2
       - dill==0.3.4
       - yapf==0.32.0
-      - tendo==0.2.15
       - cryptography==37.0.4
       - getmac==0.8.3
       # developer dependencies
       - black
-      - pyarmor
-      - pyinstaller
       - flake8
       - pep8-naming
       - flake8-variables-names
@@ -32,6 +29,3 @@ dependencies:
       - flake8-comprehensions
       - flake8-use-fstring
       - pygount
-      - pip-licenses
-      - pipdeptree
-      - pyyaml

@@ -1,4 +1,0 @@
-sign_cunarist
-"absolute_project_folder\deliver\signtool.exe" sign /f "path\to\certificate.cer" /t http://timestamp.comodoca.com  $f
-
-CHANGE above "absolute_project_folder" to match your PC and add it to the Inno Setup sign tools configuraion

@@ -1,1 +1,0 @@
-pyarmor pack -s pack.spec Solie.py
