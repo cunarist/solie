@@ -159,8 +159,7 @@ class Strategiest:
                 def job(strategy=strategy):
                     question = [
                         "Remove this strategy?",
-                        "If you remove this strategy, it cannot be recovered"
-                        + " unless a new data folder is made.",
+                        "Once you remove this, it cannot be recovered.",
                         ["Remove"],
                     ]
                     answer = core.window.ask(question)

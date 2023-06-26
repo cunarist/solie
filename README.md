@@ -40,7 +40,7 @@ python main.py
 
 😉 If you are benefiting from Solie's features and find it helpful, why not consider supporting the Solie project? Your generous donations contribute to the growth and development of Solie.
 
-If you feel like so, please consider using the BUSD(BSC) wallet address provided below.
+If you feel like so, please consider using the BUSD(BSC) wallet address written below.
 
 ```
 0xF9A7E35254cc8A9A9C811849CAF672F10fAB7366
