@@ -22,7 +22,6 @@ def is_newer_version_available():
     api_requester = ApiRequester()
     payload = {"id": "version"}
     response = api_requester.cunarist("GET", "/api/solie/latest-version", payload)
-    logging.getLogger("solie").warning(response)
     _latest_version = response["value"]
 
     if compare_versions.do(_latest_version, introduction.CURRENT_VERSION):
