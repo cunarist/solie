@@ -1176,11 +1176,10 @@ def bring_to_life():
     # ■■■■■ theme ■■■■■
 
     # this part should be done after creating the app and before creating the window
-    QtGui.QFontDatabase.addApplicationFont("./static/consolas.ttf")
-    QtGui.QFontDatabase.addApplicationFont("./static/notosans_regular.ttf")
-    QtGui.QFontDatabase.addApplicationFont("./static/lexend_bold.ttf")
-    default_font = QtGui.QFont("Noto Sans", 9)
-    app.setFont(default_font)
+    cwd = os.getcwd()
+    QtGui.QFontDatabase.addApplicationFont(cwd + "/static/consolas.ttf")
+    QtGui.QFontDatabase.addApplicationFont(cwd + "/static/notosans_regular.ttf")
+    QtGui.QFontDatabase.addApplicationFont(cwd + "/static/lexend_bold.ttf")
 
     dark_palette = QtGui.QPalette()
     dark_palette.setColor(QtGui.QPalette.Window, QtGui.QColor(29, 29, 29))
