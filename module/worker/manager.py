@@ -294,14 +294,6 @@ class Manager:
     def run_script(self, *args, **kwargs):
         widget = core.window.plainTextEdit
         script_text = core.window.undertake(lambda w=widget: w.toPlainText(), True)
-        if "# long live cunarist" not in script_text:
-            question = [
-                "Execution condition is not fulfilled",
-                "Fulfill the condition first to run the script",
-                ["Okay"],
-            ]
-            core.window.ask(question)
-            return
         filepath = self.workerpath + "/python_script.txt"
         with open(filepath, "w", encoding="utf8") as file:
             file.write(script_text)
