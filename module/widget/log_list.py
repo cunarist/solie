@@ -8,7 +8,7 @@ from module.shelf.long_text_view import LongTextView
 class LogList(QtWidgets.QListWidget):
     def __init__(self, parent):
         super().__init__(parent)
-        self.fixed_width_font = QtGui.QFont("Consolas", 9)
+        self.fixed_width_font = QtGui.QFont("Source Code Pro", 9)
         self.setFont(self.fixed_width_font)
         self.itemClicked.connect(self.show_fulltext)
 

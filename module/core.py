@@ -555,7 +555,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 "right": pyqtgraph.AxisItem(orientation="right"),
             }
             plot_item_6.setAxisItems(axis_items)
-            tick_font = QtGui.QFont("Consolas", 7)
+            tick_font = QtGui.QFont("Source Code Pro", 7)
             plot_item.getAxis("top").setTickFont(tick_font)
             plot_item.getAxis("bottom").setTickFont(tick_font)
             plot_item.getAxis("left").setTickFont(tick_font)
@@ -754,7 +754,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 "right": pyqtgraph.AxisItem(orientation="right"),
             }
             plot_item_7.setAxisItems(axis_items)
-            tick_font = QtGui.QFont("Consolas", 7)
+            tick_font = QtGui.QFont("Source Code Pro", 7)
             plot_item_2.getAxis("top").setTickFont(tick_font)
             plot_item_2.getAxis("bottom").setTickFont(tick_font)
             plot_item_2.getAxis("left").setTickFont(tick_font)
@@ -1002,6 +1002,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             outsource.do(self.checkBox_13.toggled, job)
             job = manager.me.change_settings
             outsource.do(self.comboBox_3.currentIndexChanged, job)
+            job = collector.me.guide_donation
+            outsource.do(self.pushButton_9.clicked, job)
 
         self.undertake(job, True)
 
@@ -1177,9 +1179,11 @@ def bring_to_life():
 
     # this part should be done after creating the app and before creating the window
     cwd = os.getcwd()
-    QtGui.QFontDatabase.addApplicationFont(cwd + "/static/consolas.ttf")
+    QtGui.QFontDatabase.addApplicationFont(cwd + "/static/source_code_pro.ttf")
     QtGui.QFontDatabase.addApplicationFont(cwd + "/static/notosans_regular.ttf")
     QtGui.QFontDatabase.addApplicationFont(cwd + "/static/lexend_bold.ttf")
+    default_font = QtGui.QFont("Noto Sans", 9)
+    app.setFont(default_font)
 
     dark_palette = QtGui.QPalette()
     dark_palette.setColor(QtGui.QPalette.Window, QtGui.QColor(29, 29, 29))

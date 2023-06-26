@@ -30,6 +30,7 @@ from module.recipe import remember_task_durations
 from module.recipe import standardize
 from module.recipe import datalocks
 from module.shelf.download_fill_option import DownloadFillOption
+from module.shelf.donation_guide import DonationGuide
 
 
 class Collector:
@@ -760,6 +761,15 @@ class Collector:
 
     def stop_filling_candle_data(self, *args, **kwargs):
         stop_flag.make("download_fill_candle_data")
+
+    def guide_donation(self, *args, **kwargs):
+        formation = [
+            "Choose the range to fill",
+            DonationGuide,
+            True,
+            None,
+        ]
+        core.window.overlap(formation)
 
 
 me = None

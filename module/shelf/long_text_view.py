@@ -14,6 +14,6 @@ class LongTextView(QtWidgets.QWidget):
         full_layout.addLayout(cards_layout)
 
         label = QtWidgets.QLabel(payload[0])
-        fixed_width_font = QtGui.QFont("Consolas", 9)
+        fixed_width_font = QtGui.QFont("Source Code Pro", 9)
         label.setFont(fixed_width_font)
         cards_layout.addWidget(label)
