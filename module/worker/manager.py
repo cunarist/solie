@@ -14,6 +14,7 @@ import timesetter
 from module import core
 from module import process_toss
 from module import thread_toss
+from module import introduction
 from module.worker import collector
 from module.instrument.api_requester import ApiRequester
 from module.recipe import simply_format
@@ -131,7 +132,7 @@ class Manager:
             executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
-            self.prepare_update,
+            self.check_for_update,
             trigger="cron",
             minute="*/10",
             executor="thread_pool_executor",
@@ -405,15 +406,16 @@ class Manager:
         core.window.should_confirm_closing = False
         core.window.undertake(core.window.close, False)
 
-    def prepare_update(self, *args, **kwargs):
-        find_goodies.prepare()
-        is_prepared = find_goodies.get_updater_status()
+    def check_for_update(self, *args, **kwargs):
+        should_update = find_goodies.is_newer_version_available()
 
-        if is_prepared:
+        if should_update:
+            latest_version = find_goodies.get_latest_version()
             question = [
                 "Update is ready",
-                "Shut down Solie and wait for a while. Update will be automatically"
-                " installed.",
+                "Shut down Solie and fetch the latest commits via Git."
+                + f" The latest version is {latest_version},"
+                + f" while the current version is {introduction.CURRENT_VERSION}.",
                 ["Okay"],
             ]
             core.window.ask(question)

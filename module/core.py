@@ -94,7 +94,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                         time.sleep(1)
                         process_toss.terminate_pool()
                         self.closeEvent = lambda e: e.accept()
-                        find_goodies.apply()
                         self.undertake(self.close, True)
                         break
                     else:
