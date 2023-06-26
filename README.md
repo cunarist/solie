@@ -1,8 +1,8 @@
-## About this Project
+# About this Project
 
 Solie is a solution for trading cryptocurrency contracts automatically in futures markets of Binance. Make your own strategies and simulate through history data with highly customizable features.
 
-## Documentation
+# Documentation
 
 - [Terms of service](https://cunarist.com/solie/terms-of-service)
 - [How to use Solie](https://cunarist.com/solie/using)
