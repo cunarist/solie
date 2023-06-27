@@ -13,7 +13,7 @@ Please note that this solution does not guarantee profitability, as the success 
 
 # 🛞 How to Use This Thing
 
-Since this is a Python project, you need to install some things on your system first. But don't worry, it won't be as hard as you think if you adhere to the following instructions.
+Running Solie is easy. Since this is a Python project, you need to install some things on your system first. But don't worry, it won't be as hard as you think if you adhere to the following instructions.
 
 First, make sure [`Miniconda`](https://docs.conda.io/en/latest/miniconda.html) is installed on your system. Don't forget to add `conda` to path environment variable.
 
