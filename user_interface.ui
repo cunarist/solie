@@ -151,17 +151,47 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
          </spacer>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton_9">
-          <property name="styleSheet">
-           <string notr="true">color:rgba(255,255,255,0.5)</string>
-          </property>
-          <property name="text">
-           <string>Support the Solie project ♥</string>
-          </property>
-          <property name="flat">
-           <bool>true</bool>
-          </property>
-         </widget>
+         <layout class="QHBoxLayout" name="horizontalLayout_21">
+          <item>
+           <spacer name="horizontalSpacer_17">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_9">
+            <property name="styleSheet">
+             <string notr="true">color:rgba(255,255,255,0.5)</string>
+            </property>
+            <property name="text">
+             <string>Support the Solie project ♥</string>
+            </property>
+            <property name="flat">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_18">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
         </item>
         <item>
          <widget class="QGroupBox" name="groupBox_10">

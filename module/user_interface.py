@@ -147,12 +147,25 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_4.addItem(self.verticalSpacer_4)
 
+        self.horizontalLayout_21 = QHBoxLayout()
+        self.horizontalLayout_21.setObjectName(u"horizontalLayout_21")
+        self.horizontalSpacer_17 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout_21.addItem(self.horizontalSpacer_17)
+
         self.pushButton_9 = QPushButton(self.tab_5)
         self.pushButton_9.setObjectName(u"pushButton_9")
         self.pushButton_9.setStyleSheet(u"color:rgba(255,255,255,0.5)")
         self.pushButton_9.setFlat(True)
 
-        self.verticalLayout_4.addWidget(self.pushButton_9)
+        self.horizontalLayout_21.addWidget(self.pushButton_9)
+
+        self.horizontalSpacer_18 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout_21.addItem(self.horizontalSpacer_18)
+
+
+        self.verticalLayout_4.addLayout(self.horizontalLayout_21)
 
         self.groupBox_10 = QGroupBox(self.tab_5)
         self.groupBox_10.setObjectName(u"groupBox_10")
