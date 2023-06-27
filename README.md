@@ -15,7 +15,9 @@ Please note that this solution does not guarantee profitability, as the success 
 
 Since this is a Python project, you need to install some things on your system first. But don't worry, it won't be as hard as you think if you adhere to the following instructions.
 
-First, make sure [`Miniconda`](https://docs.conda.io/en/latest/miniconda.html) is installed on your system. Before going on to the next step, always make sure that your current working directory of the terminal is this project folder.
+First, make sure [`Miniconda`](https://docs.conda.io/en/latest/miniconda.html) is installed on your system. You should make sure that you add `conda` to path environment variable.
+
+When using terminal commands from the following steps, always make sure that your current working directory is this project folder.
 
 Create or update the conda environment in the terminal.
 
