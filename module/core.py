@@ -42,7 +42,6 @@ from module.widget.overlap_popup import OverlapPopup
 from module.shelf.token_selection import TokenSelection
 from module.shelf.coin_selection import CoinSelection
 from module.shelf.datapath_input import DatapathInput
-from module.shelf.terms_of_agreement import TermsOfAgreement
 
 
 class Window(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -203,17 +202,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             time.sleep(1)
 
         # ■■■■■ check app settings ■■■■■
-
-        if not user_settings.get_app_settings()["is_agreement_read"]:
-            formation = [
-                "Check terms of agreement",
-                TermsOfAgreement,
-                False,
-                None,
-            ]
-            is_formed = self.overlap(formation)
-            if not is_formed:
-                return
 
         if user_settings.get_app_settings()["datapath"] is None:
             formation = [
