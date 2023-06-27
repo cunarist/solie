@@ -764,7 +764,7 @@ class Collector:
 
     def guide_donation(self, *args, **kwargs):
         formation = [
-            "Choose the range to fill",
+            "Support Solie",
             DonationGuide,
             True,
             None,

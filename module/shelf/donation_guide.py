@@ -35,32 +35,6 @@ class DonationGuide(QtWidgets.QWidget):
         card_layout.setContentsMargins(80, 40, 80, 40)
         cards_layout.addWidget(card)
 
-        # explanation
-        detail_text = QtWidgets.QLabel(
-            "Description",
-            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-        )
-        detail_text.setWordWrap(True)
-        card_layout.addWidget(detail_text)
-
-        # spacing
-        spacing_text = QtWidgets.QLabel("")
-        spacing_text_font = QtGui.QFont()
-        spacing_text_font.setPointSize(3)
-        spacing_text.setFont(spacing_text_font)
-        card_layout.addWidget(spacing_text)
-
-        # divider
-        divider = HorizontalDivider(self)
-        card_layout.addWidget(divider)
-
-        # spacing
-        spacing_text = QtWidgets.QLabel("")
-        spacing_text_font = QtGui.QFont()
-        spacing_text_font.setPointSize(3)
-        spacing_text.setFont(spacing_text_font)
-        card_layout.addWidget(spacing_text)
-
         # donation guide text
         text = "😉 If you are benefiting from"
         text += " Solie's features and find it helpful,"
