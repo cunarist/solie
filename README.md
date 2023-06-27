@@ -1,6 +1,6 @@
 # 🚪 About this Project
 
-![bandicam 2023-06-28 00-27-31-250](https://github.com/cunarist/solie/assets/66480156/4514eb1f-3cf4-40da-85f1-8f6ec43b31e8)
+![Recording 2023-06-28 004126](https://github.com/cunarist/solie/assets/66480156/8521df2b-a315-4e00-8963-1db287e0c8ce)
 
 **Solie** is a solution for automatically trading cryptocurrency contracts in the futures markets of Binance. It allows you to create and customize your own trading strategies and simulate them using historical data with the power of Python.
 
