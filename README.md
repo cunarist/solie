@@ -6,10 +6,7 @@ Please note that this solution does not guarantee profitability, as the success 
 
 # 📖 Documentation
 
-- [How to use Solie](https://cunarist.com/solie/using)
-- [How to make strategies](https://cunarist.com/solie/making-strategy)
-- [Developing Solie](https://cunarist.com/solie/developing)
-- [Solie change logs](https://cunarist.com/solie/change-logs)
+- Read the [documentations](https://cunarist.com/docs/solie/about) to understand how to turn on auto-trading, make your own strategies, and get involved in Solie development.
 
 # 🛞 How to Use This Thing
 

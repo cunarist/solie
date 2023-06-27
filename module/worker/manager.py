@@ -413,7 +413,7 @@ class Manager:
             core.window.ask(question)
 
     def open_documentation(self, *args, **kwargs):
-        webbrowser.open("https://cunarist.com/solie")
+        webbrowser.open("https://cunarist.com/docs/solie/about")
 
     def disable_system_auto_update(self, *args, **kwargs):
         if not self.settings["disable_system_update"]:
