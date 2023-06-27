@@ -6,7 +6,6 @@ Please note that this solution does not guarantee profitability, as the success 
 
 # 📖 Documentation
 
-- [Terms of service](https://cunarist.com/solie/terms-of-service)
 - [How to use Solie](https://cunarist.com/solie/using)
 - [How to make strategies](https://cunarist.com/solie/making-strategy)
 - [Developing Solie](https://cunarist.com/solie/developing)
