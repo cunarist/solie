@@ -36,6 +36,12 @@ Run the code.
 python main.py
 ```
 
+# 📖 Available Platforms
+
+- ✅ Windows: Working fine
+- ✅ Linux: Working fine
+- ⏸️ macOS: [Partially working](https://github.com/cunarist/solie/issues/87)
+
 # 🚪 Support
 
 😉 If you are benefiting from Solie's features and find it helpful, why not consider supporting the Solie project? Your generous donations contribute to the growth and development of Solie.
