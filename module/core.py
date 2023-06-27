@@ -31,7 +31,6 @@ from module.instrument.log_handler import LogHandler
 from module.recipe import outsource
 from module.recipe import check_internet
 from module.recipe import user_settings
-from module.recipe import find_goodies
 from module.recipe import examine_data_files
 from module.widget.ask_popup import AskPopup
 from module.widget.splash_screen import SplashScreen
