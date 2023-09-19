@@ -935,19 +935,24 @@ class Simulator:
         # ■■■■■ get datas ■■■■■
 
         # set range
-        slice_from = datetime(year, 1, 1, tzinfo=timezone.utc)
-        if year == datetime.now(timezone.utc).year:
+        if self.should_draw_all_years:
+            slice_from = datetime(1970, 1, 1, tzinfo=timezone.utc)
+        else:
+            slice_from = datetime(year, 1, 1, tzinfo=timezone.utc)
+
+        if self.should_draw_all_years:
+            slice_until = datetime(2200, 1, 1, tzinfo=timezone.utc)
+        elif year == datetime.now(timezone.utc).year:
             slice_until = datetime.now(timezone.utc)
             slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
         else:
             slice_until = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
         slice_until -= timedelta(seconds=1)
-        get_from = slice_from - timedelta(days=7)
 
         # get only year range
         with datalocks.hold("collector_candle_data"):
             df = collector.me.candle_data
-            year_candle_data = df[get_from:slice_until].copy()
+            year_candle_data = df[slice_from - timedelta(days=7) : slice_until].copy()
 
         # interpolate
         year_candle_data = year_candle_data.interpolate()
