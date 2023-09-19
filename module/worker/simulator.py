@@ -988,7 +988,10 @@ class Simulator:
             view_start = datetime.fromtimestamp(view_range[0], tz=timezone.utc)
             view_end = datetime.fromtimestamp(view_range[1], tz=timezone.utc)
 
-            if not self.should_draw_all_years:
+            if self.should_draw_all_years:
+                calculate_from = view_start
+                calculate_until = view_end
+            else:
                 calculate_from = max(view_start, slice_from)
                 calculate_until = min(view_end, slice_until)
 
