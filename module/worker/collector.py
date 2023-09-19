@@ -7,6 +7,7 @@ from collections import deque
 import itertools
 import random
 import logging
+import calendar
 
 import pandas as pd
 import numpy as np
@@ -482,6 +483,22 @@ class Collector:
                         )
         if filling_type == 1:
             current_year = datetime.now(timezone.utc).year
+            for year in range(2020, current_year):
+                for month in range(1, 12 + 1):
+                    days_in_month = calendar.monthrange(2019, 1)[1]
+                    for day in range(1, days_in_month + 1):
+                        for symbol in target_symbols:
+                            target_tuples.append(
+                                (
+                                    symbol,
+                                    "daily",
+                                    year,
+                                    month,
+                                    day,
+                                )
+                            )
+        if filling_type == 2:
+            current_year = datetime.now(timezone.utc).year
             current_month = datetime.now(timezone.utc).month
             for month in range(1, current_month):
                 for symbol in target_symbols:
@@ -493,7 +510,23 @@ class Collector:
                             month,
                         )
                     )
-        elif filling_type == 2:
+        if filling_type == 3:
+            current_year = datetime.now(timezone.utc).year
+            current_month = datetime.now(timezone.utc).month
+            for month in range(1, current_month):
+                days_in_month = calendar.monthrange(2019, 1)[1]
+                for day in range(1, days_in_month + 1):
+                    for symbol in target_symbols:
+                        target_tuples.append(
+                            (
+                                symbol,
+                                "daily",
+                                current_year,
+                                month,
+                                day,
+                            )
+                        )
+        elif filling_type == 4:
             current_year = datetime.now(timezone.utc).year
             current_month = datetime.now(timezone.utc).month
             current_day = datetime.now(timezone.utc).day
@@ -508,7 +541,7 @@ class Collector:
                             target_day,
                         )
                     )
-        elif filling_type == 3:
+        elif filling_type == 5:
             now = datetime.now(timezone.utc)
             yesterday = now - timedelta(hours=24)
             day_before_yesterday = yesterday - timedelta(hours=24)

@@ -14,7 +14,9 @@ class DownloadFillOption(QtWidgets.QWidget):
         answer_container = payload[0]
         fill_options = (
             "From 2020 to last year",
+            "From 2020 to last year (With small daily files)",
             "From first month of this year to last month",
+            "From first month of this year to last month (With small daily files)",
             "This month",
             "Yesterday and the day before yesterday",
         )
