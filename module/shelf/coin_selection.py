@@ -232,7 +232,13 @@ class CoinSelection(QtWidgets.QWidget):
                 coin_icon_url = coin_icon_urls.get(coin_symbol, "")
                 if coin_icon_url == "":
                     continue
-                image_data = urllib.request.urlopen(coin_icon_url).read()
+                try:
+                    opener = urllib.request.build_opener()
+                    opener.addheaders = [("User-agent", "Mozilla/5.0")]
+                    opened = opener.open(coin_icon_url)
+                    image_data = opened.read()
+                except Exception:
+                    pass
                 pixmap = QtGui.QPixmap()
                 pixmap.loadFromData(image_data)
 

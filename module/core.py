@@ -286,7 +286,13 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             coin_icon_url = coin_icon_urls.get(coin_symbol, "")
             pixmap = QtGui.QPixmap()
             if coin_icon_url != "":
-                image_data = urllib.request.urlopen(coin_icon_url).read()
+                try:
+                    opener = urllib.request.build_opener()
+                    opener.addheaders = [("User-agent", "Mozilla/5.0")]
+                    opened = opener.open(coin_icon_url)
+                    image_data = opened.read()
+                except Exception:
+                    pass
                 pixmap.loadFromData(image_data)
             else:
                 pixmap.load("./static/icon/blank_coin.png")
@@ -294,7 +300,13 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         token_icon_url = coin_icon_urls.get(asset_token, "")
         token_pixmap = QtGui.QPixmap()
-        image_data = urllib.request.urlopen(token_icon_url).read()
+        try:
+            opener = urllib.request.build_opener()
+            opener.addheaders = [("User-agent", "Mozilla/5.0")]
+            opened = opener.open(token_icon_url)
+            image_data = opened.read()
+        except Exception:
+            pass
         token_pixmap.loadFromData(image_data)
 
         def job():
