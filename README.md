@@ -12,11 +12,15 @@ Read the [documentations](https://solie-docs.cunarist.com) to understand how to 
 
 ## 🛞 How to Use This Thing
 
+> When using terminal commands from the following steps, always make sure that your current working directory is this project folder.
+
 Running Solie is easy. Since this is a Python project, you need to install some things on your system first. But don't worry, it won't be as hard as you think if you adhere to the following instructions.
 
-First, make sure [`Miniconda`](https://docs.conda.io/en/latest/miniconda.html) is installed on your system. Don't forget to add `conda` to path environment variable during installation.
+First, make sure [`Miniconda`](https://docs.conda.io/en/latest/miniconda.html) is installed on your system. Don't forget to add `conda` to `PATH` environment variable during installation. If you have properly added `conda` to your `PATH` environment variable, you'll be able to check its version with the command below.
 
-When using terminal commands from the following steps, always make sure that your current working directory is this project folder.
+```
+conda --version
+```
 
 Create or update the conda environment in the terminal.
 
