@@ -5,3 +5,4 @@ exclude = ["module/user_interface.py"]
 
 [tool.pyright]
 typeCheckingMode = "basic"
+ignore = ["module/user_interface.py"]
