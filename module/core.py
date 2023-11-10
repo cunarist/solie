@@ -2,7 +2,7 @@ import sys
 import threading
 import time
 import logging
-import urllib
+from urllib.request import build_opener
 import math
 import os
 from datetime import datetime, timezone
@@ -141,6 +141,19 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         super().__init__()
         self.price_labels = {}
 
+        self.plot_widget = pyqtgraph.PlotWidget()
+        self.plot_widget_1 = pyqtgraph.PlotWidget()
+        self.plot_widget_4 = pyqtgraph.PlotWidget()
+        self.plot_widget_6 = pyqtgraph.PlotWidget()
+
+        self.plot_widget_2 = pyqtgraph.PlotWidget()
+        self.plot_widget_3 = pyqtgraph.PlotWidget()
+        self.plot_widget_5 = pyqtgraph.PlotWidget()
+        self.plot_widget_7 = pyqtgraph.PlotWidget()
+
+        self.transaction_lines = {}
+        self.simulation_lines = {}
+
         # ■■■■■ Do basic Qt things ■■■■■
 
         self.setupUi(self)
@@ -179,12 +192,12 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         splash_screen = None
 
-        def job():
+        def job_ss():
             nonlocal splash_screen
             splash_screen = SplashScreen()
             self.centralWidget().layout().addWidget(splash_screen)
 
-        self.undertake(job, True)
+        self.undertake(job_ss, True)
 
         # ■■■■■ start basic things ■■■■■
 
@@ -291,12 +304,12 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             pixmap = QtGui.QPixmap()
             if coin_icon_url != "":
                 try:
-                    opener = urllib.request.build_opener()
+                    opener = build_opener()
                     opener.addheaders = [("User-agent", "Mozilla/5.0")]
                     opened = opener.open(coin_icon_url)
                     image_data = opened.read()
                 except Exception:
-                    pass
+                    raise ConnectionError("Couldn't get coin icons")
                 pixmap.loadFromData(image_data)
             else:
                 pixmap.load("./static/icon/blank_coin.png")
@@ -305,24 +318,21 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         token_icon_url = coin_icon_urls.get(asset_token, "")
         token_pixmap = QtGui.QPixmap()
         try:
-            opener = urllib.request.build_opener()
+            opener = build_opener()
             opener.addheaders = [("User-agent", "Mozilla/5.0")]
             opened = opener.open(token_icon_url)
             image_data = opened.read()
         except Exception:
-            pass
+            raise ConnectionError("Couldn't get token icons")
         token_pixmap.loadFromData(image_data)
 
-        def job():
+        def job_us():
             text = user_settings.get_app_settings()["datapath"]
             self.lineEdit.setText(text)
             self.lineEdit.setCursorPosition(len(text))
 
-            icon_label = QtWidgets.QLabel(
-                "",
-                self,
-                alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-            )
+            icon_label = QtWidgets.QLabel()
+            icon_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
             icon_label.setPixmap(token_pixmap)
             icon_label.setScaledContents(True)
             icon_label.setFixedSize(30, 30)
@@ -333,11 +343,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             token_font = QtGui.QFont()
             token_font.setPointSize(token_text_size)
             token_font.setWeight(QtGui.QFont.Weight.Bold)
-            text_label = QtWidgets.QLabel(
-                text,
-                self,
-                alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-            )
+            text_label = QtWidgets.QLabel()
             text_label.setFont(token_font)
             self.verticalLayout_14.addWidget(text_label)
             spacing_text = QtWidgets.QLabel("")
@@ -393,9 +399,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                     QtWidgets.QSizePolicy.Policy.Expanding,
                 )
                 inside_layout.addItem(spacer)
-                icon_label = QtWidgets.QLabel(
-                    alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-                )
+                icon_label = QtWidgets.QLabel()
+                icon_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 this_layout = QtWidgets.QHBoxLayout()
                 inside_layout.addLayout(this_layout)
                 icon_label.setPixmap(symbol_pixmaps[symbol])
@@ -403,19 +408,16 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 icon_label.setFixedSize(50, 50)
                 icon_label.setMargin(5)
                 this_layout.addWidget(icon_label)
-                name_label = QtWidgets.QLabel(
-                    self.symbol_to_alias[symbol],
-                    alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-                )
+                name_label = QtWidgets.QLabel()
+                name_label.setText(self.symbol_to_alias[symbol])
+                name_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 name_font = QtGui.QFont()
                 name_font.setPointSize(name_text_size)
                 name_font.setWeight(QtGui.QFont.Weight.Bold)
                 name_label.setFont(name_font)
                 inside_layout.addWidget(name_label)
-                price_label = QtWidgets.QLabel(
-                    "",
-                    alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-                )
+                price_label = QtWidgets.QLabel()
+                price_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 price_font = QtGui.QFont()
                 price_font.setPointSize(price_text_size)
                 price_font.setWeight(QtGui.QFont.Weight.Bold)
@@ -425,10 +427,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                     text = coin_symbol
                 else:
                     text = f"{coin_rank} - {coin_symbol}"
-                detail_label = QtWidgets.QLabel(
-                    text,
-                    alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-                )
+                detail_label = QtWidgets.QLabel()
+                detail_label.setText(text)
+                detail_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 detail_font = QtGui.QFont()
                 detail_font.setPointSize(detail_text_size)
                 detail_font.setWeight(QtGui.QFont.Weight.Bold)
@@ -457,11 +458,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             )
             self.horizontalLayout_17.addItem(spacer)
 
-        self.undertake(job, True)
+        self.undertake(job_us, True)
 
         # ■■■■■ show product icon and title ■■■■■
 
-        def job():
+        def job_sp():
             this_layout = self.horizontalLayout_13
             product_icon_pixmap = QtGui.QPixmap()
             with open("./static/product_icon.png", mode="rb") as file:
@@ -483,15 +484,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             label = BrandLabel(self, text, 24)
             this_layout.addWidget(label)
 
-        self.undertake(job, True)
+        self.undertake(job_sp, True)
 
         # ■■■■■ graph widgets ■■■■■
 
-        def job():
-            self.plot_widget = pyqtgraph.PlotWidget()
-            self.plot_widget_1 = pyqtgraph.PlotWidget()
-            self.plot_widget_4 = pyqtgraph.PlotWidget()
-            self.plot_widget_6 = pyqtgraph.PlotWidget()
+        def job_gw():
             self.plot_widget.setBackground("#252525")
             self.plot_widget_1.setBackground("#252525")
             self.plot_widget_4.setBackground("#252525")
@@ -513,10 +510,20 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             plot_item_1 = self.plot_widget_1.plotItem
             plot_item_4 = self.plot_widget_4.plotItem
             plot_item_6 = self.plot_widget_6.plotItem
-            plot_item.vb.setLimits(xMin=0, yMin=0)
-            plot_item_1.vb.setLimits(xMin=0, yMin=0)
-            plot_item_4.vb.setLimits(xMin=0, yMin=0)
-            plot_item_6.vb.setLimits(xMin=0)
+
+            if plot_item is None:
+                raise ValueError("Plot item was none")
+            if plot_item_1 is None:
+                raise ValueError("Plot item was none")
+            if plot_item_4 is None:
+                raise ValueError("Plot item was none")
+            if plot_item_6 is None:
+                raise ValueError("Plot item was none")
+
+            plot_item.vb.setLimits(xMin=0, yMin=0)  # type:ignore
+            plot_item_1.vb.setLimits(xMin=0, yMin=0)  # type:ignore
+            plot_item_4.vb.setLimits(xMin=0, yMin=0)  # type:ignore
+            plot_item_6.vb.setLimits(xMin=0)  # type:ignore
             plot_item.setDownsampling(auto=True, mode="subsample")
             plot_item.setClipToView(True)
             plot_item.setAutoVisible(y=True)
@@ -684,13 +691,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.plot_widget_4.setXLink(self.plot_widget_1)
             self.plot_widget_6.setXLink(self.plot_widget_4)
 
-        self.undertake(job, True)
+        self.undertake(job_gw, True)
 
-        def job():
-            self.plot_widget_2 = pyqtgraph.PlotWidget()
-            self.plot_widget_3 = pyqtgraph.PlotWidget()
-            self.plot_widget_5 = pyqtgraph.PlotWidget()
-            self.plot_widget_7 = pyqtgraph.PlotWidget()
+        def job_pw():
             self.plot_widget_2.setBackground("#252525")
             self.plot_widget_3.setBackground("#252525")
             self.plot_widget_5.setBackground("#252525")
@@ -712,10 +715,20 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             plot_item_3 = self.plot_widget_3.plotItem
             plot_item_5 = self.plot_widget_5.plotItem
             plot_item_7 = self.plot_widget_7.plotItem
-            plot_item_2.vb.setLimits(xMin=0, yMin=0)
-            plot_item_3.vb.setLimits(xMin=0, yMin=0)
-            plot_item_5.vb.setLimits(xMin=0, yMin=0)
-            plot_item_7.vb.setLimits(xMin=0)
+
+            if plot_item_2 is None:
+                raise ValueError("Plot item was none")
+            if plot_item_3 is None:
+                raise ValueError("Plot item was none")
+            if plot_item_5 is None:
+                raise ValueError("Plot item was none")
+            if plot_item_7 is None:
+                raise ValueError("Plot item was none")
+
+            plot_item_2.vb.setLimits(xMin=0, yMin=0)  # type:ignore
+            plot_item_3.vb.setLimits(xMin=0, yMin=0)  # type:ignore
+            plot_item_5.vb.setLimits(xMin=0, yMin=0)  # type:ignore
+            plot_item_7.vb.setLimits(xMin=0)  # type:ignore
             plot_item_2.setDownsampling(auto=True, mode="subsample")
             plot_item_2.setClipToView(True)
             plot_item_2.setAutoVisible(y=True)
@@ -883,7 +896,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.plot_widget_5.setXLink(self.plot_widget_3)
             self.plot_widget_7.setXLink(self.plot_widget_5)
 
-        self.undertake(job, True)
+        self.undertake(job_pw, True)
 
         # ■■■■■ prepare auto executions ■■■■■
 
@@ -920,7 +933,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             lambda: transactor.me.save_scribbles(),
             lambda: strategist.me.save_strategies(),
             lambda: collector.me.save_candle_data(),
-            lambda: transactor.me.report_automated_revenues(),
         ]
 
         # ■■■■■ change logging settings ■■■■■
@@ -932,7 +944,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ connect events to functions ■■■■■
 
-        def job():
+        def job_ef():
             # special widgets
             job = transactor.me.display_range_information
             outsource.do(self.plot_widget.sigRangeChanged, job)
@@ -1007,11 +1019,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             job = collector.me.guide_donation
             outsource.do(self.pushButton_9.clicked, job)
 
-        self.undertake(job, True)
+        self.undertake(job_ef, True)
 
         # ■■■■■ submenu actions ■■■■■
 
-        def job():
+        def job_sa():
             action_menu = QtWidgets.QMenu(self)
             self.pushButton_13.setMenu(action_menu)
             text = "Open binance historical data webpage"
@@ -1069,12 +1081,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             new_action = action_menu.addAction(text)
             outsource.do(new_action.triggered, job)
 
-        self.undertake(job, True)
+        self.undertake(job_sa, True)
 
         # ■■■■■ initialize functions ■■■■■
-
-        def job(function):
-            function()
 
         for initialize_function in self.initialize_functions:
             try:
@@ -1096,7 +1105,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ show main widgets ■■■■■
 
-        self.undertake(lambda: splash_screen.setParent(None), True)
+        self.undertake(lambda: splash_screen.setParent(None), True)  # type:ignore
         self.undertake(lambda: self.board.show(), True)
         self.undertake(lambda: self.gauge.show(), True)
 
@@ -1124,22 +1133,22 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
     def ask(self, question):
         ask_popup = None
 
-        def job():
+        def job_cw():
             nonlocal ask_popup
             ask_popup = AskPopup(self, question)
             ask_popup.show()
 
-        self.undertake(job, True)
+        self.undertake(job_cw, True)
 
         if ask_popup is None:
             return 0
 
         ask_popup.done_event.wait()
 
-        def job():
-            ask_popup.setParent(None)
+        def job_dw():
+            ask_popup.setParent(None)  # type:ignore
 
-        self.undertake(job, False)
+        self.undertake(job_dw, False)
 
         return ask_popup.answer
 
@@ -1147,22 +1156,22 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
     def overlap(self, formation):
         overlap_popup = None
 
-        def job():
+        def job_cw():
             nonlocal overlap_popup
             overlap_popup = OverlapPopup(self, formation)
             overlap_popup.show()
 
-        self.undertake(job, True)
+        self.undertake(job_cw, True)
 
         if overlap_popup is None:
             return False
 
         overlap_popup.done_event.wait()
 
-        def job():
-            overlap_popup.setParent(None)
+        def job_dw():
+            overlap_popup.setParent(None)  # type:ignore
 
-        self.undertake(job, False)
+        self.undertake(job_dw, False)
 
         return True
 
@@ -1185,19 +1194,20 @@ def bring_to_life():
     app.setFont(default_font)
 
     dark_palette = QtGui.QPalette()
-    dark_palette.setColor(QtGui.QPalette.Window, QtGui.QColor(29, 29, 29))
-    dark_palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor(230, 230, 230))
-    dark_palette.setColor(QtGui.QPalette.Base, QtGui.QColor(22, 22, 22))
-    dark_palette.setColor(QtGui.QPalette.AlternateBase, QtGui.QColor(29, 29, 29))
-    dark_palette.setColor(QtGui.QPalette.ToolTipBase, QtGui.QColor(230, 230, 230))
-    dark_palette.setColor(QtGui.QPalette.ToolTipText, QtGui.QColor(230, 230, 230))
-    dark_palette.setColor(QtGui.QPalette.Text, QtGui.QColor(230, 230, 230))
-    dark_palette.setColor(QtGui.QPalette.Button, QtGui.QColor(29, 29, 29))
-    dark_palette.setColor(QtGui.QPalette.ButtonText, QtGui.QColor(230, 230, 230))
-    dark_palette.setColor(QtGui.QPalette.BrightText, QtGui.QColor(255, 180, 0))
-    dark_palette.setColor(QtGui.QPalette.Link, QtGui.QColor(42, 130, 218))
-    dark_palette.setColor(QtGui.QPalette.Highlight, QtGui.QColor(42, 130, 218))
-    dark_palette.setColor(QtGui.QPalette.HighlightedText, QtGui.QColor(0, 0, 0))
+    color_role = QtGui.QPalette.ColorRole
+    dark_palette.setColor(color_role.Window, QtGui.QColor(29, 29, 29))
+    dark_palette.setColor(color_role.WindowText, QtGui.QColor(230, 230, 230))
+    dark_palette.setColor(color_role.Base, QtGui.QColor(22, 22, 22))
+    dark_palette.setColor(color_role.AlternateBase, QtGui.QColor(29, 29, 29))
+    dark_palette.setColor(color_role.ToolTipBase, QtGui.QColor(230, 230, 230))
+    dark_palette.setColor(color_role.ToolTipText, QtGui.QColor(230, 230, 230))
+    dark_palette.setColor(color_role.Text, QtGui.QColor(230, 230, 230))
+    dark_palette.setColor(color_role.Button, QtGui.QColor(29, 29, 29))
+    dark_palette.setColor(color_role.ButtonText, QtGui.QColor(230, 230, 230))
+    dark_palette.setColor(color_role.BrightText, QtGui.QColor(255, 180, 0))
+    dark_palette.setColor(color_role.Link, QtGui.QColor(42, 130, 218))
+    dark_palette.setColor(color_role.Highlight, QtGui.QColor(42, 130, 218))
+    dark_palette.setColor(color_role.HighlightedText, QtGui.QColor(0, 0, 0))
     app.setStyle("Fusion")
     app.setPalette(dark_palette)
 
