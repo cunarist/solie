@@ -21,7 +21,7 @@ class ApiRequester:
             "binance_secret": "",
         }
 
-    def _request(self, http_method, parameters):
+    def _request(self, http_method, parameters) -> requests.Response:
         attempt = 0
         while True:
             slot = attempt % self._SESSION_COUNT
@@ -38,6 +38,8 @@ class ApiRequester:
                 raw_response = self._sessions[slot].put(**parameters)
             elif http_method == "POST":
                 raw_response = self._sessions[slot].post(**parameters)
+            else:
+                raise ApiRequestError("This HTTP method is not supported")
 
         return raw_response
 
@@ -60,6 +62,8 @@ class ApiRequester:
             url = "https://api.binance.com"
         elif server == "futures":
             url = "https://fapi.binance.com"
+        else:
+            raise ApiRequestError("This Binance server is supported")
         url += path
         url += "?" + query_string + "&signature=" + signature
 

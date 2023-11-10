@@ -1,18 +1,17 @@
 from datetime import datetime, timezone, timedelta
+import pandas as pd
 
 
 def do(
-    symbol,
-    recent_candle_data,
-    aggtrades,
-    moment_to_fill_from,
-    last_fetched_time,
-):
-
+    symbol: str,
+    recent_candle_data: pd.DataFrame,
+    aggtrades: pd.DataFrame,
+    moment_to_fill_from: datetime,
+    last_fetched_time: datetime,
+) -> pd.DataFrame:
     fill_moment = moment_to_fill_from
 
     while fill_moment < last_fetched_time - timedelta(seconds=10):
-
         block_start = fill_moment
         block_end = fill_moment + timedelta(seconds=10)
 

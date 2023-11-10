@@ -25,7 +25,7 @@ def load():
             _data_settings = json.load(file)
 
 
-def get_app_settings():
+def get_app_settings() -> dict:
     return copy.deepcopy(_app_settings)
 
 
@@ -38,7 +38,7 @@ def apply_app_settings(payload):
         json.dump(_app_settings, file, indent=4)
 
 
-def get_data_settings():
+def get_data_settings() -> dict:
     return copy.deepcopy(_data_settings)
 
 

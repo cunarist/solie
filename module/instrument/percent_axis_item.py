@@ -10,7 +10,6 @@ class PercentAxisItem(AxisItem):
         super().__init__(*args, **kwargs)
 
     def tickValues(self, min_value, max_value, size):  # noqa:N802
-
         min_value = max(0.001 * max_value, min_value)
 
         min_power = math.ceil(math.log(min_value, 1.01))
@@ -32,7 +31,6 @@ class PercentAxisItem(AxisItem):
         ]
 
     def tickStrings(self, tick_values, scale, spacing):  # noqa:N802
-
         optimal_count = max(2, math.ceil(self.size().height() / 20))
         distance = spacing / optimal_count
 

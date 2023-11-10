@@ -1,11 +1,12 @@
-import urllib
+from urllib.error import HTTPError
+from urllib.request import urlopen
 import io
 
 import pandas as pd
 import numpy as np
 
 
-def do(target_tuple):
+def do(target_tuple: tuple) -> pd.DataFrame:
     symbol = target_tuple[0]
     download_type = target_tuple[1]
 
@@ -26,13 +27,13 @@ def do(target_tuple):
             + f"/{symbol}/{symbol}-aggTrades"
             + f"-{year_string}-{month_string}.zip"
         )
+    else:
+        raise ValueError("This download type is not supported")
 
     try:
-        zipped_csv_data = io.BytesIO(urllib.request.urlopen(url).read())
-    except urllib.error.HTTPError:
-        # no data yet available from binance
-        # because it's not uploaded yet
-        return
+        zipped_csv_data = io.BytesIO(urlopen(url).read())
+    except HTTPError:
+        raise ConnectionError("Looks like no data is available from Binance yet")
 
     try:
         df = pd.concat(
@@ -85,31 +86,31 @@ def do(target_tuple):
     close_sr = close_sr.reindex(valid_index)
     close_sr = close_sr.fillna(method="ffill")
     close_sr = close_sr.astype(np.float32)
-    close_sr = close_sr.rename((symbol, "Close"))
+    close_sr.name = (symbol, "Close")
 
     open_sr = df[1].resample("10s").agg("first")
     open_sr = open_sr.reindex(valid_index)
     open_sr = open_sr.fillna(value=close_sr)
     open_sr = open_sr.astype(np.float32)
-    open_sr = open_sr.rename((symbol, "Open"))
+    open_sr.name = (symbol, "Open")
 
     high_sr = df[1].resample("10s").agg("max")
     high_sr = high_sr.reindex(valid_index)
     high_sr = high_sr.fillna(value=close_sr)
     high_sr = high_sr.astype(np.float32)
-    high_sr = high_sr.rename((symbol, "High"))
+    high_sr.name = (symbol, "High")
 
     low_sr = df[1].resample("10s").agg("min")
     low_sr = low_sr.reindex(valid_index)
     low_sr = low_sr.fillna(value=close_sr)
     low_sr = low_sr.astype(np.float32)
-    low_sr = low_sr.rename((symbol, "Low"))
+    low_sr.name = (symbol, "Low")
 
     volume_sr = df[2].resample("10s").agg("sum")
     volume_sr = volume_sr.reindex(valid_index)
     volume_sr = volume_sr.fillna(value=0)
     volume_sr = volume_sr.astype(np.float32)
-    volume_sr = volume_sr.rename((symbol, "Volume"))
+    volume_sr.name = (symbol, "Volume")
 
     del df
 

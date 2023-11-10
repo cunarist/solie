@@ -74,6 +74,9 @@ def do(dataset):
 
             would_trade_happen = False
             did_found_new_trade = False
+            amount_shift = 0
+            fill_price = 0
+            role = ""
 
             # ■■■■■ check if any order would be filled ■■■■■
 
@@ -409,14 +412,22 @@ def do(dataset):
                     current_margin = abs(location["amount"]) * location["entry_price"]
                     wallet_balance += current_margin
 
+                margin_ratio = abs(amount_shift) * open_price / wallet_balance
+
+                order_id = random.randint(10**18, 10**19 - 1)
+
                 if amount_shift > 0:
                     side = "buy"
                 elif amount_shift < 0:
                     side = "sell"
+                else:
+                    raise ValueError("Amount of asset shift cannot be 0")
 
-                margin_ratio = abs(amount_shift) * open_price / wallet_balance
+                if role == "":
+                    raise ValueError("No trade role was specified")
 
-                order_id = random.randint(10**18, 10**19 - 1)
+                if fill_price == 0:
+                    raise ValueError("The fill price cannot be zero")
 
                 original_size = asset_record_ar.shape[0]
                 asset_record_ar.resize(original_size + 1)

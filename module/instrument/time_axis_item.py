@@ -12,7 +12,6 @@ class TimeAxisItem(AxisItem):
         super().__init__(*args, **kwargs)
 
     def tickValues(self, min_value, max_value, size):  # noqa:N802
-
         if min_value <= 0:  # use standard implementation from parent
             return AxisItem.tickValues(self, min_value, max_value, size)
 

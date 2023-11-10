@@ -3,10 +3,8 @@ import threading
 object_locks = {}
 
 
-def hold(unique_name):
+def hold(unique_name: str) -> threading.Lock:
     global object_locks
-    if type(unique_name) is not str:
-        return
     if unique_name in object_locks.keys():
         object_lock = object_locks[unique_name]
     else:

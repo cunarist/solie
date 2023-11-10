@@ -1,4 +1,4 @@
-def do(version1, version2):
+def is_left_higher(version1: str, version2: str) -> bool:
     versions1 = [int(v) for v in version1.split(".")]
     versions2 = [int(v) for v in version2.split(".")]
     for turn in range(max(len(versions1), len(versions2))):
@@ -8,4 +8,4 @@ def do(version1, version2):
             return True
         elif v1 < v2:
             return False
-    return
+    return False

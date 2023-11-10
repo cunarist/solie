@@ -6,6 +6,7 @@ import urllib
 import math
 import os
 from datetime import datetime, timezone
+from typing import Any
 
 from PySide6 import QtGui, QtWidgets, QtCore
 import pyqtgraph
@@ -1098,7 +1099,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.undertake(lambda: self.gauge.show(), True)
 
     # takes function and run it on the main thread
-    def undertake(self, job, wait_return, called_remotely=False, holder=None):
+    def undertake(self, job, wait_return, called_remotely=False, holder=[]):
         if not called_remotely:
             holder = [threading.Event(), None]
             telephone = Telephone()
