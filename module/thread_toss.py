@@ -14,32 +14,32 @@ def _error_callback(error):
 
 
 def _process_arguments(payload):
-    threading.currentThread().is_task_present = True
+    threading.currentThread().is_task_present = True  # type:ignore
     function, args, kwargs = payload
     try:
         returned = function(*args, **kwargs)
-        threading.currentThread().is_task_present = False
+        threading.currentThread().is_task_present = False  # type:ignore
     except Exception as error:
-        threading.currentThread().is_task_present = False
+        threading.currentThread().is_task_present = False  # type:ignore
         raise error
     return returned
 
 
 def _process_iterable_item(payload):
-    threading.currentThread().is_task_present = True
+    threading.currentThread().is_task_present = True  # type:ignore
     function, item = payload
     try:
         returned = function(item)
-        threading.currentThread().is_task_present = False
+        threading.currentThread().is_task_present = False  # type:ignore
     except Exception as error:
-        threading.currentThread().is_task_present = False
+        threading.currentThread().is_task_present = False  # type:ignore
         raise error
     return returned
 
 
 def get_task_presences():
     return_dictionary = {}
-    for thread in _pool._pool:
+    for thread in _pool._pool:  # type:ignore
         task_presence = getattr(thread, "is_task_present", False)
         return_dictionary[thread.name] = task_presence
     return return_dictionary

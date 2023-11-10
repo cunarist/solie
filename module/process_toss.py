@@ -1,4 +1,6 @@
 import multiprocessing
+from multiprocessing.pool import Pool
+from multiprocessing.managers import DictProxy, SyncManager
 import logging
 import time
 import os
@@ -7,9 +9,9 @@ import dill
 
 from module import thread_toss
 
-communicator = None
-_task_presences = None
-_pool = None
+communicator: SyncManager
+_task_presences: DictProxy
+_pool: Pool
 _pool_process_count = 0
 
 _is_task_present = False
@@ -64,10 +66,10 @@ def start_pool():
     global _task_presences
     global _pool
     global _pool_process_count
-    _pool_process_count = os.cpu_count()
+    _pool_process_count = os.cpu_count() or 0
     communicator = multiprocessing.Manager()
     _task_presences = communicator.dict()
-    _pool = multiprocessing.Pool(
+    _pool = Pool(
         _pool_process_count,
         initializer=_start_sharing_task_presence,
         initargs=(_task_presences,),
