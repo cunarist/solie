@@ -45,10 +45,9 @@ class StrategyBasicInput(QtWidgets.QWidget):
         cards_layout.addWidget(card)
 
         # explanation
-        detail_text = QtWidgets.QLabel(
-            "About",
-            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-        )
+        detail_text = QtWidgets.QLabel()
+        detail_text.setText("About")
+        detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         detail_text.setWordWrap(True)
         card_layout.addWidget(detail_text)
 
@@ -108,10 +107,9 @@ class StrategyBasicInput(QtWidgets.QWidget):
         cards_layout.addWidget(card)
 
         # explanation
-        detail_text = QtWidgets.QLabel(
-            "Simulation",
-            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-        )
+        detail_text = QtWidgets.QLabel()
+        detail_text.setText("Simulation")
+        detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         detail_text.setWordWrap(True)
         card_layout.addWidget(detail_text)
 
@@ -171,6 +169,7 @@ class StrategyBasicInput(QtWidgets.QWidget):
                     chunk_division_input.value(),
                 )
 
+            # TODO: hi
             returned = core.window.undertake(job, True)
             code_name = returned[0]
             if re.fullmatch(r"[A-Z]{6}", code_name):
@@ -186,7 +185,7 @@ class StrategyBasicInput(QtWidgets.QWidget):
             strategy["readable_name"] = returned[1]
             version = returned[2]
             if re.fullmatch(r"[0-9]+\.[0-9]+", version):
-                if not compare_versions.do(strategy["version"], version):
+                if not compare_versions.is_left_higher(strategy["version"], version):
                     strategy["version"] = version
                 else:
                     question = [

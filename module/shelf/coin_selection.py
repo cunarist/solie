@@ -1,4 +1,4 @@
-import urllib
+from urllib.request import build_opener
 
 from PySide6 import QtWidgets, QtCore, QtGui
 
@@ -97,11 +97,12 @@ class CoinSelection(QtWidgets.QWidget):
         cards_layout.addWidget(card)
 
         # explanation
-        detail_text = QtWidgets.QLabel(
-            "These are all available coins on Binance.\nYou can select a minimum of 1"
-            " and a maximum of 10.",
-            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
+        detail_text = QtWidgets.QLabel()
+        detail_text.setText(
+            "These are all available coins on Binance."
+            "\nYou can select a minimum of 1 and a maximum of 10."
         )
+        detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         detail_text.setWordWrap(True)
         card_layout.addWidget(detail_text)
 
@@ -164,7 +165,7 @@ class CoinSelection(QtWidgets.QWidget):
         # ■■■■■ a card ■■■■■
 
         # confirm function
-        def job(*args):
+        def job_cf(*args):
             data_settings = {}
             selected_symbols = []
             for symbol, checkbox in symbol_checkboxes.items():
@@ -207,7 +208,7 @@ class CoinSelection(QtWidgets.QWidget):
 
         # confirm button
         confirm_button = QtWidgets.QPushButton("Okay", card)
-        outsource.do(confirm_button.clicked, job)
+        outsource.do(confirm_button.clicked, job_cf)
         confirm_button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,
@@ -226,19 +227,19 @@ class CoinSelection(QtWidgets.QWidget):
 
         # ■■■■■ draw coin icons from another thread ■■■■■
 
-        def job():
+        def job_dc():
             for symbol, icon_label in symbol_icon_labels.items():
                 coin_symbol = symbol.removesuffix(asset_token)
                 coin_icon_url = coin_icon_urls.get(coin_symbol, "")
                 if coin_icon_url == "":
                     continue
                 try:
-                    opener = urllib.request.build_opener()
+                    opener = build_opener()
                     opener.addheaders = [("User-agent", "Mozilla/5.0")]
                     opened = opener.open(coin_icon_url)
                     image_data = opened.read()
                 except Exception:
-                    pass
+                    continue
                 pixmap = QtGui.QPixmap()
                 pixmap.loadFromData(image_data)
 
@@ -250,4 +251,4 @@ class CoinSelection(QtWidgets.QWidget):
 
                 core.window.undertake(job, False)
 
-        thread_toss.apply_async(job)
+        thread_toss.apply_async(job_dc)

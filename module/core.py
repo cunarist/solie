@@ -1099,7 +1099,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.undertake(lambda: self.gauge.show(), True)
 
     # takes function and run it on the main thread
-    def undertake(self, job, wait_return, called_remotely=False, holder=[]):
+    def undertake(self, job, wait_return, called_remotely=False, holder=[]) -> Any:
         if not called_remotely:
             holder = [threading.Event(), None]
             telephone = Telephone()

@@ -1,4 +1,4 @@
-import urllib
+from urllib.request import build_opener
 
 from PySide6 import QtWidgets, QtCore, QtGui
 
@@ -89,10 +89,9 @@ class TokenSelection(QtWidgets.QWidget):
         cards_layout.addWidget(card)
 
         # explanation
-        detail_text = QtWidgets.QLabel(
-            "These are all available tokens on Binance.",
-            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-        )
+        detail_text = QtWidgets.QLabel()
+        detail_text.setText("These are all available tokens on Binance.")
+        detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         detail_text.setWordWrap(True)
         card_layout.addWidget(detail_text)
 
@@ -149,7 +148,7 @@ class TokenSelection(QtWidgets.QWidget):
         # ■■■■■ a card ■■■■■
 
         # confirm function
-        def job(*args):
+        def job_cf(*args):
             data_settings = {}
             selected_tokens = []
             for symbol, radiobox in token_radioboxes.items():
@@ -191,7 +190,7 @@ class TokenSelection(QtWidgets.QWidget):
 
         # confirm button
         confirm_button = QtWidgets.QPushButton("Okay", card)
-        outsource.do(confirm_button.clicked, job)
+        outsource.do(confirm_button.clicked, job_cf)
         confirm_button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,
@@ -210,18 +209,18 @@ class TokenSelection(QtWidgets.QWidget):
 
         # ■■■■■ draw coin icons from another thread ■■■■■
 
-        def job():
+        def job_dc():
             for token, icon_label in token_icon_labels.items():
                 coin_icon_url = coin_icon_urls.get(token, "")
                 if coin_icon_url == "":
                     continue
                 try:
-                    opener = urllib.request.build_opener()
+                    opener = build_opener()
                     opener.addheaders = [("User-agent", "Mozilla/5.0")]
                     opened = opener.open(coin_icon_url)
                     image_data = opened.read()
                 except Exception:
-                    pass
+                    continue
                 pixmap = QtGui.QPixmap()
                 pixmap.loadFromData(image_data)
 
@@ -233,4 +232,4 @@ class TokenSelection(QtWidgets.QWidget):
 
                 core.window.undertake(job, False)
 
-        thread_toss.apply_async(job)
+        thread_toss.apply_async(job_dc)

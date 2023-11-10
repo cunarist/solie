@@ -41,10 +41,9 @@ class DatapathInput(QtWidgets.QWidget):
         cards_layout.addWidget(card)
 
         # explanation
-        detail_text = QtWidgets.QLabel(
-            "All the data that Solie produces will go in this folder.",
-            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-        )
+        detail_text = QtWidgets.QLabel()
+        detail_text.setText("All the data that Solie produces will go in this folder.")
+        detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         detail_text.setWordWrap(True)
         card_layout.addWidget(detail_text)
 
@@ -67,10 +66,8 @@ class DatapathInput(QtWidgets.QWidget):
         card_layout.addWidget(spacing_text)
 
         # chosen folder label
-        folder_label = QtWidgets.QLabel(
-            "",
-            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-        )
+        folder_label = QtWidgets.QLabel()
+        folder_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         folder_label.setWordWrap(True)
         card_layout.addWidget(folder_label)
 
@@ -83,10 +80,10 @@ class DatapathInput(QtWidgets.QWidget):
 
         datapath = ""
 
-        def job():
+        def job_dp():
             nonlocal datapath
 
-            def job():
+            def job_dd():
                 nonlocal datapath
                 file_dialog = QtWidgets.QFileDialog
                 default_path = str(pathlib.Path.home())
@@ -99,7 +96,7 @@ class DatapathInput(QtWidgets.QWidget):
                     )
                 )
 
-            core.window.undertake(job, True)
+            core.window.undertake(job_dd, True)
             payload = (folder_label.setText, datapath)
             core.window.undertake(lambda p=payload: p[0](p[1]), False)
 
@@ -107,7 +104,7 @@ class DatapathInput(QtWidgets.QWidget):
         this_layout = QtWidgets.QHBoxLayout()
         card_layout.addLayout(this_layout)
         choose_button = QtWidgets.QPushButton("Choose folder", card)
-        outsource.do(choose_button.clicked, job)
+        outsource.do(choose_button.clicked, job_dp)
         choose_button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,
@@ -116,7 +113,7 @@ class DatapathInput(QtWidgets.QWidget):
 
         # ■■■■■ a card ■■■■■
 
-        def job():
+        def job_ac():
             if datapath == "":
                 question = [
                     "Data folder is not chosen",
@@ -138,7 +135,7 @@ class DatapathInput(QtWidgets.QWidget):
 
         # confirm button
         confirm_button = QtWidgets.QPushButton("Okay", card)
-        outsource.do(confirm_button.clicked, job)
+        outsource.do(confirm_button.clicked, job_ac)
         confirm_button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,

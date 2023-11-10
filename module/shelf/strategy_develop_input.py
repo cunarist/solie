@@ -29,10 +29,9 @@ class StrategyDevelopInput(QtWidgets.QWidget):
         this_layout.addLayout(column_layout)
 
         # title
-        detail_text = QtWidgets.QLabel(
-            "Indicators script",
-            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-        )
+        detail_text = QtWidgets.QLabel()
+        detail_text.setText("Indicators script")
+        detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         column_layout.addWidget(detail_text)
 
         # input
@@ -45,10 +44,9 @@ class StrategyDevelopInput(QtWidgets.QWidget):
         this_layout.addLayout(column_layout)
 
         # title
-        detail_text = QtWidgets.QLabel(
-            "Decision script",
-            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-        )
+        detail_text = QtWidgets.QLabel()
+        detail_text.setText("Decision script")
+        detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         column_layout.addWidget(detail_text)
 
         # input
@@ -73,16 +71,16 @@ class StrategyDevelopInput(QtWidgets.QWidget):
         card_layout.addItem(spacer)
 
         # function
-        def job(*args):
+        def job_as(*args):
             # indicators script
             filepath = "./static/sample_indicators_script.txt"
             with open(filepath, "r", encoding="utf8") as file:
                 script = file.read()
 
-            def job(script=script):
+            def job_ii(script=script):
                 indicators_script_input.setPlainText(script)
 
-            core.window.undertake(job, False)
+            core.window.undertake(job_ii, False)
 
             # decision script
             filepath = "./static/sample_decision_script.txt"
@@ -103,7 +101,7 @@ class StrategyDevelopInput(QtWidgets.QWidget):
 
         # sample script button
         fill_button = QtWidgets.QPushButton("Fill with sample", card)
-        outsource.do(fill_button.clicked, job)
+        outsource.do(fill_button.clicked, job_as)
         fill_button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,
@@ -111,7 +109,7 @@ class StrategyDevelopInput(QtWidgets.QWidget):
         card_layout.addWidget(fill_button)
 
         # function
-        def job(*args):
+        def job_ss(*args):
             def job():
                 return (
                     indicators_script_input.toPlainText(),
@@ -125,7 +123,7 @@ class StrategyDevelopInput(QtWidgets.QWidget):
 
         # confirm button
         confirm_button = QtWidgets.QPushButton("Save and close", card)
-        outsource.do(confirm_button.clicked, job)
+        outsource.do(confirm_button.clicked, job_ss)
         confirm_button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,

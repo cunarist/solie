@@ -40,10 +40,9 @@ class StrategyInfoView(QtWidgets.QWidget):
         cards_layout.addWidget(card)
 
         # explanation
-        detail_text = QtWidgets.QLabel(
-            "Description",
-            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-        )
+        detail_text = QtWidgets.QLabel()
+        detail_text.setText("Description")
+        detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         detail_text.setWordWrap(True)
         card_layout.addWidget(detail_text)
 
