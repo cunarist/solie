@@ -333,6 +333,7 @@ class Transactor:
 
             asset_token = user_settings.get_data_settings()["asset_token"]
 
+            about_asset = {}
             if asset_token in [about_asset["a"] for about_asset in about_assets]:
                 for about_asset in about_assets:
                     asset_name = about_asset["a"]
@@ -348,6 +349,7 @@ class Transactor:
                     if position_side == "BOTH":
                         break
 
+                about_position = {}
                 target_symbols = user_settings.get_data_settings()["target_symbols"]
                 if about_position["s"] not in target_symbols:
                     return
@@ -358,12 +360,12 @@ class Transactor:
 
                 leverage = self.secret_memory["leverages"][symbol]
                 margin = abs(amount) * entry_price / leverage
-                if amount == 0:
-                    direction = "none"
-                elif amount < 0:
+                if amount < 0:
                     direction = "short"
                 elif amount > 0:
                     direction = "long"
+                else:
+                    direction = "none"
 
                 self.account_state["positions"][symbol]["margin"] = margin
                 self.account_state["positions"][symbol]["direction"] = direction
@@ -418,6 +420,8 @@ class Transactor:
                             command_name = "later_down_close"
                             boundary = stop_price
                             left_margin = None
+                        else:
+                            raise ValueError("Cannot order with this side")
                     elif side == "BUY":
                         command_name = "later_up_buy"
                         boundary = stop_price
@@ -428,6 +432,8 @@ class Transactor:
                         boundary = stop_price
                         left_quantity = origianal_quantity
                         left_margin = left_quantity * boundary / leverage
+                    else:
+                        raise ValueError("Cannot order with this side")
                 elif order_type == "TAKE_PROFIT_MARKET":
                     if close_position:
                         if side == "BUY":
@@ -438,6 +444,8 @@ class Transactor:
                             command_name = "later_up_close"
                             boundary = stop_price
                             left_margin = None
+                        else:
+                            raise ValueError("Cannot order with this side")
                     elif side == "BUY":
                         command_name = "later_down_buy"
                         boundary = stop_price
@@ -448,6 +456,8 @@ class Transactor:
                         boundary = stop_price
                         left_quantity = origianal_quantity
                         left_margin = left_quantity * boundary / leverage
+                    else:
+                        raise ValueError("Cannot order with this side")
                 elif order_type == "LIMIT":
                     if side == "BUY":
                         command_name = "book_buy"
@@ -459,6 +469,8 @@ class Transactor:
                         boundary = price
                         left_quantity = origianal_quantity - executed_quantity
                         left_margin = left_quantity * boundary / leverage
+                    else:
+                        raise ValueError("Cannot order with this side")
                 else:
                     command_name = "other"
                     boundary = max(price, stop_price)
@@ -497,7 +509,9 @@ class Transactor:
                         recorded_value = symbol_df.loc[recorded_time, "Margin Ratio"]
                         new_value = recorded_value + added_margin_ratio
                         self.asset_record.loc[recorded_time, "Margin Ratio"] = new_value
-                        last_asset = self.asset_record.loc[last_index, "Result Asset"]
+                        last_asset: float = self.asset_record.loc[
+                            last_index, "Result Asset"
+                        ]  # type:ignore
                         new_value = last_asset + added_revenue
                         self.asset_record.loc[last_index, "Result Asset"] = new_value
                     else:
@@ -516,7 +530,9 @@ class Transactor:
                         self.asset_record.loc[record_time, "Margin Ratio"] = new_value
                         new_value = order_id
                         self.asset_record.loc[record_time, "Order ID"] = new_value
-                        last_asset = self.asset_record.loc[last_index, "Result Asset"]
+                        last_asset: float = self.asset_record.loc[
+                            last_index, "Result Asset"
+                        ]  # type:ignore
                         new_value = last_asset + added_revenue
                         self.asset_record.loc[record_time, "Result Asset"] = new_value
                         if order_id in unique_order_ids:
@@ -549,7 +565,7 @@ class Transactor:
                 core.window.lineEdit_6.text(),
             )
 
-        returned = core.window.undertake(job, True)
+        returned: tuple = core.window.undertake(job, True)  # type:ignore
 
         new_keys = {}
         new_keys["binance_api"] = returned[0]
@@ -601,25 +617,25 @@ class Transactor:
 
         symbol = self.viewing_symbol
 
-        range_start = core.window.undertake(
+        range_start_timestamp: float = core.window.undertake(
             lambda: core.window.plot_widget.getAxis("bottom").range[0], True
-        )
-        range_start = max(range_start, 0)
-        range_start = datetime.fromtimestamp(range_start, tz=timezone.utc)
+        )  # type:ignore
+        range_start_timestamp = max(range_start_timestamp, 0.0)
+        range_start = datetime.fromtimestamp(range_start_timestamp, tz=timezone.utc)
 
         if stop_flag.find("display_transaction_range_information", task_id):
             return
 
-        range_end = core.window.undertake(
+        range_end_timestamp: float = core.window.undertake(
             lambda: core.window.plot_widget.getAxis("bottom").range[1], True
-        )
-        if range_end < 0:
+        )  # type:ignore
+        if range_end_timestamp < 0.0:
             # case when pyqtgraph passed negative value because it's too big
-            range_end = 9223339636
+            range_end_timestamp = 9223339636.0
         else:
             # maximum value available in pandas
-            range_end = min(range_end, 9223339636)
-        range_end = datetime.fromtimestamp(range_end, tz=timezone.utc)
+            range_end_timestamp = min(range_end_timestamp, 9223339636.0)
+        range_end = datetime.fromtimestamp(range_end_timestamp, tz=timezone.utc)
 
         if stop_flag.find("display_transaction_range_information", task_id):
             return
@@ -676,7 +692,7 @@ class Transactor:
             return
 
         widget = core.window.plot_widget.getAxis("left")
-        view_range = core.window.undertake(lambda w=widget: w.range, True)
+        view_range: list = core.window.undertake(lambda w=widget: w.range, True)  # type:ignore
         range_down = view_range[0]
         range_up = view_range[1]
         price_range_height = (1 - range_down / range_up) * 100
@@ -702,10 +718,10 @@ class Transactor:
         def job():
             widget = core.window.plot_widget
             range_down = widget.getAxis("left").range[0]
-            widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)
+            widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
             widget = core.window.plot_widget_1
             range_down = widget.getAxis("left").range[0]
-            widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)
+            widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
 
         core.window.undertake(job, False)
 
@@ -789,12 +805,12 @@ class Transactor:
         data_x = data_x[mask]
         widget = core.window.transaction_lines["mark_price"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_mp(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_mp, False)
 
         # last price
         data_x = aggregate_trades["index"].astype(np.int64) / 10**9
@@ -804,12 +820,12 @@ class Transactor:
         data_x = data_x[mask]
         widget = core.window.transaction_lines["last_price"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_lp(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_lp, False)
 
         # last trade volume
         index_ar = aggregate_trades["index"].astype(np.int64) / 10**9
@@ -825,12 +841,12 @@ class Transactor:
         data_y = np.stack([nan_ar, zero_ar, value_ar], axis=1).reshape(-1)
         widget = core.window.transaction_lines["last_volume"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_ltv(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_ltv, False)
 
         # book tickers
         data_x = realtime_data["index"].astype(np.int64) / 10**9
@@ -840,12 +856,12 @@ class Transactor:
         data_x = data_x[mask]
         widget = core.window.transaction_lines["book_tickers"][0]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_btb(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_btb, False)
 
         data_x = realtime_data["index"].astype(np.int64) / 10**9
         data_y = realtime_data[str((symbol, "Best Ask Price"))]
@@ -854,12 +870,12 @@ class Transactor:
         data_x = data_x[mask]
         widget = core.window.transaction_lines["book_tickers"][1]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_bta(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_bta, False)
 
         # entry price
         entry_price = self.account_state["positions"][symbol]["entry_price"]
@@ -875,12 +891,12 @@ class Transactor:
             data_y = []
         widget = core.window.transaction_lines["entry_price"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_ep(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_ep, False)
 
         # ■■■■■ record task duration ■■■■■
 
@@ -999,12 +1015,12 @@ class Transactor:
         ).reshape(-1)
         widget = core.window.transaction_lines["price_rise"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_pm1(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_pm1, False)
 
         data_x = np.stack(
             [
@@ -1036,12 +1052,12 @@ class Transactor:
         ).reshape(-1)
         widget = core.window.transaction_lines["price_fall"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_pm2(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_pm2, False)
 
         data_x = np.stack(
             [
@@ -1073,12 +1089,12 @@ class Transactor:
         ).reshape(-1)
         widget = core.window.transaction_lines["price_stay"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_pm3(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_pm3, False)
 
         # wobbles
         sr = candle_data[(symbol, "High")]
@@ -1086,24 +1102,24 @@ class Transactor:
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.transaction_lines["wobbles"][0]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_w1(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_w1, False)
 
         sr = candle_data[(symbol, "Low")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.transaction_lines["wobbles"][1]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_w2(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_w2, False)
 
         # trade volume
         sr = candle_data[(symbol, "Volume")]
@@ -1112,24 +1128,24 @@ class Transactor:
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.transaction_lines["volume"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_tv(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_tv, False)
 
         # asset
         data_x = asset_record["Result Asset"].index.to_numpy(dtype=np.int64) / 10**9
         data_y = asset_record["Result Asset"].to_numpy(dtype=np.float32)
         widget = core.window.transaction_lines["asset"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_a(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_a, False)
 
         # asset with unrealized profit
         sr = asset_record["Result Asset"]
@@ -1141,12 +1157,12 @@ class Transactor:
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.transaction_lines["asset_with_unrealized_profit"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_aup(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_aup, False)
 
         # buy and sell
         df = asset_record.loc[asset_record["Symbol"] == symbol]
@@ -1156,12 +1172,12 @@ class Transactor:
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.transaction_lines["sell"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_bs1(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_bs1, False)
 
         df = asset_record.loc[asset_record["Symbol"] == symbol]
         df = df[df["Side"] == "buy"]
@@ -1170,12 +1186,12 @@ class Transactor:
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.transaction_lines["buy"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_bs2(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_bs2, False)
 
         # ■■■■■ record task duration ■■■■■
 
@@ -1188,12 +1204,12 @@ class Transactor:
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
         target_symbols = user_settings.get_data_settings()["target_symbols"]
 
-        indicators = process_toss.apply(
+        indicators: pd.DataFrame = process_toss.apply(
             make_indicators.do,
             target_symbols=target_symbols,
             candle_data=candle_data,
             compiled_indicators_script=compiled_indicators_script,
-        )
+        )  # type:ignore
 
         indicators = indicators[slice_from:]
 
@@ -1409,9 +1425,9 @@ class Transactor:
                 if not is_cycle_done:
                     new_value = int(passed_time / timedelta(seconds=10) * 1000)
                 else:
-                    before_value = core.window.undertake(
+                    before_value: int = core.window.undertake(
                         lambda: core.window.progressBar_2.value(), True
-                    )
+                    )  # type:ignore
                     remaining = 1000 - before_value
                     new_value = before_value + math.ceil(remaining * 0.2)
 
@@ -1464,12 +1480,12 @@ class Transactor:
         indicators_script = strategy["indicators_script"]
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
-        indicators = process_toss.apply(
+        indicators: pd.DataFrame = process_toss.apply(
             make_indicators.do,
             target_symbols=target_symbols,
             candle_data=partial_candle_data,
             compiled_indicators_script=compiled_indicators_script,
-        )
+        )  # type:ignore
 
         current_candle_data = partial_candle_data.to_records()[-1]
         current_indicators = indicators.to_records()[-1]
@@ -1485,7 +1501,7 @@ class Transactor:
             account_state=copy.deepcopy(self.account_state),
             scribbles=self.scribbles,
             compiled_decision_script=compiled_decision_script,
-        )
+        )  # type:ignore
         self.scribbles = scribbles
 
         # ■■■■■ record task duration ■■■■■
@@ -1518,13 +1534,13 @@ class Transactor:
         widget = core.window.plot_widget
 
         def job(range_start=range_start, range_end=range_end):
-            widget.setXRange(range_start, range_end, padding=0)
+            widget.setXRange(range_start, range_end, padding=0)  # type:ignore
 
         core.window.undertake(job, False)
 
     def update_mode_settings(self, *args, **kwargs):
         widget = core.window.spinBox
-        desired_leverage = core.window.undertake(lambda w=widget: w.value(), True)
+        desired_leverage: int = core.window.undertake(lambda w=widget: w.value(), True)  # type:ignore
         self.mode_settings["desired_leverage"] = desired_leverage
 
         # ■■■■■ tell if some symbol's leverage cannot be set as desired ■■■■■
@@ -1590,6 +1606,8 @@ class Transactor:
 
         for about_symbol in about_exchange["symbols"]:
             symbol = about_symbol["symbol"]
+
+            about_filter = {}
 
             for about_filter in about_symbol["filters"]:
                 if about_filter["filterType"] == "MIN_NOTIONAL":
@@ -1680,6 +1698,7 @@ class Transactor:
         self.account_state["observed_until"] = current_moment
 
         # wallet_balance
+        about_asset = {}
         for about_asset in about_account["assets"]:
             if about_asset["asset"] == user_settings.get_data_settings()["asset_token"]:
                 break
@@ -1688,16 +1707,17 @@ class Transactor:
 
         # positions
         for symbol in user_settings.get_data_settings()["target_symbols"]:
+            about_position = {}
             for about_position in about_account["positions"]:
                 if about_position["symbol"] == symbol:
                     break
 
             if float(about_position["notional"]) > 0:
                 direction = "long"
-            elif float(about_position["notional"]) == 0:
-                direction = "none"
             elif float(about_position["notional"]) < 0:
                 direction = "short"
+            else:
+                direction = "none"
 
             entry_price = float(about_position["entryPrice"])
             update_time = int(float(about_position["updateTime"]) / 1000)
@@ -1717,6 +1737,7 @@ class Transactor:
             open_orders[symbol] = {}
 
         for symbol in user_settings.get_data_settings()["target_symbols"]:
+            about_position = {}
             for about_position in about_account["positions"]:
                 if about_position["symbol"] == symbol:
                     break
@@ -1745,6 +1766,8 @@ class Transactor:
                             command_name = "later_down_close"
                             boundary = stop_price
                             left_margin = None
+                        else:
+                            raise ValueError("Cannot order with this side")
                     elif side == "BUY":
                         command_name = "later_up_buy"
                         boundary = stop_price
@@ -1755,6 +1778,8 @@ class Transactor:
                         boundary = stop_price
                         left_quantity = origianal_quantity
                         left_margin = left_quantity * boundary / leverage
+                    else:
+                        raise ValueError("Cannot order with this side")
                 elif order_type == "TAKE_PROFIT_MARKET":
                     if close_position:
                         if side == "BUY":
@@ -1765,6 +1790,8 @@ class Transactor:
                             command_name = "later_up_close"
                             boundary = stop_price
                             left_margin = None
+                        else:
+                            raise ValueError("Cannot order with this side")
                     elif side == "BUY":
                         command_name = "later_down_buy"
                         boundary = stop_price
@@ -1775,6 +1802,8 @@ class Transactor:
                         boundary = stop_price
                         left_quantity = origianal_quantity
                         left_margin = left_quantity * boundary / leverage
+                    else:
+                        raise ValueError("Cannot order with this side")
                 elif order_type == "LIMIT":
                     if side == "BUY":
                         command_name = "book_buy"
@@ -1786,6 +1815,8 @@ class Transactor:
                         boundary = price
                         left_quantity = origianal_quantity - executed_quantity
                         left_margin = left_quantity * boundary / leverage
+                    else:
+                        raise ValueError("Cannot order with this side")
                 else:
                     command_name = "other"
                     boundary = max(price, stop_price)
@@ -1803,6 +1834,7 @@ class Transactor:
         # ■■■■■ update hidden state ■■■■■
 
         for symbol in user_settings.get_data_settings()["target_symbols"]:
+            about_position = {}
             for about_position in about_account["positions"]:
                 if about_position["symbol"] == symbol:
                     break
@@ -1851,7 +1883,7 @@ class Transactor:
 
         with datalocks.hold("transactor_asset_record"):
             last_index = self.asset_record.index[-1]
-            last_asset = self.asset_record.loc[last_index, "Result Asset"]
+            last_asset: float = self.asset_record.loc[last_index, "Result Asset"]  # type:ignore
 
         if wallet_balance == 0:
             pass
@@ -1874,7 +1906,8 @@ class Transactor:
 
         if self.automation_settings["should_transact"]:
 
-            def job(symbol):
+            def job_1(symbol):
+                about_position = {}
                 for about_position in about_account["positions"]:
                     if about_position["symbol"] == symbol:
                         break
@@ -1898,9 +1931,10 @@ class Transactor:
                         payload=payload,
                     )
 
-            thread_toss.map(job, user_settings.get_data_settings()["target_symbols"])
+            thread_toss.map(job_1, user_settings.get_data_settings()["target_symbols"])
 
-            def job(symbol):
+            def job_2(symbol):
+                about_position = {}
                 for about_position in about_account["positions"]:
                     if about_position["symbol"] == symbol:
                         break
@@ -1931,7 +1965,7 @@ class Transactor:
                         payload=payload,
                     )
 
-            thread_toss.map(job, user_settings.get_data_settings()["target_symbols"])
+            thread_toss.map(job_2, user_settings.get_data_settings()["target_symbols"])
 
             try:
                 timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
@@ -2211,7 +2245,7 @@ class Transactor:
 
         # ■■■■■ actually place orders ■■■■■
 
-        def job(payload):
+        def job_1(payload):
             response = self.api_requester.binance(
                 http_method="POST",
                 path="/fapi/v1/order",
@@ -2229,16 +2263,16 @@ class Transactor:
                 if not self.auto_order_record.index.is_monotonic_increasing:
                     self.auto_order_record = self.auto_order_record.sort_index()
 
-        thread_toss.map_async(job, new_orders)
+        thread_toss.map_async(job_1, new_orders)
 
-        def job(payload):
+        def job_2(payload):
             self.api_requester.binance(
                 http_method="DELETE",
                 path="/fapi/v1/allOpenOrders",
                 payload=payload,
             )
 
-        thread_toss.map_async(job, cancel_orders)
+        thread_toss.map_async(job_2, cancel_orders)
 
         # ■■■■■ record task duration ■■■■■
 
@@ -2303,7 +2337,7 @@ class Transactor:
         widget = core.window.plot_widget
         axis = widget.getAxis("bottom")
 
-        before_range = core.window.undertake(lambda: axis.range, True)
+        before_range: list = core.window.undertake(lambda: axis.range, True)  # type:ignore
         range_start = before_range[0]
         range_end = before_range[1]
 
@@ -2311,7 +2345,7 @@ class Transactor:
             return
 
         def job():
-            widget.setXRange(range_start + 10, range_end + 10, padding=0)
+            widget.setXRange(range_start + 10, range_end + 10, padding=0)  # type:ignore
 
         core.window.undertake(job, False)
 
