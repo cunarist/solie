@@ -20,7 +20,7 @@ from module.instrument.api_requester import ApiRequester
 from module.recipe import simply_format
 from module.recipe import check_internet
 from module.recipe import user_settings
-from module.recipe import find_goodies
+from module.recipe import find_updates
 from module.recipe import remember_task_durations
 from module.recipe import datalocks
 from module.recipe import value_to
@@ -399,10 +399,10 @@ class Manager:
         core.window.undertake(core.window.close, False)
 
     def check_for_update(self, *args, **kwargs):
-        should_update = find_goodies.is_newer_version_available()
+        should_update = find_updates.is_newer_version_available()
 
         if should_update:
-            latest_version = find_goodies.get_latest_version()
+            latest_version = find_updates.get_latest_version()
             question = [
                 "Update is ready",
                 "Shut down Solie and fetch the latest commits via Git."
