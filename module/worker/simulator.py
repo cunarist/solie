@@ -103,7 +103,9 @@ class Simulator:
         self.display_lines()
 
     def update_calculation_settings(self, *args, **kwargs):
-        text = core.window.undertake(lambda: core.window.comboBox_5.currentText(), True)
+        text: str = core.window.undertake(
+            lambda: core.window.comboBox_5.currentText(), True
+        )  # type:ignore
         if text == "":
             return
         from_year = self.calculation_settings["year"]
@@ -112,7 +114,9 @@ class Simulator:
         if from_year != to_year:
             self.display_year_range()
 
-        index = core.window.undertake(lambda: core.window.comboBox.currentIndex(), True)
+        index: int = core.window.undertake(
+            lambda: core.window.comboBox.currentIndex(), True
+        )  # type:ignore
         self.calculation_settings["strategy_index"] = index
 
         self.display_lines()
@@ -201,12 +205,12 @@ class Simulator:
         data_x = data_x[mask]
         widget = core.window.simulation_lines["mark_price"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_mp(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_mp, False)
 
         # last price
         data_x = aggregate_trades["index"].astype(np.int64) / 10**9
@@ -216,12 +220,12 @@ class Simulator:
         data_x = data_x[mask]
         widget = core.window.simulation_lines["last_price"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_lp(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_lp, False)
 
         # last trade volume
         index_ar = aggregate_trades["index"].astype(np.int64) / 10**9
@@ -237,12 +241,12 @@ class Simulator:
         data_y = np.stack([nan_ar, zero_ar, value_ar], axis=1).reshape(-1)
         widget = core.window.simulation_lines["last_volume"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_ltv(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_ltv, False)
 
         # book tickers
         data_x = realtime_data["index"].astype(np.int64) / 10**9
@@ -252,12 +256,12 @@ class Simulator:
         data_x = data_x[mask]
         widget = core.window.simulation_lines["book_tickers"][0]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_btb(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_btb, False)
 
         data_x = realtime_data["index"].astype(np.int64) / 10**9
         data_y = realtime_data[str((symbol, "Best Ask Price"))]
@@ -266,12 +270,12 @@ class Simulator:
         data_x = data_x[mask]
         widget = core.window.simulation_lines["book_tickers"][1]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_bta(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_bta, False)
 
         # entry price
         entry_price = self.account_state["positions"][symbol]["entry_price"]
@@ -287,12 +291,12 @@ class Simulator:
             data_y = []
         widget = core.window.simulation_lines["entry_price"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_ep(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_ep, False)
 
         # ■■■■■ record task duration ■■■■■
 
@@ -414,12 +418,12 @@ class Simulator:
         ).reshape(-1)
         widget = core.window.simulation_lines["price_rise"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_pm1(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_pm1, False)
 
         data_x = np.stack(
             [
@@ -451,12 +455,12 @@ class Simulator:
         ).reshape(-1)
         widget = core.window.simulation_lines["price_fall"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_pm2(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_pm2, False)
 
         data_x = np.stack(
             [
@@ -488,12 +492,12 @@ class Simulator:
         ).reshape(-1)
         widget = core.window.simulation_lines["price_stay"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_pm3(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_pm3, False)
 
         # wobbles
         sr = candle_data[(symbol, "High")]
@@ -501,24 +505,24 @@ class Simulator:
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.simulation_lines["wobbles"][0]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_w1(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_w1, False)
 
         sr = candle_data[(symbol, "Low")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.simulation_lines["wobbles"][1]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_w2(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_w2, False)
 
         # trade volume
         sr = candle_data[(symbol, "Volume")]
@@ -527,24 +531,24 @@ class Simulator:
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.simulation_lines["volume"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_tv(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_tv, False)
 
         # asset
         data_x = asset_record["Result Asset"].index.to_numpy(dtype=np.int64) / 10**9
         data_y = asset_record["Result Asset"].to_numpy(dtype=np.float32)
         widget = core.window.simulation_lines["asset"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_a(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_a, False)
 
         # asset with unrealized profit
         sr = asset_record["Result Asset"]
@@ -556,12 +560,12 @@ class Simulator:
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.simulation_lines["asset_with_unrealized_profit"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_aup(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_aup, False)
 
         # buy and sell
         df = asset_record.loc[asset_record["Symbol"] == symbol]
@@ -571,12 +575,12 @@ class Simulator:
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.simulation_lines["sell"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_bs1(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_bs1, False)
 
         df = asset_record.loc[asset_record["Symbol"] == symbol]
         df = df[df["Side"] == "buy"]
@@ -585,12 +589,12 @@ class Simulator:
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.simulation_lines["buy"]
 
-        def job(widget=widget, data_x=data_x, data_y=data_y):
+        def job_bs2(widget=widget, data_x=data_x, data_y=data_y):
             widget.setData(data_x, data_y)
 
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job, False)
+        core.window.undertake(job_bs2, False)
 
         # ■■■■■ record task duration ■■■■■
 
@@ -602,12 +606,12 @@ class Simulator:
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
         target_symbols = user_settings.get_data_settings()["target_symbols"]
 
-        indicators = process_toss.apply(
+        indicators: pd.DataFrame = process_toss.apply(
             make_indicators.do,
             target_symbols=target_symbols,
             candle_data=candle_data,
             compiled_indicators_script=compiled_indicators_script,
-        )
+        )  # type:ignore
 
         indicators = indicators[slice_from:]
 
@@ -712,7 +716,7 @@ class Simulator:
 
     def display_available_years(self, *args, **kwargs):
         with datalocks.hold("collector_candle_data"):
-            years_sr = collector.me.candle_data.index.year.drop_duplicates()
+            years_sr = collector.me.candle_data.index.year.drop_duplicates()  # type:ignore
         years = years_sr.tolist()
         years.sort(reverse=True)
         years = [str(year) for year in years]
@@ -721,7 +725,7 @@ class Simulator:
             widget = core.window.comboBox_5
             return [int(widget.itemText(i)) for i in range(widget.count())]
 
-        choices = core.window.undertake(job, True)
+        choices: list = core.window.undertake(job, True)  # type:ignore
         choices.sort(reverse=True)
         choices = [str(choice) for choice in choices]
 
@@ -739,25 +743,25 @@ class Simulator:
 
         symbol = self.viewing_symbol
 
-        range_start = core.window.undertake(
+        range_start_timestamp: float = core.window.undertake(
             lambda: core.window.plot_widget_2.getAxis("bottom").range[0], True
-        )
-        range_start = max(range_start, 0)
-        range_start = datetime.fromtimestamp(range_start, tz=timezone.utc)
+        )  # type:ignore
+        range_start_timestamp = max(range_start_timestamp, 0.0)
+        range_start = datetime.fromtimestamp(range_start_timestamp, tz=timezone.utc)
 
         if stop_flag.find("display_simulation_range_information", task_id):
             return
 
-        range_end = core.window.undertake(
+        range_end_timestamp: float = core.window.undertake(
             lambda: core.window.plot_widget_2.getAxis("bottom").range[1], True
-        )
-        if range_end < 0:
+        )  # type:ignore
+        if range_end_timestamp < 0:
             # case when pyqtgraph passed negative value because it's too big
-            range_end = 9223339636
+            range_end_timestamp = 9223339636
         else:
             # maximum value available in pandas
-            range_end = min(range_end, 9223339636)
-        range_end = datetime.fromtimestamp(range_end, tz=timezone.utc)
+            range_end_timestamp = min(range_end_timestamp, 9223339636.0)
+        range_end = datetime.fromtimestamp(range_end_timestamp, tz=timezone.utc)
 
         if stop_flag.find("display_simulation_range_information", task_id):
             return
@@ -814,7 +818,7 @@ class Simulator:
             return
 
         widget = core.window.plot_widget_2.getAxis("left")
-        view_range = core.window.undertake(lambda w=widget: w.range, True)
+        view_range: list = core.window.undertake(lambda w=widget: w.range, True)  # type:ignore
         range_down = view_range[0]
         range_up = view_range[1]
         price_range_height = (1 - range_down / range_up) * 100
@@ -840,10 +844,10 @@ class Simulator:
         def job():
             widget = core.window.plot_widget_2
             range_down = widget.getAxis("left").range[0]
-            widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)
+            widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
             widget = core.window.plot_widget_3
             range_down = widget.getAxis("left").range[0]
-            widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)
+            widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
 
         core.window.undertake(job, False)
 
@@ -866,14 +870,14 @@ class Simulator:
                 else:
                     if prepare_step == 6 and calculate_step == 1000:
                         is_progressbar_filled = True
-                        progressbar_value = core.window.undertake(
+                        progressbar_value: int = core.window.undertake(
                             lambda: core.window.progressBar_4.value(), True
-                        )
+                        )  # type:ignore
                         if progressbar_value < 1000:
                             is_progressbar_filled = False
-                        progressbar_value = core.window.undertake(
+                        progressbar_value: int = core.window.undertake(
                             lambda: core.window.progressBar.value(), True
-                        )
+                        )  # type:ignore
                         if progressbar_value < 1000:
                             is_progressbar_filled = False
                         if is_progressbar_filled:
@@ -884,9 +888,9 @@ class Simulator:
                             core.window.undertake(lambda w=widget: w.setValue(0), False)
                             return
                     widget = core.window.progressBar_4
-                    before_value = core.window.undertake(
+                    before_value: int = core.window.undertake(
                         lambda w=widget: w.value(), True
-                    )
+                    )  # type:ignore
                     if before_value < 1000:
                         remaining = math.ceil(1000 / 6 * prepare_step) - before_value
                         new_value = before_value + math.ceil(remaining * 0.2)
@@ -894,9 +898,9 @@ class Simulator:
                             lambda w=widget, v=new_value: w.setValue(v), False
                         )
                     widget = core.window.progressBar
-                    before_value = core.window.undertake(
+                    before_value: int = core.window.undertake(
                         lambda w=widget: w.value(), True
-                    )
+                    )  # type:ignore
                     if before_value < 1000:
                         remaining = calculate_step - before_value
                         new_value = before_value + math.ceil(remaining * 0.2)
@@ -988,7 +992,7 @@ class Simulator:
             previous_virtual_state = blank_virtual_state.copy()
 
             widget = core.window.plot_widget_2.getAxis("bottom")
-            view_range = core.window.undertake(lambda w=widget: w.range, True)
+            view_range: list = core.window.undertake(lambda w=widget: w.range, True)  # type:ignore
             view_start = datetime.fromtimestamp(view_range[0], tz=timezone.utc)
             view_end = datetime.fromtimestamp(view_range[1], tz=timezone.utc)
 
@@ -1034,6 +1038,9 @@ class Simulator:
 
         # ■■■■■ prepare per chunk data ■■■■■
 
+        calculation_input_data = []
+        progress_list = process_toss.communicator.list([0])
+
         if should_calculate:
             decision_script = strategy["decision_script"]
             indicators_script = strategy["indicators_script"]
@@ -1041,12 +1048,12 @@ class Simulator:
 
             # a little more data for generation
             provide_from = calculate_from - timedelta(days=7)
-            year_indicators = process_toss.apply(
+            year_indicators: pd.DataFrame = process_toss.apply(
                 make_indicators.do,
                 target_symbols=target_symbols,
                 candle_data=year_candle_data[provide_from:calculate_until],
                 compiled_indicators_script=compiled_indicators_script,
-            )
+            )  # type:ignore
 
             # range cut
             needed_candle_data = year_candle_data[calculate_from:calculate_until]
@@ -1058,14 +1065,13 @@ class Simulator:
                 chunk_candle_data_list = [
                     chunk_candle_data
                     for _, chunk_candle_data in needed_candle_data.groupby(
-                        pd.Grouper(freq=division, origin="epoch")
+                        pd.Grouper(freq=division, origin="epoch")  # type:ignore
                     )
                 ]
 
                 chunk_count = len(chunk_candle_data_list)
                 progress_list = process_toss.communicator.list([0] * chunk_count)
 
-                input_data = []
                 for turn, chunk_candle_data in enumerate(chunk_candle_data_list):
                     chunk_index = chunk_candle_data.index
                     chunk_indicators = needed_indicators.reindex(chunk_index)
@@ -1098,12 +1104,9 @@ class Simulator:
                         "chunk_virtual_state": chunk_virtual_state,
                         "decision_script": decision_script,
                     }
-                    input_data.append(dataset)
+                    calculation_input_data.append(dataset)
 
             else:
-                progress_list = process_toss.communicator.list([0])
-
-                input_data = []
                 dataset = {
                     "progress_list": progress_list,
                     "target_progress": 0,
@@ -1118,20 +1121,24 @@ class Simulator:
                     "chunk_virtual_state": previous_virtual_state,
                     "decision_script": decision_script,
                 }
-                input_data.append(dataset)
+                calculation_input_data.append(dataset)
 
         prepare_step = 6
 
         # ■■■■■ calculate ■■■■■
 
+        calculation_output_data = []
+
         if should_calculate:
-            map_result = process_toss.map_async(simulate_chunk.do, input_data)
+            map_result = process_toss.map_async(
+                simulate_chunk.do, calculation_input_data
+            )
 
             total_seconds = (calculate_until - calculate_from).total_seconds()
             while True:
                 if map_result.ready():
                     if map_result.successful():
-                        output_data = map_result.get()
+                        calculation_output_data = map_result.get()
                         break
                     else:
                         stop_flag.make("calculate_simulation")
@@ -1146,7 +1153,7 @@ class Simulator:
 
         if should_calculate:
             asset_record = previous_asset_record
-            for chunk_ouput_data in output_data:
+            for chunk_ouput_data in calculation_output_data:
                 chunk_asset_record = chunk_ouput_data["chunk_asset_record"]
                 concat_data = [asset_record, chunk_asset_record]
                 asset_record = pd.concat(concat_data)
@@ -1155,7 +1162,7 @@ class Simulator:
             asset_record = asset_record.sort_index()
 
             unrealized_changes = previous_unrealized_changes
-            for chunk_ouput_data in output_data:
+            for chunk_ouput_data in calculation_output_data:
                 chunk_unrealized_changes = chunk_ouput_data["chunk_unrealized_changes"]
                 concat_data = [unrealized_changes, chunk_unrealized_changes]
                 unrealized_changes = pd.concat(concat_data)
@@ -1163,15 +1170,16 @@ class Simulator:
             unrealized_changes = unrealized_changes[mask]
             unrealized_changes = unrealized_changes.sort_index()
 
-            scribbles = output_data[-1]["chunk_scribbles"]
-            account_state = output_data[-1]["chunk_account_state"]
-            virtual_state = output_data[-1]["chunk_virtual_state"]
+            scribbles = calculation_output_data[-1]["chunk_scribbles"]
+            account_state = calculation_output_data[-1]["chunk_account_state"]
+            virtual_state = calculation_output_data[-1]["chunk_virtual_state"]
 
         else:
             asset_record = previous_asset_record
             unrealized_changes = previous_unrealized_changes
             scribbles = previous_scribbles
             account_state = previous_account_state
+            virtual_state = previous_virtual_state
 
         # ■■■■■ remember and present ■■■■■
 
@@ -1224,7 +1232,7 @@ class Simulator:
 
         if should_parallelize:
             division = timedelta(days=chunk_length)
-            grouper = pd.Grouper(freq=division, origin="epoch")
+            grouper = pd.Grouper(freq=division, origin="epoch")  # type:ignore
             grouped = asset_record.groupby(grouper)
             chunk_asset_record_list = [r.dropna() for _, r in grouped]
             chunk_count = len(chunk_asset_record_list)
@@ -1449,7 +1457,7 @@ class Simulator:
         widget = core.window.plot_widget_2
 
         def job(range_start=range_start, range_end=range_end):
-            widget.setXRange(range_start, range_end, padding=0)
+            widget.setXRange(range_start, range_end, padding=0)  # type:ignore
 
         core.window.undertake(job, False)
 
@@ -1457,7 +1465,7 @@ class Simulator:
         stop_flag.make("calculate_simulation")
 
     def analyze_unrealized_peaks(self, *args, **kwargs):
-        peak_indexes, _ = find_peaks(-self.unrealized_changes, distance=3600 / 10)
+        peak_indexes, _ = find_peaks(-self.unrealized_changes, distance=3600 / 10)  # type:ignore
         peak_sr = self.unrealized_changes.iloc[peak_indexes]
         peak_sr = peak_sr.sort_values().iloc[:12]
         if len(peak_sr) < 12:
