@@ -28,8 +28,8 @@ There are things that must be known in the process of making Solie.
 ## Rules
 
 - Solie is made purely in Python and uses `Miniconda` as the default development environment.
-- Use `ruff` formatter for automatic formatting of Python code.
-- Use basic type checking for Python on whatever IDE you are using.
+- Use Ruff formatter for formatting and linting.
+- Use Pyright's basic type checking. If you're using Visual Studio Code, Pylance will provide a superset of Pyright’s functionality.
 - It should be easy for general users to use with just a few clicks.
 - It should be developed with the goal of working on both `Windows`, `Linux`, and `macOS`. Do not use platform-dependent packages such as `win32api`.
 - The `print` command is only for development purposes only and should not be included in the final code. If there is information to be shown, it must be displayed in the user interface.

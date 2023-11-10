@@ -2,3 +2,6 @@
 extend-select = ["N"]
 ignore = []
 exclude = ["module/user_interface.py"]
+
+[tool.pyright]
+typeCheckingMode = "basic"
