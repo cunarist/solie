@@ -443,6 +443,8 @@ class Manager:
             wait_time = timedelta(minutes=10)
         elif lock_window_setting == "1_HOUR":
             wait_time = timedelta(hours=1)
+        else:
+            raise ValueError("Invalid duration value for locking the window")
 
         last_interaction_time = core.window.last_interaction
         if datetime.now(timezone.utc) < last_interaction_time + wait_time:
