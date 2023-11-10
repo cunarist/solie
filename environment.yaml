@@ -21,4 +21,5 @@ dependencies:
       - getmac==0.8.3
       # developer dependencies
       - ruff
+      - pyright
       - pygount
