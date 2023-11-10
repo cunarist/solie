@@ -86,7 +86,7 @@ def get_task_presences():
     return return_dictionary
 
 
-def get_pool_process_count():
+def get_pool_process_count() -> int:
     return _pool_process_count
 
 

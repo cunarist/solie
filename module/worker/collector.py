@@ -57,7 +57,7 @@ class Collector:
             self.aggtrade_candle_sizes[symbol] = 0
 
         # candle data
-        self.candle_data = standardize.candle_data()
+        self.candle_data: pd.DataFrame = standardize.candle_data()
         years = [
             int(simply_format.numeric(filename))
             for filename in os.listdir(self.workerpath)
@@ -201,7 +201,7 @@ class Collector:
 
         with datalocks.hold("collector_candle_data"):
             df = self.candle_data
-            year_df = df[df.index.year == current_year].copy()
+            year_df = df[df.index.year == current_year].copy()  # type:ignore
 
         # ■■■■■ make a new file ■■■■■
 
@@ -226,13 +226,13 @@ class Collector:
 
     def save_all_years_candle_data(self, *args, **kwargs):
         with datalocks.hold("collector_candle_data"):
-            years_sr = self.candle_data.index.year.drop_duplicates()
+            years_sr = self.candle_data.index.year.drop_duplicates()  # type:ignore
         years = years_sr.tolist()
 
         for year in years:
             with datalocks.hold("collector_candle_data"):
                 df = self.candle_data
-                year_df = df[df.index.year == year].copy()
+                year_df = df[df.index.year == year].copy()  # type:ignore
             filepath = f"{self.workerpath}/candle_data_{year}.pickle"
             year_df.to_pickle(filepath)
 
@@ -251,9 +251,12 @@ class Collector:
         for about_symbol in about_exchange["symbols"]:
             symbol = about_symbol["symbol"]
 
-            for about_filter in about_symbol["filters"]:
-                if about_filter["filterType"] == "PRICE_FILTER":
+            about_filter = {}
+            for filter in about_symbol["filters"]:
+                if filter["filterType"] == "PRICE_FILTER":
+                    about_filter = filter
                     break
+
             ticksize = float(about_filter["tickSize"])
             price_precision = int(math.log10(1 / ticksize))
             self.secret_memory["price_precisions"][symbol] = price_precision
@@ -287,9 +290,9 @@ class Collector:
                 if symbol in full_symbols:
                     continue
 
-                recent_candle_data = process_toss.apply(
+                recent_candle_data: pd.DataFrame = process_toss.apply(
                     sort_dataframe.do, recent_candle_data
-                )
+                )  # type:ignore
 
                 from_moment = current_moment - timedelta(hours=24)
                 until_moment = current_moment - timedelta(minutes=1)
@@ -311,7 +314,7 @@ class Collector:
                 temp_sr = temp_sr.asfreq("10S")
                 isnan_sr = temp_sr.isna()
                 nan_index = isnan_sr[isnan_sr == 1].index
-                moment_to_fill_from = nan_index[0]
+                moment_to_fill_from: datetime = nan_index[0]  # type:ignore
 
                 # request historical aggtrade data
                 aggtrades = {}
@@ -348,7 +351,7 @@ class Collector:
                     aggtrades,
                     moment_to_fill_from,
                     last_fetched_time,
-                )
+                )  # type:ignore
         self.secret_memory["markets_gone"] = markets_gone
 
         # combine
@@ -570,7 +573,7 @@ class Collector:
 
         # ■■■■■ play the progress bar ■■■■■
 
-        def job():
+        def job_pb():
             while True:
                 if stop_flag.find("download_fill_candle_data", task_id):
                     widget = core.window.progressBar_3
@@ -587,9 +590,9 @@ class Collector:
                             core.window.undertake(lambda w=widget: w.setValue(0), False)
                             return
                     widget = core.window.progressBar_3
-                    before_value = core.window.undertake(
+                    before_value: int = core.window.undertake(
                         lambda w=widget: w.value(), True
-                    )
+                    )  # type:ignore
                     if before_value < 1000:
                         remaining = (
                             math.ceil(1000 / total_steps * done_steps) - before_value
@@ -600,7 +603,7 @@ class Collector:
                         )
                     time.sleep(0.01)
 
-        thread_toss.apply_async(job)
+        thread_toss.apply_async(job_pb)
 
         # ■■■■■ calculate in parellel ■■■■■
 
@@ -641,9 +644,9 @@ class Collector:
         # ■■■■■ combine ■■■■■
 
         with datalocks.hold("collector_candle_data"):
-            df = process_toss.apply(
+            df: pd.DataFrame = process_toss.apply(
                 combine_candle_datas.do, combined_df, self.candle_data
-            )
+            )  # type:ignore
             self.candle_data = df
 
         # ■■■■■ save ■■■■■
@@ -662,7 +665,7 @@ class Collector:
         simulator.me.display_lines()
 
     def add_book_tickers(self, *args, **kwargs):
-        received = kwargs.get("received")
+        received: dict = kwargs.get("received")  # type:ignore
         start_time = datetime.now(timezone.utc)
         symbol = received["s"]
         best_bid = received["b"]
@@ -680,7 +683,7 @@ class Collector:
         remember_task_durations.add("add_book_tickers", duration)
 
     def add_mark_price(self, *args, **kwargs):
-        received = kwargs.get("received")
+        received: dict = kwargs.get("received")  # type:ignore
         start_time = datetime.now(timezone.utc)
         target_symbols = user_settings.get_data_settings()["target_symbols"]
         event_time = np.datetime64(received[0]["E"] * 10**6, "ns")
@@ -701,7 +704,7 @@ class Collector:
         remember_task_durations.add("add_mark_price", duration)
 
     def add_aggregate_trades(self, *args, **kwargs):
-        received = kwargs.get("received")
+        received: dict = kwargs.get("received")  # type:ignore
         start_time = datetime.now(timezone.utc)
         symbol = received["s"]
         price = float(received["p"])

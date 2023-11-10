@@ -49,7 +49,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         def job():
             if not self.should_finalize:
-                self.closeEvent = lambda e: e.accept()
+                self.closeEvent = lambda event: event.accept()
                 self.undertake(self.close, True)
 
             if self.should_confirm_closing:
@@ -75,29 +75,29 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
             self.undertake(lambda: self.gauge.hide(), True)
             self.undertake(lambda: self.board.hide(), True)
-            self.closeEvent = lambda e: e.ignore()
+            self.closeEvent = lambda event: event.ignore()
 
             splash_screen = None
 
-            def job():
+            def job_sp():
                 nonlocal splash_screen
                 splash_screen = SplashScreen()
                 self.centralWidget().layout().addWidget(splash_screen)
 
-            self.undertake(job, True)
+            self.undertake(job_sp, True)
 
-            def job():
+            def job_cd():
                 while True:
                     if done_steps == total_steps:
                         time.sleep(1)
                         process_toss.terminate_pool()
-                        self.closeEvent = lambda e: e.accept()
+                        self.closeEvent = lambda event: event.accept()
                         self.undertake(self.close, True)
                         break
                     else:
                         time.sleep(0.1)
 
-            thread_toss.apply_async(job)
+            thread_toss.apply_async(job_cd)
 
             self.scheduler.remove_all_jobs()
             self.scheduler.shutdown()
@@ -139,6 +139,10 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def __init__(self):
         super().__init__()
+        self.price_labels = {}
+
+        # ■■■■■ Do basic Qt things ■■■■■
+
         self.setupUi(self)
         self.setMouseTracking(True)
 
@@ -373,7 +377,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 QtWidgets.QSizePolicy.Policy.Minimum,
             )
             self.horizontalLayout_17.addItem(spacer)
-            self.price_labels = {}
             for turn, symbol in enumerate(target_symbols):
                 coin_symbol = symbol.removesuffix(asset_token)
                 coin_rank = coin_ranks.get(coin_symbol, 0)
@@ -1162,9 +1165,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.undertake(job, False)
 
         return True
-
-
-window = None
 
 
 def bring_to_life():
