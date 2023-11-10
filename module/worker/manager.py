@@ -166,7 +166,7 @@ class Manager:
         self.settings["disable_system_update"] = True if is_checked else False
 
         payload = (core.window.comboBox_3.currentIndex,)
-        current_index = core.window.undertake(lambda p=payload: p[0](), True)
+        current_index: int = core.window.undertake(lambda p=payload: p[0](), True)  # type: ignore
         self.settings["lock_window"] = WINDOW_LOCK_OPTIONS[current_index]
 
         filepath = self.workerpath + "/settings.json"
@@ -293,7 +293,7 @@ class Manager:
 
     def run_script(self, *args, **kwargs):
         widget = core.window.plainTextEdit
-        script_text = core.window.undertake(lambda w=widget: w.toPlainText(), True)
+        script_text: str = core.window.undertake(lambda w=widget: w.toPlainText(), True)  # type:ignore
         filepath = self.workerpath + "/python_script.txt"
         with open(filepath, "w", encoding="utf8") as file:
             file.write(script_text)

@@ -20,7 +20,7 @@ There are things that must be known in the process of making Solie.
 4. After editing the UI file, you have to compile it as a Python module.
 
    ```bash
-   pyside6-uic craft/user_interface.ui > module/user_interface.py
+   pyside6-uic craft/user_interface.ui -o module/user_interface.py
    ```
 
 5. Make a commit in a branch other than `main` and create a pull request.
@@ -28,10 +28,11 @@ There are things that must be known in the process of making Solie.
 ## Rules
 
 - Solie is made purely in Python and uses `Miniconda` as the default development environment.
+- Use `ruff` formatter for automatic formatting of Python code.
+- Use basic type checking for Python on whatever IDE you are using.
 - It should be easy for general users to use with just a few clicks.
 - It should be developed with the goal of working on both `Windows`, `Linux`, and `macOS`. Do not use platform-dependent packages such as `win32api`.
 - The `print` command is only for development purposes only and should not be included in the final code. If there is information to be shown, it must be displayed in the user interface.
-- Use `ruff` formatter for automatic formatting of Python code.
 - When a value is added to data that has a table form, it should be occupied by `datalocks` and then written at once so that one row can always be assumed to be completely intact. Be careful that there is no instantaneous blank space after a new row is added.
 - Time zone information must be included in UTC in `datetime.datetime` object. In addition to this, please include UTC time zone information wherever possible, such as `pandas.DatetimeIndex`.
 
