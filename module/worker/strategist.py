@@ -10,7 +10,6 @@ from module.recipe import standardize
 from module.recipe import outsource
 from module.shelf.strategy_basic_input import StrategyBasicInput
 from module.shelf.strategy_develop_input import StrategyDevelopInput
-from module.shelf.strategy_info_view import StrategyInfoView
 
 
 class Strategiest:
@@ -92,6 +91,8 @@ class Strategiest:
                     icon_pixmap = self.yellow_pixmap
                 elif strategy["risk_level"] == 2:
                     icon_pixmap = self.green_pixmap
+                else:
+                    raise ValueError("Invalid risk level for drawing an icon")
                 text = f"{strategy['code_name']} {strategy['version']}"
                 text += f" - {strategy['readable_name']}"
                 traffic_light_icon = QtGui.QIcon()
@@ -122,7 +123,7 @@ class Strategiest:
                 )
                 card_layout.addItem(spacer)
 
-                def job(strategy=strategy):
+                def job_bs(strategy=strategy):
                     before_selections = self.remember_strategy_selections()
                     formation = [
                         "Develop your strategy",
@@ -137,9 +138,9 @@ class Strategiest:
 
                 edit_button = QtWidgets.QPushButton("Develop")
                 card_layout.addWidget(edit_button)
-                outsource.do(edit_button.clicked, job)
+                outsource.do(edit_button.clicked, job_bs)
 
-                def job(strategy=strategy):
+                def job_eb(strategy=strategy):
                     before_selections = self.remember_strategy_selections()
                     formation = [
                         "Edit your strategy's basic information",
@@ -154,9 +155,9 @@ class Strategiest:
 
                 edit_button = QtWidgets.QPushButton("Edit basic info")
                 card_layout.addWidget(edit_button)
-                outsource.do(edit_button.clicked, job)
+                outsource.do(edit_button.clicked, job_eb)
 
-                def job(strategy=strategy):
+                def job_rs(strategy=strategy):
                     question = [
                         "Remove this strategy?",
                         "Once you remove this, it cannot be recovered.",
@@ -173,9 +174,9 @@ class Strategiest:
 
                 edit_button = QtWidgets.QPushButton("Remove")
                 card_layout.addWidget(edit_button)
-                outsource.do(edit_button.clicked, job)
+                outsource.do(edit_button.clicked, job_rs)
 
-                def job(strategy=strategy):
+                def job_ss(strategy=strategy):
                     before_selections = self.remember_strategy_selections()
                     original_index = self.strategies.index(strategy)
                     after_index = original_index + 1
@@ -187,9 +188,9 @@ class Strategiest:
 
                 edit_button = QtWidgets.QPushButton("▼")
                 card_layout.addWidget(edit_button)
-                outsource.do(edit_button.clicked, job)
+                outsource.do(edit_button.clicked, job_ss)
 
-                def job(strategy=strategy):
+                def job_us(strategy=strategy):
                     before_selections = self.remember_strategy_selections()
                     original_index = self.strategies.index(strategy)
                     after_index = original_index - 1
@@ -201,7 +202,7 @@ class Strategiest:
 
                 edit_button = QtWidgets.QPushButton("▲")
                 card_layout.addWidget(edit_button)
-                outsource.do(edit_button.clicked, job)
+                outsource.do(edit_button.clicked, job_us)
 
         core.window.undertake(job, False)
 
