@@ -13,7 +13,8 @@ class OverlapPopup(QtWidgets.QWidget):
 
     def showEvent(self, event):  # noqa:N802
         # needed for filling the window when resized
-        self.setGeometry(self.parent().rect())
+        parent: QtWidgets.QMainWindow = self.parent()  # type:ignore
+        self.setGeometry(parent.rect())
 
     def eventFilter(self, source, event):  # noqa:N802
         # needed for filling the window when resized
@@ -53,7 +54,8 @@ class OverlapPopup(QtWidgets.QWidget):
         # ■■■■■ visaul box ■■■■■
 
         # box
-        content_box = PopupBox(autoFillBackground=True)
+        content_box = PopupBox()
+        content_box.setAutoFillBackground(True)
         content_box.setMaximumSize(1600, 1200)
         content_box_layout = QtWidgets.QVBoxLayout(content_box)
         full_layout.addWidget(content_box)

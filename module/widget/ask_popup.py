@@ -12,7 +12,8 @@ class AskPopup(QtWidgets.QWidget):
 
     def showEvent(self, event):  # noqa:N802
         # needed for filling the window when resized
-        self.setGeometry(self.parent().rect())
+        parent: QtWidgets.QMainWindow = self.parent()  # type:ignore
+        self.setGeometry(parent.rect())
 
     def eventFilter(self, source, event):  # noqa:N802
         # needed for filling the window when resized
@@ -52,7 +53,8 @@ class AskPopup(QtWidgets.QWidget):
         # ■■■■■ visaul box ■■■■■
 
         # box
-        content_box = PopupBox(autoFillBackground=True)
+        content_box = PopupBox()
+        content_box.setAutoFillBackground(True)
         content_box.setFixedSize(520, 520)
         content_box_layout = QtWidgets.QVBoxLayout(content_box)
         full_layout.addWidget(content_box)
@@ -71,10 +73,10 @@ class AskPopup(QtWidgets.QWidget):
         close_button_font.setPointSize(11)
         close_button.setFont(close_button_font)
 
-        def job():
+        def job_de():
             self.done_event.set()
 
-        close_button.clicked.connect(job)
+        close_button.clicked.connect(job_de)
         this_layout.addWidget(close_button)
         content_box_layout.addLayout(this_layout)
 
@@ -88,10 +90,9 @@ class AskPopup(QtWidgets.QWidget):
         content_box_layout.addItem(widget)
 
         # title
-        main_text = QtWidgets.QLabel(
-            question[0],
-            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-        )
+        main_text = QtWidgets.QLabel()
+        main_text.setText(question[0])
+        main_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         main_text_font = QtGui.QFont()
         main_text_font.setPointSize(12)
         main_text.setFont(main_text_font)
@@ -106,10 +107,9 @@ class AskPopup(QtWidgets.QWidget):
         content_box_layout.addWidget(spacing_text)
 
         # explanation
-        detail_text = QtWidgets.QLabel(
-            question[1],
-            alignment=QtCore.Qt.AlignmentFlag.AlignCenter,
-        )
+        detail_text = QtWidgets.QLabel()
+        detail_text.setText(question[1])
+        detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         detail_text.setWordWrap(True)
         content_box_layout.addWidget(detail_text)
 

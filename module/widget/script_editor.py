@@ -10,7 +10,7 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
         super().__init__(parent)
         self.fixed_width_font = QtGui.QFont("Source Code Pro", 9)
         self.setFont(self.fixed_width_font)
-        self.setLineWrapMode(ScriptEditor.NoWrap)
+        self.setLineWrapMode(ScriptEditor.LineWrapMode.NoWrap)
         SyntaxHighlighter(parent).setDocument(self.document())
 
     def keyPressEvent(self, event):  # noqa:N802

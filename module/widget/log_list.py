@@ -1,4 +1,4 @@
-from PySide6 import QtWidgets, QtGui
+from PySide6 import QtWidgets, QtGui, QtCore
 
 from module import core
 from module import thread_toss
@@ -12,12 +12,12 @@ class LogList(QtWidgets.QListWidget):
         self.setFont(self.fixed_width_font)
         self.itemClicked.connect(self.show_fulltext)
 
-    def addItem(self, summarization, log_content):  # noqa:N802
+    def addItem(self, summarization: str, log_content: str):  # noqa:N802
         maximum_item_limit = 1024
 
         new_item = QtWidgets.QListWidgetItem(self)
-        new_item.log_content = log_content
         new_item.setText(summarization)
+        new_item.setData(QtCore.Qt.ItemDataRole.UserRole, log_content)
 
         super().addItem(new_item)
 
@@ -32,7 +32,7 @@ class LogList(QtWidgets.QListWidget):
         selected_index = self.currentRow()
 
         selected_item = self.item(selected_index)
-        text = selected_item.log_content
+        text = selected_item.data(QtCore.Qt.ItemDataRole.UserRole)
 
         def job():
             formation = ["This is the full log", LongTextView, True, [text]]
