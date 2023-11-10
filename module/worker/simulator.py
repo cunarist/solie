@@ -4,7 +4,6 @@ import os
 import time
 import re
 import pickle
-import calendar
 
 import pandas as pd
 import numpy as np

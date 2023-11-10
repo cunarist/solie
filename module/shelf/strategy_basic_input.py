@@ -169,8 +169,7 @@ class StrategyBasicInput(QtWidgets.QWidget):
                     chunk_division_input.value(),
                 )
 
-            # TODO: hi
-            returned = core.window.undertake(job, True)
+            returned: tuple = core.window.undertake(job, True)  # type:ignore
             code_name = returned[0]
             if re.fullmatch(r"[A-Z]{6}", code_name):
                 strategy["code_name"] = code_name

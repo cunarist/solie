@@ -5,26 +5,25 @@ There are things that must be known in the process of making Solie.
 ## Procedure
 
 1. Install `Miniconda`[🔗](https://docs.conda.io/en/latest/miniconda.html).
-1. If you are using Visual Studio code, copy `./automate/vscode_settings.json` to `./.vscode/vscode_settings.json`. This makes the project folder ready for Solie development.
-1. Prepare the conda environment with the command below.
+2. Prepare the conda environment with the command below.
 
    ```bash
    conda env update --file environment.yaml
    ```
 
-1. The user interface can be changed by editing the `./craft/user_interface.ui` file with the `Qt Designer`. Open it with below terminal command.
+3. The user interface can be changed by editing the `./craft/user_interface.ui` file with the `Qt Designer`. Open it with below terminal command.
 
    ```bash
    pyside6-designer
    ```
 
-1. After editing the UI file, you have to compile it as a module.
+4. After editing the UI file, you have to compile it as a Python module.
 
    ```bash
    pyside6-uic craft/user_interface.ui > module/user_interface.py
    ```
 
-1. Make a code commit in a branch other than `main` and request a merge afterwards.
+5. Make a commit in a branch other than `main` and create a pull request.
 
 ## Rules
 
@@ -32,7 +31,7 @@ There are things that must be known in the process of making Solie.
 - It should be easy for general users to use with just a few clicks.
 - It should be developed with the goal of working on both `Windows`, `Linux`, and `macOS`. Do not use platform-dependent packages such as `win32api`.
 - The `print` command is only for development purposes only and should not be included in the final code. If there is information to be shown, it must be displayed in the user interface.
-- Use `black` formatter for automatic formatting of Python code.
+- Use `ruff` formatter for automatic formatting of Python code.
 - When a value is added to data that has a table form, it should be occupied by `datalocks` and then written at once so that one row can always be assumed to be completely intact. Be careful that there is no instantaneous blank space after a new row is added.
 - Time zone information must be included in UTC in `datetime.datetime` object. In addition to this, please include UTC time zone information wherever possible, such as `pandas.DatetimeIndex`.
 

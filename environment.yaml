@@ -20,11 +20,5 @@ dependencies:
       - yapf==0.32.0
       - getmac==0.8.3
       # developer dependencies
-      - black
-      - flake8
-      - pep8-naming
-      - flake8-variables-names
-      - flake8-print
-      - flake8-comprehensions
-      - flake8-use-fstring
+      - ruff
       - pygount

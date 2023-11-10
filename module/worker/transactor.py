@@ -11,7 +11,6 @@ import logging
 
 import pandas as pd
 import numpy as np
-import getmac
 
 from module import core
 from module import process_toss
@@ -485,7 +484,6 @@ class Transactor:
                     unique_order_ids = symbol_df["Order ID"].unique()
                     if order_id in unique_order_ids:
                         mask_sr = symbol_df["Order ID"] == order_id
-                        index = symbol_df.index[mask_sr][0]
 
                 with datalocks.hold("transactor_asset_record"):
                     df = self.asset_record
@@ -2223,8 +2221,6 @@ class Transactor:
             order_id = response["orderId"]
             timestamp = response["updateTime"] / 1000
             update_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-            strategy_index = self.automation_settings["strategy_index"]
-            strategy = strategist.me.strategies[strategy_index]
             with datalocks.hold("transactor_auto_order_record"):
                 while update_time in self.auto_order_record.index:
                     update_time += timedelta(milliseconds=1)

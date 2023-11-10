@@ -116,7 +116,7 @@ class StrategyDevelopInput(QtWidgets.QWidget):
                     decision_script_input.toPlainText(),
                 )
 
-            returned = core.window.undertake(job, True)
+            returned: tuple = core.window.undertake(job, True)  # type:ignore
             strategy["indicators_script"] = returned[0]
             strategy["decision_script"] = returned[1]
             done_event.set()

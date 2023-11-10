@@ -1,7 +1,5 @@
 from PySide6 import QtWidgets, QtGui, QtCore
 
-from module.widget.horizontal_divider import HorizontalDivider
-
 
 class DonationGuide(QtWidgets.QWidget):
     def __init__(self, done_event, payload):
