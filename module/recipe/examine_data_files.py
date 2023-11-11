@@ -2,75 +2,74 @@ import os
 import json
 import pandas as pd
 
+import aiofiles
+
 from module.recipe import user_settings
 
 
-def do():
+async def do():
     datapath = user_settings.get_app_settings()["datapath"]
 
-    jobs = []
-
     # 5.0: data settings
-    def job_ds():
+    try:
         filepath = f"{datapath}/basics.json"
-        with open(filepath, "r", encoding="utf8") as file:
-            data_settings = json.load(file)
+        async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+            content = await file.read()
+            data_settings = json.loads(content)
         os.remove(filepath)
         filepath = f"{datapath}/data_settings.json"
-        with open(filepath, "w", encoding="utf8") as file:
-            json.dump(data_settings, file, indent=4)
-
-    jobs.append(job_ds)
+        async with aiofiles.open(filepath, "w", encoding="utf8") as file:
+            content = json.dumps(data_settings, indent=4)
+            await file.write(content)
+    except Exception:
+        pass
 
     # 5.0: symbol column was added to auto order record
-    def job_sc():
+    try:
         filepath = f"{datapath}/transactor/auto_order_record.pickle"
         auto_order_record = pd.read_pickle(filepath)
         if "Symbol" not in auto_order_record.columns:
             auto_order_record["Symbol"] = ""
             auto_order_record.to_pickle(filepath)
-
-    jobs.append(job_sc)
+    except Exception:
+        pass
 
     # 5.0: solie default strategy now has strategy code SLSLDS
-    def job_ns():
+    try:
         filepath = f"{datapath}/transactor/automation_settings.json"
-        with open(filepath, "r", encoding="utf8") as file:
-            automation_settings = json.load(file)
+        async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+            content = await file.read()
+            automation_settings = json.loads(content)
         if automation_settings.get("strategy", None) == 2:
             automation_settings.pop("strategy")
             automation_settings["strategy_code"] = "SLSLDS"
-        with open(filepath, "w", encoding="utf8") as file:
-            json.dump(automation_settings, file, indent=4)
-
-    jobs.append(job_ns)
+        async with aiofiles.open(filepath, "w", encoding="utf8") as file:
+            content = json.dumps(automation_settings, indent=4)
+            await file.write(content)
+    except Exception:
+        pass
 
     # 6.0: use strategy index instead of strategy code
-    def job_si():
+    try:
         filepath = f"{datapath}/transactor/automation_settings.json"
-        with open(filepath, "r", encoding="utf8") as file:
-            automation_settings = json.load(file)
+        async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+            content = await file.read()
+            automation_settings = json.loads(content)
         if "strategy_code" in automation_settings.keys():
             automation_settings.pop("strategy_code")
         if "strategy_index" not in automation_settings.keys():
             automation_settings["strategy_index"] = 0
-        with open(filepath, "w", encoding="utf8") as file:
-            json.dump(automation_settings, file, indent=4)
-
-    jobs.append(job_si)
+        async with aiofiles.open(filepath, "w", encoding="utf8") as file:
+            content = json.dumps(automation_settings, indent=4)
+            await file.write(content)
+    except Exception:
+        pass
 
     # 6.3: auto_trade and manual_trade
-    def job_at():
+    try:
         filepath = f"{datapath}/transactor/asset_record.pickle"
         asset_record = pd.read_pickle(filepath)
         asset_record["Cause"] = asset_record["Cause"].replace("trade", "auto_trade")
         asset_record.to_pickle(filepath)
-
-    jobs.append(job_at)
-
-    # run jobs
-    for job in jobs:
-        try:
-            job()
-        except Exception:
-            pass
+    except Exception:
+        pass

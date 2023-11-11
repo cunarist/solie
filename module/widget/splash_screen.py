@@ -1,4 +1,7 @@
+import asyncio
+
 from PySide6 import QtWidgets, QtGui
+import aiofiles
 
 from module.widget.brand_label import BrandLabel
 from module import introduction
@@ -8,10 +11,13 @@ class SplashScreen(QtWidgets.QFrame):
     def __init__(self):
         super().__init__()
 
-        self.done_steps = 0
+        self.full_layout = QtWidgets.QHBoxLayout()
+        self.setLayout(self.full_layout)
 
-        full_layout = QtWidgets.QHBoxLayout()
-        self.setLayout(full_layout)
+        asyncio.create_task(self.fill())
+
+    async def fill(self):
+        full_layout = self.full_layout
 
         spacer = QtWidgets.QSpacerItem(
             0,
@@ -35,8 +41,8 @@ class SplashScreen(QtWidgets.QFrame):
         this_layout = QtWidgets.QHBoxLayout()
         central_layout.addLayout(this_layout)
         product_icon_pixmap = QtGui.QPixmap()
-        with open("./static/product_icon.png", mode="rb") as file:
-            product_icon_data = file.read()
+        async with aiofiles.open("./static/product_icon.png", mode="rb") as file:
+            product_icon_data = await file.read()
         product_icon_pixmap.loadFromData(product_icon_data)
         product_icon_label = QtWidgets.QLabel("", self)
         product_icon_label.setPixmap(product_icon_pixmap)

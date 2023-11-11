@@ -1,4 +1,4 @@
-import threading
+import asyncio
 
 from PySide6 import QtWidgets, QtCore, QtGui
 
@@ -9,7 +9,7 @@ from module.widget.transparent_scroll_area import TransparentScrollArea
 
 
 class OverlapPopup(QtWidgets.QWidget):
-    done_event = threading.Event()
+    done_event = asyncio.Event()
 
     def showEvent(self, event):  # noqa:N802
         # needed for filling the window when resized

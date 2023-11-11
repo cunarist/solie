@@ -1,9 +1,8 @@
-from urllib.request import build_opener
+import asyncio
 
 from PySide6 import QtWidgets, QtCore, QtGui
 
 from module import core
-from module import thread_toss
 from module.instrument.api_requester import ApiRequester
 from module.widget.horizontal_divider import HorizontalDivider
 from module.recipe import user_settings
@@ -12,18 +11,16 @@ from module.recipe import outsource
 
 class CoinSelection(QtWidgets.QWidget):
     def __init__(self, done_event, payload):
-        # ■■■■■ the basic ■■■■■
-
         super().__init__()
-
-        # ■■■■■ for remembering ■■■■■
-
-        symbol_checkboxes = {}
         self.is_closed = False
 
-        # ■■■■■ prepare the api requester ■■■■■
+        asyncio.create_task(self.fill(done_event))
+
+    async def fill(self, done_event):
+        # ■■■■■ for remembering ■■■■■
 
         api_requester = ApiRequester()
+        symbol_checkboxes = {}
 
         # ■■■■■ get previous things ■■■■■
 
@@ -33,7 +30,7 @@ class CoinSelection(QtWidgets.QWidget):
 
         available_symbols = []
 
-        response = api_requester.binance(
+        response = await api_requester.binance(
             http_method="GET",
             path="/fapi/v1/exchangeInfo",
             payload={},
@@ -50,7 +47,7 @@ class CoinSelection(QtWidgets.QWidget):
         coin_icon_urls = {}
         coin_ranks = {}
 
-        response = api_requester.coinstats("GET", "/public/v1/coins")
+        response = await api_requester.coinstats("GET", "/public/v1/coins")
         about_coins = response["coins"]
         for about_coin in about_coins:
             coin_symbol = about_coin["symbol"]
@@ -165,12 +162,11 @@ class CoinSelection(QtWidgets.QWidget):
         # ■■■■■ a card ■■■■■
 
         # confirm function
-        def job_cf(*args):
+        async def job_cf(*args):
             data_settings = {}
             selected_symbols = []
             for symbol, checkbox in symbol_checkboxes.items():
-                payload = (checkbox.isChecked,)
-                is_checked = core.window.undertake(lambda p=payload: p[0](), True)
+                is_checked = checkbox.isChecked[0]()
                 if is_checked:
                     selected_symbols.append(symbol)
             if 1 <= len(selected_symbols) <= 10:
@@ -183,7 +179,7 @@ class CoinSelection(QtWidgets.QWidget):
                     "You can select a minimum of 1 and a maximum of 10.",
                     ["Okay"],
                 ]
-                core.window.ask(question)
+                await core.window.ask(question)
             if is_symbol_count_ok:
                 question = [
                     "Okay to proceed?",
@@ -191,11 +187,11 @@ class CoinSelection(QtWidgets.QWidget):
                     " folder.",
                     ["No", "Yes"],
                 ]
-                answer = core.window.ask(question)
+                answer = await core.window.ask(question)
                 if answer in (0, 1):
                     return
-                user_settings.apply_data_settings(data_settings)
-                user_settings.load()
+                await user_settings.apply_data_settings(data_settings)
+                await user_settings.load()
                 self.is_closed = True
                 done_event.set()
 
@@ -227,28 +223,19 @@ class CoinSelection(QtWidgets.QWidget):
 
         # ■■■■■ draw coin icons from another thread ■■■■■
 
-        def job_dc():
+        async def job_dc():
             for symbol, icon_label in symbol_icon_labels.items():
                 coin_symbol = symbol.removesuffix(asset_token)
                 coin_icon_url = coin_icon_urls.get(coin_symbol, "")
                 if coin_icon_url == "":
                     continue
-                try:
-                    opener = build_opener()
-                    opener.addheaders = [("User-agent", "Mozilla/5.0")]
-                    opened = opener.open(coin_icon_url)
-                    image_data = opened.read()
-                except Exception:
-                    continue
+                image_data = await api_requester.bytes(coin_icon_url)
                 pixmap = QtGui.QPixmap()
                 pixmap.loadFromData(image_data)
 
                 if self.is_closed:
                     return
 
-                def job(icon_label=icon_label, pixmap=pixmap):
-                    icon_label.setPixmap(pixmap)
+                icon_label.setPixmap(pixmap)
 
-                core.window.undertake(job, False)
-
-        thread_toss.apply_async(job_dc)
+        asyncio.create_task(job_dc())

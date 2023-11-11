@@ -1,20 +1,18 @@
 from datetime import datetime, timedelta, timezone
 import os
 import math
-import time
 import webbrowser
 from collections import deque
 import itertools
 import random
 import logging
 import calendar
+import asyncio
 
 import pandas as pd
 import numpy as np
 
 from module import core
-from module import process_toss
-from module import thread_toss
 from module.worker import transactor
 from module.worker import simulator
 from module.instrument.api_requester import ApiRequester
@@ -58,19 +56,6 @@ class Collector:
 
         # candle data
         self.candle_data: pd.DataFrame = standardize.candle_data()
-        years = [
-            int(simply_format.numeric(filename))
-            for filename in os.listdir(self.workerpath)
-            if filename.startswith("candle_data_") and filename.endswith(".pickle")
-        ]
-        divided_datas = [self.candle_data]
-        for year in years:
-            filepath = f"{self.workerpath}/candle_data_{year}.pickle"
-            more_df = pd.read_pickle(filepath)
-            divided_datas.append(more_df)
-        self.candle_data = pd.concat(divided_datas)
-        if not self.candle_data.index.is_monotonic_increasing:
-            self.candle_data = self.candle_data.sort_index()
 
         # realtime data chunks
         field_names = itertools.product(
@@ -100,37 +85,31 @@ class Collector:
             self.display_status_information,
             trigger="cron",
             second="*",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.fill_candle_data_holes,
             trigger="cron",
             second="*/10",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.add_candle_data,
             trigger="cron",
             second="*/10",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.organize_data,
             trigger="cron",
             minute="*",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.get_exchange_information,
             trigger="cron",
             minute="*",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.save_candle_data,
             trigger="cron",
             hour="*",
-            executor="thread_pool_executor",
         )
 
         # ■■■■■ websocket streamings ■■■■■
@@ -163,10 +142,27 @@ class Collector:
         ]
         check_internet.add_disconnected_functions(disconnected_functions)
 
-    def organize_data(self, *args, **kwargs):
+    async def load(self, *args, **kwargs):
+        # candle data
+        years = [
+            int(simply_format.numeric(filename))
+            for filename in os.listdir(self.workerpath)
+            if filename.startswith("candle_data_") and filename.endswith(".pickle")
+        ]
+        divided_datas = [self.candle_data]
+        for year in years:
+            filepath = f"{self.workerpath}/candle_data_{year}.pickle"
+            more_df = pd.read_pickle(filepath)
+            divided_datas.append(more_df)
+        self.candle_data = pd.concat(divided_datas)
+        if not self.candle_data.index.is_monotonic_increasing:
+            self.candle_data = self.candle_data.sort_index()
+        await asyncio.sleep(0)
+
+    async def organize_data(self, *args, **kwargs):
         start_time = datetime.now(timezone.utc)
 
-        with datalocks.hold("collector_candle_data"):
+        async with datalocks.hold("collector_candle_data"):
             df = self.candle_data
             original_index = self.candle_data.index
             unique_index = original_index.drop_duplicates()
@@ -176,14 +172,14 @@ class Collector:
             df = df.astype(np.float32)
             self.candle_data = df
 
-        with datalocks.hold("collector_realtime_data_chunks"):
+        async with datalocks.hold("collector_realtime_data_chunks"):
             self.realtime_data_chunks[-1].sort(order="index")
             if len(self.realtime_data_chunks[-1]) > 2**16:
                 new_chunk = self.realtime_data_chunks[-1][0:0].copy()
                 self.realtime_data_chunks.append(new_chunk)
                 del new_chunk
 
-        with datalocks.hold("collector_aggregate_trades"):
+        async with datalocks.hold("collector_aggregate_trades"):
             self.aggregate_trades.sort(order="index")
             last_index = self.aggregate_trades[-1]["index"]
             slice_from = last_index - np.timedelta64(60, "s")
@@ -193,13 +189,13 @@ class Collector:
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
         remember_task_durations.add("collector_organize_data", duration)
 
-    def save_candle_data(self, *args, **kwargs):
+    async def save_candle_data(self, *args, **kwargs):
         # ■■■■■ default values ■■■■■
 
         current_year = datetime.now(timezone.utc).year
         filepath = f"{self.workerpath}/candle_data_{current_year}.pickle"
 
-        with datalocks.hold("collector_candle_data"):
+        async with datalocks.hold("collector_candle_data"):
             df = self.candle_data
             year_df = df[df.index.year == current_year].copy()  # type:ignore
 
@@ -224,24 +220,24 @@ class Collector:
         except FileNotFoundError:
             pass
 
-    def save_all_years_candle_data(self, *args, **kwargs):
-        with datalocks.hold("collector_candle_data"):
+    async def save_all_years_candle_data(self, *args, **kwargs):
+        async with datalocks.hold("collector_candle_data"):
             years_sr = self.candle_data.index.year.drop_duplicates()  # type:ignore
         years = years_sr.tolist()
 
         for year in years:
-            with datalocks.hold("collector_candle_data"):
+            async with datalocks.hold("collector_candle_data"):
                 df = self.candle_data
                 year_df = df[df.index.year == year].copy()  # type:ignore
             filepath = f"{self.workerpath}/candle_data_{year}.pickle"
             year_df.to_pickle(filepath)
 
-    def get_exchange_information(self, *args, **kwargs):
+    async def get_exchange_information(self, *args, **kwargs):
         if not check_internet.connected():
             return
 
         payload = {}
-        response = self.api_requester.binance(
+        response = await self.api_requester.binance(
             http_method="GET",
             path="/fapi/v1/exchangeInfo",
             payload=payload,
@@ -261,7 +257,7 @@ class Collector:
             price_precision = int(math.log10(1 / ticksize))
             self.secret_memory["price_precisions"][symbol] = price_precision
 
-    def fill_candle_data_holes(self, *args, **kwargs):
+    async def fill_candle_data_holes(self, *args, **kwargs):
         # ■■■■■ check internet connection ■■■■■
 
         if not check_internet.connected():
@@ -280,7 +276,7 @@ class Collector:
         request_count = 0
 
         # only the recent part
-        with datalocks.hold("collector_candle_data"):
+        async with datalocks.hold("collector_candle_data"):
             df = self.candle_data
             recent_candle_data = df[df.index >= split_moment].copy()
 
@@ -290,9 +286,9 @@ class Collector:
                 if symbol in full_symbols:
                     continue
 
-                recent_candle_data: pd.DataFrame = process_toss.apply(
-                    sort_dataframe.do, recent_candle_data
-                )  # type:ignore
+                recent_candle_data = await core.event_loop.run_in_executor(
+                    core.process_pool, sort_dataframe.do, recent_candle_data
+                )
 
                 from_moment = current_moment - timedelta(hours=24)
                 until_moment = current_moment - timedelta(minutes=1)
@@ -326,7 +322,7 @@ class Collector:
                         "startTime": int(last_fetched_time.timestamp() * 1000),
                         "limit": 1000,
                     }
-                    response = self.api_requester.binance(
+                    response = await self.api_requester.binance(
                         http_method="GET",
                         path="/fapi/v1/aggTrades",
                         payload=payload,
@@ -344,18 +340,19 @@ class Collector:
                         aggtrades[last_fetched_id]["T"] / 1000, tz=timezone.utc
                     )
 
-                recent_candle_data = process_toss.apply(
+                recent_candle_data = await core.event_loop.run_in_executor(
+                    core.process_pool,
                     fill_holes_with_aggtrades.do,
                     symbol,
                     recent_candle_data,
                     aggtrades,
                     moment_to_fill_from,
                     last_fetched_time,
-                )  # type:ignore
+                )
         self.secret_memory["markets_gone"] = markets_gone
 
         # combine
-        with datalocks.hold("collector_candle_data"):
+        async with datalocks.hold("collector_candle_data"):
             df = self.candle_data
             original_candle_data = df[df.index < split_moment]
             # in case the other data is added during the task
@@ -366,8 +363,8 @@ class Collector:
             candle_data = pd.concat([original_candle_data, recent_candle_data])
             self.candle_data = candle_data
 
-    def display_status_information(self, *args, **kwargs):
-        with datalocks.hold("collector_candle_data"):
+    async def display_status_information(self, *args, **kwargs):
+        async with datalocks.hold("collector_candle_data"):
             if len(self.candle_data) == 0:
                 # when the app is executed for the first time
                 return
@@ -377,7 +374,7 @@ class Collector:
             return
 
         # price
-        with datalocks.hold("collector_aggregate_trades"):
+        async with datalocks.hold("collector_aggregate_trades"):
             ar = self.aggregate_trades.copy()
         price_precisions = self.secret_memory["price_precisions"]
 
@@ -390,17 +387,16 @@ class Collector:
                 text = f"＄{latest_price:.{price_precision}f}"
             else:
                 text = "Unavailable"
-            widget = core.window.price_labels[symbol]
-            core.window.undertake(lambda w=widget, t=text: w.setText(t), False)
+            core.window.price_labels[symbol].setText(text)
 
         # bottom information
         if len(self.secret_memory["markets_gone"]) == 0:
-            cumulation_rate = self.get_candle_data_cumulation_rate()
+            cumulation_rate = await self.get_candle_data_cumulation_rate()
             chunk_count = len(self.realtime_data_chunks)
             first_written_time = None
             last_written_time = None
             for turn in range(chunk_count):
-                with datalocks.hold("collector_realtime_data_chunks"):
+                async with datalocks.hold("collector_realtime_data_chunks"):
                     if len(self.realtime_data_chunks[turn]) > 0:
                         if first_written_time is None:
                             first_record = self.realtime_data_chunks[turn][0]
@@ -431,23 +427,23 @@ class Collector:
             else:
                 text = f"It seems that {', '.join(markets_gone)} markets are removed by Binance. You should make a new data folder."
 
-        core.window.undertake(lambda t=text: core.window.label_6.setText(t), False)
+        core.window.label_6.setText(text)
 
-    def get_candle_data_cumulation_rate(self, *args, **kwargs):
+    async def get_candle_data_cumulation_rate(self, *args, **kwargs):
         current_moment = datetime.now(timezone.utc).replace(microsecond=0)
         current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
         count_start_moment = current_moment - timedelta(hours=24)
-        with datalocks.hold("collector_candle_data"):
+        async with datalocks.hold("collector_candle_data"):
             df = self.candle_data
             cumulated_moments = len(df[count_start_moment:].dropna())
         needed_moments = 24 * 60 * 60 / 10
         cumulation_rate = min(float(1), (cumulated_moments + 1) / needed_moments)
         return cumulation_rate
 
-    def open_binance_data_page(self, *args, **kwargs):
+    async def open_binance_data_page(self, *args, **kwargs):
         webbrowser.open("https://www.binance.com/en/landing/data")
 
-    def download_fill_candle_data(self, *args, **kwargs):
+    async def download_fill_candle_data(self, *args, **kwargs):
         # ■■■■■ ask filling type ■■■■■
 
         answer_container = {"filling_type": None}
@@ -459,7 +455,7 @@ class Collector:
             [answer_container],
         ]
 
-        core.window.overlap(formation)
+        await core.window.overlap(formation)
 
         filling_type = answer_container["filling_type"]
         if filling_type is None:
@@ -573,85 +569,84 @@ class Collector:
 
         # ■■■■■ play the progress bar ■■■■■
 
-        def job_pb():
+        async def play_progress_bar():
             while True:
                 if stop_flag.find("download_fill_candle_data", task_id):
-                    widget = core.window.progressBar_3
-                    core.window.undertake(lambda w=widget: w.setValue(0), False)
+                    core.window.progressBar_3.setValue(0)
                     return
                 else:
                     if done_steps == total_steps:
-                        progressbar_value = core.window.undertake(
-                            lambda: core.window.progressBar_3.value(), True
-                        )
+                        progressbar_value = core.window.progressBar_3.value()
                         if progressbar_value == 1000:
-                            time.sleep(0.1)
-                            widget = core.window.progressBar_3
-                            core.window.undertake(lambda w=widget: w.setValue(0), False)
+                            await asyncio.sleep(0.1)
+                            core.window.progressBar_3.setValue(0)
                             return
-                    widget = core.window.progressBar_3
-                    before_value: int = core.window.undertake(
-                        lambda w=widget: w.value(), True
-                    )  # type:ignore
+                    before_value = core.window.progressBar_3.value()
                     if before_value < 1000:
                         remaining = (
                             math.ceil(1000 / total_steps * done_steps) - before_value
                         )
                         new_value = before_value + math.ceil(remaining * 0.2)
-                        core.window.undertake(
-                            lambda w=widget, v=new_value: w.setValue(v), False
-                        )
-                    time.sleep(0.01)
+                        core.window.progressBar_3.setValue(new_value)
+                    await asyncio.sleep(0.01)
 
-        thread_toss.apply_async(job_pb)
+        asyncio.create_task(play_progress_bar())
 
         # ■■■■■ calculate in parellel ■■■■■
 
         random.shuffle(target_tuples)
-        lanes = process_toss.get_pool_process_count()
+        lanes = core.process_count
         chunk_size = math.ceil(len(target_tuples) / lanes)
         target_tuple_chunks = []
         for turn in range(lanes):
             new_chunk = target_tuples[turn * chunk_size : (turn + 1) * chunk_size]
             target_tuple_chunks.append(new_chunk)
 
-        with datalocks.hold("collector_candle_data"):
+        async with datalocks.hold("collector_candle_data"):
             combined_df = self.candle_data.iloc[0:0].copy()
 
-        def job(target_tuple_chunk):
+        async def download_fill(target_tuple_chunk):
             nonlocal done_steps
             nonlocal combined_df
 
             for target_tuple in target_tuple_chunk:
                 if stop_flag.find("download_fill_candle_data", task_id):
                     return
-                returned = process_toss.apply(download_aggtrade_data.do, target_tuple)
+                returned = await core.event_loop.run_in_executor(
+                    core.process_pool,
+                    download_aggtrade_data.do,
+                    target_tuple,
+                )
                 if returned is not None:
                     new_df = returned
-                    with datalocks.hold("combined_dataframe_during_filling"):
-                        combined_df = process_toss.apply(
+                    async with datalocks.hold("combined_dataframe_during_filling"):
+                        combined_df = await core.event_loop.run_in_executor(
+                            core.process_pool,
                             combine_candle_datas.do,
                             new_df,
                             combined_df,
                         )
                 done_steps += 1
 
-        thread_toss.map(job, target_tuple_chunks)
+        await asyncio.gather(*[download_fill(chunk) for chunk in target_tuple_chunks])
 
         if stop_flag.find("download_fill_candle_data", task_id):
             return
 
         # ■■■■■ combine ■■■■■
 
-        with datalocks.hold("collector_candle_data"):
-            df: pd.DataFrame = process_toss.apply(
-                combine_candle_datas.do, combined_df, self.candle_data
-            )  # type:ignore
+        async with datalocks.hold("collector_candle_data"):
+            df = await core.event_loop.run_in_executor(
+                core.process_pool,
+                combine_candle_datas.do,
+                combined_df,
+                self.candle_data,
+            )
             self.candle_data = df
 
         # ■■■■■ save ■■■■■
 
-        self.save_all_years_candle_data()
+        await self.save_all_years_candle_data()
 
         # ■■■■■ add to log ■■■■■
 
@@ -661,17 +656,17 @@ class Collector:
 
         # ■■■■■ display to graphs ■■■■■
 
-        transactor.me.display_lines()
-        simulator.me.display_lines()
+        asyncio.create_task(transactor.me.display_lines())
+        asyncio.create_task(simulator.me.display_lines())
 
-    def add_book_tickers(self, *args, **kwargs):
+    async def add_book_tickers(self, *args, **kwargs):
         received: dict = kwargs.get("received")  # type:ignore
         start_time = datetime.now(timezone.utc)
         symbol = received["s"]
         best_bid = received["b"]
         best_ask = received["a"]
         event_time = np.datetime64(received["E"] * 10**6, "ns")
-        with datalocks.hold("collector_realtime_data_chunks"):
+        async with datalocks.hold("collector_realtime_data_chunks"):
             original_size = self.realtime_data_chunks[-1].shape[0]
             self.realtime_data_chunks[-1].resize(original_size + 1)
             self.realtime_data_chunks[-1][-1]["index"] = event_time
@@ -682,7 +677,7 @@ class Collector:
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
         remember_task_durations.add("add_book_tickers", duration)
 
-    def add_mark_price(self, *args, **kwargs):
+    async def add_mark_price(self, *args, **kwargs):
         received: dict = kwargs.get("received")  # type:ignore
         start_time = datetime.now(timezone.utc)
         target_symbols = user_settings.get_data_settings()["target_symbols"]
@@ -693,7 +688,7 @@ class Collector:
             if symbol in target_symbols:
                 mark_price = float(about_mark_price["p"])
                 filtered_data[symbol] = mark_price
-        with datalocks.hold("collector_realtime_data_chunks"):
+        async with datalocks.hold("collector_realtime_data_chunks"):
             original_size = self.realtime_data_chunks[-1].shape[0]
             self.realtime_data_chunks[-1].resize(original_size + 1)
             self.realtime_data_chunks[-1][-1]["index"] = event_time
@@ -703,14 +698,14 @@ class Collector:
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
         remember_task_durations.add("add_mark_price", duration)
 
-    def add_aggregate_trades(self, *args, **kwargs):
+    async def add_aggregate_trades(self, *args, **kwargs):
         received: dict = kwargs.get("received")  # type:ignore
         start_time = datetime.now(timezone.utc)
         symbol = received["s"]
         price = float(received["p"])
         volume = float(received["q"])
         trade_time = np.datetime64(received["T"] * 10**6, "ns")
-        with datalocks.hold("collector_aggregate_trades"):
+        async with datalocks.hold("collector_aggregate_trades"):
             original_size = self.aggregate_trades.shape[0]
             self.aggregate_trades.resize(original_size + 1)
             self.aggregate_trades[-1]["index"] = trade_time
@@ -719,28 +714,28 @@ class Collector:
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
         remember_task_durations.add("add_aggregate_trades", duration)
 
-    def clear_aggregate_trades(self, *args, **kwargs):
-        with datalocks.hold("collector_aggregate_trades"):
+    async def clear_aggregate_trades(self, *args, **kwargs):
+        async with datalocks.hold("collector_aggregate_trades"):
             self.aggregate_trades = self.aggregate_trades[0:0].copy()
 
-    def add_candle_data(self, *args, **kwargs):
+    async def add_candle_data(self, *args, **kwargs):
         current_moment = datetime.now(timezone.utc).replace(microsecond=0)
         current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
         before_moment = current_moment - timedelta(seconds=10)
 
-        with datalocks.hold("collector_aggregate_trades"):
+        async with datalocks.hold("collector_aggregate_trades"):
             data_length = len(self.aggregate_trades)
         if data_length == 0:
             return
 
         for _ in range(20):
-            with datalocks.hold("collector_aggregate_trades"):
+            async with datalocks.hold("collector_aggregate_trades"):
                 last_received_index = self.aggregate_trades[-1]["index"]
             if np.datetime64(current_moment) < last_received_index:
                 break
-            time.sleep(0.1)
+            await asyncio.sleep(0.1)
 
-        with datalocks.hold("collector_aggregate_trades"):
+        async with datalocks.hold("collector_aggregate_trades"):
             aggregate_trades = self.aggregate_trades.copy()
 
         first_received_index = aggregate_trades[0]["index"]
@@ -767,7 +762,7 @@ class Collector:
                 close_price = block_ar[-1][str((symbol, "Price"))]
                 sum_volume = block_ar[str((symbol, "Volume"))].sum()
             else:
-                with datalocks.hold("collector_candle_data"):
+                async with datalocks.hold("collector_candle_data"):
                     df = self.candle_data
                     inspect_sr = df.iloc[-60:][(symbol, "Close")].copy()
                 inspect_sr = inspect_sr.dropna()
@@ -786,7 +781,7 @@ class Collector:
             new_datas[(symbol, "Close")] = close_price
             new_datas[(symbol, "Volume")] = sum_volume
 
-        with datalocks.hold("collector_candle_data"):
+        async with datalocks.hold("collector_candle_data"):
             for column_name, new_data_value in new_datas.items():
                 self.candle_data.loc[before_moment, column_name] = new_data_value
             if not self.candle_data.index.is_monotonic_increasing:
@@ -795,17 +790,17 @@ class Collector:
         duration = (datetime.now(timezone.utc) - current_moment).total_seconds()
         remember_task_durations.add("add_candle_data", duration)
 
-    def stop_filling_candle_data(self, *args, **kwargs):
+    async def stop_filling_candle_data(self, *args, **kwargs):
         stop_flag.make("download_fill_candle_data")
 
-    def guide_donation(self, *args, **kwargs):
+    async def guide_donation(self, *args, **kwargs):
         formation = [
             "Support Solie",
             DonationGuide,
             True,
             None,
         ]
-        core.window.overlap(formation)
+        await core.window.overlap(formation)
 
 
 me = None

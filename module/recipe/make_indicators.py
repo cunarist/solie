@@ -5,11 +5,10 @@ import talib
 import pandas as pd
 import numpy as np
 
-from module import thread_toss
 from module.recipe import datalocks
 
 
-def do(**kwargs):
+def do(**kwargs) -> pd.DataFrame:
     # ■■■■■ get data ■■■■■
 
     target_symbols = kwargs["target_symbols"]
@@ -47,11 +46,7 @@ def do(**kwargs):
 
     # ■■■■■ make individual indicators ■■■■■
 
-    def job(symbol):
-        with datalocks.hold("candle_data_during_indicator_creation"):
-            if symbol not in candle_data.columns.get_level_values(0):
-                return
-
+    for symbol in target_symbols:
         namespace = {
             "talib": talib,
             "pd": pd,
@@ -63,8 +58,6 @@ def do(**kwargs):
         }
 
         exec(compiled_indicators_script, namespace)
-
-    thread_toss.map(job, target_symbols)
 
     # ■■■■■ concatenate individual indicators into one ■■■■■
 

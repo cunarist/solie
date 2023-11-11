@@ -134,9 +134,9 @@ class StrategyBasicInput(QtWidgets.QWidget):
         # input
         this_layout = QtWidgets.QFormLayout()
         card_layout.addLayout(this_layout)
-        parallelized_simulation_input = QtWidgets.QCheckBox()
-        parallelized_simulation_input.setChecked(strategy["parallelized_simulation"])
-        this_layout.addRow("Parallelized", parallelized_simulation_input)
+        parallelized_input = QtWidgets.QCheckBox()
+        parallelized_input.setChecked(strategy["parallelized_simulation"])
+        this_layout.addRow("Parallelized", parallelized_input)
         chunk_division_input = QtWidgets.QSpinBox()
         chunk_division_input.setSuffix(" days")
         chunk_division_input.setMinimum(7)
@@ -157,20 +157,8 @@ class StrategyBasicInput(QtWidgets.QWidget):
         cards_layout.addWidget(card)
 
         # function
-        def job(*args):
-            def job():
-                return (
-                    code_name_input.text(),
-                    readable_name_input.text(),
-                    version_input.text(),
-                    description_input.toPlainText(),
-                    risk_level_input.currentIndex(),
-                    parallelized_simulation_input.isChecked(),
-                    chunk_division_input.value(),
-                )
-
-            returned: tuple = core.window.undertake(job, True)  # type:ignore
-            code_name = returned[0]
+        async def job(*args):
+            code_name = code_name_input.text()
             if re.fullmatch(r"[A-Z]{6}", code_name):
                 strategy["code_name"] = code_name
             else:
@@ -179,10 +167,10 @@ class StrategyBasicInput(QtWidgets.QWidget):
                     "You should make the code name with 6 capital letters.",
                     ["Okay"],
                 ]
-                core.window.ask(question)
+                await core.window.ask(question)
                 return
-            strategy["readable_name"] = returned[1]
-            version = returned[2]
+            strategy["readable_name"] = readable_name_input.text()
+            version = version_input.text()
             if re.fullmatch(r"[0-9]+\.[0-9]+", version):
                 if not compare_versions.is_left_higher(strategy["version"], version):
                     strategy["version"] = version
@@ -193,7 +181,7 @@ class StrategyBasicInput(QtWidgets.QWidget):
                         " go up higher.",
                         ["Okay"],
                     ]
-                    core.window.ask(question)
+                    await core.window.ask(question)
                     return
             else:
                 question = [
@@ -202,12 +190,12 @@ class StrategyBasicInput(QtWidgets.QWidget):
                     " single dot.",
                     ["Okay"],
                 ]
-                core.window.ask(question)
+                await core.window.ask(question)
                 return
-            strategy["description"] = returned[3]
-            strategy["risk_level"] = returned[4]
-            strategy["parallelized_simulation"] = returned[5]
-            strategy["chunk_division"] = returned[6]
+            strategy["description"] = description_input.toPlainText()
+            strategy["risk_level"] = risk_level_input.currentIndex()
+            strategy["parallelized_simulation"] = parallelized_input.isChecked()
+            strategy["chunk_division"] = chunk_division_input.value()
             done_event.set()
 
         # confirm button

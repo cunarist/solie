@@ -80,25 +80,21 @@ class DatapathInput(QtWidgets.QWidget):
 
         datapath = ""
 
-        def job_dp():
+        async def job_dp():
             nonlocal datapath
 
-            def job_dd():
-                nonlocal datapath
-                file_dialog = QtWidgets.QFileDialog
-                default_path = str(pathlib.Path.home())
-                title_bar_text = "Data folder"
-                datapath = str(
-                    file_dialog.getExistingDirectory(
-                        self,
-                        title_bar_text,
-                        default_path,
-                    )
+            file_dialog = QtWidgets.QFileDialog
+            default_path = str(pathlib.Path.home())
+            title_bar_text = "Data folder"
+            datapath = str(
+                file_dialog.getExistingDirectory(
+                    self,
+                    title_bar_text,
+                    default_path,
                 )
+            )
 
-            core.window.undertake(job_dd, True)
-            payload = (folder_label.setText, datapath)
-            core.window.undertake(lambda p=payload: p[0](p[1]), False)
+            folder_label.setText(datapath)
 
         # choose button
         this_layout = QtWidgets.QHBoxLayout()
@@ -113,17 +109,17 @@ class DatapathInput(QtWidgets.QWidget):
 
         # ■■■■■ a card ■■■■■
 
-        def job_ac():
+        async def job_ac():
             if datapath == "":
                 question = [
                     "Data folder is not chosen",
                     "Choose your data folder first.",
                     ["Okay"],
                 ]
-                core.window.ask(question)
+                await core.window.ask(question)
             else:
-                user_settings.apply_app_settings({"datapath": datapath})
-                user_settings.load()
+                await user_settings.apply_app_settings({"datapath": datapath})
+                await user_settings.load()
                 done_event.set()
 
         # card structure

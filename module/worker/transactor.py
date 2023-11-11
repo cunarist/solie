@@ -1,20 +1,20 @@
 from datetime import datetime, timedelta, timezone
 import json
 import os
-import time
 import webbrowser
 import math
 import re
 import pickle
 import copy
 import logging
+import asyncio
+import functools
 
 import pandas as pd
 import numpy as np
+import aiofiles
 
 from module import core
-from module import process_toss
-from module import thread_toss
 from module.worker import collector
 from module.worker import strategist
 from module.instrument.api_requester import ApiRequester
@@ -60,90 +60,27 @@ class Transactor:
 
         self.account_state = standardize.account_state()
 
-        try:
-            filepath = self.workerpath + "/scribbles.pickle"
-            with open(filepath, "rb") as file:
-                self.scribbles = pickle.load(file)
-        except FileNotFoundError:
-            self.scribbles = {}
-
-        try:
-            filepath = self.workerpath + "/automation_settings.json"
-            with open(filepath, "r", encoding="utf8") as file:
-                read_data = json.load(file)
-            self.automation_settings = read_data
-            state = read_data["should_transact"]
-            core.window.undertake(
-                lambda s=state: core.window.checkBox.setChecked(s), False
-            )
-            strategy_index = read_data["strategy_index"]
-            core.window.undertake(
-                lambda i=strategy_index: core.window.comboBox_2.setCurrentIndex(i),
-                False,
-            )
-        except FileNotFoundError:
-            self.automation_settings = {
-                "strategy_index": 0,
-                "should_transact": False,
-            }
-
-        try:
-            filepath = self.workerpath + "/mode_settings.json"
-            with open(filepath, "r", encoding="utf8") as file:
-                read_data = json.load(file)
-            self.mode_settings = read_data
-            new_value = read_data["desired_leverage"]
-            core.window.undertake(
-                lambda n=new_value: core.window.spinBox.setValue(n), False
-            )
-        except FileNotFoundError:
-            self.mode_settings = {
-                "desired_leverage": 1,
-            }
-
-        try:
-            filepath = self.workerpath + "/keys.json"
-            with open(filepath, "r", encoding="utf8") as file:
-                keys = json.load(file)
-            text = keys["binance_api"]
-            core.window.undertake(
-                lambda t=text: core.window.lineEdit_4.setText(t), False
-            )
-            text = keys["binance_secret"]
-            core.window.undertake(
-                lambda t=text: core.window.lineEdit_6.setText(t), False
-            )
-            self.keys = keys
-            self.api_requester.update_keys(keys)
-        except FileNotFoundError:
-            self.keys = {
-                "binance_api": "",
-                "binance_secret": "",
-            }
-
-        try:
-            filepath = self.workerpath + "/unrealized_changes.pickle"
-            self.unrealized_changes = pd.read_pickle(filepath)
-        except FileNotFoundError:
-            self.unrealized_changes = standardize.unrealized_changes()
-
-        try:
-            filepath = self.workerpath + "/asset_record.pickle"
-            self.asset_record = pd.read_pickle(filepath)
-        except FileNotFoundError:
-            self.asset_record = standardize.asset_record()
-
-        try:
-            filepath = self.workerpath + "/auto_order_record.pickle"
-            self.auto_order_record = pd.read_pickle(filepath)
-        except FileNotFoundError:
-            self.auto_order_record = pd.DataFrame(
-                columns=[
-                    "Symbol",
-                    "Order ID",
-                ],
-                index=pd.DatetimeIndex([], tz="UTC"),
-            )
+        self.scribbles = {}
+        self.automation_settings = {
+            "strategy_index": 0,
+            "should_transact": False,
+        }
+        self.mode_settings = {
+            "desired_leverage": 1,
+        }
+        self.keys = {
+            "binance_api": "",
+            "binance_secret": "",
+        }
+        self.unrealized_changes = standardize.unrealized_changes()
+        self.asset_record = standardize.asset_record()
+        self.auto_order_record = pd.DataFrame(
+            columns=[
+                "Symbol",
+                "Order ID",
+            ],
+            index=pd.DatetimeIndex([], tz="UTC"),
+        )
 
         # ■■■■■ repetitive schedules ■■■■■
 
@@ -151,85 +88,72 @@ class Transactor:
             self.display_lines,
             trigger="cron",
             second="*",
-            executor="thread_pool_executor",
             kwargs={"only_light_lines": True, "frequent": True},
         )
         core.window.scheduler.add_job(
             self.display_status_information,
             trigger="cron",
             second="*",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.display_range_information,
             trigger="cron",
             second="*",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.cancel_conflicting_orders,
             trigger="cron",
             second="*",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.display_lines,
             trigger="cron",
             second="*/10",
-            executor="thread_pool_executor",
             kwargs={"periodic": True, "frequent": True},
         )
         core.window.scheduler.add_job(
             self.pan_view_range,
             trigger="cron",
             second="*/10",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.perform_transaction,
             trigger="cron",
             second="*/10",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.save_scribbles,
             trigger="cron",
             second="*/10",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.watch_binance,
             trigger="cron",
             second="*/10",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.organize_data,
             trigger="cron",
             minute="*",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.update_user_data_stream,
             trigger="cron",
             minute="*/10",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.save_large_data,
             trigger="cron",
             hour="*",
-            executor="thread_pool_executor",
         )
 
         # ■■■■■ websocket streamings ■■■■■
 
-        self.api_streamers = [
-            ApiStreamer(
-                "",
-                self.listen_to_account,
-            ),
-        ]
+        self.api_streamer = ApiStreamer(
+            "",
+            self.listen_to_account,
+        )
+        self.api_streamers = []
 
         # ■■■■■ invoked by the internet connection  ■■■■■
 
@@ -242,8 +166,87 @@ class Transactor:
         disconnected_functions = []
         check_internet.add_disconnected_functions(disconnected_functions)
 
-    def organize_data(self, *args, **kwargs):
-        with datalocks.hold("transactor_unrealized_changes"):
+    async def load(self, *args, **kwargs):
+        # scribbles
+        try:
+            filepath = self.workerpath + "/scribbles.pickle"
+            async with aiofiles.open(filepath, "rb") as file:
+                content = await file.read()
+                self.scribbles = pickle.loads(content)
+        except FileNotFoundError:
+            pass
+        await asyncio.sleep(0)
+
+        # automation settings
+        try:
+            filepath = self.workerpath + "/automation_settings.json"
+            async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+                content = await file.read()
+                read_data = json.loads(content)
+            self.automation_settings = read_data
+            state = read_data["should_transact"]
+            core.window.checkBox.setChecked(state)
+            strategy_index = read_data["strategy_index"]
+            core.window.comboBox_2.setCurrentIndex(strategy_index)
+        except FileNotFoundError:
+            pass
+        await asyncio.sleep(0)
+
+        # mode settings
+        try:
+            filepath = self.workerpath + "/mode_settings.json"
+            async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+                content = await file.read()
+                read_data = json.loads(content)
+            self.mode_settings = read_data
+            new_value = read_data["desired_leverage"]
+            core.window.spinBox.setValue(new_value)
+        except FileNotFoundError:
+            pass
+        await asyncio.sleep(0)
+
+        # keys
+        try:
+            filepath = self.workerpath + "/keys.json"
+            async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+                content = await file.read()
+                keys = json.loads(content)
+            text = keys["binance_api"]
+            core.window.lineEdit_4.setText(text)
+            text = keys["binance_secret"]
+            core.window.lineEdit_6.setText(text)
+            self.keys = keys
+            self.api_requester.update_keys(keys)
+        except FileNotFoundError:
+            pass
+        await asyncio.sleep(0)
+
+        # unrealized changes
+        try:
+            filepath = self.workerpath + "/unrealized_changes.pickle"
+            self.unrealized_changes = pd.read_pickle(filepath)
+        except FileNotFoundError:
+            pass
+        await asyncio.sleep(0)
+
+        # asset record
+        try:
+            filepath = self.workerpath + "/asset_record.pickle"
+            self.asset_record = pd.read_pickle(filepath)
+        except FileNotFoundError:
+            pass
+        await asyncio.sleep(0)
+
+        # auto order record
+        try:
+            filepath = self.workerpath + "/auto_order_record.pickle"
+            self.auto_order_record = pd.read_pickle(filepath)
+        except FileNotFoundError:
+            pass
+        await asyncio.sleep(0)
+
+    async def organize_data(self, *args, **kwargs):
+        async with datalocks.hold("transactor_unrealized_changes"):
             sr = self.unrealized_changes
             original_index = sr.index
             unique_index = original_index.drop_duplicates()
@@ -252,7 +255,7 @@ class Transactor:
             sr = sr.astype(np.float32)
             self.unrealized_changes = sr
 
-        with datalocks.hold("transactor_auto_order_record"):
+        async with datalocks.hold("transactor_auto_order_record"):
             df = self.auto_order_record
             original_index = df.index
             unique_index = original_index.drop_duplicates()
@@ -261,7 +264,7 @@ class Transactor:
             df = df.iloc[-(2**16) :].copy()
             self.auto_order_record = df
 
-        with datalocks.hold("transactor_asset_record"):
+        async with datalocks.hold("transactor_asset_record"):
             df = self.asset_record
             original_index = df.index
             unique_index = original_index.drop_duplicates()
@@ -269,31 +272,31 @@ class Transactor:
             df = df.sort_index()
             self.asset_record = df
 
-    def save_large_data(self, *args, **kwargs):
-        with datalocks.hold("transactor_unrealized_changes"):
+    async def save_large_data(self, *args, **kwargs):
+        async with datalocks.hold("transactor_unrealized_changes"):
             unrealized_changes = self.unrealized_changes.copy()
         unrealized_changes.to_pickle(self.workerpath + "/unrealized_changes.pickle")
 
-        with datalocks.hold("transactor_auto_order_record"):
+        async with datalocks.hold("transactor_auto_order_record"):
             auto_order_record = self.auto_order_record.copy()
         auto_order_record.to_pickle(self.workerpath + "/auto_order_record.pickle")
 
-        with datalocks.hold("transactor_asset_record"):
+        async with datalocks.hold("transactor_asset_record"):
             asset_record = self.asset_record.copy()
         asset_record.to_pickle(self.workerpath + "/asset_record.pickle")
 
-    def save_scribbles(self, *args, **kwargs):
+    async def save_scribbles(self, *args, **kwargs):
         filepath = self.workerpath + "/scribbles.pickle"
-        with open(filepath, "wb") as file:
+        async with aiofiles.open(filepath, "wb") as file:
             pickle.dump(self.scribbles, file)
 
-    def update_user_data_stream(self, *args, **kwargs):
+    async def update_user_data_stream(self, *args, **kwargs):
         if not check_internet.connected():
             return
 
         try:
             payload = {}
-            response = self.api_requester.binance(
+            response = await self.api_requester.binance(
                 http_method="POST",
                 path="/fapi/v1/listenKey",
                 payload=payload,
@@ -303,11 +306,12 @@ class Transactor:
 
         listen_key = response["listenKey"]
 
-        api_streamer = self.api_streamers[0]
-        url = "wss://fstream.binance.com/ws/" + listen_key
-        api_streamer.update_url(url)
+        self.api_streamer = ApiStreamer(
+            "wss://fstream.binance.com/ws/" + listen_key,
+            self.listen_to_account,
+        )
 
-    def listen_to_account(self, *args, **kwargs):
+    async def listen_to_account(self, *args, **kwargs):
         received = kwargs["received"]
 
         # ■■■■■ default values ■■■■■
@@ -324,7 +328,7 @@ class Transactor:
             text = "Binance user data stream listen key got expired"
             logger = logging.getLogger("solie")
             logger.warning(text)
-            self.update_user_data_stream()
+            await self.update_user_data_stream()
 
         if event_type == "ACCOUNT_UPDATE":
             about_update = received["a"]
@@ -490,14 +494,14 @@ class Transactor:
                 added_margin = added_notional / leverage
                 added_margin_ratio = added_margin / wallet_balance
 
-                with datalocks.hold("transactor_auto_order_record"):
+                async with datalocks.hold("transactor_auto_order_record"):
                     df = self.auto_order_record
                     symbol_df = df[df["Symbol"] == symbol]
                     unique_order_ids = symbol_df["Order ID"].unique()
                     if order_id in unique_order_ids:
                         mask_sr = symbol_df["Order ID"] == order_id
 
-                with datalocks.hold("transactor_asset_record"):
+                async with datalocks.hold("transactor_asset_record"):
                     df = self.asset_record
                     symbol_df = df[df["Symbol"] == symbol]
                     recorded_id_list = symbol_df["Order ID"].tolist()
@@ -544,62 +548,54 @@ class Transactor:
 
         # ■■■■■ cancel conflicting orders ■■■■■
 
-        self.cancel_conflicting_orders()
+        await self.cancel_conflicting_orders()
 
-    def open_exchange(self, *args, **kwargs):
+    async def open_exchange(self, *args, **kwargs):
         symbol = self.viewing_symbol
         webbrowser.open(f"https://www.binance.com/en/futures/{symbol}")
 
-    def open_futures_wallet_page(self, *args, **kwargs):
+    async def open_futures_wallet_page(self, *args, **kwargs):
         webbrowser.open("https://www.binance.com/en/my/wallet/account/futures")
 
-    def open_api_management_page(self, *args, **kwargs):
+    async def open_api_management_page(self, *args, **kwargs):
         webbrowser.open("https://www.binance.com/en/my/settings/api-management")
 
-    def update_keys(self, *args, **kwargs):
+    async def update_keys(self, *args, **kwargs):
         server = kwargs.get("server", "real")
 
-        def job():
-            return (
-                core.window.lineEdit_4.text(),
-                core.window.lineEdit_6.text(),
-            )
-
-        returned: tuple = core.window.undertake(job, True)  # type:ignore
+        binance_api = core.window.lineEdit_4.text()
+        binance_secret = core.window.lineEdit_6.text()
 
         new_keys = {}
-        new_keys["binance_api"] = returned[0]
-        new_keys["binance_secret"] = returned[1]
+        new_keys["binance_api"] = binance_api
+        new_keys["binance_secret"] = binance_secret
 
         self.keys = new_keys
 
         filepath = self.workerpath + "/keys.json"
-        with open(filepath, "w", encoding="utf8") as file:
+        async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             json.dump(new_keys, file, indent=4)
 
         new_keys = {}
         new_keys["server"] = server
-        new_keys["binance_api"] = returned[0]
-        new_keys["binance_secret"] = returned[1]
+        new_keys["binance_api"] = binance_api
+        new_keys["binance_secret"] = binance_secret
 
         self.api_requester.update_keys(new_keys)
-        self.update_user_data_stream()
+        await self.update_user_data_stream()
 
-    def update_automation_settings(self, *args, **kwargs):
+    async def update_automation_settings(self, *args, **kwargs):
         # ■■■■■ get information about strategy ■■■■■
 
-        strategy_index = core.window.undertake(
-            lambda: core.window.comboBox_2.currentIndex(), True
-        )
+        strategy_index = core.window.comboBox_2.currentIndex()
         self.automation_settings["strategy_index"] = strategy_index
 
-        self.display_lines()
+        asyncio.create_task(self.display_lines())
 
         # ■■■■■ is automation turned on ■■■■■
 
-        is_checked = core.window.undertake(
-            lambda: core.window.checkBox.isChecked(), True
-        )
+        is_checked = core.window.checkBox.isChecked()
+
         if is_checked:
             self.automation_settings["should_transact"] = True
         else:
@@ -607,28 +603,23 @@ class Transactor:
 
         # ■■■■■ save ■■■■■
 
-        with open(
-            self.workerpath + "/automation_settings.json", "w", encoding="utf8"
-        ) as file:
+        filepath = self.workerpath + "/automation_settings.json"
+        async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             json.dump(self.automation_settings, file, indent=4)
 
-    def display_range_information(self, *args, **kwargs):
+    async def display_range_information(self, *args, **kwargs):
         task_id = stop_flag.make("display_transaction_range_information")
 
         symbol = self.viewing_symbol
 
-        range_start_timestamp: float = core.window.undertake(
-            lambda: core.window.plot_widget.getAxis("bottom").range[0], True
-        )  # type:ignore
+        range_start_timestamp = core.window.plot_widget.getAxis("bottom").range[0]
         range_start_timestamp = max(range_start_timestamp, 0.0)
         range_start = datetime.fromtimestamp(range_start_timestamp, tz=timezone.utc)
 
         if stop_flag.find("display_transaction_range_information", task_id):
             return
 
-        range_end_timestamp: float = core.window.undertake(
-            lambda: core.window.plot_widget.getAxis("bottom").range[1], True
-        )  # type:ignore
+        range_end_timestamp = core.window.plot_widget.getAxis("bottom").range[1]
         if range_end_timestamp < 0.0:
             # case when pyqtgraph passed negative value because it's too big
             range_end_timestamp = 9223339636.0
@@ -648,9 +639,9 @@ class Transactor:
         if stop_flag.find("display_transaction_range_information", task_id):
             return
 
-        with datalocks.hold("transactor_unrealized_changes"):
+        async with datalocks.hold("transactor_unrealized_changes"):
             unrealized_changes = self.unrealized_changes[range_start:range_end].copy()
-        with datalocks.hold("transactor_asset_record"):
+        async with datalocks.hold("transactor_asset_record"):
             asset_record = self.asset_record[range_start:range_end].copy()
 
         auto_trade_mask = asset_record["Cause"] == "auto_trade"
@@ -691,8 +682,7 @@ class Transactor:
         if stop_flag.find("display_transaction_range_information", task_id):
             return
 
-        widget = core.window.plot_widget.getAxis("left")
-        view_range: list = core.window.undertake(lambda w=widget: w.range, True)  # type:ignore
+        view_range = core.window.plot_widget.getAxis("left").range
         range_down = view_range[0]
         range_up = view_range[1]
         price_range_height = (1 - range_down / range_up) * 100
@@ -712,27 +702,21 @@ class Transactor:
         text += "  ⦁  "
         text += "Lowest unrealized profit"
         text += f" {min_unrealized_change*100:+.4f}%"
-        core.window.undertake(lambda t=text: core.window.label_8.setText(t), False)
+        core.window.label_8.setText(text)
 
-    def set_minimum_view_range(self, *args, **kwargs):
-        def job():
-            widget = core.window.plot_widget
-            range_down = widget.getAxis("left").range[0]
-            widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
-            widget = core.window.plot_widget_1
-            range_down = widget.getAxis("left").range[0]
-            widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
+    async def set_minimum_view_range(self, *args, **kwargs):
+        widget = core.window.plot_widget
+        range_down = widget.getAxis("left").range[0]
+        widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
+        widget = core.window.plot_widget_1
+        range_down = widget.getAxis("left").range[0]
+        widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
 
-        core.window.undertake(job, False)
-
-    def display_strategy_index(self, *args, **kwargs):
+    async def display_strategy_index(self, *args, **kwargs):
         strategy_index = self.automation_settings["strategy_index"]
-        core.window.undertake(
-            lambda i=strategy_index: core.window.comboBox_2.setCurrentIndex(i),
-            False,
-        )
+        core.window.comboBox_2.setCurrentIndex(strategy_index)
 
-    def display_lines(self, *args, **kwargs):
+    async def display_lines(self, *args, **kwargs):
         # ■■■■■ start the task ■■■■■
 
         periodic = kwargs.get("periodic", False)
@@ -756,7 +740,7 @@ class Transactor:
 
         # ■■■■■ check if the data exists ■■■■■
 
-        with datalocks.hold("collector_candle_data"):
+        async with datalocks.hold("collector_candle_data"):
             if len(collector.me.candle_data) == 0:
                 return
 
@@ -770,11 +754,11 @@ class Transactor:
             for _ in range(50):
                 if stop_flag.find(task_name, task_id):
                     return
-                with datalocks.hold("collector_candle_data"):
+                async with datalocks.hold("collector_candle_data"):
                     last_index = collector.me.candle_data.index[-1]
                     if last_index == before_moment:
                         break
-                time.sleep(0.1)
+                await asyncio.sleep(0.1)
 
         # ■■■■■ get ready for task duration measurement ■■■■■
 
@@ -788,11 +772,11 @@ class Transactor:
 
         # ■■■■■ get light data ■■■■■
 
-        with datalocks.hold("collector_realtime_data_chunks"):
+        async with datalocks.hold("collector_realtime_data_chunks"):
             before_chunk = collector.me.realtime_data_chunks[-2].copy()
             current_chunk = collector.me.realtime_data_chunks[-1].copy()
         realtime_data = np.concatenate((before_chunk, current_chunk))
-        with datalocks.hold("collector_aggregate_trades"):
+        async with datalocks.hold("collector_aggregate_trades"):
             aggregate_trades = collector.me.aggregate_trades.copy()
 
         # ■■■■■ draw light lines ■■■■■
@@ -804,13 +788,10 @@ class Transactor:
         data_y = data_y[mask]
         data_x = data_x[mask]
         widget = core.window.transaction_lines["mark_price"]
-
-        def job_mp(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_mp, False)
+        await asyncio.sleep(0)
 
         # last price
         data_x = aggregate_trades["index"].astype(np.int64) / 10**9
@@ -819,13 +800,10 @@ class Transactor:
         data_y = data_y[mask]
         data_x = data_x[mask]
         widget = core.window.transaction_lines["last_price"]
-
-        def job_lp(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_lp, False)
+        await asyncio.sleep(0)
 
         # last trade volume
         index_ar = aggregate_trades["index"].astype(np.int64) / 10**9
@@ -840,13 +818,10 @@ class Transactor:
         data_x = np.repeat(index_ar, 3)
         data_y = np.stack([nan_ar, zero_ar, value_ar], axis=1).reshape(-1)
         widget = core.window.transaction_lines["last_volume"]
-
-        def job_ltv(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_ltv, False)
+        await asyncio.sleep(0)
 
         # book tickers
         data_x = realtime_data["index"].astype(np.int64) / 10**9
@@ -855,13 +830,10 @@ class Transactor:
         data_y = data_y[mask]
         data_x = data_x[mask]
         widget = core.window.transaction_lines["book_tickers"][0]
-
-        def job_btb(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_btb, False)
+        await asyncio.sleep(0)
 
         data_x = realtime_data["index"].astype(np.int64) / 10**9
         data_y = realtime_data[str((symbol, "Best Ask Price"))]
@@ -869,13 +841,10 @@ class Transactor:
         data_y = data_y[mask]
         data_x = data_x[mask]
         widget = core.window.transaction_lines["book_tickers"][1]
-
-        def job_bta(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_bta, False)
+        await asyncio.sleep(0)
 
         # entry price
         entry_price = self.account_state["positions"][symbol]["entry_price"]
@@ -890,13 +859,10 @@ class Transactor:
             data_x = []
             data_y = []
         widget = core.window.transaction_lines["entry_price"]
-
-        def job_ep(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_ep, False)
+        await asyncio.sleep(0)
 
         # ■■■■■ record task duration ■■■■■
 
@@ -923,13 +889,13 @@ class Transactor:
 
         # ■■■■■ get heavy data ■■■■■
 
-        with datalocks.hold("collector_candle_data"):
+        async with datalocks.hold("collector_candle_data"):
             candle_data = collector.me.candle_data
             candle_data = candle_data[get_from:slice_until][[symbol]]
             candle_data = candle_data.copy()
-        with datalocks.hold("transactor_unrealized_changes"):
+        async with datalocks.hold("transactor_unrealized_changes"):
             unrealized_changes = self.unrealized_changes.copy()
-        with datalocks.hold("transactor_asset_record"):
+        async with datalocks.hold("transactor_asset_record"):
             asset_record = self.asset_record
             if len(asset_record) > 0:
                 last_asset = asset_record.iloc[-1]["Result Asset"]
@@ -1014,13 +980,10 @@ class Transactor:
             axis=1,
         ).reshape(-1)
         widget = core.window.transaction_lines["price_rise"]
-
-        def job_pm1(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_pm1, False)
+        await asyncio.sleep(0)
 
         data_x = np.stack(
             [
@@ -1051,13 +1014,10 @@ class Transactor:
             axis=1,
         ).reshape(-1)
         widget = core.window.transaction_lines["price_fall"]
-
-        def job_pm2(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_pm2, False)
+        await asyncio.sleep(0)
 
         data_x = np.stack(
             [
@@ -1088,38 +1048,29 @@ class Transactor:
             axis=1,
         ).reshape(-1)
         widget = core.window.transaction_lines["price_stay"]
-
-        def job_pm3(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_pm3, False)
+        await asyncio.sleep(0)
 
         # wobbles
         sr = candle_data[(symbol, "High")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.transaction_lines["wobbles"][0]
-
-        def job_w1(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_w1, False)
+        await asyncio.sleep(0)
 
         sr = candle_data[(symbol, "Low")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.transaction_lines["wobbles"][1]
-
-        def job_w2(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_w2, False)
+        await asyncio.sleep(0)
 
         # trade volume
         sr = candle_data[(symbol, "Volume")]
@@ -1127,25 +1078,19 @@ class Transactor:
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.transaction_lines["volume"]
-
-        def job_tv(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_tv, False)
+        await asyncio.sleep(0)
 
         # asset
         data_x = asset_record["Result Asset"].index.to_numpy(dtype=np.int64) / 10**9
         data_y = asset_record["Result Asset"].to_numpy(dtype=np.float32)
         widget = core.window.transaction_lines["asset"]
-
-        def job_a(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_a, False)
+        await asyncio.sleep(0)
 
         # asset with unrealized profit
         sr = asset_record["Result Asset"]
@@ -1156,13 +1101,10 @@ class Transactor:
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9 + 5
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.transaction_lines["asset_with_unrealized_profit"]
-
-        def job_aup(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_aup, False)
+        await asyncio.sleep(0)
 
         # buy and sell
         df = asset_record.loc[asset_record["Symbol"] == symbol]
@@ -1171,13 +1113,10 @@ class Transactor:
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.transaction_lines["sell"]
-
-        def job_bs1(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_bs1, False)
+        await asyncio.sleep(0)
 
         df = asset_record.loc[asset_record["Symbol"] == symbol]
         df = df[df["Side"] == "buy"]
@@ -1185,13 +1124,10 @@ class Transactor:
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.transaction_lines["buy"]
-
-        def job_bs2(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_bs2, False)
+        await asyncio.sleep(0)
 
         # ■■■■■ record task duration ■■■■■
 
@@ -1204,12 +1140,15 @@ class Transactor:
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
         target_symbols = user_settings.get_data_settings()["target_symbols"]
 
-        indicators: pd.DataFrame = process_toss.apply(
-            make_indicators.do,
-            target_symbols=target_symbols,
-            candle_data=candle_data,
-            compiled_indicators_script=compiled_indicators_script,
-        )  # type:ignore
+        indicators = await core.event_loop.run_in_executor(
+            core.process_pool,
+            functools.partial(
+                make_indicators.do,
+                target_symbols=target_symbols,
+                candle_data=candle_data,
+                compiled_indicators_script=compiled_indicators_script,
+            ),
+        )
 
         indicators = indicators[slice_from:]
 
@@ -1230,18 +1169,15 @@ class Transactor:
                     color = "#AAAAAA"
                 else:
                     color = inside_strings[0]
-
-                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
-                    widget.setPen(color)
-                    widget.setData(data_x, data_y)
-
+                widget.setPen(color)
+                widget.setData(data_x, data_y)
                 if stop_flag.find(task_name, task_id):
                     return
-                core.window.undertake(job, False)
+                await asyncio.sleep(0)
             else:
                 if stop_flag.find(task_name, task_id):
                     return
-                core.window.undertake(lambda w=widget: w.clear(), False)
+                widget.clear()
 
         # trade volume indicators
         df = indicators[symbol]["Volume"]
@@ -1258,18 +1194,15 @@ class Transactor:
                     color = "#AAAAAA"
                 else:
                     color = inside_strings[0]
-
-                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
-                    widget.setPen(color)
-                    widget.setData(data_x, data_y)
-
+                widget.setPen(color)
+                widget.setData(data_x, data_y)
                 if stop_flag.find(task_name, task_id):
                     return
-                core.window.undertake(job, False)
+                await asyncio.sleep(0)
             else:
                 if stop_flag.find(task_name, task_id):
                     return
-                core.window.undertake(lambda w=widget: w.clear(), False)
+                widget.clear()
 
         # abstract indicators
         df = indicators[symbol]["Abstract"]
@@ -1286,44 +1219,38 @@ class Transactor:
                     color = "#AAAAAA"
                 else:
                     color = inside_strings[0]
-
-                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
-                    widget.setPen(color)
-                    widget.setData(data_x, data_y)
-
+                widget.setPen(color)
+                widget.setData(data_x, data_y)
                 if stop_flag.find(task_name, task_id):
                     return
-                core.window.undertake(job, False)
+                await asyncio.sleep(0)
             else:
                 if stop_flag.find(task_name, task_id):
                     return
-                core.window.undertake(lambda w=widget: w.clear(), False)
+                widget.clear()
 
         # ■■■■■ set minimum view range ■■■■■
 
-        self.set_minimum_view_range()
+        await self.set_minimum_view_range()
 
-    def toggle_frequent_draw(self, *args, **kwargs):
+    async def toggle_frequent_draw(self, *args, **kwargs):
         is_checked = args[0]
         if is_checked:
             self.should_draw_frequently = True
         else:
             self.should_draw_frequently = False
-        self.display_lines()
+        await self.display_lines()
 
-    def update_viewing_symbol(self, *args, **kwargs):
-        def job():
-            return core.window.comboBox_4.currentText()
-
-        alias = core.window.undertake(job, True)
+    async def update_viewing_symbol(self, *args, **kwargs):
+        alias = core.window.comboBox_4.currentText()
         symbol = core.window.alias_to_symbol[alias]
         self.viewing_symbol = symbol
 
-        self.display_lines()
-        self.display_status_information()
-        self.display_range_information()
+        asyncio.create_task(self.display_lines())
+        asyncio.create_task(self.display_status_information())
+        asyncio.create_task(self.display_range_information())
 
-    def display_status_information(self, *args, **kwargs):
+    async def display_status_information(self, *args, **kwargs):
         # ■■■■■ Display important things first ■■■■■
 
         time_passed = datetime.now(timezone.utc) - self.account_state["observed_until"]
@@ -1332,7 +1259,7 @@ class Transactor:
                 "Couldn't get the latest info on your Binance account due to a problem"
                 " with your key or connection to the Binance server."
             )
-            core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
+            core.window.label_16.setText(text)
             return
 
         if not self.secret_memory["is_key_restrictions_satisfied"]:
@@ -1341,16 +1268,16 @@ class Transactor:
                 " disabled. Go to your Binance API managements webpage to change"
                 " the restrictions."
             )
-            core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
+            core.window.label_16.setText(text)
             return
 
-        cumulation_rate = collector.me.get_candle_data_cumulation_rate()
+        cumulation_rate = await collector.me.get_candle_data_cumulation_rate()
         if cumulation_rate < 1:
             text = (
                 "For auto transaction to work, the past 24 hour accumulation rate of"
                 " candle data must be 100%. Auto transaction is disabled."
             )
-            core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
+            core.window.label_16.setText(text)
             return
 
         # ■■■■■ display assets and positions information ■■■■■
@@ -1388,9 +1315,9 @@ class Transactor:
         text += f" {open_orders_count}"
         text += f"({all_open_orders_count})"
 
-        core.window.undertake(lambda t=text: core.window.label_16.setText(t), False)
+        core.window.label_16.setText(text)
 
-    def perform_transaction(self, *args, **kwargs):
+    async def perform_transaction(self, *args, **kwargs):
         # ■■■■■ stop if internet connection is not present ■■■■
 
         if not check_internet.connected():
@@ -1408,7 +1335,7 @@ class Transactor:
 
         # ■■■■■ stop if the accumulation rate is not 100% ■■■■■
 
-        cumulation_rate = collector.me.get_candle_data_cumulation_rate()
+        cumulation_rate = await collector.me.get_candle_data_cumulation_rate()
         if cumulation_rate < 1:
             is_cycle_done = True
             return
@@ -1417,7 +1344,7 @@ class Transactor:
 
         is_cycle_done = False
 
-        def job():
+        async def play_progress_bar():
             start_time = datetime.now(timezone.utc)
             passed_time = timedelta(seconds=0)
             while passed_time < timedelta(seconds=10):
@@ -1425,21 +1352,16 @@ class Transactor:
                 if not is_cycle_done:
                     new_value = int(passed_time / timedelta(seconds=10) * 1000)
                 else:
-                    before_value: int = core.window.undertake(
-                        lambda: core.window.progressBar_2.value(), True
-                    )  # type:ignore
+                    before_value = core.window.progressBar_2.value()
                     remaining = 1000 - before_value
                     new_value = before_value + math.ceil(remaining * 0.2)
 
-                def job(new_value=new_value):
-                    core.window.progressBar_2.setValue(new_value)
+                core.window.progressBar_2.setValue(new_value)
+                await asyncio.sleep(0.01)
 
-                core.window.undertake(job, False)
-                time.sleep(0.01)
+            core.window.progressBar_2.setValue(0)
 
-            core.window.undertake(lambda: core.window.progressBar_2.setValue(0), False)
-
-        thread_toss.apply_async(job)
+        asyncio.create_task(play_progress_bar())
 
         # ■■■■■ moment ■■■■■
 
@@ -1449,7 +1371,7 @@ class Transactor:
 
         # ■■■■■ check if the data exists ■■■■■
 
-        with datalocks.hold("collector_candle_data"):
+        async with datalocks.hold("collector_candle_data"):
             if len(collector.me.candle_data) == 0:
                 # case when the app is executed for the first time
                 return
@@ -1457,16 +1379,16 @@ class Transactor:
         # ■■■■■ wait for the latest data to be added ■■■■■
 
         for _ in range(50):
-            with datalocks.hold("collector_candle_data"):
+            async with datalocks.hold("collector_candle_data"):
                 last_index = collector.me.candle_data.index[-1]
                 if last_index == before_moment:
                     break
-            time.sleep(0.1)
+            await asyncio.sleep(0.1)
 
         # ■■■■■ get the candle data ■■■■■
 
         slice_from = datetime.now(timezone.utc) - timedelta(days=7)
-        with datalocks.hold("collector_candle_data"):
+        async with datalocks.hold("collector_candle_data"):
             df = collector.me.candle_data
             partial_candle_data = df[slice_from:].copy()
 
@@ -1480,28 +1402,34 @@ class Transactor:
         indicators_script = strategy["indicators_script"]
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
-        indicators: pd.DataFrame = process_toss.apply(
-            make_indicators.do,
-            target_symbols=target_symbols,
-            candle_data=partial_candle_data,
-            compiled_indicators_script=compiled_indicators_script,
-        )  # type:ignore
+        indicators = await core.event_loop.run_in_executor(
+            core.process_pool,
+            functools.partial(
+                make_indicators.do,
+                target_symbols=target_symbols,
+                candle_data=partial_candle_data,
+                compiled_indicators_script=compiled_indicators_script,
+            ),
+        )
 
         current_candle_data = partial_candle_data.to_records()[-1]
         current_indicators = indicators.to_records()[-1]
         decision_script = strategy["decision_script"]
         compiled_decision_script = compile(decision_script, "<string>", "exec")
 
-        decision, scribbles = process_toss.apply(
-            decide.choose,
-            target_symbols=target_symbols,
-            current_moment=current_moment,
-            current_candle_data=current_candle_data,
-            current_indicators=current_indicators,
-            account_state=copy.deepcopy(self.account_state),
-            scribbles=self.scribbles,
-            compiled_decision_script=compiled_decision_script,
-        )  # type:ignore
+        decision, scribbles = await core.event_loop.run_in_executor(
+            core.process_pool,
+            functools.partial(
+                decide.choose,
+                target_symbols=target_symbols,
+                current_moment=current_moment,
+                current_candle_data=current_candle_data,
+                current_indicators=current_indicators,
+                account_state=copy.deepcopy(self.account_state),
+                scribbles=self.scribbles,
+                compiled_decision_script=compiled_decision_script,
+            ),
+        )
         self.scribbles = scribbles
 
         # ■■■■■ record task duration ■■■■■
@@ -1512,35 +1440,22 @@ class Transactor:
 
         # ■■■■■ place order ■■■■■
 
-        self.place_orders(decision)
+        await self.place_orders(decision)
 
-    def display_day_range(self, *args, **kwargs):
+    async def display_day_range(self, *args, **kwargs):
         range_start = (datetime.now(timezone.utc) - timedelta(hours=24)).timestamp()
         range_end = datetime.now(timezone.utc).timestamp()
         widget = core.window.plot_widget
+        widget.setXRange(range_start, range_end)
 
-        def job(range_start=range_start, range_end=range_end):
-            widget.setXRange(range_start, range_end)
-
-        core.window.undertake(job, False)
-
-    def match_graph_range(self, *args, **kwargs):
-        range_start = core.window.undertake(
-            lambda: core.window.plot_widget_2.getAxis("bottom").range[0], True
-        )
-        range_end = core.window.undertake(
-            lambda: core.window.plot_widget_2.getAxis("bottom").range[1], True
-        )
+    async def match_graph_range(self, *args, **kwargs):
+        range_start = core.window.plot_widget_2.getAxis("bottom").range[0]
+        range_end = core.window.plot_widget_2.getAxis("bottom").range[1]
         widget = core.window.plot_widget
+        widget.setXRange(range_start, range_end, padding=0)  # type:ignore
 
-        def job(range_start=range_start, range_end=range_end):
-            widget.setXRange(range_start, range_end, padding=0)  # type:ignore
-
-        core.window.undertake(job, False)
-
-    def update_mode_settings(self, *args, **kwargs):
-        widget = core.window.spinBox
-        desired_leverage: int = core.window.undertake(lambda w=widget: w.value(), True)  # type:ignore
+    async def update_mode_settings(self, *args, **kwargs):
+        desired_leverage = core.window.spinBox.value()
         self.mode_settings["desired_leverage"] = desired_leverage
 
         # ■■■■■ tell if some symbol's leverage cannot be set as desired ■■■■■
@@ -1562,7 +1477,7 @@ class Transactor:
                 " simulation prediction with the same leverage.",
                 ["Show details", "Okay"],
             ]
-            answer = core.window.ask(question)
+            answer = await core.window.ask(question)
             if answer == 1:
                 texts = []
                 for symbol, max_leverage in target_max_leverages.items():
@@ -1573,16 +1488,15 @@ class Transactor:
                     text,
                     ["Okay"],
                 ]
-                core.window.ask(question)
+                await core.window.ask(question)
 
         # ■■■■■ save ■■■■■
 
-        with open(
-            self.workerpath + "/mode_settings.json", "w", encoding="utf8"
-        ) as file:
+        filepath = self.workerpath + "/mode_settings.json"
+        async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             json.dump(self.mode_settings, file, indent=4)
 
-    def watch_binance(self, *args, **kwargs):
+    async def watch_binance(self, *args, **kwargs):
         # ■■■■■ check internet connection ■■■■■
 
         if not check_internet.connected():
@@ -1597,7 +1511,7 @@ class Transactor:
         # ■■■■■ request exchange information ■■■■■
 
         payload = {}
-        response = self.api_requester.binance(
+        response = await self.api_requester.binance(
             http_method="GET",
             path="/fapi/v1/exchangeInfo",
             payload=payload,
@@ -1645,7 +1559,7 @@ class Transactor:
             payload = {
                 "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
             }
-            response = self.api_requester.binance(
+            response = await self.api_requester.binance(
                 http_method="GET",
                 path="/fapi/v1/leverageBracket",
                 payload=payload,
@@ -1666,7 +1580,7 @@ class Transactor:
             payload = {
                 "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
             }
-            response = self.api_requester.binance(
+            response = await self.api_requester.binance(
                 http_method="GET",
                 path="/fapi/v2/account",
                 payload=payload,
@@ -1678,19 +1592,24 @@ class Transactor:
 
         about_open_orders = {}
 
-        def job(symbol):
+        async def job(symbol):
             payload = {
                 "symbol": symbol,
                 "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
             }
-            response = self.api_requester.binance(
+            response = await self.api_requester.binance(
                 http_method="GET",
                 path="/fapi/v1/openOrders",
                 payload=payload,
             )
             about_open_orders[symbol] = response
 
-        thread_toss.map(job, user_settings.get_data_settings()["target_symbols"])
+        await asyncio.gather(
+            *[
+                job(symbol)
+                for symbol in user_settings.get_data_settings()["target_symbols"]
+            ]
+        )
 
         # ■■■■■ update account state ■■■■■
 
@@ -1854,14 +1773,14 @@ class Transactor:
         else:
             unrealized_change = 0
 
-        with datalocks.hold("transactor_unrealized_changes"):
+        async with datalocks.hold("transactor_unrealized_changes"):
             self.unrealized_changes[before_moment] = unrealized_change
             if not self.unrealized_changes.index.is_monotonic_increasing:
                 self.unrealized_changes = self.unrealized_changes.sort_index()
 
         # ■■■■■ make an asset trace if it's blank ■■■■■
 
-        with datalocks.hold("transactor_asset_record"):
+        async with datalocks.hold("transactor_asset_record"):
             if len(self.asset_record) == 0:
                 for about_asset in about_account["assets"]:
                     if (
@@ -1881,7 +1800,7 @@ class Transactor:
                 break
         wallet_balance = float(about_asset["walletBalance"])
 
-        with datalocks.hold("transactor_asset_record"):
+        async with datalocks.hold("transactor_asset_record"):
             last_index = self.asset_record.index[-1]
             last_asset: float = self.asset_record.loc[last_index, "Result Asset"]  # type:ignore
 
@@ -1890,7 +1809,7 @@ class Transactor:
         elif abs(wallet_balance - last_asset) / wallet_balance > 10**-9:
             # when the difference is bigger than a billionth
             # referal fee, funding fee, wallet transfer, etc..
-            with datalocks.hold("transactor_asset_record"):
+            async with datalocks.hold("transactor_asset_record"):
                 current_time = datetime.now(timezone.utc)
                 self.asset_record.loc[current_time, "Cause"] = "other"
                 self.asset_record.loc[current_time, "Result Asset"] = wallet_balance
@@ -1898,7 +1817,7 @@ class Transactor:
                     self.asset_record = self.asset_record.sort_index()
         else:
             # when the difference is small enough to consider as an numeric error
-            with datalocks.hold("transactor_asset_record"):
+            async with datalocks.hold("transactor_asset_record"):
                 last_index = self.asset_record.index[-1]
                 self.asset_record.loc[last_index, "Result Asset"] = wallet_balance
 
@@ -1906,7 +1825,7 @@ class Transactor:
 
         if self.automation_settings["should_transact"]:
 
-            def job_1(symbol):
+            async def job_1(symbol):
                 about_position = {}
                 for about_position in about_account["positions"]:
                     if about_position["symbol"] == symbol:
@@ -1925,15 +1844,20 @@ class Transactor:
                         "timestamp": timestamp,
                         "leverage": goal_leverage,
                     }
-                    self.api_requester.binance(
+                    await self.api_requester.binance(
                         http_method="POST",
                         path="/fapi/v1/leverage",
                         payload=payload,
                     )
 
-            thread_toss.map(job_1, user_settings.get_data_settings()["target_symbols"])
+            await asyncio.gather(
+                *[
+                    job_1(symbol)
+                    for symbol in user_settings.get_data_settings()["target_symbols"]
+                ]
+            )
 
-            def job_2(symbol):
+            async def job_2(symbol):
                 about_position = {}
                 for about_position in about_account["positions"]:
                     if about_position["symbol"] == symbol:
@@ -1950,7 +1874,7 @@ class Transactor:
                                 "now_close": {},
                             },
                         }
-                        self.place_orders(decision)
+                        await self.place_orders(decision)
 
                     # change to crossed margin mode
                     timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
@@ -1959,13 +1883,18 @@ class Transactor:
                         "timestamp": timestamp,
                         "marginType": "CROSSED",
                     }
-                    self.api_requester.binance(
+                    await self.api_requester.binance(
                         http_method="POST",
                         path="/fapi/v1/marginType",
                         payload=payload,
                     )
 
-            thread_toss.map(job_2, user_settings.get_data_settings()["target_symbols"])
+            await asyncio.gather(
+                *[
+                    job_2(symbol)
+                    for symbol in user_settings.get_data_settings()["target_symbols"]
+                ]
+            )
 
             try:
                 timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
@@ -1973,7 +1902,7 @@ class Transactor:
                     "timestamp": timestamp,
                     "multiAssetsMargin": "false",
                 }
-                self.api_requester.binance(
+                await self.api_requester.binance(
                     http_method="POST",
                     path="/fapi/v1/multiAssetsMargin",
                     payload=payload,
@@ -1987,7 +1916,7 @@ class Transactor:
                     "timestamp": timestamp,
                     "dualSidePosition": "false",
                 }
-                self.api_requester.binance(
+                await self.api_requester.binance(
                     http_method="POST",
                     path="/fapi/v1/positionSide/dual",
                     payload=payload,
@@ -2000,7 +1929,7 @@ class Transactor:
         payload = {
             "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
         }
-        response = self.api_requester.binance(
+        response = await self.api_requester.binance(
             http_method="GET",
             path="/sapi/v1/account/apiRestrictions",
             payload=payload,
@@ -2018,7 +1947,7 @@ class Transactor:
                 is_satisfied = False
         self.secret_memory["is_key_restrictions_satisfied"] = is_satisfied
 
-    def place_orders(self, *args, **kwargs):
+    async def place_orders(self, *args, **kwargs):
         task_start_time = datetime.now(timezone.utc)
 
         decision = args[0]
@@ -2045,7 +1974,7 @@ class Transactor:
             if symbol not in decision.keys():
                 continue
 
-            with datalocks.hold("collector_aggregate_trades"):
+            async with datalocks.hold("collector_aggregate_trades"):
                 ar = collector.me.aggregate_trades[-10000:].copy()
             temp_ar = ar[str((symbol, "Price"))]
             temp_ar = temp_ar[temp_ar != 0]
@@ -2245,8 +2174,8 @@ class Transactor:
 
         # ■■■■■ actually place orders ■■■■■
 
-        def job_1(payload):
-            response = self.api_requester.binance(
+        async def job_1(payload):
+            response = await self.api_requester.binance(
                 http_method="POST",
                 path="/fapi/v1/order",
                 payload=payload,
@@ -2255,7 +2184,7 @@ class Transactor:
             order_id = response["orderId"]
             timestamp = response["updateTime"] / 1000
             update_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-            with datalocks.hold("transactor_auto_order_record"):
+            async with datalocks.hold("transactor_auto_order_record"):
                 while update_time in self.auto_order_record.index:
                     update_time += timedelta(milliseconds=1)
                 self.auto_order_record.loc[update_time, "Symbol"] = order_symbol
@@ -2263,16 +2192,16 @@ class Transactor:
                 if not self.auto_order_record.index.is_monotonic_increasing:
                     self.auto_order_record = self.auto_order_record.sort_index()
 
-        thread_toss.map_async(job_1, new_orders)
+        await asyncio.gather(*[job_1(order) for order in new_orders])
 
-        def job_2(payload):
-            self.api_requester.binance(
+        async def job_2(payload):
+            await self.api_requester.binance(
                 http_method="DELETE",
                 path="/fapi/v1/allOpenOrders",
                 payload=payload,
             )
 
-        thread_toss.map_async(job_2, cancel_orders)
+        await asyncio.gather(*[job_2(order) for order in new_orders])
 
         # ■■■■■ record task duration ■■■■■
 
@@ -2280,16 +2209,16 @@ class Transactor:
         duration = duration.total_seconds()
         remember_task_durations.add("place_orders", duration)
 
-    def clear_positions_and_open_orders(self, *args, **kwargs):
+    async def clear_positions_and_open_orders(self, *args, **kwargs):
         decision = {}
         for symbol in user_settings.get_data_settings()["target_symbols"]:
             decision[symbol] = {
                 "cancel_all": {},
                 "now_close": {},
             }
-        self.place_orders(decision)
+        await self.place_orders(decision)
 
-    def cancel_conflicting_orders(self, *args, **kwargs):
+    async def cancel_conflicting_orders(self, *args, **kwargs):
         if not self.automation_settings["should_transact"]:
             return
 
@@ -2313,14 +2242,14 @@ class Transactor:
                         if order_id != latest_id:
                             conflicting_order_tuples.append((symbol, order_id))
 
-        def job(conflicting_order_tuple):
+        async def job(conflicting_order_tuple):
             try:
                 payload = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": conflicting_order_tuple[0],
                     "orderId": conflicting_order_tuple[1],
                 }
-                self.api_requester.binance(
+                await self.api_requester.binance(
                     http_method="DELETE",
                     path="/fapi/v1/order",
                     payload=payload,
@@ -2328,28 +2257,23 @@ class Transactor:
             except ApiRequestError:
                 pass
 
-        thread_toss.map_async(job, conflicting_order_tuples)
+        await asyncio.gather(*[job(conflict) for conflict in conflicting_order_tuples])
 
-    def pan_view_range(self, *args, **kwargs):
+    async def pan_view_range(self, *args, **kwargs):
         if not self.should_draw_frequently:
             return
 
         widget = core.window.plot_widget
-        axis = widget.getAxis("bottom")
-
-        before_range: list = core.window.undertake(lambda: axis.range, True)  # type:ignore
+        before_range = widget.getAxis("bottom").range
         range_start = before_range[0]
         range_end = before_range[1]
 
         if range_end - range_start < 6 * 60 * 60:  # six hours
             return
 
-        def job():
-            widget.setXRange(range_start + 10, range_end + 10, padding=0)  # type:ignore
+        widget.setXRange(range_start + 10, range_end + 10, padding=0)  # type:ignore
 
-        core.window.undertake(job, False)
-
-    def show_raw_account_state_object(self, *args, **kwargs):
+    async def show_raw_account_state_object(self, *args, **kwargs):
         text = ""
 
         time = datetime.now(timezone.utc)
@@ -2365,7 +2289,7 @@ class Transactor:
             True,
             [text],
         ]
-        core.window.overlap(formation)
+        await core.window.overlap(formation)
 
 
 me = None

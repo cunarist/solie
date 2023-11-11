@@ -1,19 +1,18 @@
 from datetime import datetime, timedelta, timezone
 import os
 from collections import deque
-import time
 import statistics
 import logging
 import webbrowser
 import platform
 import subprocess
 import json
+import asyncio
 
+import aiofiles
 import timesetter
 
 from module import core
-from module import process_toss
-from module import thread_toss
 from module import introduction
 from module.worker import collector
 from module.instrument.api_requester import ApiRequester
@@ -57,41 +56,11 @@ class Manager:
         }
         self.binance_limits = {}
 
-        filepath = self.workerpath + "/settings.json"
-        if os.path.isfile(filepath):
-            with open(filepath, "r", encoding="utf8") as file:
-                self.settings = json.load(file)
-        else:
-            self.settings = {
-                "match_system_time": True,
-                "disable_system_update": False,
-                "lock_window": "NEVER",
-            }
-        payload = (
-            core.window.checkBox_12.setChecked,
-            self.settings["match_system_time"],
-        )
-        core.window.undertake(lambda p=payload: p[0](p[1]), False)
-        payload = (
-            core.window.checkBox_13.setChecked,
-            self.settings["disable_system_update"],
-        )
-        core.window.undertake(lambda p=payload: p[0](p[1]), False)
-        payload = (
-            core.window.comboBox_3.setCurrentIndex,
-            value_to.indexes(WINDOW_LOCK_OPTIONS, self.settings["lock_window"])[0],
-        )
-        core.window.undertake(lambda p=payload: p[0](p[1]), False)
-
-        filepath = self.workerpath + "/python_script.txt"
-        if os.path.isfile(filepath):
-            with open(filepath, "r", encoding="utf8") as file:
-                script = file.read()
-        else:
-            script = ""
-        core.window.undertake(
-            lambda s=script: core.window.plainTextEdit.setPlainText(s), False
-        )
+        self.settings = {
+            "match_system_time": True,
+            "disable_system_update": False,
+            "lock_window": "NEVER",
+        }
 
         # ■■■■■ repetitive schedules ■■■■■
 
@@ -99,49 +68,41 @@ class Manager:
             self.lock_board,
             trigger="cron",
             second="*",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.check_online_status,
             trigger="cron",
             second="*",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.display_system_status,
             trigger="cron",
             second="*",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.display_internal_status,
             trigger="cron",
             second="*",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.disable_system_auto_update,
             trigger="cron",
             minute="*",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.match_system_time,
             trigger="cron",
             minute="*/10",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.check_for_update,
             trigger="cron",
             minute="*/10",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.check_binance_limits,
             trigger="cron",
             hour="*",
-            executor="thread_pool_executor",
         )
 
         # ■■■■■ websocket streamings ■■■■■
@@ -156,41 +117,55 @@ class Manager:
         disconnected_functions = []
         check_internet.add_disconnected_functions(disconnected_functions)
 
-    def change_settings(self, *args, **kwargs):
-        payload = (core.window.checkBox_12.isChecked,)
-        is_checked = core.window.undertake(lambda p=payload: p[0](), True)
+    async def load(self, *args, **kwargs):
+        # settings
+        filepath = self.workerpath + "/settings.json"
+        if os.path.isfile(filepath):
+            async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+                content = await file.read()
+                self.settings = json.loads(content)
+        core.window.checkBox_12.setChecked(self.settings["match_system_time"])
+        core.window.checkBox_13.setChecked(self.settings["disable_system_update"])
+        core.window.comboBox_3.setCurrentIndex(
+            value_to.indexes(WINDOW_LOCK_OPTIONS, self.settings["lock_window"])[0]
+        )
+
+        # python script
+        filepath = self.workerpath + "/python_script.txt"
+        if os.path.isfile(filepath):
+            async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+                script = await file.read()
+        else:
+            script = ""
+        core.window.plainTextEdit.setPlainText(script)
+
+    async def change_settings(self, *args, **kwargs):
+        is_checked = core.window.checkBox_12.isChecked()
         self.settings["match_system_time"] = True if is_checked else False
 
-        payload = (core.window.checkBox_13.isChecked,)
-        is_checked = core.window.undertake(lambda p=payload: p[0](), True)
+        is_checked = core.window.checkBox_13.isChecked()
         self.settings["disable_system_update"] = True if is_checked else False
 
-        payload = (core.window.comboBox_3.currentIndex,)
-        current_index: int = core.window.undertake(lambda p=payload: p[0](), True)  # type: ignore
+        current_index = core.window.comboBox_3.currentIndex()
         self.settings["lock_window"] = WINDOW_LOCK_OPTIONS[current_index]
 
         filepath = self.workerpath + "/settings.json"
-        with open(filepath, "w", encoding="utf8") as file:
+        async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             json.dump(self.settings, file, indent=4)
 
-    def open_datapath(self, *args, **kwargs):
+    async def open_datapath(self, *args, **kwargs):
         os.startfile(user_settings.get_app_settings()["datapath"])
 
-    def deselect_log_output(self, *args, **kwargs):
-        def job():
-            core.window.listWidget.clearSelection()
+    async def deselect_log_output(self, *args, **kwargs):
+        core.window.listWidget.clearSelection()
 
-        core.window.undertake(job, False)
-
-    def add_log_output(self, *args, **kwargs):
+    async def add_log_output(self, *args, **kwargs):
         # get the data
         summarization = args[0]
         log_content = args[1]
 
         # add to log list
-        job = core.window.listWidget.addItem
-        payload = (job, summarization, log_content)
-        core.window.undertake(lambda p=payload: p[0](p[1], p[2]), False)
+        core.window.listWidget.addItem(summarization, log_content)
 
         # save to file
         task_start_time = datetime.now(timezone.utc)
@@ -200,41 +175,15 @@ class Manager:
         filepath = filepath.replace("-", "_")
         filepath = filepath.replace("+", "_")
         filepath = self.workerpath + "/log_outputs_" + filepath + ".txt"
-        with open(filepath, "a", encoding="utf8") as file:
-            file.write(f"{summarization}\n")
-            file.write(f"{log_content}\n\n")
+        async with aiofiles.open(filepath, "a", encoding="utf8") as file:
+            await file.write(f"{summarization}\n")
+            await file.write(f"{log_content}\n\n")
         duration = datetime.now(timezone.utc) - task_start_time
         duration = duration.total_seconds()
         remember_task_durations.add("write_log", duration)
 
-    def display_internal_status(self, *args, **kwargs):
+    async def display_internal_status(self, *args, **kwargs):
         def job():
-            active_count = 0
-            texts = []
-            task_presences = thread_toss.get_task_presences()
-            for thread_name, is_task_present in task_presences.items():
-                if is_task_present:
-                    active_count += 1
-                text = thread_name
-                text += f": {'Active' if is_task_present else 'Inactive'}"
-                texts.append(text)
-            text = f"{active_count} active"
-            text += "\n\n" + "\n".join(texts)
-            core.window.undertake(lambda t=text: core.window.label_12.setText(t), False)
-
-            active_count = 0
-            texts = []
-            task_presences = process_toss.get_task_presences()
-            for process_id, is_task_present in task_presences.items():
-                if is_task_present:
-                    active_count += 1
-                text = f"PID {process_id}"
-                text += f": {'Active' if is_task_present else 'Inactive'}"
-                texts.append(text)
-            text = f"{active_count} active"
-            text += "\n\n" + "\n".join(texts)
-            core.window.undertake(lambda t=text: core.window.label_32.setText(t), False)
-
             texts = []
             texts.append("Limits")
             for limit_type, limit_value in self.binance_limits.items():
@@ -251,7 +200,7 @@ class Manager:
                     texts.append(text)
 
             text = "\n".join(texts)
-            core.window.undertake(lambda t=text: core.window.label_35.setText(t), False)
+            core.window.label_35.setText(text)
 
             texts = []
 
@@ -272,12 +221,12 @@ class Manager:
                     texts.append(text)
 
             text = "\n\n".join(texts)
-            core.window.undertake(lambda t=text: core.window.label_33.setText(t), False)
+            core.window.label_33.setText(text)
 
             block_sizes = collector.me.aggtrade_candle_sizes
             lines = (f"{symbol} {count}" for (symbol, count) in block_sizes.items())
             text = "\n".join(lines)
-            core.window.undertake(lambda t=text: core.window.label_36.setText(t), False)
+            core.window.label_36.setText(text)
 
             texts = []
             for key, lock in datalocks.object_locks.items():
@@ -285,28 +234,27 @@ class Manager:
                 locked_text = "Locked" if is_locked else "Unlocked"
                 texts.append(f"{key}: {locked_text}")
             text = "\n".join(texts)
-            core.window.undertake(lambda t=text: core.window.label_34.setText(t), False)
+            core.window.label_34.setText(text)
 
         for _ in range(10):
             job()
-            time.sleep(0.1)
+            await asyncio.sleep(0.1)
 
-    def run_script(self, *args, **kwargs):
-        widget = core.window.plainTextEdit
-        script_text: str = core.window.undertake(lambda w=widget: w.toPlainText(), True)  # type:ignore
+    async def run_script(self, *args, **kwargs):
+        script_text = core.window.plainTextEdit.toPlainText()
         filepath = self.workerpath + "/python_script.txt"
-        with open(filepath, "w", encoding="utf8") as file:
-            file.write(script_text)
+        async with aiofiles.open(filepath, "w", encoding="utf8") as file:
+            await file.write(script_text)
         namespace = {"window": core.window, "logger": logging.getLogger("solie")}
         exec(script_text, namespace)
 
-    def check_online_status(self, *args, **kwargs):
+    async def check_online_status(self, *args, **kwargs):
         if not check_internet.connected():
             return
 
         request_time = datetime.now(timezone.utc)
         payload = {}
-        response = self.api_requester.binance(
+        response = await self.api_requester.binance(
             http_method="GET",
             path="/fapi/v1/time",
             payload=payload,
@@ -321,13 +269,12 @@ class Manager:
         time_difference = (local_time - server_time).total_seconds() - ping / 2
         self.online_status["server_time_differences"].append(time_difference)
 
-    def display_system_status(self, *args, **kwargs):
+    async def display_system_status(self, *args, **kwargs):
         time = datetime.now(timezone.utc)
         time_text = time.strftime("%Y-%m-%d %H:%M:%S")
         internet_connected = check_internet.connected()
         ping = self.online_status["ping"]
-        payload = (core.window.board.isEnabled,)
-        board_enabled = core.window.undertake(lambda p=payload: p[0](), True)
+        board_enabled = core.window.board.isEnabled()
 
         deque_data = self.online_status["server_time_differences"]
         if len(deque_data) > 0:
@@ -348,9 +295,9 @@ class Manager:
         text += f"Time difference with server {mean_difference:+.3f}s"
         text += "  ⦁  "
         text += f"Board {('unlocked' if board_enabled else 'locked')}"
-        core.window.undertake(lambda t=text: core.window.gauge.setText(t), False)
+        core.window.gauge.setText(text)
 
-    def match_system_time(self, *args, **kwargs):
+    async def match_system_time(self, *args, **kwargs):
         if not self.settings["match_system_time"]:
             return
 
@@ -363,12 +310,12 @@ class Manager:
         server_time_differences.clear()
         server_time_differences.append(0)
 
-    def check_binance_limits(self, *args, **kwargs):
+    async def check_binance_limits(self, *args, **kwargs):
         if not check_internet.connected():
             return
 
         payload = {}
-        response = self.api_requester.binance(
+        response = await self.api_requester.binance(
             http_method="GET",
             path="/fapi/v1/exchangeInfo",
             payload=payload,
@@ -381,24 +328,24 @@ class Manager:
             limit_name = f"{limit_type}({interval_value}{interval_unit})"
             self.binance_limits[limit_name] = limit_value
 
-    def reset_datapath(self, *args, **kwargs):
+    async def reset_datapath(self, *args, **kwargs):
         question = [
             "Are you sure you want to change the data folder?",
             "Solie will shut down shortly. You will get to choose the new data folder"
             " when you start Solie again. Previous data folder does not get deleted.",
             ["No", "Yes"],
         ]
-        answer = core.window.ask(question)
+        answer = await core.window.ask(question)
 
         if answer in (0, 1):
             return
 
-        user_settings.apply_app_settings({"datapath": None})
+        await user_settings.apply_app_settings({"datapath": None})
 
         core.window.should_confirm_closing = False
-        core.window.undertake(core.window.close, False)
+        core.window.close()
 
-    def check_for_update(self, *args, **kwargs):
+    async def check_for_update(self, *args, **kwargs):
         should_update = find_updates.is_newer_version_available()
 
         if should_update:
@@ -410,12 +357,12 @@ class Manager:
                 + f" while the current version is {introduction.CURRENT_VERSION}.",
                 ["Okay"],
             ]
-            core.window.ask(question)
+            await core.window.ask(question)
 
-    def open_documentation(self, *args, **kwargs):
+    async def open_documentation(self, *args, **kwargs):
         webbrowser.open("https://solie-docs.cunarist.com")
 
-    def disable_system_auto_update(self, *args, **kwargs):
+    async def disable_system_auto_update(self, *args, **kwargs):
         if not self.settings["disable_system_update"]:
             return
 
@@ -430,7 +377,7 @@ class Manager:
         elif platform.system() == "Darwin":  # macOS
             pass
 
-    def lock_board(self, *args, **kwargs):
+    async def lock_board(self, *args, **kwargs):
         lock_window_setting = self.settings["lock_window"]
 
         if lock_window_setting == "NEVER":
@@ -450,9 +397,9 @@ class Manager:
         if datetime.now(timezone.utc) < last_interaction_time + wait_time:
             return
 
-        is_enabled = core.window.undertake(lambda: core.window.board.isEnabled(), True)
+        is_enabled = core.window.board.isEnabled()
         if is_enabled:
-            core.window.undertake(lambda: core.window.board.setEnabled(False), False)
+            core.window.board.setEnabled(False)
 
 
 me = None

@@ -67,7 +67,7 @@ class DownloadFillOption(QtWidgets.QWidget):
         # option buttons
         for turn, text in enumerate(fill_options):
 
-            def job(turn=turn, *args, **kwargs):
+            async def job(turn=turn, *args, **kwargs):
                 answer_container["filling_type"] = turn
                 done_event.set()
 

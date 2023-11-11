@@ -1,17 +1,17 @@
 from datetime import datetime, timedelta, timezone
 import math
 import os
-import time
 import re
 import pickle
+import asyncio
+import functools
 
 import pandas as pd
 import numpy as np
 from scipy.signal import find_peaks
+import aiofiles
 
 from module import core
-from module import process_toss
-from module import thread_toss
 from module.worker import collector
 from module.worker import strategist
 from module.recipe import simulate_chunk
@@ -61,22 +61,17 @@ class Simulator:
         self.asset_record = standardize.asset_record()
         self.unrealized_changes = standardize.unrealized_changes()
 
-        text = "Nothing drawn"
-        core.window.undertake(lambda t=text: core.window.label_19.setText(t), False)
-
         # ■■■■■ repetitive schedules ■■■■■
 
         core.window.scheduler.add_job(
             self.display_available_years,
             trigger="cron",
             second="*",
-            executor="thread_pool_executor",
         )
         core.window.scheduler.add_job(
             self.display_lines,
             trigger="cron",
             hour="*",
-            executor="thread_pool_executor",
             kwargs={"periodic": True},
         )
 
@@ -92,48 +87,42 @@ class Simulator:
         disconnected_functions = []
         check_internet.add_disconnected_functions(disconnected_functions)
 
-    def update_viewing_symbol(self, *args, **kwargs):
-        def job():
-            return core.window.comboBox_6.currentText()
+    async def load(self, *args, **kwargs):
+        text = "Nothing drawn"
+        core.window.label_19.setText(text)
 
-        alias = core.window.undertake(job, True)
+    async def update_viewing_symbol(self, *args, **kwargs):
+        alias = core.window.comboBox_6.currentText()
         symbol = core.window.alias_to_symbol[alias]
         self.viewing_symbol = symbol
 
-        self.display_lines()
+        await self.display_lines()
 
-    def update_calculation_settings(self, *args, **kwargs):
-        text: str = core.window.undertake(
-            lambda: core.window.comboBox_5.currentText(), True
-        )  # type:ignore
+    async def update_calculation_settings(self, *args, **kwargs):
+        text = core.window.comboBox_5.currentText()
         if text == "":
             return
         from_year = self.calculation_settings["year"]
         to_year = int(text)
         self.calculation_settings["year"] = to_year
         if from_year != to_year:
-            self.display_year_range()
+            asyncio.create_task(self.display_year_range())
 
-        index: int = core.window.undertake(
-            lambda: core.window.comboBox.currentIndex(), True
-        )  # type:ignore
+        index = core.window.comboBox.currentIndex()
         self.calculation_settings["strategy_index"] = index
 
-        self.display_lines()
+        await self.display_lines()
 
-    def update_presentation_settings(self, *args, **kwargs):
-        widget = core.window.spinBox_2
-        input_value = core.window.undertake(lambda w=widget: w.value(), True)
+    async def update_presentation_settings(self, *args, **kwargs):
+        input_value = core.window.spinBox_2.value()
         self.presentation_settings["leverage"] = input_value
-        widget = core.window.doubleSpinBox
-        input_value = core.window.undertake(lambda w=widget: w.value(), True)
+        input_value = core.window.doubleSpinBox.value()
         self.presentation_settings["taker_fee"] = input_value
-        widget = core.window.doubleSpinBox_2
-        input_value = core.window.undertake(lambda w=widget: w.value(), True)
+        input_value = core.window.doubleSpinBox_2.value()
         self.presentation_settings["maker_fee"] = input_value
-        self.present()
+        await self.present()
 
-    def display_lines(self, *args, **kwargs):
+    async def display_lines(self, *args, **kwargs):
         # ■■■■■ start the task ■■■■■
 
         periodic = kwargs.get("periodic", False)
@@ -156,7 +145,7 @@ class Simulator:
 
         # ■■■■■ check if the data exists ■■■■■
 
-        with datalocks.hold("collector_candle_data"):
+        async with datalocks.hold("collector_candle_data"):
             if len(collector.me.candle_data) == 0:
                 return
 
@@ -170,11 +159,11 @@ class Simulator:
             for _ in range(50):
                 if stop_flag.find(task_name, task_id):
                     return
-                with datalocks.hold("collector_candle_data"):
+                async with datalocks.hold("collector_candle_data"):
                     last_index = collector.me.candle_data.index[-1]
                     if last_index == before_moment:
                         break
-                time.sleep(0.1)
+                await asyncio.sleep(0.1)
 
         # ■■■■■ get ready for task duration measurement ■■■■■
 
@@ -188,11 +177,11 @@ class Simulator:
 
         # ■■■■■ get light data ■■■■■
 
-        with datalocks.hold("collector_realtime_data_chunks"):
+        async with datalocks.hold("collector_realtime_data_chunks"):
             before_chunk = collector.me.realtime_data_chunks[-2].copy()
             current_chunk = collector.me.realtime_data_chunks[-1].copy()
         realtime_data = np.concatenate((before_chunk, current_chunk))
-        with datalocks.hold("collector_aggregate_trades"):
+        async with datalocks.hold("collector_aggregate_trades"):
             aggregate_trades = collector.me.aggregate_trades.copy()
 
         # ■■■■■ draw light lines ■■■■■
@@ -204,13 +193,10 @@ class Simulator:
         data_y = data_y[mask]
         data_x = data_x[mask]
         widget = core.window.simulation_lines["mark_price"]
-
-        def job_mp(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_mp, False)
+        await asyncio.sleep(0)
 
         # last price
         data_x = aggregate_trades["index"].astype(np.int64) / 10**9
@@ -219,13 +205,10 @@ class Simulator:
         data_y = data_y[mask]
         data_x = data_x[mask]
         widget = core.window.simulation_lines["last_price"]
-
-        def job_lp(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_lp, False)
+        await asyncio.sleep(0)
 
         # last trade volume
         index_ar = aggregate_trades["index"].astype(np.int64) / 10**9
@@ -240,13 +223,10 @@ class Simulator:
         data_x = np.repeat(index_ar, 3)
         data_y = np.stack([nan_ar, zero_ar, value_ar], axis=1).reshape(-1)
         widget = core.window.simulation_lines["last_volume"]
-
-        def job_ltv(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_ltv, False)
+        await asyncio.sleep(0)
 
         # book tickers
         data_x = realtime_data["index"].astype(np.int64) / 10**9
@@ -255,13 +235,10 @@ class Simulator:
         data_y = data_y[mask]
         data_x = data_x[mask]
         widget = core.window.simulation_lines["book_tickers"][0]
-
-        def job_btb(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_btb, False)
+        await asyncio.sleep(0)
 
         data_x = realtime_data["index"].astype(np.int64) / 10**9
         data_y = realtime_data[str((symbol, "Best Ask Price"))]
@@ -269,13 +246,10 @@ class Simulator:
         data_y = data_y[mask]
         data_x = data_x[mask]
         widget = core.window.simulation_lines["book_tickers"][1]
-
-        def job_bta(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_bta, False)
+        await asyncio.sleep(0)
 
         # entry price
         entry_price = self.account_state["positions"][symbol]["entry_price"]
@@ -290,13 +264,10 @@ class Simulator:
             data_x = []
             data_y = []
         widget = core.window.simulation_lines["entry_price"]
-
-        def job_ep(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_ep, False)
+        await asyncio.sleep(0)
 
         # ■■■■■ record task duration ■■■■■
 
@@ -326,13 +297,13 @@ class Simulator:
 
         # ■■■■■ get heavy data ■■■■■
 
-        with datalocks.hold("collector_candle_data"):
+        async with datalocks.hold("collector_candle_data"):
             candle_data = collector.me.candle_data
             candle_data = candle_data[get_from:slice_until][[symbol]]
             candle_data = candle_data.copy()
-        with datalocks.hold("simulator_unrealized_changes"):
+        async with datalocks.hold("simulator_unrealized_changes"):
             unrealized_changes = self.unrealized_changes.copy()
-        with datalocks.hold("simulator_asset_record"):
+        async with datalocks.hold("simulator_asset_record"):
             asset_record = self.asset_record
             if len(asset_record) > 0:
                 last_asset = asset_record.iloc[-1]["Result Asset"]
@@ -417,13 +388,10 @@ class Simulator:
             axis=1,
         ).reshape(-1)
         widget = core.window.simulation_lines["price_rise"]
-
-        def job_pm1(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_pm1, False)
+        await asyncio.sleep(0)
 
         data_x = np.stack(
             [
@@ -454,13 +422,10 @@ class Simulator:
             axis=1,
         ).reshape(-1)
         widget = core.window.simulation_lines["price_fall"]
-
-        def job_pm2(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_pm2, False)
+        await asyncio.sleep(0)
 
         data_x = np.stack(
             [
@@ -491,38 +456,29 @@ class Simulator:
             axis=1,
         ).reshape(-1)
         widget = core.window.simulation_lines["price_stay"]
-
-        def job_pm3(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_pm3, False)
+        await asyncio.sleep(0)
 
         # wobbles
         sr = candle_data[(symbol, "High")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.simulation_lines["wobbles"][0]
-
-        def job_w1(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_w1, False)
+        await asyncio.sleep(0)
 
         sr = candle_data[(symbol, "Low")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.simulation_lines["wobbles"][1]
-
-        def job_w2(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_w2, False)
+        await asyncio.sleep(0)
 
         # trade volume
         sr = candle_data[(symbol, "Volume")]
@@ -530,25 +486,19 @@ class Simulator:
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.simulation_lines["volume"]
-
-        def job_tv(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_tv, False)
+        await asyncio.sleep(0)
 
         # asset
         data_x = asset_record["Result Asset"].index.to_numpy(dtype=np.int64) / 10**9
         data_y = asset_record["Result Asset"].to_numpy(dtype=np.float32)
         widget = core.window.simulation_lines["asset"]
-
-        def job_a(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_a, False)
+        await asyncio.sleep(0)
 
         # asset with unrealized profit
         sr = asset_record["Result Asset"]
@@ -559,13 +509,10 @@ class Simulator:
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9 + 5
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.simulation_lines["asset_with_unrealized_profit"]
-
-        def job_aup(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_aup, False)
+        await asyncio.sleep(0)
 
         # buy and sell
         df = asset_record.loc[asset_record["Symbol"] == symbol]
@@ -574,13 +521,10 @@ class Simulator:
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.simulation_lines["sell"]
-
-        def job_bs1(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_bs1, False)
+        await asyncio.sleep(0)
 
         df = asset_record.loc[asset_record["Symbol"] == symbol]
         df = df[df["Side"] == "buy"]
@@ -588,13 +532,10 @@ class Simulator:
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = core.window.simulation_lines["buy"]
-
-        def job_bs2(widget=widget, data_x=data_x, data_y=data_y):
-            widget.setData(data_x, data_y)
-
+        widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
-        core.window.undertake(job_bs2, False)
+        await asyncio.sleep(0)
 
         # ■■■■■ record task duration ■■■■■
 
@@ -606,12 +547,15 @@ class Simulator:
         compiled_indicators_script = compile(indicators_script, "<string>", "exec")
         target_symbols = user_settings.get_data_settings()["target_symbols"]
 
-        indicators: pd.DataFrame = process_toss.apply(
-            make_indicators.do,
-            target_symbols=target_symbols,
-            candle_data=candle_data,
-            compiled_indicators_script=compiled_indicators_script,
-        )  # type:ignore
+        indicators = await core.event_loop.run_in_executor(
+            core.process_pool,
+            functools.partial(
+                make_indicators.do,
+                target_symbols=target_symbols,
+                candle_data=candle_data,
+                compiled_indicators_script=compiled_indicators_script,
+            ),
+        )
 
         indicators = indicators[slice_from:]
 
@@ -632,18 +576,15 @@ class Simulator:
                     color = "#AAAAAA"
                 else:
                     color = inside_strings[0]
-
-                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
-                    widget.setPen(color)
-                    widget.setData(data_x, data_y)
-
+                widget.setPen(color)
+                widget.setData(data_x, data_y)
                 if stop_flag.find(task_name, task_id):
                     return
-                core.window.undertake(job, False)
+                await asyncio.sleep(0)
             else:
                 if stop_flag.find(task_name, task_id):
                     return
-                core.window.undertake(lambda w=widget: w.clear(), False)
+                widget.clear()
 
         # trade volume indicators
         df = indicators[symbol]["Volume"]
@@ -660,18 +601,15 @@ class Simulator:
                     color = "#AAAAAA"
                 else:
                     color = inside_strings[0]
-
-                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
-                    widget.setPen(color)
-                    widget.setData(data_x, data_y)
-
+                widget.setPen(color)
+                widget.setData(data_x, data_y)
                 if stop_flag.find(task_name, task_id):
                     return
-                core.window.undertake(job, False)
+                await asyncio.sleep(0)
             else:
                 if stop_flag.find(task_name, task_id):
                     return
-                core.window.undertake(lambda w=widget: w.clear(), False)
+                widget.clear()
 
         # abstract indicators
         df = indicators[symbol]["Abstract"]
@@ -688,73 +626,62 @@ class Simulator:
                     color = "#AAAAAA"
                 else:
                     color = inside_strings[0]
-
-                def job(widget=widget, data_x=data_x, data_y=data_y, color=color):
-                    widget.setPen(color)
-                    widget.setData(data_x, data_y)
-
+                widget.setPen(color)
+                widget.setData(data_x, data_y)
                 if stop_flag.find(task_name, task_id):
                     return
-                core.window.undertake(job, False)
+                await asyncio.sleep(0)
             else:
                 if stop_flag.find(task_name, task_id):
                     return
-                core.window.undertake(lambda w=widget: w.clear(), False)
+                widget.clear()
 
         # ■■■■■ set minimum view range ■■■■■
 
-        self.set_minimum_view_range()
+        await self.set_minimum_view_range()
 
-    def erase(self, *args, **kwargs):
+    async def erase(self, *args, **kwargs):
         self.raw_account_state = standardize.account_state()
         self.raw_scribbles = {}
         self.raw_asset_record = standardize.asset_record()
         self.raw_unrealized_changes = standardize.unrealized_changes()
         self.about_viewing = None
 
-        self.present()
+        await self.present()
 
-    def display_available_years(self, *args, **kwargs):
-        with datalocks.hold("collector_candle_data"):
+    async def display_available_years(self, *args, **kwargs):
+        async with datalocks.hold("collector_candle_data"):
             years_sr = collector.me.candle_data.index.year.drop_duplicates()  # type:ignore
         years = years_sr.tolist()
         years.sort(reverse=True)
         years = [str(year) for year in years]
 
-        def job():
-            widget = core.window.comboBox_5
-            return [int(widget.itemText(i)) for i in range(widget.count())]
-
-        choices: list = core.window.undertake(job, True)  # type:ignore
+        widget = core.window.comboBox_5
+        choices = [int(widget.itemText(i)) for i in range(widget.count())]
         choices.sort(reverse=True)
         choices = [str(choice) for choice in choices]
 
         if years != choices:
             # if it's changed
-            widget = core.window.comboBox_5
-            core.window.undertake(lambda w=widget: w.clear(), False)
-            core.window.undertake(lambda w=widget, y=years: w.addItems(y), False)
+            core.window.comboBox_5.clear()
+            core.window.comboBox_5.addItems(years)
 
-    def simulate_only_visible(self, *args, **kwargs):
-        self.calculate(only_visible=True)
+    async def simulate_only_visible(self, *args, **kwargs):
+        await self.calculate(only_visible=True)
 
-    def display_range_information(self, *args, **kwargs):
+    async def display_range_information(self, *args, **kwargs):
         task_id = stop_flag.make("display_simulation_range_information")
 
         symbol = self.viewing_symbol
 
-        range_start_timestamp: float = core.window.undertake(
-            lambda: core.window.plot_widget_2.getAxis("bottom").range[0], True
-        )  # type:ignore
+        range_start_timestamp = core.window.plot_widget_2.getAxis("bottom").range[0]
         range_start_timestamp = max(range_start_timestamp, 0.0)
         range_start = datetime.fromtimestamp(range_start_timestamp, tz=timezone.utc)
 
         if stop_flag.find("display_simulation_range_information", task_id):
             return
 
-        range_end_timestamp: float = core.window.undertake(
-            lambda: core.window.plot_widget_2.getAxis("bottom").range[1], True
-        )  # type:ignore
+        range_end_timestamp = core.window.plot_widget_2.getAxis("bottom").range[1]
         if range_end_timestamp < 0:
             # case when pyqtgraph passed negative value because it's too big
             range_end_timestamp = 9223339636
@@ -774,9 +701,9 @@ class Simulator:
         if stop_flag.find("display_simulation_range_information", task_id):
             return
 
-        with datalocks.hold("simulator_unrealized_changes"):
+        async with datalocks.hold("simulator_unrealized_changes"):
             unrealized_changes = self.unrealized_changes[range_start:range_end].copy()
-        with datalocks.hold("simulator_asset_record"):
+        async with datalocks.hold("simulator_asset_record"):
             asset_record = self.asset_record[range_start:range_end].copy()
 
         auto_trade_mask = asset_record["Cause"] == "auto_trade"
@@ -817,8 +744,7 @@ class Simulator:
         if stop_flag.find("display_simulation_range_information", task_id):
             return
 
-        widget = core.window.plot_widget_2.getAxis("left")
-        view_range: list = core.window.undertake(lambda w=widget: w.range, True)  # type:ignore
+        view_range = core.window.plot_widget_2.getAxis("left").range
         range_down = view_range[0]
         range_up = view_range[1]
         price_range_height = (1 - range_down / range_up) * 100
@@ -838,20 +764,17 @@ class Simulator:
         text += "  ⦁  "
         text += "Lowest unrealized profit"
         text += f" {min_unrealized_change*100:+.4f}%"
-        core.window.undertake(lambda t=text: core.window.label_13.setText(t), False)
+        core.window.label_13.setText(text)
 
-    def set_minimum_view_range(self, *args, **kwargs):
-        def job():
-            widget = core.window.plot_widget_2
-            range_down = widget.getAxis("left").range[0]
-            widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
-            widget = core.window.plot_widget_3
-            range_down = widget.getAxis("left").range[0]
-            widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
+    async def set_minimum_view_range(self, *args, **kwargs):
+        widget = core.window.plot_widget_2
+        range_down = widget.getAxis("left").range[0]
+        widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
+        widget = core.window.plot_widget_3
+        range_down = widget.getAxis("left").range[0]
+        widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
 
-        core.window.undertake(job, False)
-
-    def calculate(self, *args, **kwargs):
+    async def calculate(self, *args, **kwargs):
         task_id = stop_flag.make("calculate_simulation")
 
         only_visible = kwargs.get("only_visible", False)
@@ -859,57 +782,41 @@ class Simulator:
         prepare_step = 0
         calculate_step = 0
 
-        def job():
+        async def play_progress_bar():
             while True:
                 if stop_flag.find("calculate_simulation", task_id):
-                    widget = core.window.progressBar_4
-                    core.window.undertake(lambda w=widget: w.setValue(0), False)
-                    widget = core.window.progressBar
-                    core.window.undertake(lambda w=widget: w.setValue(0), False)
+                    core.window.progressBar_4.setValue(0)
+                    core.window.progressBar.setValue(0)
                     return
                 else:
                     if prepare_step == 6 and calculate_step == 1000:
                         is_progressbar_filled = True
-                        progressbar_value: int = core.window.undertake(
-                            lambda: core.window.progressBar_4.value(), True
-                        )  # type:ignore
+                        progressbar_value = core.window.progressBar_4.value()
                         if progressbar_value < 1000:
                             is_progressbar_filled = False
-                        progressbar_value: int = core.window.undertake(
-                            lambda: core.window.progressBar.value(), True
-                        )  # type:ignore
+                        progressbar_value = core.window.progressBar.value()
                         if progressbar_value < 1000:
                             is_progressbar_filled = False
                         if is_progressbar_filled:
-                            time.sleep(0.1)
-                            widget = core.window.progressBar_4
-                            core.window.undertake(lambda w=widget: w.setValue(0), False)
-                            widget = core.window.progressBar
-                            core.window.undertake(lambda w=widget: w.setValue(0), False)
+                            await asyncio.sleep(0.1)
+                            core.window.progressBar_4.setValue(0)
+                            core.window.progressBar.setValue(0)
                             return
                     widget = core.window.progressBar_4
-                    before_value: int = core.window.undertake(
-                        lambda w=widget: w.value(), True
-                    )  # type:ignore
+                    before_value = widget.value()
                     if before_value < 1000:
                         remaining = math.ceil(1000 / 6 * prepare_step) - before_value
                         new_value = before_value + math.ceil(remaining * 0.2)
-                        core.window.undertake(
-                            lambda w=widget, v=new_value: w.setValue(v), False
-                        )
+                        widget.setValue(new_value)
                     widget = core.window.progressBar
-                    before_value: int = core.window.undertake(
-                        lambda w=widget: w.value(), True
-                    )  # type:ignore
+                    before_value = widget.value()
                     if before_value < 1000:
                         remaining = calculate_step - before_value
                         new_value = before_value + math.ceil(remaining * 0.2)
-                        core.window.undertake(
-                            lambda w=widget, v=new_value: w.setValue(v), False
-                        )
-                    time.sleep(0.01)
+                        widget.setValue(new_value)
+                    await asyncio.sleep(0.01)
 
-        thread_toss.apply_async(job)
+        asyncio.create_task(play_progress_bar())
 
         prepare_step = 1
 
@@ -953,7 +860,7 @@ class Simulator:
         slice_until -= timedelta(seconds=1)
 
         # get only year range
-        with datalocks.hold("collector_candle_data"):
+        async with datalocks.hold("collector_candle_data"):
             df = collector.me.candle_data
             year_candle_data = df[slice_from - timedelta(days=7) : slice_until].copy()
 
@@ -991,8 +898,7 @@ class Simulator:
             previous_account_state = blank_account_state.copy()
             previous_virtual_state = blank_virtual_state.copy()
 
-            widget = core.window.plot_widget_2.getAxis("bottom")
-            view_range: list = core.window.undertake(lambda w=widget: w.range, True)  # type:ignore
+            view_range = core.window.plot_widget_2.getAxis("bottom").range
             view_start = datetime.fromtimestamp(view_range[0], tz=timezone.utc)
             view_end = datetime.fromtimestamp(view_range[1], tz=timezone.utc)
 
@@ -1010,12 +916,15 @@ class Simulator:
                 previous_asset_record = pd.read_pickle(filepath)
                 filepath = unrealized_changes_path
                 previous_unrealized_changes = pd.read_pickle(filepath)
-                with open(scribbles_path, "rb") as file:
-                    previous_scribbles = pickle.load(file)
-                with open(account_state_path, "rb") as file:
-                    previous_account_state = pickle.load(file)
-                with open(virtual_state_path, "rb") as file:
-                    previous_virtual_state = pickle.load(file)
+                async with aiofiles.open(scribbles_path, "rb") as file:
+                    content = await file.read()
+                    previous_scribbles = pickle.loads(content)
+                async with aiofiles.open(account_state_path, "rb") as file:
+                    content = await file.read()
+                    previous_account_state = pickle.loads(content)
+                async with aiofiles.open(virtual_state_path, "rb") as file:
+                    content = await file.read()
+                    previous_virtual_state = pickle.loads(content)
 
                 calculate_from = previous_account_state["observed_until"]
                 calculate_until = slice_until
@@ -1039,7 +948,7 @@ class Simulator:
         # ■■■■■ prepare per chunk data ■■■■■
 
         calculation_input_data = []
-        progress_list = process_toss.communicator.list([0])
+        progress_list = core.communicator.list([0])
 
         if should_calculate:
             decision_script = strategy["decision_script"]
@@ -1048,12 +957,15 @@ class Simulator:
 
             # a little more data for generation
             provide_from = calculate_from - timedelta(days=7)
-            year_indicators: pd.DataFrame = process_toss.apply(
-                make_indicators.do,
-                target_symbols=target_symbols,
-                candle_data=year_candle_data[provide_from:calculate_until],
-                compiled_indicators_script=compiled_indicators_script,
-            )  # type:ignore
+            year_indicators = await core.event_loop.run_in_executor(
+                core.process_pool,
+                functools.partial(
+                    make_indicators.do,
+                    target_symbols=target_symbols,
+                    candle_data=year_candle_data[provide_from:calculate_until],
+                    compiled_indicators_script=compiled_indicators_script,
+                ),
+            )
 
             # range cut
             needed_candle_data = year_candle_data[calculate_from:calculate_until]
@@ -1070,7 +982,7 @@ class Simulator:
                 ]
 
                 chunk_count = len(chunk_candle_data_list)
-                progress_list = process_toss.communicator.list([0] * chunk_count)
+                progress_list = core.communicator.list([0] * chunk_count)
 
                 for turn, chunk_candle_data in enumerate(chunk_candle_data_list):
                     chunk_index = chunk_candle_data.index
@@ -1130,22 +1042,30 @@ class Simulator:
         calculation_output_data = []
 
         if should_calculate:
-            map_result = process_toss.map_async(
-                simulate_chunk.do, calculation_input_data
-            )
+            futures = [
+                core.event_loop.run_in_executor(
+                    core.process_pool, simulate_chunk.do, input_data
+                )
+                for input_data in calculation_input_data
+            ]
+            gathered = asyncio.gather(*futures)
 
             total_seconds = (calculate_until - calculate_from).total_seconds()
-            while True:
-                if map_result.ready():
-                    if map_result.successful():
-                        calculation_output_data = map_result.get()
-                        break
-                    else:
-                        stop_flag.make("calculate_simulation")
-                if stop_flag.find("calculate_simulation", task_id):
-                    return
-                total_progress = sum(progress_list)
-                calculate_step = math.ceil(total_progress * 1000 / total_seconds)
+
+            async def update_calculation_step():
+                nonlocal calculate_step
+                while True:
+                    if stop_flag.find("calculate_simulation", task_id):
+                        return
+                    if gathered.done():
+                        return
+                    total_progress = sum(progress_list)
+                    calculate_step = math.ceil(total_progress * 1000 / total_seconds)
+                    await asyncio.sleep(0.01)
+
+            asyncio.create_task(update_calculation_step())
+
+            calculation_output_data = await gathered
 
         calculate_step = 1000
 
@@ -1192,26 +1112,26 @@ class Simulator:
             "strategy_code_name": strategy_code_name,
             "strategy_version": strategy_version,
         }
-        self.present()
+        await self.present()
 
         # ■■■■■ save if properly calculated ■■■■■
 
         if not only_visible and should_calculate:
             asset_record.to_pickle(asset_record_path)
             unrealized_changes.to_pickle(unrealized_changes_path)
-            with open(scribbles_path, "wb") as file:
+            async with aiofiles.open(scribbles_path, "wb") as file:
                 pickle.dump(scribbles, file)
-            with open(account_state_path, "wb") as file:
+            async with aiofiles.open(account_state_path, "wb") as file:
                 pickle.dump(account_state, file)
-            with open(virtual_state_path, "wb") as file:
+            async with aiofiles.open(virtual_state_path, "wb") as file:
                 pickle.dump(virtual_state, file)
 
-    def present(self, *args, **kwargs):
+    async def present(self, *args, **kwargs):
         maker_fee = self.presentation_settings["maker_fee"]
         taker_fee = self.presentation_settings["taker_fee"]
         leverage = self.presentation_settings["leverage"]
 
-        with datalocks.hold("simulator_unrealized_changes"):
+        async with datalocks.hold("simulator_unrealized_changes"):
             asset_record = self.raw_asset_record.copy()
             unrealized_changes = self.raw_unrealized_changes.copy()
             scribbles = self.raw_scribbles.copy()
@@ -1289,19 +1209,19 @@ class Simulator:
 
         self.scribbles = presentation_scribbles
         self.account_state = presentation_account_state
-        with datalocks.hold("simulator_unrealized_changes"):
+        async with datalocks.hold("simulator_unrealized_changes"):
             self.unrealized_changes = presentation_unrealized_changes
-        with datalocks.hold("simulator_asset_record"):
+        async with datalocks.hold("simulator_asset_record"):
             self.asset_record = presentation_asset_record
 
         # ■■■■■ display ■■■■■
 
-        self.display_lines()
-        self.display_range_information()
+        asyncio.create_task(self.display_lines())
+        asyncio.create_task(self.display_range_information())
 
         if self.about_viewing is None:
             text = "Nothing drawn"
-            core.window.undertake(lambda t=text: core.window.label_19.setText(t), False)
+            core.window.label_19.setText(text)
         else:
             year = self.about_viewing["year"]
             strategy_code_name = self.about_viewing["strategy_code_name"]
@@ -1312,9 +1232,9 @@ class Simulator:
             text += f"Strategy code name {strategy_code_name}"
             text += "  ⦁  "
             text += f"Strategy version {strategy_version}"
-            core.window.undertake(lambda t=text: core.window.label_19.setText(t), False)
+            core.window.label_19.setText(text)
 
-    def display_year_range(self, *args, **kwargs):
+    async def display_year_range(self, *args, **kwargs):
         range_start = datetime(
             year=self.calculation_settings["year"],
             month=1,
@@ -1330,13 +1250,9 @@ class Simulator:
         )
         range_end = range_end.timestamp()
         widget = core.window.plot_widget_2
+        widget.setXRange(range_start, range_end)
 
-        def job(range_start=range_start, range_end=range_end):
-            widget.setXRange(range_start, range_end)
-
-        core.window.undertake(job, False)
-
-    def delete_calculation_data(self, *args, **kwargs):
+    async def delete_calculation_data(self, *args, **kwargs):
         year = self.calculation_settings["year"]
         strategy_index = self.calculation_settings["strategy_index"]
 
@@ -1371,7 +1287,7 @@ class Simulator:
                 f" {strategy_code_name} version {strategy_version}.",
                 ["Okay"],
             ]
-            core.window.ask(question)
+            await core.window.ask(question)
             return
         else:
             question = [
@@ -1382,7 +1298,7 @@ class Simulator:
                 " other combinations does not get affected.",
                 ["Cancel", "Delete"],
             ]
-            answer = core.window.ask(question)
+            answer = await core.window.ask(question)
             if answer in (0, 1):
                 return
 
@@ -1407,9 +1323,9 @@ class Simulator:
         except FileNotFoundError:
             pass
 
-        self.erase()
+        await self.erase()
 
-    def draw(self, *args, **kwargs):
+    async def draw(self, *args, **kwargs):
         year = self.calculation_settings["year"]
         strategy_index = self.calculation_settings["strategy_index"]
 
@@ -1424,19 +1340,21 @@ class Simulator:
         account_state_path = path_start + "_account_state.pickle"
 
         try:
-            with datalocks.hold("simulator_unrealized_changes"):
+            async with datalocks.hold("simulator_unrealized_changes"):
                 self.raw_asset_record = pd.read_pickle(asset_record_path)
                 self.raw_unrealized_changes = pd.read_pickle(unrealized_changes_path)
-                with open(scribbles_path, "rb") as file:
-                    self.raw_scribbles = pickle.load(file)
-                with open(account_state_path, "rb") as file:
-                    self.raw_account_state = pickle.load(file)
+                async with aiofiles.open(scribbles_path, "rb") as file:
+                    content = await file.read()
+                    self.raw_scribbles = pickle.loads(content)
+                async with aiofiles.open(account_state_path, "rb") as file:
+                    content = await file.read()
+                    self.raw_account_state = pickle.loads(content)
             self.about_viewing = {
                 "year": year,
                 "strategy_code_name": strategy_code_name,
                 "strategy_version": strategy_version,
             }
-            self.present()
+            await self.present()
         except FileNotFoundError:
             question = [
                 "No calculation data on this combination",
@@ -1444,27 +1362,19 @@ class Simulator:
                 f" {strategy_code_name} version {strategy_version}.",
                 ["Okay"],
             ]
-            core.window.ask(question)
+            await core.window.ask(question)
             return
 
-    def match_graph_range(self, *args, **kwargs):
-        range_start = core.window.undertake(
-            lambda: core.window.plot_widget.getAxis("bottom").range[0], True
-        )
-        range_end = core.window.undertake(
-            lambda: core.window.plot_widget.getAxis("bottom").range[1], True
-        )
+    async def match_graph_range(self, *args, **kwargs):
+        range_start = core.window.plot_widget.getAxis("bottom").range[0]
+        range_end = core.window.plot_widget.getAxis("bottom").range[1]
         widget = core.window.plot_widget_2
+        widget.setXRange(range_start, range_end, padding=0)  # type:ignore
 
-        def job(range_start=range_start, range_end=range_end):
-            widget.setXRange(range_start, range_end, padding=0)  # type:ignore
-
-        core.window.undertake(job, False)
-
-    def stop_calculation(self, *args, **kwargs):
+    async def stop_calculation(self, *args, **kwargs):
         stop_flag.make("calculate_simulation")
 
-    def analyze_unrealized_peaks(self, *args, **kwargs):
+    async def analyze_unrealized_peaks(self, *args, **kwargs):
         peak_indexes, _ = find_peaks(-self.unrealized_changes, distance=3600 / 10)  # type:ignore
         peak_sr = self.unrealized_changes.iloc[peak_indexes]
         peak_sr = peak_sr.sort_values().iloc[:12]
@@ -1475,7 +1385,7 @@ class Simulator:
                 " profit.",
                 ["Okay"],
             ]
-            core.window.ask(question)
+            await core.window.ask(question)
         else:
             text_lines = [
                 f"{index} {peak_value:+.2f}%"
@@ -1486,15 +1396,15 @@ class Simulator:
                 "\n".join(text_lines),
                 ["Okay"],
             ]
-            core.window.ask(question)
+            await core.window.ask(question)
 
-    def toggle_combined_draw(self, *args, **kwargs):
+    async def toggle_combined_draw(self, *args, **kwargs):
         is_checked = args[0]
         if is_checked:
             self.should_draw_all_years = True
         else:
             self.should_draw_all_years = False
-        self.display_lines()
+        await self.display_lines()
 
 
 me = None

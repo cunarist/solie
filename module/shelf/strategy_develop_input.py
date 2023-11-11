@@ -1,3 +1,5 @@
+import aiofiles
+
 from PySide6 import QtWidgets, QtCore
 
 from module import core
@@ -71,33 +73,27 @@ class StrategyDevelopInput(QtWidgets.QWidget):
         card_layout.addItem(spacer)
 
         # function
-        def job_as(*args):
+        async def job_as(*args):
             # indicators script
             filepath = "./static/sample_indicators_script.txt"
-            with open(filepath, "r", encoding="utf8") as file:
-                script = file.read()
+            async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+                script = await file.read()
 
-            def job_ii(script=script):
-                indicators_script_input.setPlainText(script)
-
-            core.window.undertake(job_ii, False)
+            indicators_script_input.setPlainText(script)
 
             # decision script
             filepath = "./static/sample_decision_script.txt"
-            with open(filepath, "r", encoding="utf8") as file:
-                script = file.read()
+            async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+                script = await file.read()
 
-            def job(script=script):
-                decision_script_input.setPlainText(script)
-
-            core.window.undertake(job, False)
+            decision_script_input.setPlainText(script)
 
             question = [
                 "Sample scripts applied",
                 "It is not yet saved. Use it as you want.",
                 ["Okay"],
             ]
-            core.window.ask(question)
+            await core.window.ask(question)
 
         # sample script button
         fill_button = QtWidgets.QPushButton("Fill with sample", card)
@@ -109,16 +105,9 @@ class StrategyDevelopInput(QtWidgets.QWidget):
         card_layout.addWidget(fill_button)
 
         # function
-        def job_ss(*args):
-            def job():
-                return (
-                    indicators_script_input.toPlainText(),
-                    decision_script_input.toPlainText(),
-                )
-
-            returned: tuple = core.window.undertake(job, True)  # type:ignore
-            strategy["indicators_script"] = returned[0]
-            strategy["decision_script"] = returned[1]
+        async def job_ss(*args):
+            strategy["indicators_script"] = indicators_script_input.toPlainText()
+            strategy["decision_script"] = decision_script_input.toPlainText()
             done_event.set()
 
         # confirm button

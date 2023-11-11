@@ -1,77 +1,33 @@
-import json
-import time
+import asyncio
+import aiohttp
+from typing import Callable, Coroutine
 import logging
-
-import websocket
-
-from module import thread_toss
 
 
 class ApiStreamer:
     # https://github.com/websocket-client/websocket-client/issues/580
 
-    _instances = []
-    _is_active = True
-
-    def __init__(self, url, when_received):
-        self._instances.append(self)
-
+    def __init__(self, url: str, when_received: Callable[..., Coroutine]):
         self._url = url
         self._when_received = when_received
-        self._websocket_app = None
-        self._is_closed = False
+        self.session = aiohttp.ClientSession()
 
         if url != "":
-            self._create_websocket_app()
+            asyncio.create_task(self._run_websocket())
 
-    def update_url(self, url):
-        did_change = self._url != url
-        before_url = self._url
-        self._url = url
-        if self._websocket_app is None:
-            self._create_websocket_app()
-        elif did_change:
-            self._websocket_app.close()
-            text = f"Websocket address replaced from {before_url} to {url}"
-            logger = logging.getLogger("solie")
-            logger.info(text)
+    async def _run_websocket(self):
+        async with self.session.ws_connect(self._url) as ws:
+            async for received_raw in ws:
+                if received_raw.type in (
+                    aiohttp.WSMsgType.CLOSED,
+                    aiohttp.WSMsgType.ERROR,
+                ):
+                    asyncio.create_task(self._run_websocket())
+                    raise ConnectionError(f"Websocket reconnected:\n{self._url}")
+                received = received_raw.json()
+                asyncio.create_task(self._when_received(received))
 
-    @classmethod
-    def close_all_forever(cls):
-        cls._is_active = False
-        for instance in cls._instances:
-            if isinstance(instance._websocket_app, websocket.WebSocketApp):
-                instance._websocket_app.close()
-
-    def _create_websocket_app(self):
-        def on_message(_, message):
-            received = json.loads(message)
-            try:
-                # not using thread pool
-                # because thread pool is even slower with frequent messages
-                self._when_received(received=received)
-            except Exception:
-                logger = logging.getLogger("solie")
-                logger.exception(
-                    "Exception occured from a streamer\nBelow is the received data\n"
-                    + json.dumps(received, indent=4, default=str)
-                )
-
-        def on_close(*args):
-            if self._is_active:
-                time.sleep(10)
-                self._create_websocket_app()
-
-        websocket_app = websocket.WebSocketApp(
-            url=self._url,
-            on_message=on_message,
-            on_close=on_close,
-        )
-        self._websocket_app = websocket_app
-
-        # https://websocket-client.readthedocs.io/en/latest/examples.html?highlight=dispatcher#dispatching-multiple-websocketapps
-
-        def job():
-            websocket_app.run_forever(skip_utf8_validation=True)
-
-        thread_toss.apply_async(job)
+    def __del__(self):
+        asyncio.create_task(self.session.close())
+        logger = logging.getLogger("solie")
+        logger.exception(f"Websocket closed:\n{self._url}")

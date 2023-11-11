@@ -1,19 +1,15 @@
 import hashlib
 import hmac
 from urllib.parse import urlencode
-import json
 from datetime import datetime, timezone
 
-import requests
+import aiohttp
 
 from module.instrument.api_request_error import ApiRequestError
-from module.recipe import datalocks
 
 
 class ApiRequester:
-    _SESSION_COUNT = 64
     used_rates = {}
-    _sessions = [requests.Session() for _ in range(_SESSION_COUNT)]
 
     def __init__(self):
         self.keys = {
@@ -21,32 +17,12 @@ class ApiRequester:
             "binance_secret": "",
         }
 
-    def _request(self, http_method, parameters) -> requests.Response:
-        attempt = 0
-        while True:
-            slot = attempt % self._SESSION_COUNT
-            if datalocks.hold(f"request_session_{slot}").locked():
-                attempt += 1
-            else:
-                break
-        with datalocks.hold(f"request_session_{slot}"):
-            if http_method == "GET":
-                raw_response = self._sessions[slot].get(**parameters)
-            elif http_method == "DELETE":
-                raw_response = self._sessions[slot].delete(**parameters)
-            elif http_method == "PUT":
-                raw_response = self._sessions[slot].put(**parameters)
-            elif http_method == "POST":
-                raw_response = self._sessions[slot].post(**parameters)
-            else:
-                raise ApiRequestError("This HTTP method is not supported")
-
-        return raw_response
-
     def update_keys(self, keys):
         self.keys.update(keys)
 
-    def binance(self, http_method, path, payload={}, server="futures"):
+    async def binance(
+        self, http_method: str, path: str, payload: dict = {}, server="futures"
+    ):
         query_string = urlencode(payload)
         # replace single quote to double quote
         query_string = query_string.replace("%27", "%22")
@@ -67,17 +43,11 @@ class ApiRequester:
         url += path
         url += "?" + query_string + "&signature=" + signature
 
-        parameters = {"url": url, "headers": headers}
-        raw_response = self._request(http_method, parameters)
-
-        # decode to json
-        try:
-            response = raw_response.json()
-        except json.decoder.JSONDecodeError:
-            status_code = raw_response.status_code
-            text = "There was a problem with Binance API request"
-            text += f" (HTTP {status_code})"
-            raise ApiRequestError(text)
+        async with aiohttp.ClientSession() as session:
+            raw_response = await session.request(
+                method=http_method, url=url, headers=headers
+            )
+            response = await raw_response.json()
 
         # record api usage
         for header_key in raw_response.headers.keys():
@@ -96,33 +66,58 @@ class ApiRequester:
 
         return response
 
-    def coinstats(self, http_method, path, payload={}):
+    async def coinstats(self, http_method: str, path: str, payload: dict = {}):
         query_string = urlencode(payload)
         # replace single quote to double quote
         query_string = query_string.replace("%27", "%22")
 
         url = "https://api.coinstats.app" + path + "?" + query_string
-        parameters = {"url": url}
-        raw_response = self._request(http_method, parameters)
-        response = raw_response.json()
+
+        async with aiohttp.ClientSession() as session:
+            raw_response = await session.request(method=http_method, url=url)
+            response = await raw_response.json()
 
         return response
 
-    def cunarist(self, http_method, path, payload={}):
+    async def cunarist(self, http_method: str, path: str, payload: dict = {}):
         query_string = urlencode(payload)
         # replace single quote to double quote
         query_string = query_string.replace("%27", "%22")
 
         url = "https://cunarist.com" + path + "?" + query_string
-        parameters = {"url": url}
-        raw_response = self._request(http_method, parameters)
-        response = raw_response.json()
 
-        status_code = raw_response.status_code
+        async with aiohttp.ClientSession() as session:
+            raw_response = await session.request(method=http_method, url=url)
+            response = await raw_response.json()
+
+        status_code = raw_response.status
         if status_code != 200:
             text = f"There was a problem with Cunarist API request (HTTP {status_code})"
             text += "\n"
             text += response["message"]
+            raise ApiRequestError(text)
+
+        return response
+
+    async def bytes(self, url: str, payload: dict = {}):
+        query_string = urlencode(payload)
+        # replace single quote to double quote
+        query_string = query_string.replace("%27", "%22")
+
+        headers = {
+            "User-agent": "Mozilla/5.0",
+        }
+        url = url + "?" + query_string
+
+        async with aiohttp.ClientSession() as session:
+            raw_response = await session.request(method="GET", url=url, headers=headers)
+            response = await raw_response.read()
+
+        status_code = raw_response.status
+        if status_code != 200:
+            text = f"There was a problem with bytes request (HTTP {status_code})"
+            text += "\n"
+            text += url
             raise ApiRequestError(text)
 
         return response

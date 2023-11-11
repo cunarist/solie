@@ -1,7 +1,8 @@
+import asyncio
+
 from PySide6 import QtWidgets, QtGui, QtCore
 
 from module import core
-from module import thread_toss
 from module.shelf.long_text_view import LongTextView
 
 
@@ -34,8 +35,8 @@ class LogList(QtWidgets.QListWidget):
         selected_item = self.item(selected_index)
         text = selected_item.data(QtCore.Qt.ItemDataRole.UserRole)
 
-        def job():
+        async def job():
             formation = ["This is the full log", LongTextView, True, [text]]
-            core.window.overlap(formation)
+            await core.window.overlap(formation)
 
-        thread_toss.apply_async(job)
+        asyncio.create_task(job())

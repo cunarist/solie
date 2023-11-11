@@ -1,8 +1,8 @@
 import logging
 import time
+import asyncio
 
 from module import core
-from module import thread_toss
 from module.worker import manager
 from module.shelf.long_text_view import LongTextView
 
@@ -36,16 +36,18 @@ class LogHandler(logging.Handler):
 
         if core.window.should_overlap_error:
 
-            def job(log_content=log_content):
+            async def job(log_content=log_content):
                 formation = [
                     "There was an error",
                     LongTextView,
                     False,
                     [log_content],
                 ]
-                core.window.overlap(formation)
+                await core.window.overlap(formation)
 
-            thread_toss.apply_async(job)
+            asyncio.create_task(job())
 
         else:
-            manager.me.add_log_output(summarization, log_content)
+            asyncio.create_task(
+                manager.me.add_log_output(summarization, log_content),
+            )
