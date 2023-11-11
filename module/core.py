@@ -1,44 +1,37 @@
-import sys
+import asyncio
 import logging
 import math
-import os
-from datetime import datetime, timezone
-import asyncio
-from typing import Callable, Coroutine
-from concurrent.futures import ProcessPoolExecutor
 import multiprocessing
+import os
+import sys
+from concurrent.futures import ProcessPoolExecutor
+from datetime import datetime, timezone
+from typing import Callable, Coroutine
 
-from PySide6 import QtGui, QtWidgets, QtCore
+import aiofiles
+import pandas as pd
 import pyqtgraph
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-import pandas as pd
+from PySide6 import QtCore, QtGui, QtWidgets
 from qasync import QEventLoop
-import aiofiles
 
 from module import introduction
-from module.user_interface import Ui_MainWindow
-from module.worker import manager
-from module.worker import collector
-from module.worker import transactor
-from module.worker import simulator
-from module.worker import strategist
-from module.instrument.percent_axis_item import PercentAxisItem
-from module.instrument.time_axis_item import TimeAxisItem
 from module.instrument.api_requester import ApiRequester
 from module.instrument.log_handler import LogHandler
-from module.recipe import outsource
-from module.recipe import check_internet
-from module.recipe import user_settings
-from module.recipe import examine_data_files
+from module.instrument.percent_axis_item import PercentAxisItem
+from module.instrument.time_axis_item import TimeAxisItem
+from module.recipe import check_internet, examine_data_files, outsource, user_settings
+from module.shelf.coin_selection import CoinSelection
+from module.shelf.datapath_input import DatapathInput
+from module.shelf.token_selection import TokenSelection
+from module.user_interface import Ui_MainWindow
 from module.widget.ask_popup import AskPopup
-from module.widget.splash_screen import SplashScreen
-from module.widget.symbol_box import SymbolBox
 from module.widget.brand_label import BrandLabel
 from module.widget.horizontal_divider import HorizontalDivider
 from module.widget.overlap_popup import OverlapPopup
-from module.shelf.token_selection import TokenSelection
-from module.shelf.coin_selection import CoinSelection
-from module.shelf.datapath_input import DatapathInput
+from module.widget.splash_screen import SplashScreen
+from module.widget.symbol_box import SymbolBox
+from module.worker import collector, manager, simulator, strategist, transactor
 
 
 class Window(QtWidgets.QMainWindow, Ui_MainWindow):

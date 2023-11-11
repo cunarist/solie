@@ -1,9 +1,9 @@
+import io
 from urllib.error import HTTPError
 from urllib.request import urlopen
-import io
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 
 def do(target_tuple: tuple) -> pd.DataFrame:

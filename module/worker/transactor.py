@@ -1,35 +1,36 @@
-from datetime import datetime, timedelta, timezone
-import json
-import os
-import webbrowser
-import math
-import re
-import pickle
-import copy
-import logging
 import asyncio
+import copy
 import functools
+import json
+import logging
+import math
+import os
+import pickle
+import re
+import webbrowser
+from datetime import datetime, timedelta, timezone
 
-import pandas as pd
-import numpy as np
 import aiofiles
+import numpy as np
+import pandas as pd
 
 from module import core
-from module.worker import collector
-from module.worker import strategist
+from module.instrument.api_request_error import ApiRequestError
 from module.instrument.api_requester import ApiRequester
 from module.instrument.api_streamer import ApiStreamer
-from module.instrument.api_request_error import ApiRequestError
-from module.recipe import decide
-from module.recipe import make_indicators
-from module.recipe import ball
-from module.recipe import stop_flag
-from module.recipe import check_internet
-from module.recipe import user_settings
-from module.recipe import remember_task_durations
-from module.recipe import standardize
-from module.recipe import datalocks
+from module.recipe import (
+    ball,
+    check_internet,
+    datalocks,
+    decide,
+    make_indicators,
+    remember_task_durations,
+    standardize,
+    stop_flag,
+    user_settings,
+)
 from module.shelf.long_text_view import LongTextView
+from module.worker import collector, strategist
 
 
 class Transactor:

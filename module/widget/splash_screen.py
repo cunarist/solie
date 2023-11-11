@@ -1,10 +1,10 @@
 import asyncio
 
-from PySide6 import QtWidgets, QtGui
 import aiofiles
+from PySide6 import QtGui, QtWidgets
 
-from module.widget.brand_label import BrandLabel
 from module import introduction
+from module.widget.brand_label import BrandLabel
 
 
 class SplashScreen(QtWidgets.QFrame):

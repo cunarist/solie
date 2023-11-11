@@ -1,15 +1,12 @@
-import os
-import json
 import asyncio
+import json
+import os
 
-from PySide6 import QtGui, QtWidgets
 import aiofiles
+from PySide6 import QtGui, QtWidgets
 
 from module import core
-from module.recipe import check_internet
-from module.recipe import user_settings
-from module.recipe import standardize
-from module.recipe import outsource
+from module.recipe import check_internet, outsource, standardize, user_settings
 from module.shelf.strategy_basic_input import StrategyBasicInput
 from module.shelf.strategy_develop_input import StrategyDevelopInput
 

@@ -1,7 +1,8 @@
 import asyncio
-import aiohttp
-from typing import Callable, Coroutine
 import logging
+from typing import Callable, Coroutine
+
+import aiohttp
 
 
 class ApiStreamer:

@@ -1,13 +1,12 @@
+import functools
 import pathlib
 from tkinter import filedialog
-import functools
 
-from PySide6 import QtWidgets, QtCore, QtGui
+from PySide6 import QtCore, QtGui, QtWidgets
 
 from module import core
+from module.recipe import outsource, user_settings
 from module.widget.horizontal_divider import HorizontalDivider
-from module.recipe import user_settings
-from module.recipe import outsource
 
 
 class DatapathInput(QtWidgets.QWidget):

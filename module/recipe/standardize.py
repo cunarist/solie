@@ -1,7 +1,8 @@
-import pandas as pd
-import numpy as np
-from datetime import datetime, timezone
 import random
+from datetime import datetime, timezone
+
+import numpy as np
+import pandas as pd
 
 from module.recipe import user_settings
 

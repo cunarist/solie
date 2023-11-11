@@ -1,6 +1,6 @@
 import asyncio
 
-from PySide6 import QtWidgets, QtCore, QtGui
+from PySide6 import QtCore, QtGui, QtWidgets
 
 from module.widget.popup_box import PopupBox
 from module.widget.transparent_scroll_area import TransparentScrollArea

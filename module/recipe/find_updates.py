@@ -1,7 +1,6 @@
 from module import introduction
 from module.instrument.api_requester import ApiRequester
-from module.recipe import compare_versions
-from module.recipe import check_internet
+from module.recipe import check_internet, compare_versions
 
 _latest_version = "0.0"
 

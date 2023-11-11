@@ -1,28 +1,29 @@
-from datetime import datetime, timedelta, timezone
-import os
-from collections import deque
-import statistics
-import logging
-import webbrowser
-import platform
-import subprocess
-import json
 import asyncio
+import json
+import logging
+import os
+import platform
+import statistics
+import subprocess
+import webbrowser
+from collections import deque
+from datetime import datetime, timedelta, timezone
 
 import aiofiles
 import timesetter
 
-from module import core
-from module import introduction
-from module.worker import collector
+from module import core, introduction
 from module.instrument.api_requester import ApiRequester
-from module.recipe import simply_format
-from module.recipe import check_internet
-from module.recipe import user_settings
-from module.recipe import find_updates
-from module.recipe import remember_task_durations
-from module.recipe import datalocks
-from module.recipe import value_to
+from module.recipe import (
+    check_internet,
+    datalocks,
+    find_updates,
+    remember_task_durations,
+    simply_format,
+    user_settings,
+    value_to,
+)
+from module.worker import collector
 
 WINDOW_LOCK_OPTIONS = (
     "NEVER",

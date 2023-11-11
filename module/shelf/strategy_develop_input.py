@@ -1,10 +1,9 @@
 import aiofiles
-
-from PySide6 import QtWidgets, QtCore
+from PySide6 import QtCore, QtWidgets
 
 from module import core
-from module.widget.script_editor import ScriptEditor
 from module.recipe import outsource
+from module.widget.script_editor import ScriptEditor
 
 
 class StrategyDevelopInput(QtWidgets.QWidget):

@@ -1,10 +1,10 @@
+import asyncio
 import logging
 import time
-import asyncio
 
 from module import core
-from module.worker import manager
 from module.shelf.long_text_view import LongTextView
+from module.worker import manager
 
 
 class LogHandler(logging.Handler):

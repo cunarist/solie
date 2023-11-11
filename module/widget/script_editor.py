@@ -1,6 +1,6 @@
-from PySide6 import QtWidgets, QtGui, QtCore
-from yapf.yapflib.yapf_api import FormatCode
+from PySide6 import QtCore, QtGui, QtWidgets
 from yapf.yapflib.errors import YapfError
+from yapf.yapflib.yapf_api import FormatCode
 
 from module.instrument.syntax_highlighter import SyntaxHighlighter
 

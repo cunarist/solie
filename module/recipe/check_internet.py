@@ -1,7 +1,6 @@
-import socket
-import logging
 import asyncio
-
+import logging
+import socket
 
 is_ready = asyncio.Event()
 _was_connected = False

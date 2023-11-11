@@ -1,7 +1,7 @@
+import copy
 import math
 import random
-from datetime import datetime, timezone, timedelta
-import copy
+from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import pandas as pd

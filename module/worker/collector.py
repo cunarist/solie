@@ -1,35 +1,36 @@
-from datetime import datetime, timedelta, timezone
-import os
+import asyncio
+import calendar
+import itertools
+import logging
 import math
+import os
+import random
 import webbrowser
 from collections import deque
-import itertools
-import random
-import logging
-import calendar
-import asyncio
+from datetime import datetime, timedelta, timezone
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from module import core
-from module.worker import transactor
-from module.worker import simulator
 from module.instrument.api_requester import ApiRequester
 from module.instrument.api_streamer import ApiStreamer
-from module.recipe import simply_format
-from module.recipe import stop_flag
-from module.recipe import check_internet
-from module.recipe import user_settings
-from module.recipe import download_aggtrade_data
-from module.recipe import combine_candle_datas
-from module.recipe import sort_dataframe
-from module.recipe import fill_holes_with_aggtrades
-from module.recipe import remember_task_durations
-from module.recipe import standardize
-from module.recipe import datalocks
-from module.shelf.download_fill_option import DownloadFillOption
+from module.recipe import (
+    check_internet,
+    combine_candle_datas,
+    datalocks,
+    download_aggtrade_data,
+    fill_holes_with_aggtrades,
+    remember_task_durations,
+    simply_format,
+    sort_dataframe,
+    standardize,
+    stop_flag,
+    user_settings,
+)
 from module.shelf.donation_guide import DonationGuide
+from module.shelf.download_fill_option import DownloadFillOption
+from module.worker import simulator, transactor
 
 
 class Collector:

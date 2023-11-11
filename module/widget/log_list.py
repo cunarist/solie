@@ -1,6 +1,6 @@
 import asyncio
 
-from PySide6 import QtWidgets, QtGui, QtCore
+from PySide6 import QtCore, QtGui, QtWidgets
 
 from module import core
 from module.shelf.long_text_view import LongTextView

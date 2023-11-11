@@ -1,5 +1,5 @@
-from PySide6 import QtGui
 from pygments import lex, lexers
+from PySide6 import QtGui
 
 
 class SyntaxHighlighter(QtGui.QSyntaxHighlighter):

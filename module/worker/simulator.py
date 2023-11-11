@@ -1,26 +1,27 @@
-from datetime import datetime, timedelta, timezone
-import math
-import os
-import re
-import pickle
 import asyncio
 import functools
+import math
+import os
+import pickle
+import re
+from datetime import datetime, timedelta, timezone
 
-import pandas as pd
-import numpy as np
-from scipy.signal import find_peaks
 import aiofiles
+import numpy as np
+import pandas as pd
+from scipy.signal import find_peaks
 
 from module import core
-from module.worker import collector
-from module.worker import strategist
-from module.recipe import simulate_chunk
-from module.recipe import make_indicators
-from module.recipe import stop_flag
-from module.recipe import check_internet
-from module.recipe import user_settings
-from module.recipe import standardize
-from module.recipe import datalocks
+from module.recipe import (
+    check_internet,
+    datalocks,
+    make_indicators,
+    simulate_chunk,
+    standardize,
+    stop_flag,
+    user_settings,
+)
+from module.worker import collector, strategist
 
 
 class Simulator:
