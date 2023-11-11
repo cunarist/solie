@@ -151,7 +151,8 @@ class Manager:
 
         filepath = self.workerpath + "/settings.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-            json.dump(self.settings, file, indent=4)
+            content = json.dumps(self.settings, indent=4)
+            await file.write(content)
 
     async def open_datapath(self, *args, **kwargs):
         os.startfile(user_settings.get_app_settings()["datapath"])

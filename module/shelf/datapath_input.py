@@ -1,4 +1,6 @@
 import pathlib
+from tkinter import filedialog
+import functools
 
 from PySide6 import QtWidgets, QtCore, QtGui
 
@@ -83,15 +85,15 @@ class DatapathInput(QtWidgets.QWidget):
         async def job_dp():
             nonlocal datapath
 
-            file_dialog = QtWidgets.QFileDialog()
             default_path = str(pathlib.Path.home())
             title_bar_text = "Data folder"
-            datapath = str(
-                file_dialog.getExistingDirectory(
-                    self,
-                    title_bar_text,
-                    default_path,
-                )
+            datapath = await core.event_loop.run_in_executor(
+                None,
+                functools.partial(
+                    filedialog.askdirectory,
+                    initialdir=default_path,
+                    title=title_bar_text,
+                ),
             )
 
             folder_label.setText(datapath)

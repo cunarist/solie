@@ -1120,11 +1120,14 @@ class Simulator:
             asset_record.to_pickle(asset_record_path)
             unrealized_changes.to_pickle(unrealized_changes_path)
             async with aiofiles.open(scribbles_path, "wb") as file:
-                pickle.dump(scribbles, file)
+                content = pickle.dumps(scribbles)
+                await file.write(content)
             async with aiofiles.open(account_state_path, "wb") as file:
-                pickle.dump(account_state, file)
+                content = pickle.dumps(account_state)
+                await file.write(content)
             async with aiofiles.open(virtual_state_path, "wb") as file:
-                pickle.dump(virtual_state, file)
+                content = pickle.dumps(virtual_state)
+                await file.write(content)
 
     async def present(self, *args, **kwargs):
         maker_fee = self.presentation_settings["maker_fee"]

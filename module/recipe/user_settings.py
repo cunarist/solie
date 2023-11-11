@@ -41,7 +41,8 @@ async def apply_app_settings(payload):
     _app_settings = {**_app_settings, **payload}
     os.makedirs(os.path.dirname("./note/app_settings.json"), exist_ok=True)
     async with aiofiles.open("./note/app_settings.json", "w", encoding="utf8") as file:
-        json.dump(_app_settings, file, indent=4)
+        content = json.dumps(_app_settings, indent=4)
+        await file.write(content)
 
 
 def get_data_settings() -> dict:
@@ -58,4 +59,5 @@ async def apply_data_settings(payload):
         async with aiofiles.open(
             f"{datapath}/data_settings.json", "w", encoding="utf8"
         ) as file:
-            json.dump(_data_settings, file, indent=4)
+            content = json.dumps(_data_settings, indent=4)
+            await file.write(content)

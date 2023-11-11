@@ -288,7 +288,8 @@ class Transactor:
     async def save_scribbles(self, *args, **kwargs):
         filepath = self.workerpath + "/scribbles.pickle"
         async with aiofiles.open(filepath, "wb") as file:
-            pickle.dump(self.scribbles, file)
+            content = pickle.dumps(self.scribbles)
+            await file.write(content)
 
     async def update_user_data_stream(self, *args, **kwargs):
         if not check_internet.connected():
@@ -574,7 +575,8 @@ class Transactor:
 
         filepath = self.workerpath + "/keys.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-            json.dump(new_keys, file, indent=4)
+            content = json.dumps(new_keys, indent=4)
+            await file.write(content)
 
         new_keys = {}
         new_keys["server"] = server
@@ -605,7 +607,8 @@ class Transactor:
 
         filepath = self.workerpath + "/automation_settings.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-            json.dump(self.automation_settings, file, indent=4)
+            content = json.dumps(self.automation_settings, indent=4)
+            await file.write(content)
 
     async def display_range_information(self, *args, **kwargs):
         task_id = stop_flag.make("display_transaction_range_information")
@@ -1494,7 +1497,8 @@ class Transactor:
 
         filepath = self.workerpath + "/mode_settings.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-            json.dump(self.mode_settings, file, indent=4)
+            content = json.dumps(self.mode_settings, indent=4)
+            await file.write(content)
 
     async def watch_binance(self, *args, **kwargs):
         # ■■■■■ check internet connection ■■■■■

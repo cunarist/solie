@@ -80,7 +80,8 @@ class Strategiest:
     async def save_strategies(self, *args, **kwargs):
         filepath = self.workerpath + "/strategies.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-            json.dump(self.strategies, file, indent=4)
+            content = json.dumps(self.strategies, indent=4)
+            await file.write(content)
 
     async def display_strategies(self, *args, **kwargs):
         core.window.comboBox_2.clear()
