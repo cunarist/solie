@@ -83,7 +83,7 @@ class DatapathInput(QtWidgets.QWidget):
         async def job_dp():
             nonlocal datapath
 
-            file_dialog = QtWidgets.QFileDialog
+            file_dialog = QtWidgets.QFileDialog()
             default_path = str(pathlib.Path.home())
             title_bar_text = "Data folder"
             datapath = str(
