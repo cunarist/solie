@@ -44,10 +44,10 @@ class ApiRequester:
         url += "?" + query_string + "&signature=" + signature
 
         async with aiohttp.ClientSession() as session:
-            raw_response = await session.request(
+            async with session.request(
                 method=http_method, url=url, headers=headers
-            )
-            response = await raw_response.json()
+            ) as raw_response:
+                response = await raw_response.json()
 
         # record api usage
         for header_key in raw_response.headers.keys():
@@ -74,8 +74,8 @@ class ApiRequester:
         url = "https://api.coinstats.app" + path + "?" + query_string
 
         async with aiohttp.ClientSession() as session:
-            raw_response = await session.request(method=http_method, url=url)
-            response = await raw_response.json()
+            async with session.request(method=http_method, url=url) as raw_response:
+                response = await raw_response.json()
 
         return response
 
@@ -87,8 +87,8 @@ class ApiRequester:
         url = "https://cunarist.com" + path + "?" + query_string
 
         async with aiohttp.ClientSession() as session:
-            raw_response = await session.request(method=http_method, url=url)
-            response = await raw_response.json()
+            async with session.request(method=http_method, url=url) as raw_response:
+                response = await raw_response.json()
 
         status_code = raw_response.status
         if status_code != 200:
@@ -110,8 +110,10 @@ class ApiRequester:
         url = url + "?" + query_string
 
         async with aiohttp.ClientSession() as session:
-            raw_response = await session.request(method="GET", url=url, headers=headers)
-            response = await raw_response.read()
+            async with session.request(
+                method="GET", url=url, headers=headers
+            ) as raw_response:
+                response = await raw_response.read()
 
         status_code = raw_response.status
         if status_code != 200:
