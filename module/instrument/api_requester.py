@@ -99,15 +99,10 @@ class ApiRequester:
 
         return response
 
-    async def bytes(self, url: str, payload: dict = {}):
-        query_string = urlencode(payload)
-        # replace single quote to double quote
-        query_string = query_string.replace("%27", "%22")
-
+    async def bytes(self, url: str):
         headers = {
             "User-agent": "Mozilla/5.0",
         }
-        url = url + "?" + query_string
 
         async with aiohttp.ClientSession() as session:
             async with session.request(
