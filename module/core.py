@@ -127,7 +127,12 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.initialize_functions: list[Callable[..., Coroutine]] = []
         self.finalize_functions: list[Callable[..., Coroutine]] = []
-        self.scheduler = AsyncIOScheduler(timezone="UTC")
+        self.scheduler = AsyncIOScheduler(
+            timezone="UTC",
+            job_defaults={
+                "max_instances": 64,
+            },
+        )
 
         # ■■■■■ do basic Qt things ■■■■■
 
