@@ -66,11 +66,11 @@ class Strategiest:
             first_strategy["risk_level"] = 2
             filepath = "./static/sample_indicators_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
-                read_data = file.read()
+                read_data = await file.read()
                 first_strategy["indicators_script"] = read_data
             filepath = "./static/sample_decision_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
-                read_data = file.read()
+                read_data = await file.read()
                 first_strategy["decision_script"] = read_data
             self.strategies = [first_strategy]
 
