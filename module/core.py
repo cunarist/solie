@@ -35,52 +35,58 @@ from module.worker import collector, manager, simulator, strategist, transactor
 
 
 class Window(QtWidgets.QMainWindow, Ui_MainWindow):
-    # def closeEvent(self, event):  # noqa:N802
-    #     event.ignore()
+    def closeEvent(self, event):  # noqa:N802
+        event.ignore()
 
-    #     async def job_close():
-    #         if not self.should_finalize:
-    #             self.closeEvent = lambda event: event.accept()
-    #             self.close()
+        async def job_close():
+            if not self.should_finalize:
+                event_loop.stop()
+                event_loop.close()
+                process_pool.shutdown()
+                self.closeEvent = lambda event: event.accept()
+                self.close()
 
-    #         if self.should_confirm_closing:
-    #             question = [
-    #                 "Really quit?",
-    #                 "If Solie is not turned on, data collection gets stopped as well."
-    #                 " Solie will proceed to finalizations such as closing network"
-    #                 " connections and saving data.",
-    #                 ["Cancel", "Shut down"],
-    #             ]
-    #             answer = await self.ask(question)
+            if self.should_confirm_closing:
+                question = [
+                    "Really quit?",
+                    "If Solie is not turned on, data collection gets stopped as well."
+                    " Solie will proceed to finalizations such as closing network"
+                    " connections and saving data.",
+                    ["Cancel", "Shut down"],
+                ]
+                answer = await self.ask(question)
 
-    #             if answer in (0, 1):
-    #                 return
+                if answer in (0, 1):
+                    return
 
-    #         self.should_overlap_error = True
+            self.should_overlap_error = True
 
-    #         AskPopup.done_event.set()
-    #         OverlapPopup.done_event.set()
+            AskPopup.done_event.set()
+            OverlapPopup.done_event.set()
 
-    #         self.gauge.hide()
-    #         self.board.hide()
-    #         self.closeEvent = lambda event: event.ignore()
+            self.gauge.hide()
+            self.board.hide()
+            self.closeEvent = lambda event: event.ignore()
 
-    #         splash_screen = SplashScreen()
-    #         self.centralWidget().layout().addWidget(splash_screen)
+            splash_screen = SplashScreen()
+            self.centralWidget().layout().addWidget(splash_screen)
 
-    #         self.scheduler.remove_all_jobs()
-    #         self.scheduler.shutdown()
+            self.scheduler.remove_all_jobs()
+            self.scheduler.shutdown()
 
-    #         await asyncio.gather(
-    #             *[finalize_function() for finalize_function in self.finalize_functions]
-    #         )
+            await asyncio.gather(
+                *[finalize_function() for finalize_function in self.finalize_functions]
+            )
 
-    #         await asyncio.sleep(1)
+            await asyncio.sleep(1)
 
-    #         self.closeEvent = lambda event: event.accept()
-    #         self.close()
+            event_loop.stop()
+            event_loop.close()
+            process_pool.shutdown()
+            self.closeEvent = lambda event: event.accept()
+            self.close()
 
-    #     asyncio.create_task(job_close())
+        asyncio.create_task(job_close())
 
     def mouseMoveEvent(self, event):  # noqa:N802
         self.last_interaction = datetime.now(timezone.utc)
@@ -1122,4 +1128,4 @@ def bring_to_life():
     event_loop.create_task(window.boot())
     event_loop.run_forever()
 
-    sys.exit(getattr(app, "exec")())
+    sys.exit(app.exec())

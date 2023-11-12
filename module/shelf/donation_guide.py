@@ -62,22 +62,3 @@ class DonationGuide(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.Policy.Expanding,
         )
         cards_layout.addItem(spacer)
-
-        # ■■■■■ full layout ■■■■■
-
-        full_layout = QtWidgets.QHBoxLayout(self)
-        cards_layout = QtWidgets.QVBoxLayout()
-        full_layout.addLayout(cards_layout)
-
-        text = "😉 If you are benefiting from"
-        text += " Solie's features and find it helpful,"
-        text += " why not consider supporting the Solie project?"
-        text += " Your generous donations contribute to"
-        text += " the growth and development of Solie."
-        text += "\n\nIf you feel like so, please consider"
-        text += " using the BUSD(BSC) wallet address written below."
-
-        label = QtWidgets.QLabel(text)
-        fixed_width_font = QtGui.QFont("Noto Sans", 9)
-        label.setFont(fixed_width_font)
-        cards_layout.addWidget(label)
