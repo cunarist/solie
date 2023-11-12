@@ -195,6 +195,8 @@ class Manager:
                 list_text = "\n".join(texts[:max_tasks_shown]) + "\n..."
             core.window.label_12.setText(f"{tasks_not_done} total\n\n{list_text}")
 
+            core.window.label_32.setText(f"Process count: {core.process_count}")
+
             texts = []
             texts.append("Limits")
             for limit_type, limit_value in self.binance_limits.items():
