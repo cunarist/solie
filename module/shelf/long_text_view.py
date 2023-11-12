@@ -1,4 +1,4 @@
-from PySide6 import QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 
 class LongTextView(QtWidgets.QWidget):
@@ -16,4 +16,7 @@ class LongTextView(QtWidgets.QWidget):
         label = QtWidgets.QLabel(payload[0])
         fixed_width_font = QtGui.QFont("Source Code Pro", 9)
         label.setFont(fixed_width_font)
+        label.setTextInteractionFlags(
+            QtCore.Qt.TextInteractionFlag.TextSelectableByMouse
+        )
         cards_layout.addWidget(label)
