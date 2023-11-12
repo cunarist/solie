@@ -181,11 +181,25 @@ class Manager:
     async def display_internal_status(self, *args, **kwargs):
         def job():
             texts = []
+            all_tasks = asyncio.all_tasks()
+            tasks_not_done = 0
+            for task in all_tasks:
+                if not task.done():
+                    tasks_not_done += 1
+                    text = task.get_name()
+                    texts.append(text)
+            max_tasks_shown = 8
+            if len(texts) <= max_tasks_shown:
+                list_text = "\n".join(texts)
+            else:
+                list_text = "\n".join(texts[:max_tasks_shown]) + "\n..."
+            core.window.label_12.setText(f"{tasks_not_done} total\n\n{list_text}")
+
+            texts = []
             texts.append("Limits")
             for limit_type, limit_value in self.binance_limits.items():
                 text = f"{limit_type}: {limit_value}"
                 texts.append(text)
-
             used_rates = self.api_requester.used_rates
             if len(used_rates) > 0:
                 texts.append("")
@@ -194,12 +208,10 @@ class Manager:
                     time_string = used_tuple[1].strftime("%m-%d %H:%M:%S")
                     text = f"{used_type}: {used_tuple[0]}({time_string})"
                     texts.append(text)
-
             text = "\n".join(texts)
             core.window.label_35.setText(text)
 
             texts = []
-
             task_durations = remember_task_durations.get()
             for data_name, deque_data in task_durations.items():
                 if len(deque_data) > 0:
@@ -215,7 +227,6 @@ class Manager:
                     data_value = max(deque_data)
                     text += f"Maximum {simply_format.fixed_float(data_value,6)}s "
                     texts.append(text)
-
             text = "\n\n".join(texts)
             core.window.label_33.setText(text)
 
@@ -232,9 +243,9 @@ class Manager:
             text = "\n".join(texts)
             core.window.label_34.setText(text)
 
-        for _ in range(10):
+        for _ in range(5):
             job()
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.2)
 
     async def run_script(self, *args, **kwargs):
         script_text = core.window.plainTextEdit.toPlainText()

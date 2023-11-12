@@ -1128,8 +1128,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>286</width>
-                <height>77</height>
+                <width>280</width>
+                <height>65</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_19">
@@ -1318,8 +1318,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>766</width>
-                 <height>752</height>
+                 <width>752</width>
+                 <height>690</height>
                 </rect>
                </property>
                <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -2043,8 +2043,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>98</width>
-                   <height>40</height>
+                   <width>398</width>
+                   <height>265</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_6">
@@ -2072,8 +2072,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>98</width>
-                   <height>40</height>
+                   <width>398</width>
+                   <height>265</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_7">
@@ -2101,8 +2101,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>98</width>
-                   <height>40</height>
+                   <width>398</width>
+                   <height>265</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_4">
@@ -2130,8 +2130,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>98</width>
-                   <height>40</height>
+                   <width>398</width>
+                   <height>265</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_8">
@@ -2159,8 +2159,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>98</width>
-                   <height>40</height>
+                   <width>398</width>
+                   <height>265</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_5">
@@ -2188,8 +2188,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>98</width>
-                   <height>40</height>
+                   <width>398</width>
+                   <height>265</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_9">
@@ -2210,7 +2210,7 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
               <item row="0" column="0">
                <widget class="QLabel" name="label_37">
                 <property name="text">
-                 <string>Thread pool</string>
+                 <string>Async tasks</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>
