@@ -1115,9 +1115,9 @@ def bring_to_life():
     window.setPalette(dark_palette)
     window.show()
 
-    async def watch_app_lifecycle():
+    async def keep_app_lifecycle():
         await app_close_event.wait()
 
     app_close_event = asyncio.Event()
     event_loop.create_task(window.boot())
-    event_loop.run_until_complete(watch_app_lifecycle())
+    event_loop.run_until_complete(keep_app_lifecycle())
