@@ -68,7 +68,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.centralWidget().layout().addWidget(splash_screen)
 
             await asyncio.gather(
-                *[finalize_function() for finalize_function in self.finalize_functions]
+                *[finalize_function() for finalize_function in self.finalize_functions],
+                return_exceptions=True,
             )
 
             app_close_event.set()
@@ -1014,7 +1015,10 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ initialize functions ■■■■■
 
-        await asyncio.gather(*[job() for job in self.initialize_functions])
+        await asyncio.gather(
+            *[job() for job in self.initialize_functions],
+            return_exceptions=True,
+        )
 
         # ■■■■■ start repetitive timer ■■■■■
 
@@ -1122,9 +1126,7 @@ def bring_to_life():
     window.show()
 
     async def keep_app_lifecycle():
-        global window
         await app_close_event.wait()
-        del window
 
     app_close_event = asyncio.Event()
     event_loop.create_task(window.boot())
