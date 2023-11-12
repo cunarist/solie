@@ -1131,3 +1131,4 @@ def bring_to_life():
     app_close_event = asyncio.Event()
     event_loop.create_task(window.boot())
     event_loop.run_until_complete(keep_app_lifecycle())
+    event_loop.close()

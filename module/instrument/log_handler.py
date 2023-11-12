@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import sys
 import time
 
 from module import core
@@ -15,7 +16,7 @@ class LogHandler(logging.Handler):
         log_formatter.converter = time.gmtime
         self.setFormatter(log_formatter)
 
-    def emit(self, log_record):
+    def emit(self, log_record: logging.LogRecord):
         formatted = self.format(log_record)
 
         # when this is from exception
@@ -23,7 +24,10 @@ class LogHandler(logging.Handler):
             lines = formatted.split("\n")
             summarization = lines[0]
             log_content = "\n".join(lines[1:])
-            exc_type = log_record.exc_info[0].__name__
+            exception = log_record.exc_info[0]
+            if exception is None:
+                return
+            exc_type = exception.__name__
             summarization += f" - {exc_type}"
         # when this is a normal log
         else:
@@ -33,20 +37,26 @@ class LogHandler(logging.Handler):
             summarization += f" - {first_line_content}"
             summarization = summarization[:80]
 
-        if core.window.should_overlap_error:
+        if not core.app_close_event.is_set():
+            if core.window.should_overlap_error:
 
-            async def job(log_content=log_content):
-                formation = [
-                    "There was an error",
-                    LongTextView,
-                    False,
-                    [log_content],
-                ]
-                await core.window.overlap(formation)
+                async def job(log_content=log_content):
+                    formation = [
+                        "There was an error",
+                        LongTextView,
+                        False,
+                        [log_content],
+                    ]
+                    await core.window.overlap(formation)
 
-            asyncio.create_task(job())
+                asyncio.create_task(job())
 
+            else:
+                asyncio.create_task(
+                    core.window.manager.add_log_output(
+                        summarization,
+                        log_content,
+                    ),
+                )
         else:
-            asyncio.create_task(
-                core.window.manager.add_log_output(summarization, log_content),
-            )
+            sys.stdout.write(log_content)

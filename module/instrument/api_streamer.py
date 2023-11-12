@@ -26,8 +26,9 @@ class ApiStreamer:
                 ):
                     asyncio.create_task(self._run_websocket())
                     raise ConnectionError(f"Websocket reconnected:\n{self._url}")
-                received = received_raw.json()
-                asyncio.create_task(self._when_received(received=received))
+                else:
+                    received = received_raw.json()
+                    asyncio.create_task(self._when_received(received=received))
 
     async def _close_self(self):
         await self.session.close()
