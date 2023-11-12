@@ -5,7 +5,6 @@ import os
 import platform
 import statistics
 import subprocess
-import webbrowser
 from collections import deque
 from datetime import datetime, timedelta, timezone
 
@@ -17,6 +16,7 @@ from module.instrument.api_requester import ApiRequester
 from module.recipe import (
     check_internet,
     datalocks,
+    open_browser,
     remember_task_durations,
     simply_format,
     user_settings,
@@ -354,7 +354,7 @@ class Manager:
         core.window.close()
 
     async def open_documentation(self, *args, **kwargs):
-        webbrowser.open("https://solie-docs.cunarist.com")
+        open_browser.do("https://solie-docs.cunarist.com")
 
     async def disable_system_auto_update(self, *args, **kwargs):
         if not self.settings["disable_system_update"]:

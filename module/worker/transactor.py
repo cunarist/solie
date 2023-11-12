@@ -7,7 +7,6 @@ import math
 import os
 import pickle
 import re
-import webbrowser
 from datetime import datetime, timedelta, timezone
 
 import aiofiles
@@ -24,6 +23,7 @@ from module.recipe import (
     datalocks,
     decide,
     make_indicators,
+    open_browser,
     remember_task_durations,
     standardize,
     stop_flag,
@@ -553,13 +553,13 @@ class Transactor:
 
     async def open_exchange(self, *args, **kwargs):
         symbol = self.viewing_symbol
-        webbrowser.open(f"https://www.binance.com/en/futures/{symbol}")
+        open_browser.do(f"https://www.binance.com/en/futures/{symbol}")
 
     async def open_futures_wallet_page(self, *args, **kwargs):
-        webbrowser.open("https://www.binance.com/en/my/wallet/account/futures")
+        open_browser.do("https://www.binance.com/en/my/wallet/account/futures")
 
     async def open_api_management_page(self, *args, **kwargs):
-        webbrowser.open("https://www.binance.com/en/my/settings/api-management")
+        open_browser.do("https://www.binance.com/en/my/settings/api-management")
 
     async def update_keys(self, *args, **kwargs):
         server = kwargs.get("server", "real")

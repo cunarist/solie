@@ -5,7 +5,6 @@ import logging
 import math
 import os
 import random
-import webbrowser
 from collections import deque
 from datetime import datetime, timedelta, timezone
 
@@ -21,6 +20,7 @@ from module.recipe import (
     datalocks,
     download_aggtrade_data,
     fill_holes_with_aggtrades,
+    open_browser,
     remember_task_durations,
     simply_format,
     sort_dataframe,
@@ -441,7 +441,7 @@ class Collector:
         return cumulation_rate
 
     async def open_binance_data_page(self, *args, **kwargs):
-        webbrowser.open("https://www.binance.com/en/landing/data")
+        open_browser.do("https://www.binance.com/en/landing/data")
 
     async def download_fill_candle_data(self, *args, **kwargs):
         # ■■■■■ ask filling type ■■■■■
