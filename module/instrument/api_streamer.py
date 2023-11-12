@@ -6,8 +6,6 @@ import aiohttp
 
 
 class ApiStreamer:
-    # https://github.com/websocket-client/websocket-client/issues/580
-
     def __init__(self, url: str, when_received: Callable[..., Coroutine]):
         self._url = url
         self._when_received = when_received
@@ -15,6 +13,9 @@ class ApiStreamer:
 
         if url != "":
             asyncio.create_task(self._run_websocket())
+
+    def __del__(self):
+        asyncio.create_task(self._close_self())
 
     async def _run_websocket(self):
         async with self.session.ws_connect(self._url) as ws:
@@ -28,7 +29,7 @@ class ApiStreamer:
                 received = received_raw.json()
                 asyncio.create_task(self._when_received(received=received))
 
-    def __del__(self):
-        asyncio.create_task(self.session.close())
+    async def _close_self(self):
+        await self.session.close()
         logger = logging.getLogger("solie")
         logger.exception(f"Websocket closed:\n{self._url}")
