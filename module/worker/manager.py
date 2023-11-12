@@ -22,7 +22,6 @@ from module.recipe import (
     user_settings,
     value_to,
 )
-from module.worker import collector
 
 WINDOW_LOCK_OPTIONS = (
     "NEVER",
@@ -232,7 +231,7 @@ class Manager:
             text = "\n\n".join(texts)
             core.window.label_33.setText(text)
 
-            block_sizes = collector.me.aggtrade_candle_sizes
+            block_sizes = core.window.collector.aggtrade_candle_sizes
             lines = (f"{symbol} {count}" for (symbol, count) in block_sizes.items())
             text = "\n".join(lines)
             core.window.label_36.setText(text)

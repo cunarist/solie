@@ -30,7 +30,6 @@ from module.recipe import (
     user_settings,
 )
 from module.shelf.long_text_view import LongTextView
-from module.worker import collector, strategist
 
 
 class Transactor:
@@ -745,7 +744,7 @@ class Transactor:
         # ■■■■■ check if the data exists ■■■■■
 
         async with datalocks.hold("collector_candle_data"):
-            if len(collector.me.candle_data) == 0:
+            if len(core.window.collector.candle_data) == 0:
                 return
 
         # ■■■■■ wait for the latest data to be added ■■■■■
@@ -759,7 +758,7 @@ class Transactor:
                 if stop_flag.find(task_name, task_id):
                     return
                 async with datalocks.hold("collector_candle_data"):
-                    last_index = collector.me.candle_data.index[-1]
+                    last_index = core.window.collector.candle_data.index[-1]
                     if last_index == before_moment:
                         break
                 await asyncio.sleep(0.1)
@@ -772,16 +771,16 @@ class Transactor:
 
         symbol = self.viewing_symbol
         strategy_index = self.automation_settings["strategy_index"]
-        strategy = strategist.me.strategies[strategy_index]
+        strategy = core.window.strategist.strategies[strategy_index]
 
         # ■■■■■ get light data ■■■■■
 
         async with datalocks.hold("collector_realtime_data_chunks"):
-            before_chunk = collector.me.realtime_data_chunks[-2].copy()
-            current_chunk = collector.me.realtime_data_chunks[-1].copy()
+            before_chunk = core.window.collector.realtime_data_chunks[-2].copy()
+            current_chunk = core.window.collector.realtime_data_chunks[-1].copy()
         realtime_data = np.concatenate((before_chunk, current_chunk))
         async with datalocks.hold("collector_aggregate_trades"):
-            aggregate_trades = collector.me.aggregate_trades.copy()
+            aggregate_trades = core.window.collector.aggregate_trades.copy()
 
         # ■■■■■ draw light lines ■■■■■
 
@@ -894,7 +893,7 @@ class Transactor:
         # ■■■■■ get heavy data ■■■■■
 
         async with datalocks.hold("collector_candle_data"):
-            candle_data = collector.me.candle_data
+            candle_data = core.window.collector.candle_data
             candle_data = candle_data[get_from:slice_until][[symbol]]
             candle_data = candle_data.copy()
         async with datalocks.hold("transactor_unrealized_changes"):
@@ -1273,7 +1272,7 @@ class Transactor:
             core.window.label_16.setText(text)
             return
 
-        cumulation_rate = await collector.me.get_candle_data_cumulation_rate()
+        cumulation_rate = await core.window.collector.get_candle_data_cumulation_rate()
         if cumulation_rate < 1:
             text = (
                 "For auto transaction to work, the past 24 hour accumulation rate of"
@@ -1337,7 +1336,7 @@ class Transactor:
 
         # ■■■■■ stop if the accumulation rate is not 100% ■■■■■
 
-        cumulation_rate = await collector.me.get_candle_data_cumulation_rate()
+        cumulation_rate = await core.window.collector.get_candle_data_cumulation_rate()
         if cumulation_rate < 1:
             is_cycle_done = True
             return
@@ -1374,7 +1373,7 @@ class Transactor:
         # ■■■■■ check if the data exists ■■■■■
 
         async with datalocks.hold("collector_candle_data"):
-            if len(collector.me.candle_data) == 0:
+            if len(core.window.collector.candle_data) == 0:
                 # case when the app is executed for the first time
                 return
 
@@ -1382,7 +1381,7 @@ class Transactor:
 
         for _ in range(50):
             async with datalocks.hold("collector_candle_data"):
-                last_index = collector.me.candle_data.index[-1]
+                last_index = core.window.collector.candle_data.index[-1]
                 if last_index == before_moment:
                     break
             await asyncio.sleep(0.1)
@@ -1391,7 +1390,7 @@ class Transactor:
 
         slice_from = datetime.now(timezone.utc) - timedelta(days=7)
         async with datalocks.hold("collector_candle_data"):
-            df = collector.me.candle_data
+            df = core.window.collector.candle_data
             partial_candle_data = df[slice_from:].copy()
 
         # ■■■■■ make decision ■■■■■
@@ -1399,7 +1398,7 @@ class Transactor:
         target_symbols = user_settings.get_data_settings()["target_symbols"]
 
         strategy_index = self.automation_settings["strategy_index"]
-        strategy = strategist.me.strategies[strategy_index]
+        strategy = core.window.strategist.strategies[strategy_index]
 
         indicators_script = strategy["indicators_script"]
 
@@ -1976,7 +1975,7 @@ class Transactor:
                 continue
 
             async with datalocks.hold("collector_aggregate_trades"):
-                ar = collector.me.aggregate_trades[-10000:].copy()
+                ar = core.window.collector.aggregate_trades[-10000:].copy()
             temp_ar = ar[str((symbol, "Price"))]
             temp_ar = temp_ar[temp_ar != 0]
             current_price = float(temp_ar[-1])

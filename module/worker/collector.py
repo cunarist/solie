@@ -30,7 +30,6 @@ from module.recipe import (
 )
 from module.shelf.donation_guide import DonationGuide
 from module.shelf.download_fill_option import DownloadFillOption
-from module.worker import simulator, transactor
 
 
 class Collector:
@@ -657,8 +656,8 @@ class Collector:
 
         # ■■■■■ display to graphs ■■■■■
 
-        asyncio.create_task(transactor.me.display_lines())
-        asyncio.create_task(simulator.me.display_lines())
+        asyncio.create_task(core.window.transactor.display_lines())
+        asyncio.create_task(core.window.simulator.display_lines())
 
     async def add_book_tickers(self, *args, **kwargs):
         received: dict = kwargs.get("received")  # type:ignore

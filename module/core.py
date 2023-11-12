@@ -118,6 +118,12 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.transaction_lines: dict[str, pyqtgraph.PlotDataItem] = {}
         self.simulation_lines: dict[str, pyqtgraph.PlotDataItem] = {}
 
+        self.collector: collector.Collector
+        self.transactor: transactor.Transactor
+        self.simulator: simulator.Simulator
+        self.strategist: strategist.Strategiest
+        self.manager: manager.Manager
+
         self.initialize_functions: list[Callable[..., Coroutine]] = []
         self.finalize_functions: list[Callable[..., Coroutine]] = []
         self.scheduler = AsyncIOScheduler(
@@ -839,29 +845,29 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ workers ■■■■■
 
-        collector.bring_to_life()
-        transactor.bring_to_life()
-        simulator.bring_to_life()
-        strategist.bring_to_life()
-        manager.bring_to_life()
+        self.collector = collector.Collector()
+        self.transactor = transactor.Transactor()
+        self.simulator = simulator.Simulator()
+        self.strategist = strategist.Strategiest()
+        self.manager = manager.Manager()
 
         # ■■■■■ initialize functions ■■■■■
 
         self.initialize_functions = [
-            collector.me.load,
-            transactor.me.load,
-            simulator.me.load,
-            strategist.me.load,
-            manager.me.load,
+            self.collector.load,
+            self.transactor.load,
+            self.simulator.load,
+            self.strategist.load,
+            self.manager.load,
         ]
 
         # ■■■■■ finalize functions ■■■■■
 
         self.finalize_functions = [
-            transactor.me.save_large_data,
-            transactor.me.save_scribbles,
-            strategist.me.save_strategies,
-            collector.me.save_candle_data,
+            self.transactor.save_large_data,
+            self.transactor.save_scribbles,
+            self.strategist.save_strategies,
+            self.collector.save_candle_data,
         ]
 
         # ■■■■■ change logging settings ■■■■■
@@ -874,77 +880,77 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ connect events to functions ■■■■■
 
         # special widgets
-        job = transactor.me.display_range_information
+        job = self.transactor.display_range_information
         outsource.do(self.plot_widget.sigRangeChanged, job)
-        job = transactor.me.set_minimum_view_range
+        job = self.transactor.set_minimum_view_range
         outsource.do(self.plot_widget.sigRangeChanged, job)
-        job = simulator.me.display_range_information
+        job = self.simulator.display_range_information
         outsource.do(self.plot_widget_2.sigRangeChanged, job)
-        job = simulator.me.set_minimum_view_range
+        job = self.simulator.set_minimum_view_range
         outsource.do(self.plot_widget_2.sigRangeChanged, job)
 
         # normal widgets
-        job = simulator.me.update_calculation_settings
+        job = self.simulator.update_calculation_settings
         outsource.do(self.comboBox.currentIndexChanged, job)
-        job = transactor.me.update_automation_settings
+        job = self.transactor.update_automation_settings
         outsource.do(self.comboBox_2.currentIndexChanged, job)
-        job = transactor.me.update_automation_settings
+        job = self.transactor.update_automation_settings
         outsource.do(self.checkBox.toggled, job)
-        job = simulator.me.calculate
+        job = self.simulator.calculate
         outsource.do(self.pushButton_3.clicked, job)
-        job = manager.me.open_datapath
+        job = self.manager.open_datapath
         outsource.do(self.pushButton_8.clicked, job)
-        job = simulator.me.update_presentation_settings
+        job = self.simulator.update_presentation_settings
         outsource.do(self.spinBox_2.editingFinished, job)
-        job = simulator.me.update_presentation_settings
+        job = self.simulator.update_presentation_settings
         outsource.do(self.doubleSpinBox.editingFinished, job)
-        job = simulator.me.update_presentation_settings
+        job = self.simulator.update_presentation_settings
         outsource.do(self.doubleSpinBox_2.editingFinished, job)
-        job = simulator.me.erase
+        job = self.simulator.erase
         outsource.do(self.pushButton_4.clicked, job)
-        job = simulator.me.update_calculation_settings
+        job = self.simulator.update_calculation_settings
         outsource.do(self.comboBox_5.currentIndexChanged, job)
-        job = transactor.me.update_keys
+        job = self.transactor.update_keys
         outsource.do(self.lineEdit_4.editingFinished, job)
-        job = transactor.me.update_keys
+        job = self.transactor.update_keys
         outsource.do(self.lineEdit_6.editingFinished, job)
-        job = manager.me.run_script
+        job = self.manager.run_script
         outsource.do(self.pushButton.clicked, job)
-        job = transactor.me.toggle_frequent_draw
+        job = self.transactor.toggle_frequent_draw
         outsource.do(self.checkBox_2.toggled, job)
-        job = simulator.me.toggle_combined_draw
+        job = self.simulator.toggle_combined_draw
         outsource.do(self.checkBox_3.toggled, job)
-        job = transactor.me.display_day_range
+        job = self.transactor.display_day_range
         outsource.do(self.pushButton_14.clicked, job)
-        job = simulator.me.display_year_range
+        job = self.simulator.display_year_range
         outsource.do(self.pushButton_15.clicked, job)
-        job = simulator.me.delete_calculation_data
+        job = self.simulator.delete_calculation_data
         outsource.do(self.pushButton_16.clicked, job)
-        job = simulator.me.draw
+        job = self.simulator.draw
         outsource.do(self.pushButton_17.clicked, job)
-        job = collector.me.download_fill_candle_data
+        job = self.collector.download_fill_candle_data
         outsource.do(self.pushButton_2.clicked, job)
-        job = transactor.me.update_mode_settings
+        job = self.transactor.update_mode_settings
         outsource.do(self.spinBox.editingFinished, job)
-        job = manager.me.deselect_log_output
+        job = self.manager.deselect_log_output
         outsource.do(self.pushButton_6.clicked, job)
-        job = manager.me.reset_datapath
+        job = self.manager.reset_datapath
         outsource.do(self.pushButton_22.clicked, job)
-        job = transactor.me.update_viewing_symbol
+        job = self.transactor.update_viewing_symbol
         outsource.do(self.comboBox_4.currentIndexChanged, job)
-        job = simulator.me.update_viewing_symbol
+        job = self.simulator.update_viewing_symbol
         outsource.do(self.comboBox_6.currentIndexChanged, job)
-        job = manager.me.open_documentation
+        job = self.manager.open_documentation
         outsource.do(self.pushButton_7.clicked, job)
-        job = strategist.me.add_blank_strategy
+        job = self.strategist.add_blank_strategy
         outsource.do(self.pushButton_5.clicked, job)
-        job = manager.me.change_settings
+        job = self.manager.change_settings
         outsource.do(self.checkBox_12.toggled, job)
-        job = manager.me.change_settings
+        job = self.manager.change_settings
         outsource.do(self.checkBox_13.toggled, job)
-        job = manager.me.change_settings
+        job = self.manager.change_settings
         outsource.do(self.comboBox_3.currentIndexChanged, job)
-        job = collector.me.guide_donation
+        job = self.collector.guide_donation
         outsource.do(self.pushButton_9.clicked, job)
 
         # ■■■■■ submenu actions ■■■■■
@@ -952,57 +958,57 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         action_menu = QtWidgets.QMenu(self)
         self.pushButton_13.setMenu(action_menu)
         text = "Open binance historical data webpage"
-        job = collector.me.open_binance_data_page
+        job = self.collector.open_binance_data_page
         new_action = action_menu.addAction(text)
         outsource.do(new_action.triggered, job)
         text = "Stop filling candle data"
-        job = collector.me.stop_filling_candle_data
+        job = self.collector.stop_filling_candle_data
         new_action = action_menu.addAction(text)
         outsource.do(new_action.triggered, job)
 
         action_menu = QtWidgets.QMenu(self)
         self.pushButton_12.setMenu(action_menu)
         text = "Open binance exchange"
-        job = transactor.me.open_exchange
+        job = self.transactor.open_exchange
         new_action = action_menu.addAction(text)
         outsource.do(new_action.triggered, job)
         text = "Open binance futures wallet"
-        job = transactor.me.open_futures_wallet_page
+        job = self.transactor.open_futures_wallet_page
         new_action = action_menu.addAction(text)
         outsource.do(new_action.triggered, job)
         text = "Open binance API management webpage"
-        job = transactor.me.open_api_management_page
+        job = self.transactor.open_api_management_page
         new_action = action_menu.addAction(text)
         outsource.do(new_action.triggered, job)
         text = "Clear all positions and open orders"
-        job = transactor.me.clear_positions_and_open_orders
+        job = self.transactor.clear_positions_and_open_orders
         new_action = action_menu.addAction(text)
         outsource.do(new_action.triggered, job)
         text = "Display same range as simulation graph"
-        job = transactor.me.match_graph_range
+        job = self.transactor.match_graph_range
         new_action = action_menu.addAction(text)
         outsource.do(new_action.triggered, job)
         text = "Show Raw Account State Object"
-        job = transactor.me.show_raw_account_state_object
+        job = self.transactor.show_raw_account_state_object
         new_action = action_menu.addAction(text)
         outsource.do(new_action.triggered, job)
 
         action_menu = QtWidgets.QMenu(self)
         self.pushButton_11.setMenu(action_menu)
         text = "Calculate temporarily only on visible range"
-        job = simulator.me.simulate_only_visible
+        job = self.simulator.simulate_only_visible
         new_action = action_menu.addAction(text)
         outsource.do(new_action.triggered, job)
         text = "Stop calculation"
-        job = simulator.me.stop_calculation
+        job = self.simulator.stop_calculation
         new_action = action_menu.addAction(text)
         outsource.do(new_action.triggered, job)
         text = "Find spots with lowest unrealized profit"
-        job = simulator.me.analyze_unrealized_peaks
+        job = self.simulator.analyze_unrealized_peaks
         new_action = action_menu.addAction(text)
         outsource.do(new_action.triggered, job)
         text = "Display same range as transaction graph"
-        job = simulator.me.match_graph_range
+        job = self.simulator.match_graph_range
         new_action = action_menu.addAction(text)
         outsource.do(new_action.triggered, job)
 
@@ -1020,16 +1026,16 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ start basic functions ■■■■■
 
-        asyncio.create_task(collector.me.get_exchange_information())
-        asyncio.create_task(strategist.me.display_strategies())
-        asyncio.create_task(transactor.me.display_strategy_index())
-        asyncio.create_task(transactor.me.watch_binance())
-        asyncio.create_task(transactor.me.update_user_data_stream())
-        asyncio.create_task(transactor.me.display_lines())
-        asyncio.create_task(transactor.me.display_day_range())
-        asyncio.create_task(simulator.me.display_lines())
-        asyncio.create_task(simulator.me.display_year_range())
-        asyncio.create_task(manager.me.check_binance_limits())
+        asyncio.create_task(self.collector.get_exchange_information())
+        asyncio.create_task(self.strategist.display_strategies())
+        asyncio.create_task(self.transactor.display_strategy_index())
+        asyncio.create_task(self.transactor.watch_binance())
+        asyncio.create_task(self.transactor.update_user_data_stream())
+        asyncio.create_task(self.transactor.display_lines())
+        asyncio.create_task(self.transactor.display_day_range())
+        asyncio.create_task(self.simulator.display_lines())
+        asyncio.create_task(self.simulator.display_year_range())
+        asyncio.create_task(self.manager.check_binance_limits())
 
         # ■■■■■ wait until the contents are filled ■■■■■
 
@@ -1116,7 +1122,9 @@ def bring_to_life():
     window.show()
 
     async def keep_app_lifecycle():
+        global window
         await app_close_event.wait()
+        del window
 
     app_close_event = asyncio.Event()
     event_loop.create_task(window.boot())

@@ -21,7 +21,6 @@ from module.recipe import (
     stop_flag,
     user_settings,
 )
-from module.worker import collector, strategist
 
 
 class Simulator:
@@ -147,7 +146,7 @@ class Simulator:
         # ■■■■■ check if the data exists ■■■■■
 
         async with datalocks.hold("collector_candle_data"):
-            if len(collector.me.candle_data) == 0:
+            if len(core.window.collector.candle_data) == 0:
                 return
 
         # ■■■■■ wait for the latest data to be added ■■■■■
@@ -161,7 +160,7 @@ class Simulator:
                 if stop_flag.find(task_name, task_id):
                     return
                 async with datalocks.hold("collector_candle_data"):
-                    last_index = collector.me.candle_data.index[-1]
+                    last_index = core.window.collector.candle_data.index[-1]
                     if last_index == before_moment:
                         break
                 await asyncio.sleep(0.1)
@@ -174,16 +173,16 @@ class Simulator:
 
         symbol = self.viewing_symbol
         strategy_index = self.calculation_settings["strategy_index"]
-        strategy = strategist.me.strategies[strategy_index]
+        strategy = core.window.strategist.strategies[strategy_index]
 
         # ■■■■■ get light data ■■■■■
 
         async with datalocks.hold("collector_realtime_data_chunks"):
-            before_chunk = collector.me.realtime_data_chunks[-2].copy()
-            current_chunk = collector.me.realtime_data_chunks[-1].copy()
+            before_chunk = core.window.collector.realtime_data_chunks[-2].copy()
+            current_chunk = core.window.collector.realtime_data_chunks[-1].copy()
         realtime_data = np.concatenate((before_chunk, current_chunk))
         async with datalocks.hold("collector_aggregate_trades"):
-            aggregate_trades = collector.me.aggregate_trades.copy()
+            aggregate_trades = core.window.collector.aggregate_trades.copy()
 
         # ■■■■■ draw light lines ■■■■■
 
@@ -299,7 +298,7 @@ class Simulator:
         # ■■■■■ get heavy data ■■■■■
 
         async with datalocks.hold("collector_candle_data"):
-            candle_data = collector.me.candle_data
+            candle_data = core.window.collector.candle_data
             candle_data = candle_data[get_from:slice_until][[symbol]]
             candle_data = candle_data.copy()
         async with datalocks.hold("simulator_unrealized_changes"):
@@ -650,7 +649,7 @@ class Simulator:
 
     async def display_available_years(self, *args, **kwargs):
         async with datalocks.hold("collector_candle_data"):
-            years_sr = collector.me.candle_data.index.year.drop_duplicates()  # type:ignore
+            years_sr = core.window.collector.candle_data.index.year.drop_duplicates()  # type:ignore
         years = years_sr.tolist()
         years.sort(reverse=True)
         years = [str(year) for year in years]
@@ -824,7 +823,7 @@ class Simulator:
         year = self.calculation_settings["year"]
         strategy_index = self.calculation_settings["strategy_index"]
 
-        strategy = strategist.me.strategies[strategy_index]
+        strategy = core.window.strategist.strategies[strategy_index]
         strategy_code_name = strategy["code_name"]
         strategy_version = strategy["version"]
         should_parallelize = strategy["parallelized_simulation"]
@@ -860,7 +859,7 @@ class Simulator:
 
         # get only year range
         async with datalocks.hold("collector_candle_data"):
-            df = collector.me.candle_data
+            df = core.window.collector.candle_data
             year_candle_data = df[slice_from - timedelta(days=7) : slice_until].copy()
 
         # interpolate
@@ -1145,7 +1144,7 @@ class Simulator:
             chunk_length = 0
         else:
             strategy_index = self.calculation_settings["strategy_index"]
-            strategy = strategist.me.strategies[strategy_index]
+            strategy = core.window.strategist.strategies[strategy_index]
             should_parallelize = strategy["parallelized_simulation"]
             chunk_length = strategy["chunk_division"]
 
@@ -1257,7 +1256,7 @@ class Simulator:
         year = self.calculation_settings["year"]
         strategy_index = self.calculation_settings["strategy_index"]
 
-        strategy = strategist.me.strategies[strategy_index]
+        strategy = core.window.strategist.strategies[strategy_index]
         strategy_code_name = strategy["code_name"]
         strategy_version = strategy["version"]
 
@@ -1330,7 +1329,7 @@ class Simulator:
         year = self.calculation_settings["year"]
         strategy_index = self.calculation_settings["strategy_index"]
 
-        strategy = strategist.me.strategies[strategy_index]
+        strategy = core.window.strategist.strategies[strategy_index]
         strategy_code_name = strategy["code_name"]
         strategy_version = strategy["version"]
 

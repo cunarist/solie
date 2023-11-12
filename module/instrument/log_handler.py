@@ -4,7 +4,6 @@ import time
 
 from module import core
 from module.shelf.long_text_view import LongTextView
-from module.worker import manager
 
 
 class LogHandler(logging.Handler):
@@ -49,5 +48,5 @@ class LogHandler(logging.Handler):
 
         else:
             asyncio.create_task(
-                manager.me.add_log_output(summarization, log_content),
+                core.window.manager.add_log_output(summarization, log_content),
             )
