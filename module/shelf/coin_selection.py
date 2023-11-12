@@ -42,17 +42,23 @@ class CoinSelection(QtWidgets.QWidget):
 
         # ■■■■■ get coin informations ■■■■■
 
+        response = await api_requester.coingecko(
+            "GET",
+            "/api/v3/coins/markets",
+            {
+                "vs_currency": "usd",
+            },
+        )
+
         coin_names = {}
         coin_icon_urls = {}
         coin_ranks = {}
 
-        response = await api_requester.coinstats("GET", "/public/v1/coins")
-        about_coins = response["coins"]
-        for about_coin in about_coins:
-            coin_symbol = about_coin["symbol"]
+        for about_coin in response:
+            coin_symbol = about_coin["symbol"].upper()
             coin_names[coin_symbol] = about_coin["name"]
-            coin_icon_urls[coin_symbol] = about_coin["icon"]
-            coin_ranks[coin_symbol] = about_coin["rank"]
+            coin_icon_urls[coin_symbol] = about_coin["image"]
+            coin_ranks[coin_symbol] = about_coin["market_cap_rank"]
 
         # ■■■■■ sort symbols by rank ■■■■■
 
@@ -165,7 +171,7 @@ class CoinSelection(QtWidgets.QWidget):
             data_settings = {}
             selected_symbols = []
             for symbol, checkbox in symbol_checkboxes.items():
-                is_checked = checkbox.isChecked[0]()
+                is_checked = checkbox.isChecked()
                 if is_checked:
                     selected_symbols.append(symbol)
             if 1 <= len(selected_symbols) <= 10:
@@ -220,9 +226,9 @@ class CoinSelection(QtWidgets.QWidget):
         )
         cards_layout.addItem(spacer)
 
-        # ■■■■■ draw coin icons from another thread ■■■■■
+        # ■■■■■ draw coin icons from another task ■■■■■
 
-        async def job_dc():
+        async def draw_icons():
             for symbol, icon_label in symbol_icon_labels.items():
                 coin_symbol = symbol.removesuffix(asset_token)
                 coin_icon_url = coin_icon_urls.get(coin_symbol, "")
@@ -237,4 +243,4 @@ class CoinSelection(QtWidgets.QWidget):
 
                 icon_label.setPixmap(pixmap)
 
-        asyncio.create_task(job_dc())
+        asyncio.create_task(draw_icons())

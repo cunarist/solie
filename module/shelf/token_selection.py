@@ -40,17 +40,23 @@ class TokenSelection(QtWidgets.QWidget):
 
         # ■■■■■ get coin informations ■■■■■
 
+        response = await api_requester.coingecko(
+            "GET",
+            "/api/v3/coins/markets",
+            {
+                "vs_currency": "usd",
+            },
+        )
+
         coin_names = {}
         coin_icon_urls = {}
         coin_ranks = {}
 
-        response = await api_requester.coinstats("GET", "/public/v1/coins")
-        about_coins = response["coins"]
-        for about_coin in about_coins:
-            coin_symbol = about_coin["symbol"]
+        for about_coin in response:
+            coin_symbol = about_coin["symbol"].upper()
             coin_names[coin_symbol] = about_coin["name"]
-            coin_icon_urls[coin_symbol] = about_coin["icon"]
-            coin_ranks[coin_symbol] = about_coin["rank"]
+            coin_icon_urls[coin_symbol] = about_coin["image"]
+            coin_ranks[coin_symbol] = about_coin["market_cap_rank"]
 
         # ■■■■■ set things ■■■■■
 
@@ -151,7 +157,7 @@ class TokenSelection(QtWidgets.QWidget):
             data_settings = {}
             selected_tokens = []
             for symbol, radiobox in token_radioboxes.items():
-                is_selected = radiobox.isChecked[0]()
+                is_selected = radiobox.isChecked()
                 if is_selected:
                     selected_tokens.append(symbol)
             if len(selected_tokens) == 1:
@@ -205,7 +211,7 @@ class TokenSelection(QtWidgets.QWidget):
         )
         cards_layout.addItem(spacer)
 
-        # ■■■■■ draw coin icons from another thread ■■■■■
+        # ■■■■■ draw coin icons from another task ■■■■■
 
         async def job_dc():
             for token, icon_label in token_icon_labels.items():

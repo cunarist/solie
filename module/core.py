@@ -223,18 +223,23 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         asset_token = user_settings.get_data_settings()["asset_token"]
         target_symbols = user_settings.get_data_settings()["target_symbols"]
-        response = await api_requester.coinstats("GET", "/public/v1/coins")
-        about_coins = response["coins"]
+        response = await api_requester.coingecko(
+            "GET",
+            "/api/v3/coins/markets",
+            {
+                "vs_currency": "usd",
+            },
+        )
 
         coin_names = {}
         coin_icon_urls = {}
         coin_ranks = {}
 
-        for about_coin in about_coins:
-            coin_symbol = about_coin["symbol"]
+        for about_coin in response:
+            coin_symbol = about_coin["symbol"].upper()
             coin_names[coin_symbol] = about_coin["name"]
-            coin_icon_urls[coin_symbol] = about_coin["icon"]
-            coin_ranks[coin_symbol] = about_coin["rank"]
+            coin_icon_urls[coin_symbol] = about_coin["image"]
+            coin_ranks[coin_symbol] = about_coin["market_cap_rank"]
 
         self.alias_to_symbol = {}
         self.symbol_to_alias = {}

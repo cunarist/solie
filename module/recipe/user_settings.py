@@ -39,8 +39,9 @@ async def apply_app_settings(payload):
     global _app_settings
     payload = copy.deepcopy(payload)
     _app_settings = {**_app_settings, **payload}
-    os.makedirs(os.path.dirname("./note/app_settings.json"), exist_ok=True)
-    async with aiofiles.open("./note/app_settings.json", "w", encoding="utf8") as file:
+    filepath = "./note/app_settings.json"
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    async with aiofiles.open(filepath, "w", encoding="utf8") as file:
         content = json.dumps(_app_settings, indent=4)
         await file.write(content)
 
@@ -55,9 +56,8 @@ async def apply_data_settings(payload):
     _data_settings = {**_data_settings, **payload}
     datapath = _app_settings["datapath"]
     if datapath is not None:
-        os.makedirs(os.path.dirname(f"{datapath}/data_settings.json"), exist_ok=True)
-        async with aiofiles.open(
-            f"{datapath}/data_settings.json", "w", encoding="utf8"
-        ) as file:
+        filepath = f"{datapath}/data_settings.json"
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             content = json.dumps(_data_settings, indent=4)
             await file.write(content)

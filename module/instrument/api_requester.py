@@ -66,12 +66,12 @@ class ApiRequester:
 
         return response
 
-    async def coinstats(self, http_method: str, path: str, payload: dict = {}):
+    async def coingecko(self, http_method: str, path: str, payload: dict = {}):
         query_string = urlencode(payload)
         # replace single quote to double quote
         query_string = query_string.replace("%27", "%22")
 
-        url = "https://api.coinstats.app" + path + "?" + query_string
+        url = "https://api.coingecko.com" + path + "?" + query_string
 
         async with aiohttp.ClientSession() as session:
             async with session.request(method=http_method, url=url) as raw_response:
