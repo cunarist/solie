@@ -40,7 +40,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         async def job_close():
             if not self.should_finalize:
-                app_lifecycle.cancel()
+                app_close_event.set()
 
             if self.should_confirm_closing:
                 question = [
@@ -71,7 +71,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 *[finalize_function() for finalize_function in self.finalize_functions]
             )
 
-            app_lifecycle.cancel()
+            app_close_event.set()
 
         asyncio.create_task(job_close())
 
@@ -1067,7 +1067,7 @@ def bring_to_life():
     global process_count
     global process_pool
     global communicator
-    global app_lifecycle
+    global app_close_event
 
     # ■■■■■ app ■■■■■
 
@@ -1111,13 +1111,13 @@ def bring_to_life():
 
     # ■■■■■ show and run ■■■■■
 
-    app_lifecycle = asyncio.Future()
     window = Window()
     window.setPalette(dark_palette)
     window.show()
-    event_loop.create_task(window.boot())
 
-    try:
-        event_loop.run_until_complete(app_lifecycle)
-    except asyncio.exceptions.CancelledError:
-        sys.exit(0)
+    async def watch_app_lifecycle():
+        await app_close_event.wait()
+
+    app_close_event = asyncio.Event()
+    event_loop.create_task(window.boot())
+    event_loop.run_until_complete(watch_app_lifecycle())
