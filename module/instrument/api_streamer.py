@@ -4,6 +4,8 @@ from typing import Callable, Coroutine
 
 import aiohttp
 
+from module import core
+
 
 class ApiStreamer:
     def __init__(self, url: str, when_received: Callable[..., Coroutine]):
@@ -20,6 +22,8 @@ class ApiStreamer:
     async def _run_websocket(self):
         async with self.session.ws_connect(self._url) as ws:
             async for received_raw in ws:
+                if core.app_close_event.is_set():
+                    return
                 if received_raw.type in (
                     aiohttp.WSMsgType.CLOSED,
                     aiohttp.WSMsgType.ERROR,

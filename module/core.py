@@ -55,8 +55,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 if answer in (0, 1):
                     return
 
-            self.should_overlap_error = True
-
             AskPopup.done_event.set()
             OverlapPopup.done_event.set()
 
@@ -67,6 +65,10 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             splash_screen = SplashScreen()
             self.centralWidget().layout().addWidget(splash_screen)
 
+            self.scheduler.shutdown()
+            await asyncio.sleep(1)
+
+            self.should_overlap_error = True
             await asyncio.gather(
                 *[finalize_function() for finalize_function in self.finalize_functions],
                 return_exceptions=True,
