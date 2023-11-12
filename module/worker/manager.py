@@ -12,12 +12,11 @@ from datetime import datetime, timedelta, timezone
 import aiofiles
 import timesetter
 
-from module import core, introduction
+from module import core
 from module.instrument.api_requester import ApiRequester
 from module.recipe import (
     check_internet,
     datalocks,
-    find_updates,
     remember_task_durations,
     simply_format,
     user_settings,
@@ -92,11 +91,6 @@ class Manager:
         )
         core.window.scheduler.add_job(
             self.match_system_time,
-            trigger="cron",
-            minute="*/10",
-        )
-        core.window.scheduler.add_job(
-            self.check_for_update,
             trigger="cron",
             minute="*/10",
         )
@@ -346,20 +340,6 @@ class Manager:
 
         core.window.should_confirm_closing = False
         core.window.close()
-
-    async def check_for_update(self, *args, **kwargs):
-        should_update = find_updates.is_newer_version_available()
-
-        if should_update:
-            latest_version = find_updates.get_latest_version()
-            question = [
-                "Update is ready",
-                "Shut down Solie and fetch the latest commits via Git."
-                + f" The latest version is {latest_version},"
-                + f" while the current version is {introduction.CURRENT_VERSION}.",
-                ["Okay"],
-            ]
-            await core.window.ask(question)
 
     async def open_documentation(self, *args, **kwargs):
         webbrowser.open("https://solie-docs.cunarist.com")

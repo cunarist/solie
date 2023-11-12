@@ -79,26 +79,6 @@ class ApiRequester:
 
         return response
 
-    async def cunarist(self, http_method: str, path: str, payload: dict = {}):
-        query_string = urlencode(payload)
-        # replace single quote to double quote
-        query_string = query_string.replace("%27", "%22")
-
-        url = "https://cunarist.com" + path + "?" + query_string
-
-        async with aiohttp.ClientSession() as session:
-            async with session.request(method=http_method, url=url) as raw_response:
-                response = await raw_response.json()
-
-        status_code = raw_response.status
-        if status_code != 200:
-            text = f"There was a problem with Cunarist API request (HTTP {status_code})"
-            text += "\n"
-            text += response["message"]
-            raise ApiRequestError(text)
-
-        return response
-
     async def bytes(self, url: str):
         headers = {
             "User-agent": "Mozilla/5.0",
