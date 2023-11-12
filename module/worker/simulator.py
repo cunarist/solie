@@ -545,16 +545,14 @@ class Simulator:
         # ■■■■■ make indicators ■■■■■
 
         indicators_script = strategy["indicators_script"]
-        compiled_indicators_script = compile(indicators_script, "<string>", "exec")
-        target_symbols = user_settings.get_data_settings()["target_symbols"]
 
         indicators = await core.event_loop.run_in_executor(
             core.process_pool,
             functools.partial(
                 make_indicators.do,
-                target_symbols=target_symbols,
+                target_symbols=[self.viewing_symbol],
                 candle_data=candle_data,
-                compiled_indicators_script=compiled_indicators_script,
+                indicators_script=indicators_script,
             ),
         )
 
@@ -954,7 +952,6 @@ class Simulator:
         if should_calculate:
             decision_script = strategy["decision_script"]
             indicators_script = strategy["indicators_script"]
-            compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
             # a little more data for generation
             provide_from = calculate_from - timedelta(days=7)
@@ -964,7 +961,7 @@ class Simulator:
                     make_indicators.do,
                     target_symbols=target_symbols,
                     candle_data=year_candle_data[provide_from:calculate_until],
-                    compiled_indicators_script=compiled_indicators_script,
+                    indicators_script=indicators_script,
                 ),
             )
 

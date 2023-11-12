@@ -1,11 +1,10 @@
 import itertools
 from datetime import datetime, timedelta, timezone
+from types import CodeType
 
 import numpy as np
 import pandas as pd
 import talib
-
-from module.recipe import datalocks
 
 
 def do(**kwargs) -> pd.DataFrame:
@@ -13,7 +12,7 @@ def do(**kwargs) -> pd.DataFrame:
 
     target_symbols = kwargs["target_symbols"]
     candle_data = kwargs["candle_data"]
-    compiled_indicators_script = kwargs["compiled_indicators_script"]
+    indicators_script: str | CodeType = kwargs["indicators_script"]
 
     # ■■■■■ interpolate nans ■■■■■
 
@@ -46,18 +45,15 @@ def do(**kwargs) -> pd.DataFrame:
 
     # ■■■■■ make individual indicators ■■■■■
 
-    for symbol in target_symbols:
-        namespace = {
-            "talib": talib,
-            "pd": pd,
-            "np": np,
-            "symbol": symbol,
-            "candle_data": candle_data,
-            "datalocks": datalocks,
-            "new_indicators": new_indicators,
-        }
-
-        exec(compiled_indicators_script, namespace)
+    namespace = {
+        "talib": talib,
+        "pd": pd,
+        "np": np,
+        "target_symbols": target_symbols,
+        "candle_data": candle_data,
+        "new_indicators": new_indicators,
+    }
+    exec(indicators_script, namespace)
 
     # ■■■■■ concatenate individual indicators into one ■■■■■
 

@@ -48,10 +48,9 @@ Variables provided by default are as follows. You can use these without any impo
 - `talib`(`module`): Python package `ta-lib`.
 - `pd`(`module`): Python package `pandas`.
 - `np`(`module`): Python package `numpy`.
-- `symbol`(`str`): The symbol for which you want to create the current indicator.
+- `target_symbols`(`list`): The symbols being observed.
 - `candle_data`(`pandas.DataFrame`): Candle data. Extra 7 days of data before desired calculation range is included.
-- `datalocks`(`module`): Used to hold `candle_data` for thread-safe reading.
-- `new_indicators`(`dict`): An object to hold newly created indicators. To get a single column from the observation data, you need to copy it while occupying it with `datalocks`. This is crucial because while multithreading is used for speed, `pandas.DataFrame` objects cannot be read or written simultaneously.
+- `new_indicators`(`dict`): An object that holds newly created indicators.
 
 ### Basic Syntax
 
@@ -86,12 +85,11 @@ Candle data exists internally in the form of a tabular `pandas.DataFrame`.
 You can extract partial `pandas.Series` data from `candle_data`.
 
 ```python
-with datalocks.hold("candle_data_during_indicator_creation"):
-    open_sr = candle_data[("BTCUSDT", "Open")].copy()
-    high_sr = candle_data[("BTCUSDT", "High")].copy()
-    low_sr = candle_data[("BTCUSDT", "Low")].copy()
-    close_sr = candle_data[("BTCUSDT", "Close")].copy()
-    volume_sr = candle_data[("BTCUSDT", "Volume")].copy()
+open_sr = candle_data[("BTCUSDT", "Open")]
+high_sr = candle_data[("BTCUSDT", "High")]
+low_sr = candle_data[("BTCUSDT", "Low")]
+close_sr = candle_data[("BTCUSDT", "Close")]
+volume_sr = candle_data[("BTCUSDT", "Volume")]
 # return each pandas.Series object
 ```
 
@@ -124,8 +122,7 @@ Solie includes the `talib` package. Creation of dozens of basic indicators is av
 
 ```python
 # Example
-with datalocks.hold("candle_data_during_indicator_creation"):
-    close_series = candle_data[("BTCUSDT", "Close")].copy() # return pandas.Series object
+close_series = candle_data[("BTCUSDT", "Close")] # pandas.Series object
 sma_series = talib.SMA(close_series, 360) # return pandas.Series object
 # 360 in 10 seconds means 3600 seconds, meaning 1 hour
 ```
@@ -133,8 +130,7 @@ sma_series = talib.SMA(close_series, 360) # return pandas.Series object
 Once you have created the indicators, simply put them in a `dict` object called `new_indicators` as appropriate tuple keys. After that, multiple `pandas.Series` objects inside this object are merged into a single indicators object. After writing this and saving it, you will see the indicator in the graph view. It can also be used in strategic decisions.
 
 ```python
-with datalocks.hold("candle_data_during_indicator_creation"):
-    close_sr = candle_data[(symbol, "Close")].copy()
+close_sr = candle_data[(symbol, "Close")]
 sma_sr = talib.SMA(close_sr, 360)
 new_indicators[(symbol, "Price", "SMA")] = sma_sr
 # Here, the tuple key is (symbol, "Price", "SMA")
@@ -151,8 +147,7 @@ The tuple key has 3 values. The first value represents a symbol and the third va
 You can set the color drawn on the graph as you wish. Just put parentheses next to the name and color code it. Color codes can be chosen on a color combination site[🔗](https://htmlcolorcodes.com/).
 
 ```python
-with datalocks.hold("candle_data_during_indicator_creation"):
-    close_sr = candle_data[(symbol, "Close")].copy()
+close_sr = candle_data[(symbol, "Close")]
 sma_sr = talib.SMA(close_sr, 360)
 new_indicators[(symbol, "Price", "SMA (#649CFF)")] = sma_sr # blue
 ```
@@ -162,8 +157,7 @@ Up to this point, indicators generation has been completed using the `pandas.Ser
 Below is the code that creates the average of two different moving averages.
 
 ```python
-with datalocks.hold("candle_data_during_indicator_creation"):
-    close_sr = candle_data[(symbol, "Close")].copy()
+close_sr = candle_data[(symbol, "Close")]
 sma_one = talib.SMA(close_sr, 360)
 sma_two = talib.SMA(close_sr, 2160)
 average_sma = (sma_one + sma_two) / 2
@@ -173,8 +167,7 @@ new_indicators[(symbol, "Price", "Average SMA")] = average_sma
 Below is the code that creates a market overheating indicator with two different moving averages and limits the value to not exceed 1.5. In the picture, you can see that everything above 1.5 is cut off.
 
 ```python
-with datalocks.hold("candle_data_during_indicator_creation"):
-    volume_sr = candle_data[(symbol, "Volume")].copy()
+volume_sr = candle_data[(symbol, "Volume")]
 sma_one = talib.SMA(volume_sr, 360)
 sma_two = talib.SMA(volume_sr, 2160)
 wildness = sma_one / sma_two # division operation
@@ -186,8 +179,7 @@ new_indicators[(symbol, "Abstract", "Wildness")] = wildness
 Below is the code that simply creates an indicator that delays the closing price by 10 minutes.
 
 ```python
-with datalocks.hold("candle_data_during_indicator_creation"):
-    close_sr = candle_data[(symbol, "Close")].copy()
+close_sr = candle_data[(symbol, "Close")]
 shifted_sr = close_sr.shift(60) # own method of pandas.Series object
 new_indicators[(symbol, "Price", "Shifted")] = shifted_sr
 ```
@@ -207,7 +199,7 @@ Variables provided by default are as follows. You can use these without any impo
 - `timezone`(`class`): part of the Python standard library.
 - `timedelta`(`class`): part of the Python standard library.
 - `math`(`module`): part of the Python standard library.
-- `target_symbols`(`list`): List of symbols to target.
+- `target_symbols`(`list`): The symbols being observed.
 - `current_moment`(`datetime.datetime`): The current time rounded down to the base time. For example, if the current exact time is 14:03:22.335 on January 3, 2022, then `current_moment` appears as 14:03:20 on January 3, 2022 in the 10-second interval.
 
 - `current_candle_data`(`numpy.record`): Only the most recent row is truncated from the observation data recorded up to the current time. Contains price and volume information. The information should be pulled out as a `tuple` as a `str`ized key.

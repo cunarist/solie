@@ -19,7 +19,6 @@ dependencies:
       - apscheduler==3.9.1
       - timesetter==1.8
       - pygments==2.11.2
-      - dill==0.3.4
       - yapf==0.32.0
       - getmac==0.8.3
       # developer dependencies

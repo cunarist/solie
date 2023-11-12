@@ -1,5 +1,6 @@
 import math
 from datetime import datetime, timedelta, timezone
+from types import CodeType
 
 
 def choose(**kwargs):
@@ -11,7 +12,7 @@ def choose(**kwargs):
     current_indicators = kwargs["current_indicators"]
     account_state = kwargs["account_state"]
     scribbles = kwargs["scribbles"]
-    compiled_decision_script = kwargs["compiled_decision_script"]
+    decision_script: str | CodeType = kwargs["decision_script"]
 
     # ■■■■■ decision template ■■■■■
 
@@ -35,7 +36,7 @@ def choose(**kwargs):
         "decision": decision,
     }
 
-    exec(compiled_decision_script, namespace)
+    exec(decision_script, namespace)
 
     # ■■■■■ return decision ■■■■■
 

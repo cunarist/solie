@@ -89,7 +89,7 @@ class StrategyDevelopInput(QtWidgets.QWidget):
 
             question = [
                 "Sample scripts applied",
-                "It is not yet saved. Use it as you want.",
+                "It is not yet saved. Modify the code as you want.",
                 ["Okay"],
             ]
             await core.window.ask(question)

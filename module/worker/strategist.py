@@ -127,7 +127,7 @@ class Strategiest:
             card_layout.addItem(spacer)
 
             async def job_bs(strategy=strategy):
-                before_selections = self.remember_strategy_selections()
+                before_selections = await self.remember_strategy_selections()
                 formation = [
                     "Develop your strategy",
                     StrategyDevelopInput,
@@ -144,7 +144,7 @@ class Strategiest:
             outsource.do(edit_button.clicked, job_bs)
 
             async def job_eb(strategy=strategy):
-                before_selections = self.remember_strategy_selections()
+                before_selections = await self.remember_strategy_selections()
                 formation = [
                     "Edit your strategy's basic information",
                     StrategyBasicInput,
@@ -169,7 +169,7 @@ class Strategiest:
                 answer = await core.window.ask(question)
                 if answer == 0:
                     return
-                before_selections = self.remember_strategy_selections()
+                before_selections = await self.remember_strategy_selections()
                 self.strategies.remove(strategy)
                 asyncio.create_task(self.display_strategies())
                 asyncio.create_task(self.save_strategies())
@@ -180,7 +180,7 @@ class Strategiest:
             outsource.do(edit_button.clicked, job_rs)
 
             async def job_ss(strategy=strategy):
-                before_selections = self.remember_strategy_selections()
+                before_selections = await self.remember_strategy_selections()
                 original_index = self.strategies.index(strategy)
                 after_index = original_index + 1
                 self.strategies.pop(original_index)
@@ -194,7 +194,7 @@ class Strategiest:
             outsource.do(edit_button.clicked, job_ss)
 
             async def job_us(strategy=strategy):
-                before_selections = self.remember_strategy_selections()
+                before_selections = await self.remember_strategy_selections()
                 original_index = self.strategies.index(strategy)
                 after_index = original_index - 1
                 self.strategies.pop(original_index)

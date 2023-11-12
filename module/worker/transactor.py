@@ -1141,16 +1141,14 @@ class Transactor:
         # ■■■■■ make indicators ■■■■■
 
         indicators_script = strategy["indicators_script"]
-        compiled_indicators_script = compile(indicators_script, "<string>", "exec")
-        target_symbols = user_settings.get_data_settings()["target_symbols"]
 
         indicators = await core.event_loop.run_in_executor(
             core.process_pool,
             functools.partial(
                 make_indicators.do,
-                target_symbols=target_symbols,
+                target_symbols=[self.viewing_symbol],
                 candle_data=candle_data,
-                compiled_indicators_script=compiled_indicators_script,
+                indicators_script=indicators_script,
             ),
         )
 
@@ -1404,7 +1402,6 @@ class Transactor:
         strategy = strategist.me.strategies[strategy_index]
 
         indicators_script = strategy["indicators_script"]
-        compiled_indicators_script = compile(indicators_script, "<string>", "exec")
 
         indicators = await core.event_loop.run_in_executor(
             core.process_pool,
@@ -1412,14 +1409,13 @@ class Transactor:
                 make_indicators.do,
                 target_symbols=target_symbols,
                 candle_data=partial_candle_data,
-                compiled_indicators_script=compiled_indicators_script,
+                indicators_script=indicators_script,
             ),
         )
 
         current_candle_data = partial_candle_data.to_records()[-1]
         current_indicators = indicators.to_records()[-1]
         decision_script = strategy["decision_script"]
-        compiled_decision_script = compile(decision_script, "<string>", "exec")
 
         decision, scribbles = await core.event_loop.run_in_executor(
             core.process_pool,
@@ -1431,7 +1427,7 @@ class Transactor:
                 current_indicators=current_indicators,
                 account_state=copy.deepcopy(self.account_state),
                 scribbles=self.scribbles,
-                compiled_decision_script=compiled_decision_script,
+                decision_script=decision_script,
             ),
         )
         self.scribbles = scribbles

@@ -57,7 +57,7 @@ def do(dataset):
     # ■■■■■ actual loop calculation ■■■■■
 
     calculation_index_length = len(calculation_index_ar)
-    compiled_decision_script = compile(decision_script, "<string>", "exec")
+    decision_script = compile(decision_script, "<string>", "exec")
     first_calculation_moment = calculation_index_ar[0]
 
     for cycle in range(calculation_index_length):
@@ -494,7 +494,7 @@ def do(dataset):
             current_indicators=current_indicators,
             account_state=copy.deepcopy(chunk_account_state),
             scribbles=chunk_scribbles,
-            compiled_decision_script=compiled_decision_script,
+            decision_script=decision_script,
         )
 
         for symbol_key, symbol_decision in decision.items():
