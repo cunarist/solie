@@ -801,11 +801,3 @@ class Collector:
             None,
         ]
         await core.window.overlap(formation)
-
-
-me = None
-
-
-def bring_to_life():
-    global me
-    me = Collector()

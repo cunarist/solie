@@ -2290,11 +2290,3 @@ class Transactor:
             [text],
         ]
         await core.window.overlap(formation)
-
-
-me = None
-
-
-def bring_to_life():
-    global me
-    me = Transactor()

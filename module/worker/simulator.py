@@ -1405,11 +1405,3 @@ class Simulator:
         else:
             self.should_draw_all_years = False
         await self.display_lines()
-
-
-me = None
-
-
-def bring_to_life():
-    global me
-    me = Simulator()

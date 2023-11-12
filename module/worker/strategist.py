@@ -228,11 +228,3 @@ class Strategiest:
         if before_selections["simulator"] in self.strategies:
             new_index = self.strategies.index(before_selections["simulator"])
             core.window.comboBox.setCurrentIndex(new_index)
-
-
-me = None
-
-
-def bring_to_life():
-    global me
-    me = Strategiest()

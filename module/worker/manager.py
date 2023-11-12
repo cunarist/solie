@@ -394,11 +394,3 @@ class Manager:
         is_enabled = core.window.board.isEnabled()
         if is_enabled:
             core.window.board.setEnabled(False)
-
-
-me = None
-
-
-def bring_to_life():
-    global me
-    me = Manager()
