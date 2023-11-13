@@ -1,8 +1,7 @@
-import asyncio
-
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from module import core
+from module.recipe import outsource
 from module.shelf.long_text_view import LongTextView
 
 
@@ -11,7 +10,7 @@ class LogList(QtWidgets.QListWidget):
         super().__init__(parent)
         self.fixed_width_font = QtGui.QFont("Source Code Pro", 9)
         self.setFont(self.fixed_width_font)
-        self.itemClicked.connect(self.show_fulltext)
+        outsource.do(self.itemClicked, self.show_fulltext)
 
     def addItem(self, summarization: str, log_content: str):  # noqa:N802
         maximum_item_limit = 1024
@@ -29,14 +28,11 @@ class LogList(QtWidgets.QListWidget):
             for _ in range(remove_count):
                 self.takeItem(0)
 
-    def show_fulltext(self, *args, **kwargs):
+    async def show_fulltext(self, *args, **kwargs):
         selected_index = self.currentRow()
 
         selected_item = self.item(selected_index)
         text = selected_item.data(QtCore.Qt.ItemDataRole.UserRole)
 
-        async def job():
-            formation = ["This is the full log", LongTextView, True, [text]]
-            await core.window.overlap(formation)
-
-        asyncio.create_task(job())
+        formation = ["This is the full log", LongTextView, True, [text]]
+        await core.window.overlap(formation)

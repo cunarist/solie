@@ -2,6 +2,7 @@ import asyncio
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
+from module.recipe import outsource
 from module.widget.popup_box import PopupBox
 from module.widget.transparent_scroll_area import TransparentScrollArea
 
@@ -81,10 +82,10 @@ class OverlapPopup(QtWidgets.QWidget):
             close_button_font.setPointSize(11)
             close_button.setFont(close_button_font)
 
-            def job():
+            async def job():
                 self.done_event.set()
 
-            close_button.clicked.connect(job)
+            outsource.do(close_button.clicked, job)
             this_layout.addWidget(close_button)
         content_box_layout.addLayout(this_layout)
 
