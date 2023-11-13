@@ -15,7 +15,6 @@ from module import core
 from module.instrument.api_requester import ApiRequester
 from module.recipe import (
     check_internet,
-    datalocks,
     open_browser,
     remember_task_durations,
     simply_format,
@@ -235,14 +234,6 @@ class Manager:
             lines = (f"{symbol} {count}" for (symbol, count) in block_sizes.items())
             text = "\n".join(lines)
             core.window.label_36.setText(text)
-
-            texts = []
-            for key, lock in datalocks.object_locks.items():
-                is_locked = lock.locked()
-                locked_text = "Locked" if is_locked else "Unlocked"
-                texts.append(f"{key}: {locked_text}")
-            text = "\n".join(texts)
-            core.window.label_34.setText(text)
 
         for _ in range(5):
             job()

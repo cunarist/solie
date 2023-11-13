@@ -1128,8 +1128,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>280</width>
-                <height>65</height>
+                <width>1216</width>
+                <height>611</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_19">
@@ -2240,7 +2240,7 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
               <item row="2" column="2">
                <widget class="QLabel" name="label_40">
                 <property name="text">
-                 <string>Datalocks</string>
+                 <string>(Preserved)</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>

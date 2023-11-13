@@ -12,9 +12,9 @@ import pandas as pd
 from scipy.signal import find_peaks
 
 from module import core
+from module.instrument.rw_lock import RWLock
 from module.recipe import (
     check_internet,
-    datalocks,
     make_indicators,
     simulate_chunk,
     standardize,
@@ -53,13 +53,13 @@ class Simulator:
 
         self.raw_account_state = standardize.account_state()
         self.raw_scribbles = {}
-        self.raw_asset_record = standardize.asset_record()
-        self.raw_unrealized_changes = standardize.unrealized_changes()
+        self.raw_asset_record = RWLock(standardize.asset_record())
+        self.raw_unrealized_changes = RWLock(standardize.unrealized_changes())
 
         self.account_state = standardize.account_state()
         self.scribbles = {}
-        self.asset_record = standardize.asset_record()
-        self.unrealized_changes = standardize.unrealized_changes()
+        self.asset_record = RWLock(standardize.asset_record())
+        self.unrealized_changes = RWLock(standardize.unrealized_changes())
 
         # ■■■■■ repetitive schedules ■■■■■
 
@@ -145,8 +145,9 @@ class Simulator:
 
         # ■■■■■ check if the data exists ■■■■■
 
-        async with datalocks.hold("collector_candle_data"):
-            if len(core.window.collector.candle_data) == 0:
+        async with core.window.collector.candle_data.read_lock as wrapper:
+            inner = wrapper.inner
+            if len(inner) == 0:
                 return
 
         # ■■■■■ wait for the latest data to be added ■■■■■
@@ -159,8 +160,9 @@ class Simulator:
             for _ in range(50):
                 if stop_flag.find(task_name, task_id):
                     return
-                async with datalocks.hold("collector_candle_data"):
-                    last_index = core.window.collector.candle_data.index[-1]
+                async with core.window.collector.candle_data.read_lock as wrapper:
+                    inner = wrapper.inner
+                    last_index = inner.index[-1]
                     if last_index == before_moment:
                         break
                 await asyncio.sleep(0.1)
@@ -177,12 +179,13 @@ class Simulator:
 
         # ■■■■■ get light data ■■■■■
 
-        async with datalocks.hold("collector_realtime_data_chunks"):
-            before_chunk = core.window.collector.realtime_data_chunks[-2].copy()
-            current_chunk = core.window.collector.realtime_data_chunks[-1].copy()
+        async with core.window.collector.realtime_data_chunks.read_lock as wrapper:
+            inner = wrapper.inner
+            before_chunk = inner[-2].copy()
+            current_chunk = inner[-1].copy()
         realtime_data = np.concatenate((before_chunk, current_chunk))
-        async with datalocks.hold("collector_aggregate_trades"):
-            aggregate_trades = core.window.collector.aggregate_trades.copy()
+        async with core.window.collector.aggregate_trades.read_lock as wrapper:
+            aggregate_trades = wrapper.inner.copy()
 
         # ■■■■■ draw light lines ■■■■■
 
@@ -297,25 +300,25 @@ class Simulator:
 
         # ■■■■■ get heavy data ■■■■■
 
-        async with datalocks.hold("collector_candle_data"):
-            candle_data = core.window.collector.candle_data
-            candle_data = candle_data[get_from:slice_until][[symbol]]
-            candle_data = candle_data.copy()
-        async with datalocks.hold("simulator_unrealized_changes"):
-            unrealized_changes = self.unrealized_changes.copy()
-        async with datalocks.hold("simulator_asset_record"):
-            asset_record = self.asset_record
-            if len(asset_record) > 0:
-                last_asset = asset_record.iloc[-1]["Result Asset"]
+        async with core.window.collector.candle_data.read_lock as wrapper:
+            inner = wrapper.inner
+            inner = inner[get_from:slice_until][[symbol]]
+            candle_data = inner.copy()
+        async with self.unrealized_changes.read_lock as wrapper:
+            unrealized_changes = wrapper.inner.copy()
+        async with self.asset_record.read_lock as wrapper:
+            inner = wrapper.inner
+            if len(inner) > 0:
+                last_asset = inner.iloc[-1]["Result Asset"]
             else:
                 last_asset = None
-            before_record = asset_record[:slice_from]
-            asset_record = asset_record[slice_from:]
+            before_record = inner[:slice_from]
+            inner = inner[slice_from:]
             if len(before_record) > 0:
                 before_asset = before_record.iloc[-1]["Result Asset"]
             else:
                 before_asset = None
-            asset_record = asset_record.copy()
+            asset_record = inner.copy()
 
         candle_data = candle_data[slice_from:]
 
@@ -641,15 +644,16 @@ class Simulator:
     async def erase(self, *args, **kwargs):
         self.raw_account_state = standardize.account_state()
         self.raw_scribbles = {}
-        self.raw_asset_record = standardize.asset_record()
-        self.raw_unrealized_changes = standardize.unrealized_changes()
+        self.raw_asset_record = RWLock(standardize.asset_record())
+        self.raw_unrealized_changes = RWLock(standardize.unrealized_changes())
         self.about_viewing = None
 
         await self.present()
 
     async def display_available_years(self, *args, **kwargs):
-        async with datalocks.hold("collector_candle_data"):
-            years_sr = core.window.collector.candle_data.index.year.drop_duplicates()  # type:ignore
+        async with core.window.collector.candle_data.read_lock as wrapper:
+            inner = wrapper.inner
+            years_sr = inner.index.year.drop_duplicates()  # type:ignore
         years = years_sr.tolist()
         years.sort(reverse=True)
         years = [str(year) for year in years]
@@ -699,10 +703,10 @@ class Simulator:
         if stop_flag.find("display_simulation_range_information", task_id):
             return
 
-        async with datalocks.hold("simulator_unrealized_changes"):
-            unrealized_changes = self.unrealized_changes[range_start:range_end].copy()
-        async with datalocks.hold("simulator_asset_record"):
-            asset_record = self.asset_record[range_start:range_end].copy()
+        async with self.unrealized_changes.read_lock as wrapper:
+            unrealized_changes = wrapper.inner[range_start:range_end].copy()
+        async with self.asset_record.read_lock as wrapper:
+            asset_record = wrapper.inner[range_start:range_end].copy()
 
         auto_trade_mask = asset_record["Cause"] == "auto_trade"
         asset_changes = asset_record["Result Asset"].pct_change() + 1
@@ -858,8 +862,8 @@ class Simulator:
         slice_until -= timedelta(seconds=1)
 
         # get only year range
-        async with datalocks.hold("collector_candle_data"):
-            df = core.window.collector.candle_data
+        async with core.window.collector.candle_data.read_lock as wrapper:
+            df = wrapper.inner
             year_candle_data = df[slice_from - timedelta(days=7) : slice_until].copy()
 
         # interpolate
@@ -1100,8 +1104,8 @@ class Simulator:
 
         # ■■■■■ remember and present ■■■■■
 
-        self.raw_asset_record = asset_record
-        self.raw_unrealized_changes = unrealized_changes
+        self.raw_asset_record = RWLock(asset_record)
+        self.raw_unrealized_changes = RWLock(unrealized_changes)
         self.raw_scribbles = scribbles
         self.raw_account_state = account_state
         self.about_viewing = {
@@ -1131,11 +1135,14 @@ class Simulator:
         taker_fee = self.presentation_settings["taker_fee"]
         leverage = self.presentation_settings["leverage"]
 
-        async with datalocks.hold("simulator_unrealized_changes"):
-            asset_record = self.raw_asset_record.copy()
-            unrealized_changes = self.raw_unrealized_changes.copy()
-            scribbles = self.raw_scribbles.copy()
-            account_state = self.raw_account_state.copy()
+        async with self.raw_asset_record.read_lock as wrapper:
+            asset_record = wrapper.inner.copy()
+
+        async with self.raw_unrealized_changes.read_lock as wrapper:
+            unrealized_changes = wrapper.inner.copy()
+
+        scribbles = self.raw_scribbles.copy()
+        account_state = self.raw_account_state.copy()
 
         # ■■■■■ get strategy details ■■■■
 
@@ -1209,10 +1216,10 @@ class Simulator:
 
         self.scribbles = presentation_scribbles
         self.account_state = presentation_account_state
-        async with datalocks.hold("simulator_unrealized_changes"):
-            self.unrealized_changes = presentation_unrealized_changes
-        async with datalocks.hold("simulator_asset_record"):
-            self.asset_record = presentation_asset_record
+        async with self.unrealized_changes.write_lock as wrapper:
+            wrapper.replace(presentation_unrealized_changes)
+        async with self.asset_record.write_lock as wrapper:
+            wrapper.replace(presentation_asset_record)
 
         # ■■■■■ display ■■■■■
 
@@ -1340,15 +1347,18 @@ class Simulator:
         account_state_path = path_start + "_account_state.pickle"
 
         try:
-            async with datalocks.hold("simulator_unrealized_changes"):
-                self.raw_asset_record = pd.read_pickle(asset_record_path)
-                self.raw_unrealized_changes = pd.read_pickle(unrealized_changes_path)
-                async with aiofiles.open(scribbles_path, "rb") as file:
-                    content = await file.read()
-                    self.raw_scribbles = pickle.loads(content)
-                async with aiofiles.open(account_state_path, "rb") as file:
-                    content = await file.read()
-                    self.raw_account_state = pickle.loads(content)
+            async with self.raw_asset_record.write_lock as wrapper:
+                new = pd.read_pickle(asset_record_path)
+                wrapper.replace(new)
+            async with self.raw_unrealized_changes.write_lock as wrapper:
+                new = pd.read_pickle(unrealized_changes_path)
+                wrapper.replace(new)
+            async with aiofiles.open(scribbles_path, "rb") as file:
+                content = await file.read()
+                self.raw_scribbles = pickle.loads(content)
+            async with aiofiles.open(account_state_path, "rb") as file:
+                content = await file.read()
+                self.raw_account_state = pickle.loads(content)
             self.about_viewing = {
                 "year": year,
                 "strategy_code_name": strategy_code_name,
@@ -1375,8 +1385,10 @@ class Simulator:
         stop_flag.make("calculate_simulation")
 
     async def analyze_unrealized_peaks(self, *args, **kwargs):
-        peak_indexes, _ = find_peaks(-self.unrealized_changes, distance=3600 / 10)  # type:ignore
-        peak_sr = self.unrealized_changes.iloc[peak_indexes]
+        async with self.unrealized_changes.read_lock as wrapper:
+            sr = wrapper.inner
+            peak_indexes, _ = find_peaks(-sr, distance=3600 / 10)  # type:ignore
+            peak_sr = sr.iloc[peak_indexes]
         peak_sr = peak_sr.sort_values().iloc[:12]
         if len(peak_sr) < 12:
             question = [

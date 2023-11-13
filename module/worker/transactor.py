@@ -17,10 +17,10 @@ from module import core
 from module.instrument.api_request_error import ApiRequestError
 from module.instrument.api_requester import ApiRequester
 from module.instrument.api_streamer import ApiStreamer
+from module.instrument.rw_lock import RWLock
 from module.recipe import (
     ball,
     check_internet,
-    datalocks,
     decide,
     make_indicators,
     open_browser,
@@ -72,14 +72,16 @@ class Transactor:
             "binance_api": "",
             "binance_secret": "",
         }
-        self.unrealized_changes = standardize.unrealized_changes()
-        self.asset_record = standardize.asset_record()
-        self.auto_order_record = pd.DataFrame(
-            columns=[
-                "Symbol",
-                "Order ID",
-            ],
-            index=pd.DatetimeIndex([], tz="UTC"),
+        self.unrealized_changes = RWLock(standardize.unrealized_changes())
+        self.asset_record = RWLock(standardize.asset_record())
+        self.auto_order_record = RWLock(
+            pd.DataFrame(
+                columns=[
+                    "Symbol",
+                    "Order ID",
+                ],
+                index=pd.DatetimeIndex([], tz="UTC"),
+            )
         )
 
         # ■■■■■ repetitive schedules ■■■■■
@@ -224,7 +226,7 @@ class Transactor:
         # unrealized changes
         try:
             filepath = self.workerpath + "/unrealized_changes.pickle"
-            self.unrealized_changes = pd.read_pickle(filepath)
+            self.unrealized_changes = RWLock(pd.read_pickle(filepath))
         except FileNotFoundError:
             pass
         await asyncio.sleep(0)
@@ -232,7 +234,7 @@ class Transactor:
         # asset record
         try:
             filepath = self.workerpath + "/asset_record.pickle"
-            self.asset_record = pd.read_pickle(filepath)
+            self.asset_record = RWLock(pd.read_pickle(filepath))
         except FileNotFoundError:
             pass
         await asyncio.sleep(0)
@@ -240,49 +242,49 @@ class Transactor:
         # auto order record
         try:
             filepath = self.workerpath + "/auto_order_record.pickle"
-            self.auto_order_record = pd.read_pickle(filepath)
+            self.auto_order_record = RWLock(pd.read_pickle(filepath))
         except FileNotFoundError:
             pass
         await asyncio.sleep(0)
 
     async def organize_data(self, *args, **kwargs):
-        async with datalocks.hold("transactor_unrealized_changes"):
-            sr = self.unrealized_changes
+        async with self.unrealized_changes.write_lock as wrapper:
+            sr = wrapper.inner
             original_index = sr.index
             unique_index = original_index.drop_duplicates()
             sr = sr.reindex(unique_index)
             sr = sr.sort_index()
             sr = sr.astype(np.float32)
-            self.unrealized_changes = sr
+            wrapper.replace(sr)
 
-        async with datalocks.hold("transactor_auto_order_record"):
-            df = self.auto_order_record
+        async with self.auto_order_record.write_lock as wrapper:
+            df = wrapper.inner
             original_index = df.index
             unique_index = original_index.drop_duplicates()
             df = df.reindex(unique_index)
             df = df.sort_index()
             df = df.iloc[-(2**16) :].copy()
-            self.auto_order_record = df
+            wrapper.replace(df)
 
-        async with datalocks.hold("transactor_asset_record"):
-            df = self.asset_record
+        async with self.asset_record.write_lock as wrapper:
+            df = wrapper.inner
             original_index = df.index
             unique_index = original_index.drop_duplicates()
             df = df.reindex(unique_index)
             df = df.sort_index()
-            self.asset_record = df
+            wrapper.replace(df)
 
     async def save_large_data(self, *args, **kwargs):
-        async with datalocks.hold("transactor_unrealized_changes"):
-            unrealized_changes = self.unrealized_changes.copy()
+        async with self.unrealized_changes.read_lock as wrapper:
+            unrealized_changes = wrapper.inner.copy()
         unrealized_changes.to_pickle(self.workerpath + "/unrealized_changes.pickle")
 
-        async with datalocks.hold("transactor_auto_order_record"):
-            auto_order_record = self.auto_order_record.copy()
+        async with self.auto_order_record.read_lock as wrapper:
+            auto_order_record = wrapper.inner.copy()
         auto_order_record.to_pickle(self.workerpath + "/auto_order_record.pickle")
 
-        async with datalocks.hold("transactor_asset_record"):
-            asset_record = self.asset_record.copy()
+        async with self.asset_record.read_lock as wrapper:
+            asset_record = wrapper.inner.copy()
         asset_record.to_pickle(self.workerpath + "/asset_record.pickle")
 
     async def save_scribbles(self, *args, **kwargs):
@@ -495,57 +497,54 @@ class Transactor:
                 added_margin = added_notional / leverage
                 added_margin_ratio = added_margin / wallet_balance
 
-                async with datalocks.hold("transactor_auto_order_record"):
-                    df = self.auto_order_record
+                async with self.auto_order_record.read_lock as wrapper:
+                    df = wrapper.inner
                     symbol_df = df[df["Symbol"] == symbol]
                     unique_order_ids = symbol_df["Order ID"].unique()
                     if order_id in unique_order_ids:
                         mask_sr = symbol_df["Order ID"] == order_id
 
-                async with datalocks.hold("transactor_asset_record"):
-                    df = self.asset_record
+                async with self.asset_record.write_lock as wrapper:
+                    df = wrapper.inner
                     symbol_df = df[df["Symbol"] == symbol]
                     recorded_id_list = symbol_df["Order ID"].tolist()
                     does_record_exist = order_id in recorded_id_list
-                    last_index = self.asset_record.index[-1]
+                    last_index = df.index[-1]
                     if does_record_exist:
                         mask_sr = symbol_df["Order ID"] == order_id
                         recorded_time = symbol_df.index[mask_sr][0]
                         recorded_value = symbol_df.loc[recorded_time, "Margin Ratio"]
                         new_value = recorded_value + added_margin_ratio
-                        self.asset_record.loc[recorded_time, "Margin Ratio"] = new_value
-                        last_asset: float = self.asset_record.loc[
-                            last_index, "Result Asset"
-                        ]  # type:ignore
+                        df.loc[recorded_time, "Margin Ratio"] = new_value
+                        last_asset: float = df.loc[last_index, "Result Asset"]  # type:ignore
                         new_value = last_asset + added_revenue
-                        self.asset_record.loc[last_index, "Result Asset"] = new_value
+                        df.loc[last_index, "Result Asset"] = new_value
                     else:
                         record_time = event_time
-                        while record_time in self.asset_record.index:
+                        while record_time in df.index:
                             record_time += timedelta(milliseconds=1)
                         new_value = symbol
-                        self.asset_record.loc[record_time, "Symbol"] = new_value
+                        df.loc[record_time, "Symbol"] = new_value
                         new_value = "sell" if side == "SELL" else "buy"
-                        self.asset_record.loc[record_time, "Side"] = new_value
+                        df.loc[record_time, "Side"] = new_value
                         new_value = last_filled_price
-                        self.asset_record.loc[record_time, "Fill Price"] = new_value
+                        df.loc[record_time, "Fill Price"] = new_value
                         new_value = "maker" if is_maker else "taker"
-                        self.asset_record.loc[record_time, "Role"] = new_value
+                        df.loc[record_time, "Role"] = new_value
                         new_value = added_margin_ratio
-                        self.asset_record.loc[record_time, "Margin Ratio"] = new_value
+                        df.loc[record_time, "Margin Ratio"] = new_value
                         new_value = order_id
-                        self.asset_record.loc[record_time, "Order ID"] = new_value
-                        last_asset: float = self.asset_record.loc[
-                            last_index, "Result Asset"
-                        ]  # type:ignore
+                        df.loc[record_time, "Order ID"] = new_value
+                        last_asset: float = df.loc[last_index, "Result Asset"]  # type:ignore
                         new_value = last_asset + added_revenue
-                        self.asset_record.loc[record_time, "Result Asset"] = new_value
+                        df.loc[record_time, "Result Asset"] = new_value
                         if order_id in unique_order_ids:
-                            self.asset_record.loc[record_time, "Cause"] = "auto_trade"
+                            df.loc[record_time, "Cause"] = "auto_trade"
                         else:
-                            self.asset_record.loc[record_time, "Cause"] = "manual_trade"
-                    if not self.asset_record.index.is_monotonic_increasing:
-                        self.asset_record = self.asset_record.sort_index()
+                            df.loc[record_time, "Cause"] = "manual_trade"
+                    if not df.index.is_monotonic_increasing:
+                        df = df.sort_index()
+                        wrapper.replace(df)
 
         # ■■■■■ cancel conflicting orders ■■■■■
 
@@ -642,10 +641,10 @@ class Transactor:
         if stop_flag.find("display_transaction_range_information", task_id):
             return
 
-        async with datalocks.hold("transactor_unrealized_changes"):
-            unrealized_changes = self.unrealized_changes[range_start:range_end].copy()
-        async with datalocks.hold("transactor_asset_record"):
-            asset_record = self.asset_record[range_start:range_end].copy()
+        async with self.unrealized_changes.read_lock as wrapper:
+            unrealized_changes = wrapper.inner[range_start:range_end].copy()
+        async with self.asset_record.read_lock as wrapper:
+            asset_record = wrapper.inner[range_start:range_end].copy()
 
         auto_trade_mask = asset_record["Cause"] == "auto_trade"
         asset_changes = asset_record["Result Asset"].pct_change() + 1
@@ -743,8 +742,9 @@ class Transactor:
 
         # ■■■■■ check if the data exists ■■■■■
 
-        async with datalocks.hold("collector_candle_data"):
-            if len(core.window.collector.candle_data) == 0:
+        async with core.window.collector.candle_data.read_lock as wrapper:
+            inner = wrapper.inner
+            if len(inner) == 0:
                 return
 
         # ■■■■■ wait for the latest data to be added ■■■■■
@@ -757,8 +757,9 @@ class Transactor:
             for _ in range(50):
                 if stop_flag.find(task_name, task_id):
                     return
-                async with datalocks.hold("collector_candle_data"):
-                    last_index = core.window.collector.candle_data.index[-1]
+                async with core.window.collector.candle_data.read_lock as wrapper:
+                    inner = wrapper.inner
+                    last_index = inner.index[-1]
                     if last_index == before_moment:
                         break
                 await asyncio.sleep(0.1)
@@ -775,12 +776,13 @@ class Transactor:
 
         # ■■■■■ get light data ■■■■■
 
-        async with datalocks.hold("collector_realtime_data_chunks"):
-            before_chunk = core.window.collector.realtime_data_chunks[-2].copy()
-            current_chunk = core.window.collector.realtime_data_chunks[-1].copy()
+        async with core.window.collector.realtime_data_chunks.read_lock as wrapper:
+            inner = wrapper.inner
+            before_chunk = inner[-2].copy()
+            current_chunk = inner[-1].copy()
         realtime_data = np.concatenate((before_chunk, current_chunk))
-        async with datalocks.hold("collector_aggregate_trades"):
-            aggregate_trades = core.window.collector.aggregate_trades.copy()
+        async with core.window.collector.aggregate_trades.read_lock as wrapper:
+            aggregate_trades = wrapper.inner.copy()
 
         # ■■■■■ draw light lines ■■■■■
 
@@ -892,14 +894,14 @@ class Transactor:
 
         # ■■■■■ get heavy data ■■■■■
 
-        async with datalocks.hold("collector_candle_data"):
-            candle_data = core.window.collector.candle_data
-            candle_data = candle_data[get_from:slice_until][[symbol]]
-            candle_data = candle_data.copy()
-        async with datalocks.hold("transactor_unrealized_changes"):
-            unrealized_changes = self.unrealized_changes.copy()
-        async with datalocks.hold("transactor_asset_record"):
-            asset_record = self.asset_record
+        async with core.window.collector.candle_data.read_lock as wrapper:
+            inner = wrapper.inner
+            inner = inner[get_from:slice_until][[symbol]]
+            candle_data = inner.copy()
+        async with self.unrealized_changes.read_lock as wrapper:
+            unrealized_changes = wrapper.inner.copy()
+        async with self.asset_record.read_lock as wrapper:
+            asset_record = wrapper.inner
             if len(asset_record) > 0:
                 last_asset = asset_record.iloc[-1]["Result Asset"]
             else:
@@ -1372,16 +1374,18 @@ class Transactor:
 
         # ■■■■■ check if the data exists ■■■■■
 
-        async with datalocks.hold("collector_candle_data"):
-            if len(core.window.collector.candle_data) == 0:
+        async with core.window.collector.candle_data.read_lock as wrapper:
+            inner = wrapper.inner
+            if len(inner) == 0:
                 # case when the app is executed for the first time
                 return
 
         # ■■■■■ wait for the latest data to be added ■■■■■
 
         for _ in range(50):
-            async with datalocks.hold("collector_candle_data"):
-                last_index = core.window.collector.candle_data.index[-1]
+            async with core.window.collector.candle_data.read_lock as wrapper:
+                inner = wrapper.inner
+                last_index = inner.index[-1]
                 if last_index == before_moment:
                     break
             await asyncio.sleep(0.1)
@@ -1389,8 +1393,8 @@ class Transactor:
         # ■■■■■ get the candle data ■■■■■
 
         slice_from = datetime.now(timezone.utc) - timedelta(days=7)
-        async with datalocks.hold("collector_candle_data"):
-            df = core.window.collector.candle_data
+        async with core.window.collector.candle_data.read_lock as wrapper:
+            df = wrapper.inner
             partial_candle_data = df[slice_from:].copy()
 
         # ■■■■■ make decision ■■■■■
@@ -1773,15 +1777,17 @@ class Transactor:
         else:
             unrealized_change = 0
 
-        async with datalocks.hold("transactor_unrealized_changes"):
-            self.unrealized_changes[before_moment] = unrealized_change
-            if not self.unrealized_changes.index.is_monotonic_increasing:
-                self.unrealized_changes = self.unrealized_changes.sort_index()
+        async with self.unrealized_changes.write_lock as wrapper:
+            sr = wrapper.inner
+            sr[before_moment] = unrealized_change
+            if not sr.index.is_monotonic_increasing:
+                sr = sr.sort_index()
 
         # ■■■■■ make an asset trace if it's blank ■■■■■
 
-        async with datalocks.hold("transactor_asset_record"):
-            if len(self.asset_record) == 0:
+        async with self.asset_record.write_lock as wrapper:
+            df = wrapper.inner
+            if len(df) == 0:
                 for about_asset in about_account["assets"]:
                     if (
                         about_asset["asset"]
@@ -1790,8 +1796,8 @@ class Transactor:
                         break
                 wallet_balance = float(about_asset["walletBalance"])
                 current_time = datetime.now(timezone.utc)
-                self.asset_record.loc[current_time, "Cause"] = "other"
-                self.asset_record.loc[current_time, "Result Asset"] = wallet_balance
+                df.loc[current_time, "Cause"] = "other"
+                df.loc[current_time, "Result Asset"] = wallet_balance
 
         # ■■■■■ when the wallet balance changed for no good reason ■■■■■
 
@@ -1800,26 +1806,30 @@ class Transactor:
                 break
         wallet_balance = float(about_asset["walletBalance"])
 
-        async with datalocks.hold("transactor_asset_record"):
-            last_index = self.asset_record.index[-1]
-            last_asset: float = self.asset_record.loc[last_index, "Result Asset"]  # type:ignore
+        async with self.asset_record.read_lock as wrapper:
+            df = wrapper.inner
+            last_index = df.index[-1]
+            last_asset: float = df.loc[last_index, "Result Asset"]  # type:ignore
 
         if wallet_balance == 0:
             pass
         elif abs(wallet_balance - last_asset) / wallet_balance > 10**-9:
             # when the difference is bigger than a billionth
             # referal fee, funding fee, wallet transfer, etc..
-            async with datalocks.hold("transactor_asset_record"):
+            async with self.asset_record.write_lock as wrapper:
+                df = wrapper.inner
                 current_time = datetime.now(timezone.utc)
-                self.asset_record.loc[current_time, "Cause"] = "other"
-                self.asset_record.loc[current_time, "Result Asset"] = wallet_balance
-                if not self.asset_record.index.is_monotonic_increasing:
-                    self.asset_record = self.asset_record.sort_index()
+                df.loc[current_time, "Cause"] = "other"
+                df.loc[current_time, "Result Asset"] = wallet_balance
+                if not df.index.is_monotonic_increasing:
+                    df = df.sort_index()
+                    wrapper.replace(df)
         else:
             # when the difference is small enough to consider as an numeric error
-            async with datalocks.hold("transactor_asset_record"):
-                last_index = self.asset_record.index[-1]
-                self.asset_record.loc[last_index, "Result Asset"] = wallet_balance
+            async with self.asset_record.write_lock as wrapper:
+                df = wrapper.inner
+                last_index = df.index[-1]
+                df.loc[last_index, "Result Asset"] = wallet_balance
 
         # ■■■■■ correct mode of the account market if automation is turned on ■■■■■
 
@@ -1974,8 +1984,8 @@ class Transactor:
             if symbol not in decision.keys():
                 continue
 
-            async with datalocks.hold("collector_aggregate_trades"):
-                ar = core.window.collector.aggregate_trades[-10000:].copy()
+            async with core.window.collector.aggregate_trades.read_lock as wrapper:
+                ar = wrapper.inner[-10000:].copy()
             temp_ar = ar[str((symbol, "Price"))]
             temp_ar = temp_ar[temp_ar != 0]
             current_price = float(temp_ar[-1])
@@ -2184,13 +2194,15 @@ class Transactor:
             order_id = response["orderId"]
             timestamp = response["updateTime"] / 1000
             update_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-            async with datalocks.hold("transactor_auto_order_record"):
-                while update_time in self.auto_order_record.index:
+            async with self.auto_order_record.write_lock as wrapper:
+                df = wrapper.inner
+                while update_time in df.index:
                     update_time += timedelta(milliseconds=1)
-                self.auto_order_record.loc[update_time, "Symbol"] = order_symbol
-                self.auto_order_record.loc[update_time, "Order ID"] = order_id
-                if not self.auto_order_record.index.is_monotonic_increasing:
-                    self.auto_order_record = self.auto_order_record.sort_index()
+                df.loc[update_time, "Symbol"] = order_symbol
+                df.loc[update_time, "Order ID"] = order_id
+                if not df.index.is_monotonic_increasing:
+                    df = df.sort_index()
+                    wrapper.replace(df)
 
         await asyncio.gather(*[job_1(order) for order in new_orders])
 
