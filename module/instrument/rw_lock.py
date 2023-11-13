@@ -33,7 +33,7 @@ class _RWLockCore:
     def write_locked(self) -> bool:
         return self._w_state > 0
 
-    async def _yield_after_acquire(self, lock_type: int) -> None:
+    async def _yield_after_acquire(self, lock_type: int):
         if self._do_yield:
             try:
                 await asyncio.sleep(0.0)
@@ -110,13 +110,13 @@ class _RWLockCore:
         finally:
             self._write_waiters.remove(fut)
 
-    def release_read(self) -> None:
+    def release_read(self):
         self._release(self._RL)
 
-    def release_write(self) -> None:
+    def release_write(self):
         self._release(self._WL)
 
-    def _release(self, lock_type: int) -> None:
+    def _release(self, lock_type: int):
         # assert lock_type in (self._RL, self._WL)
         me = asyncio.current_task(loop=self._loop)
         assert me is not None  # nosec
@@ -131,7 +131,7 @@ class _RWLockCore:
             self._w_state -= 1
         self._wake_up()
 
-    def _wake_up(self) -> None:
+    def _wake_up(self):
         # If no one is reading or writing, wake up write waiters
         # first, only one write waiter should be waken up, if no
         # write waiters and have read waiters, wake up all read
@@ -153,27 +153,27 @@ class _RWLockCore:
 
 
 class _ContextManagerMixin:
-    def __enter__(self) -> None:
+    def __enter__(self):
         raise RuntimeError('"await" should be used as context manager expression')
 
-    def __exit__(self, *args: Any) -> None:
+    def __exit__(self, *args: Any):
         # This must exist because __enter__ exists, even though that
         # always raises; that's how the with-statement works.
         pass  # pragma: no cover
 
-    async def __aenter__(self) -> None:
+    async def __aenter__(self):
         await self.acquire()
         # We have no use for the "as ..."  clause in the with
         # statement for locks.
         return None
 
-    async def __aexit__(self, *args: List[Any]) -> None:
+    async def __aexit__(self, *args: List[Any]):
         self.release()
 
-    async def acquire(self) -> None:
+    async def acquire(self):
         raise NotImplementedError  # pragma: no cover
 
-    def release(self) -> None:
+    def release(self):
         raise NotImplementedError  # pragma: no cover
 
 
@@ -196,7 +196,7 @@ class Wrapper(Generic[T]):
 
 # Lock objects to access the _RWLockCore in reader or writer mode
 class ReadLock(_ContextManagerMixin, Generic[T]):
-    def __init__(self, lock: _RWLockCore, wrapper: Wrapper[T]) -> None:
+    def __init__(self, lock: _RWLockCore, wrapper: Wrapper[T]):
         self._wrapper = wrapper
         self._lock = lock
 
@@ -246,7 +246,7 @@ class RWLock(Generic[T]):
 
     core = _RWLockCore
 
-    def __init__(self, inner: T, fast: bool = False) -> None:
+    def __init__(self, inner: T, fast: bool = True):
         loop = asyncio.get_running_loop()
         self._wrapper = Wrapper(inner)
         self._loop: Loop = loop
