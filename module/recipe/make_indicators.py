@@ -4,7 +4,7 @@ from types import CodeType
 
 import numpy as np
 import pandas as pd
-import talib
+import pandas_ta as ta
 
 
 def do(**kwargs) -> pd.DataFrame:
@@ -18,7 +18,7 @@ def do(**kwargs) -> pd.DataFrame:
 
     candle_data = candle_data.interpolate()
 
-    # ■■■■■ make dummy row to avoid talib error with all nan series ■■■■■
+    # ■■■■■ make dummy row to avoid ta error with all nan series ■■■■■
 
     if len(candle_data) > 0:
         dummy_index = candle_data.index[-1] + timedelta(seconds=1)
@@ -46,7 +46,7 @@ def do(**kwargs) -> pd.DataFrame:
     # ■■■■■ make individual indicators ■■■■■
 
     namespace = {
-        "talib": talib,
+        "ta": ta,
         "pd": pd,
         "np": np,
         "target_symbols": target_symbols,

@@ -4,7 +4,6 @@ channels:
 dependencies:
   - python=3.10.8
   - pip=23.1.2
-  - ta-lib=0.4.19
   - pip:
       - numpy==1.22.2
       - pandas==1.4.4
@@ -21,6 +20,7 @@ dependencies:
       - pygments==2.11.2
       - yapf==0.32.0
       - getmac==0.8.3
+      - pandas-ta==0.3.14b
       # developer dependencies
       - ruff
       - pyright
