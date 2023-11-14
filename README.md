@@ -16,7 +16,7 @@ Read the [documentations](https://solie-docs.cunarist.com) to understand how to 
 
 Running Solie is easy. Since this is a Python project, you need to install some things on your system first. But don't worry, it won't be as hard as you think if you adhere to the following instructions.
 
-First, make sure [Miniforge](https://github.com/conda-forge/miniforge) is installed on your system. If the installation was successful, you'll be able to check its version with the command below.
+First, make sure [Miniforge](https://github.com/conda-forge/miniforge) is installed on your system. Don't forget to add Miniforge to PATH during the installation. If the installation was successful, you'll be able to check its version with the command below.
 
 ```
 mamba --version
