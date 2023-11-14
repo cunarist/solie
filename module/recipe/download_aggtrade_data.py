@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 
-def do(target_tuple: tuple) -> pd.DataFrame:
+def do(target_tuple: tuple) -> pd.DataFrame | None:
     symbol = target_tuple[0]
     download_type = target_tuple[1]
 
@@ -33,7 +33,7 @@ def do(target_tuple: tuple) -> pd.DataFrame:
     try:
         zipped_csv_data = io.BytesIO(urlopen(url).read())
     except HTTPError:
-        raise ConnectionError("Looks like no data is available from Binance yet")
+        return
 
     try:
         df = pd.concat(
