@@ -1,5 +1,5 @@
 [tool.ruff]
-extend-select = ["N", "I"]
+extend-select = ["N", "I", "T20"]
 exclude = ["module/user_interface.py"]
 
 [tool.pyright]
