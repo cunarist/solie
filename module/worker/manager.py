@@ -78,11 +78,6 @@ class Manager:
             second="*",
         )
         core.window.scheduler.add_job(
-            self.display_internal_status,
-            trigger="cron",
-            second="*",
-        )
-        core.window.scheduler.add_job(
             self.disable_system_auto_update,
             trigger="cron",
             minute="*",
@@ -177,7 +172,7 @@ class Manager:
         remember_task_durations.add("write_log", duration)
 
     async def display_internal_status(self, *args, **kwargs):
-        def job():
+        while True:
             texts = []
             all_tasks = asyncio.all_tasks()
             tasks_not_done = 0
@@ -218,9 +213,9 @@ class Manager:
                     text = data_name
                     text += "\n"
                     data_value = sum(deque_data) / len(deque_data)
-                    text += f"Average {simply_format.fixed_float(data_value,6)}s "
+                    text += f"Mean {simply_format.fixed_float(data_value,6)}s "
                     data_value = statistics.median(deque_data)
-                    text += f"Middle {simply_format.fixed_float(data_value,6)}s "
+                    text += f"Median {simply_format.fixed_float(data_value,6)}s "
                     text += "\n"
                     data_value = min(deque_data)
                     text += f"Minimum {simply_format.fixed_float(data_value,6)}s "
@@ -235,8 +230,6 @@ class Manager:
             text = "\n".join(lines)
             core.window.label_36.setText(text)
 
-        for _ in range(5):
-            job()
             await asyncio.sleep(0.2)
 
     async def run_script(self, *args, **kwargs):
