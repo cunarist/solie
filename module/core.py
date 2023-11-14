@@ -1114,7 +1114,7 @@ def bring_to_life():
     app.setStyle("Fusion")
     app.setPalette(dark_palette)
 
-    # ■■■■■ prepare concurrency and parallelism ■■■■■
+    # ■■■■■ prepare parallelism ■■■■■
 
     process_count = multiprocessing.cpu_count()
     process_pool = ProcessPoolExecutor(process_count)
