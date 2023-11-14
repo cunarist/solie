@@ -230,7 +230,7 @@ class Manager:
             text = "\n".join(lines)
             core.window.label_36.setText(text)
 
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.1)
 
     async def run_script(self, *args, **kwargs):
         script_text = core.window.plainTextEdit.toPlainText()

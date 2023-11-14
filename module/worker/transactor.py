@@ -89,7 +89,7 @@ class Transactor:
         core.window.scheduler.add_job(
             self.display_lines,
             trigger="cron",
-            second="*/2",
+            second="*",
             kwargs={"only_light_lines": True, "frequent": True},
         )
         core.window.scheduler.add_job(
