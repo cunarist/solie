@@ -16,16 +16,16 @@ Read the [documentations](https://solie-docs.cunarist.com) to understand how to 
 
 Running Solie is easy. Since this is a Python project, you need to install some things on your system first. But don't worry, it won't be as hard as you think if you adhere to the following instructions.
 
-First, make sure [`Miniconda`](https://docs.conda.io/en/latest/miniconda.html) is installed on your system. Don't forget to add `conda` to `PATH` environment variable during installation. If you have properly added `conda` to your `PATH` environment variable, you'll be able to check its version with the command below.
+First, make sure [Miniforge](https://github.com/conda-forge/miniforge) is installed on your system. If the installation was successful, you'll be able to check its version with the command below.
 
 ```
-conda --version
+mamba --version
 ```
 
 Create or update the conda environment in the terminal.
 
 ```
-conda env update --file environment.yaml
+mamba env update
 ```
 
 Activate the conda environment.
