@@ -71,7 +71,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.should_overlap_error = True
             await asyncio.gather(
                 *[finalize_function() for finalize_function in self.finalize_functions],
-                return_exceptions=True,
             )
 
             app_close_event.set()
@@ -873,13 +872,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.collector.save_candle_data,
         ]
 
-        # ■■■■■ change logging settings ■■■■■
-
-        self.should_overlap_error = False
-        logger = logging.getLogger("solie")
-        logger.setLevel("DEBUG")
-        logger.info("Started up")
-
         # ■■■■■ connect events to functions ■■■■■
 
         # special widgets
@@ -1019,7 +1011,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         await asyncio.gather(
             *[job() for job in self.initialize_functions],
-            return_exceptions=True,
         )
 
         # ■■■■■ start repetitive timer ■■■■■
@@ -1047,6 +1038,13 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ wait until the contents are filled ■■■■■
 
         await asyncio.sleep(1)
+
+        # ■■■■■ change logging settings ■■■■■
+
+        self.should_overlap_error = False
+        logger = logging.getLogger("solie")
+        logger.setLevel("DEBUG")
+        logger.info("Started up")
 
         # ■■■■■ show main widgets ■■■■■
 
