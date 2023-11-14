@@ -1116,13 +1116,15 @@ def bring_to_life():
 
     # ■■■■■ prepare concurrency and parallelism ■■■■■
 
-    event_loop = QEventLoop(app)
-    asyncio.set_event_loop(event_loop)
     process_count = multiprocessing.cpu_count()
     process_pool = ProcessPoolExecutor(process_count)
     communicator = multiprocessing.Manager()
 
     # ■■■■■ show and run ■■■■■
+
+    event_loop = QEventLoop(app)
+    asyncio.set_event_loop(event_loop)
+    app_close_event = asyncio.Event()
 
     window = Window()
     window.setPalette(dark_palette)
@@ -1131,7 +1133,6 @@ def bring_to_life():
     async def keep_app_lifecycle():
         await app_close_event.wait()
 
-    app_close_event = asyncio.Event()
     event_loop.create_task(window.boot())
     event_loop.run_until_complete(keep_app_lifecycle())
     event_loop.close()
