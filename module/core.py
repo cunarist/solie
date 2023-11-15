@@ -150,7 +150,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.should_finalize = False
         self.should_confirm_closing = True
-        self.should_overlap_error = True
+        self.should_overlap_error = False
         self.last_interaction = datetime.now(timezone.utc)
 
         # ■■■■■ hide some of the main widgets ■■■■■
@@ -159,6 +159,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.board.hide()
 
     async def boot(self):
+        # ■■■■■ prepare logging ■■■■■
+
+        logging.getLogger().addHandler(LogHandler())
+        logger.info("Started up")
+
         # ■■■■■ global settings of packages ■■■■■
 
         os.get_terminal_size = lambda *args: os.terminal_size((150, 90))
@@ -166,7 +171,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         pd.set_option("display.min_rows", 100)
         pd.set_option("display.max_rows", 100)
         pyqtgraph.setConfigOptions(antialias=True)
-        logging.getLogger().addHandler(LogHandler())
 
         # ■■■■■ guide frame ■■■■■
 
@@ -1039,13 +1043,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         await asyncio.sleep(1)
 
-        # ■■■■■ change logging settings ■■■■■
-
-        self.should_overlap_error = False
-        logger = logging.getLogger("solie")
-        logger.setLevel("DEBUG")
-        logger.info("Started up")
-
         # ■■■■■ show main widgets ■■■■■
 
         splash_screen.setParent(None)  # type:ignore
@@ -1079,6 +1076,7 @@ def bring_to_life():
     global process_pool
     global communicator
     global app_close_event
+    global logger
 
     # ■■■■■ app ■■■■■
 
@@ -1117,6 +1115,11 @@ def bring_to_life():
     process_count = multiprocessing.cpu_count()
     process_pool = ProcessPoolExecutor(process_count)
     communicator = multiprocessing.Manager()
+
+    # ■■■■■ create logger ■■■■■
+
+    logger = logging.getLogger("solie")
+    logger.setLevel("DEBUG")
 
     # ■■■■■ show and run ■■■■■
 

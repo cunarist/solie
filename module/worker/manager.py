@@ -1,6 +1,5 @@
 import asyncio
 import json
-import logging
 import os
 import platform
 import statistics
@@ -45,8 +44,6 @@ class Manager:
         # ■■■■■ remember and display ■■■■■
 
         self.api_requester = ApiRequester()
-
-        self.executed_time = datetime.now(timezone.utc).replace(microsecond=0)
 
         self.online_status = {
             "ping": 0,
@@ -148,29 +145,6 @@ class Manager:
     async def deselect_log_output(self, *args, **kwargs):
         core.window.listWidget.clearSelection()
 
-    async def add_log_output(self, *args, **kwargs):
-        # get the data
-        summarization = args[0]
-        log_content = args[1]
-
-        # add to log list
-        core.window.listWidget.addItem(summarization, log_content)
-
-        # save to file
-        task_start_time = datetime.now(timezone.utc)
-        filepath = str(self.executed_time)
-        filepath = filepath.replace(":", "_")
-        filepath = filepath.replace(" ", "_")
-        filepath = filepath.replace("-", "_")
-        filepath = filepath.replace("+", "_")
-        filepath = self.workerpath + "/log_outputs_" + filepath + ".txt"
-        async with aiofiles.open(filepath, "a", encoding="utf8") as file:
-            await file.write(f"{summarization}\n")
-            await file.write(f"{log_content}\n\n")
-        duration = datetime.now(timezone.utc) - task_start_time
-        duration = duration.total_seconds()
-        remember_task_durations.add("write_log", duration)
-
     async def display_internal_status(self, *args, **kwargs):
         while True:
             texts = []
@@ -237,7 +211,7 @@ class Manager:
         filepath = self.workerpath + "/python_script.txt"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             await file.write(script_text)
-        namespace = {"window": core.window, "logger": logging.getLogger("solie")}
+        namespace = {"window": core.window, "logger": core.logger}
         exec(script_text, namespace)
 
     async def check_online_status(self, *args, **kwargs):

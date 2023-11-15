@@ -10,7 +10,6 @@ task_durations = {
     "display_light_transaction_lines": deque(maxlen=60),
     "display_all_transaction_lines": deque(maxlen=20),
     "place_orders": deque(maxlen=60),
-    "write_log": deque(maxlen=60),
 }
 
 

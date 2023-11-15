@@ -1,7 +1,8 @@
 import asyncio
-import logging
 
 import aiohttp
+
+from module import core
 
 is_ready = asyncio.Event()
 _was_connected = False
@@ -45,11 +46,11 @@ async def monitor():
         if _was_connected and not is_connected:
             for job in _disconnected_functions:
                 asyncio.create_task(job())
-            logging.getLogger("solie").warning("Internet disconnected")
+            core.logger.warning("Internet disconnected")
         elif not _was_connected and is_connected:
             for job in _connected_functions:
                 asyncio.create_task(job())
-            logging.getLogger("solie").info("Internet connected")
+            core.logger.info("Internet connected")
 
         # remember connection state
         _was_connected = is_connected

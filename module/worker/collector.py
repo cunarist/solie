@@ -1,7 +1,6 @@
 import asyncio
 import calendar
 import itertools
-import logging
 import math
 import os
 import random
@@ -667,8 +666,7 @@ class Collector:
         # ■■■■■ add to log ■■■■■
 
         text = "Filled the candle data with the history data downloaded from Binance"
-        logger = logging.getLogger("solie")
-        logger.info(text)
+        core.logger.info(text)
 
         # ■■■■■ display to graphs ■■■■■
 

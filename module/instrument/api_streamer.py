@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from typing import Callable, Coroutine
 
 import aiohttp
@@ -36,5 +35,4 @@ class ApiStreamer:
 
     async def _close_self(self):
         await self.session.close()
-        logger = logging.getLogger("solie")
-        logger.exception(f"Websocket closed:\n{self._url}")
+        core.logger.exception(f"Websocket closed:\n{self._url}")
