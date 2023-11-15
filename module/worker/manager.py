@@ -70,7 +70,7 @@ class Manager:
         core.window.scheduler.add_job(
             self.check_online_status,
             trigger="cron",
-            second="*",
+            second="*/5",
         )
         core.window.scheduler.add_job(
             self.display_system_status,
