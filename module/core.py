@@ -159,11 +159,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.board.hide()
 
     async def boot(self):
-        # ■■■■■ prepare logging ■■■■■
-
-        logging.getLogger().addHandler(LogHandler())
-        logger.info("Started up")
-
         # ■■■■■ global settings of packages ■■■■■
 
         os.get_terminal_size = lambda *args: os.terminal_size((150, 90))
@@ -1010,6 +1005,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         job = self.simulator.match_graph_range
         new_action = action_menu.addAction(text)
         outsource.do(new_action.triggered, job)
+
+        # ■■■■■ prepare logging ■■■■■
+
+        logging.getLogger().addHandler(LogHandler())
+        logger.info("Started up")
 
         # ■■■■■ initialize functions ■■■■■
 
