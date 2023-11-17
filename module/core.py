@@ -1125,6 +1125,7 @@ def bring_to_life():
 
     event_loop = QEventLoop(app)
     asyncio.set_event_loop(event_loop)
+
     app_close_event = asyncio.Event()
 
     window = Window()
@@ -1132,5 +1133,5 @@ def bring_to_life():
     window.show()
 
     event_loop.create_task(window.boot())
-    event_loop.run_until_complete(asyncio.wait_for(app_close_event.wait(), None))
+    event_loop.run_until_complete(app_close_event.wait())
     event_loop.close()
