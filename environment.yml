@@ -9,7 +9,7 @@ dependencies:
       - pandas==1.5.3
       - scipy==1.11.3
       - pyside6==6.6.0
-      - qasync==0.26.0
+      - qasync==0.27.0
       - pyqtgraph==0.13.3
       - aiohttp==3.8.6
       - faust-cchardet==2.1.19
