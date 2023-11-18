@@ -150,11 +150,12 @@ class Transactor:
 
         # ■■■■■ websocket streamings ■■■■■
 
-        self.api_streamer = ApiStreamer(
-            "",
-            self.listen_to_account,
-        )
-        self.api_streamers = []
+        self.api_streamers = {
+            "ACCOUNT": ApiStreamer(
+                "",
+                self.listen_to_account,
+            )
+        }
 
         # ■■■■■ invoked by the internet connection  ■■■■■
 
@@ -308,7 +309,7 @@ class Transactor:
 
         listen_key = response["listenKey"]
 
-        self.api_streamer = ApiStreamer(
+        self.api_streamers["ACCOUNT"] = ApiStreamer(
             "wss://fstream.binance.com/ws/" + listen_key,
             self.listen_to_account,
         )

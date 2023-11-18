@@ -77,7 +77,7 @@ class Simulator:
 
         # ■■■■■ websocket streamings ■■■■■
 
-        self.api_streamers = []
+        self.api_streamers = {}
 
         # ■■■■■ invoked by the internet connection  ■■■■■
 

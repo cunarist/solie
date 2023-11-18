@@ -113,23 +113,23 @@ class Collector:
 
         # ■■■■■ websocket streamings ■■■■■
 
-        self.api_streamers = [
-            ApiStreamer(
+        self.api_streamers = {
+            "MARK_PRICE": ApiStreamer(
                 "wss://fstream.binance.com/ws/!markPrice@arr@1s",
                 self.add_mark_price,
             ),
-        ]
+        }
         for symbol in user_settings.get_data_settings()["target_symbols"]:
             api_streamer = ApiStreamer(
                 f"wss://fstream.binance.com/ws/{symbol.lower()}@bookTicker",
                 self.add_book_tickers,
             )
-            self.api_streamers.append(api_streamer)
+            self.api_streamers[f"BOOK_TICKER_{symbol}"] = api_streamer
             api_streamer = ApiStreamer(
                 f"wss://fstream.binance.com/ws/{symbol.lower()}@aggTrade",
                 self.add_aggregate_trades,
             )
-            self.api_streamers.append(api_streamer)
+            self.api_streamers[f"AGG_TRADE_{symbol}"] = api_streamer
 
         # ■■■■■ invoked by the internet connection  ■■■■■
 
