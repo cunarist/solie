@@ -16,7 +16,7 @@ Read the [documentations](https://solie-docs.cunarist.com) to understand how to 
 
 Running Solie is easy, but you need to install some components on your system first. It won't be as hard as you think if you adhere to the following instructions.
 
-First, install [Python](https://www.python.org/). You can either use the installer downloaded from the website or use the app store or the package manager of your operating system.
+First, install [Python](https://www.python.org/). We recommend using the official installer provided from the website to ensure stability.
 
 Also, make sure [Poetry](https://python-poetry.org/) is installed on your system. You might need to replace `python` with `python3`, `pip` with `pip3` on some platforms from the commands below.
 
