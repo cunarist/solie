@@ -5,7 +5,7 @@ description = "Backtesting and auto-trading cryptos with intuitive GUI on Binanc
 authors = ["Cunarist"]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.13"
+python = "^3.9,<3.13"
 numpy = "1.26.2"
 pandas = "1.5.3"
 scipy = "1.11.3"
