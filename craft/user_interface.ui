@@ -21,7 +21,7 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>static/product_icon.png</normaloff>static/product_icon.png</iconset>
+    <normaloff>solie/static/product_icon.png</normaloff>solie/static/product_icon.png</iconset>
   </property>
   <property name="styleSheet">
    <string notr="true">QPushButton, QComboBox, QLineEdit, QCheckBox, QSpinBox, QDoubleSpinBox {
@@ -2294,23 +2294,23 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
   <customwidget>
    <class>ScriptEditor</class>
    <extends>QPlainTextEdit</extends>
-   <header>module/widget/script_editor</header>
+   <header>solie/widget/script_editor</header>
   </customwidget>
   <customwidget>
    <class>LogList</class>
    <extends>QListWidget</extends>
-   <header>module/widget/log_list</header>
+   <header>solie/widget/log_list</header>
   </customwidget>
   <customwidget>
    <class>HorizontalDivider</class>
    <extends>QFrame</extends>
-   <header>module/widget/horizontal_divider</header>
+   <header>solie/widget/horizontal_divider</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>VerticalDivider</class>
    <extends>QFrame</extends>
-   <header>module/widget/vertical_divider</header>
+   <header>solie/widget/vertical_divider</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

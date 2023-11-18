@@ -28,11 +28,11 @@ class Strategiest:
         self.strategy_cards = []
 
         self.red_pixmap = QtGui.QPixmap()
-        self.red_pixmap.load("./static/icon/traffic_light_red.png")
+        self.red_pixmap.load("./solie/static/icon/traffic_light_red.png")
         self.yellow_pixmap = QtGui.QPixmap()
-        self.yellow_pixmap.load("./static/icon/traffic_light_yellow.png")
+        self.yellow_pixmap.load("./solie/static/icon/traffic_light_yellow.png")
         self.green_pixmap = QtGui.QPixmap()
-        self.green_pixmap.load("./static/icon/traffic_light_green.png")
+        self.green_pixmap.load("./solie/static/icon/traffic_light_green.png")
 
         # ■■■■■ repetitive schedules ■■■■■
 
@@ -64,11 +64,11 @@ class Strategiest:
                 + " This strategy is only for demonstration purposes."
             )
             first_strategy["risk_level"] = 2
-            filepath = "./static/sample_indicators_script.txt"
+            filepath = "./solie/static/sample_indicators_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 read_data = await file.read()
                 first_strategy["indicators_script"] = read_data
-            filepath = "./static/sample_decision_script.txt"
+            filepath = "./solie/static/sample_decision_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 read_data = await file.read()
                 first_strategy["decision_script"] = read_data

@@ -277,7 +277,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 image_data = await api_requester.bytes(coin_icon_url)
                 pixmap.loadFromData(image_data)
             else:
-                pixmap.load("./static/icon/blank_coin.png")
+                pixmap.load("./solie/static/icon/blank_coin.png")
             symbol_pixmaps[symbol] = pixmap
 
         token_icon_url = coin_icon_urls.get(asset_token, "")
@@ -421,7 +421,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         this_layout = self.horizontalLayout_13
         product_icon_pixmap = QtGui.QPixmap()
-        async with aiofiles.open("./static/product_icon.png", mode="rb") as file:
+        async with aiofiles.open("./solie/static/product_icon.png", mode="rb") as file:
             product_icon_data = await file.read()
         product_icon_pixmap.loadFromData(product_icon_data)
         product_icon_label = QtWidgets.QLabel("", self)
@@ -1086,9 +1086,9 @@ def bring_to_life():
 
     # this part should be done after creating the app and before creating the window
     cwd = os.getcwd()
-    QtGui.QFontDatabase.addApplicationFont(cwd + "/static/source_code_pro.ttf")
-    QtGui.QFontDatabase.addApplicationFont(cwd + "/static/notosans_regular.ttf")
-    QtGui.QFontDatabase.addApplicationFont(cwd + "/static/lexend_bold.ttf")
+    QtGui.QFontDatabase.addApplicationFont(cwd + "/solie/static/source_code_pro.ttf")
+    QtGui.QFontDatabase.addApplicationFont(cwd + "/solie/static/notosans_regular.ttf")
+    QtGui.QFontDatabase.addApplicationFont(cwd + "/solie/static/lexend_bold.ttf")
     default_font = QtGui.QFont("Noto Sans", 9)
     app.setFont(default_font)
 

@@ -28,7 +28,7 @@ There are things that must be known in the process of making Solie.
 4. After editing the UI file, you have to compile it as a Python module.
 
    ```bash
-   pyside6-uic craft/user_interface.ui -o module/user_interface.py
+   pyside6-uic craft/user_interface.ui -o solie/user_interface.py
    ```
 
 5. Make a commit in a branch other than `main` and create a pull request.
