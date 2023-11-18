@@ -30,8 +30,8 @@ pygount = "*"
 
 [tool.ruff]
 extend-select = ["N", "I", "T20"]
-exclude = ["module/user_interface.py"]
+exclude = ["solie/user_interface.py"]
 
 [tool.pyright]
 typeCheckingMode = "basic"
-ignore = ["module/user_interface.py"]
+ignore = ["solie/user_interface.py"]

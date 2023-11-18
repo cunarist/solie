@@ -42,7 +42,7 @@ poetry shell
 Run the code.
 
 ```bash
-python solie.py
+python solie
 ```
 
 ## 📖 Available Platforms
