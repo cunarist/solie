@@ -16,9 +16,7 @@ Read the [documentations](https://solie-docs.cunarist.com) to understand how to 
 
 Running Solie is easy, but you need to install some components on your system first. It won't be as hard as you think if you adhere to the following instructions.
 
-First, install [Python](https://www.python.org/).
-
-Also, sure [Poetry](https://python-poetry.org/) is installed on your system. You might need to replace `python` with `python3`, `pip` with `pip3` on some platforms.
+First, install [Python](https://www.python.org/). Also, make sure [Poetry](https://python-poetry.org/) is installed on your system. You might need to replace `python` with `python3`, `pip` with `pip3` on some platforms.
 
 ```bash
 pip install pipx
