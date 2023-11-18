@@ -12,13 +12,17 @@ Read the [documentations](https://solie-docs.cunarist.com) to understand how to 
 
 ## 🛞 How to Use This Thing
 
-> When using terminal commands from the following steps, always make sure that your current working directory is this project folder.
+> When using terminal commands from the following steps, always make sure that your current working directory is the folder of this project. Also, you might need to replace `python` with `python3`, `pip` with `pip3` on some platforms from the commands below.
 
 Running Solie is easy, but you need to install some components on your system first. It won't be as hard as you think if you adhere to the following instructions.
 
-First, install [Python](https://www.python.org/). We recommend using the official installer provided from the website to ensure stability.
+First, install [Python](https://www.python.org/). We recommend using the official installer provided from the website to ensure stability. Don't forget to add `python` command to PATH during the installation. You can check that Python is ready with the command below.
 
-Also, make sure [Poetry](https://python-poetry.org/) is installed on your system. You might need to replace `python` with `python3`, `pip` with `pip3` on some platforms from the commands below.
+```bash
+python --version
+```
+
+Also, make sure [Poetry](https://python-poetry.org/) is installed on your system.
 
 ```bash
 pip install pipx
