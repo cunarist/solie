@@ -4,11 +4,19 @@ There are things that must be known in the process of making Solie.
 
 ## Procedure
 
-1. Install Miniforge[🔗](https://github.com/conda-forge/miniforge).
-2. Prepare the conda environment with the command below.
+1. Install Poetry[🔗](https://python-poetry.org/).
 
    ```bash
-   mamba env update
+   pip install pipx
+   python -m pipx ensurepath
+   # You might need to restart the terminal here
+   pipx install poetry
+   ```
+
+2. Prepare the virtual environment with the command below.
+
+   ```bash
+   poetry install
    ```
 
 3. The user interface can be changed by editing the `./craft/user_interface.ui` file with the `Qt Designer`. Open it with below terminal command.
@@ -27,7 +35,7 @@ There are things that must be known in the process of making Solie.
 
 ## Rules
 
-- Solie is made purely in Python and uses `conda` as the default development environment.
+- Solie is made purely in Python and uses Poetry as the default package management tool.
 - Use Ruff formatter for formatting and linting.
 - Use Pyright's basic type checking. If you're using Visual Studio Code, Pylance will provide a superset of Pyright’s functionality.
 - It should be easy for general users to use with just a few clicks.

@@ -14,30 +14,35 @@ Read the [documentations](https://solie-docs.cunarist.com) to understand how to 
 
 > When using terminal commands from the following steps, always make sure that your current working directory is this project folder.
 
-Running Solie is easy. Since this is a Python project, you need to install some things on your system first. But don't worry, it won't be as hard as you think if you adhere to the following instructions.
+Running Solie is easy, but you need to install some components on your system first. It won't be as hard as you think if you adhere to the following instructions.
 
-First, make sure [Miniforge](https://github.com/conda-forge/miniforge) is installed on your system. Don't forget to add Miniforge to PATH during the installation. If the installation was successful, you'll be able to check its version with the command below.
+First, install [Python](https://www.python.org/).
 
+Also, sure [Poetry](https://python-poetry.org/) is installed on your system. You might need to replace `python` with `python3`, `pip` with `pip3` on some platforms.
+
+```bash
+pip install pipx
+python -m pipx ensurepath
+# You might need to restart the terminal here
+pipx install poetry
 ```
-mamba --version
+
+Install the dependencies.
+
+```bash
+poetry install
 ```
 
-Create or update the conda environment in the terminal.
+Activate the poetry shell.
 
-```
-mamba env update
-```
-
-Activate the conda environment.
-
-```
-conda activate solie
+```bash
+poetry shell
 ```
 
 Run the code.
 
-```
-python main.py
+```bash
+python solie.py
 ```
 
 ## 📖 Available Platforms
