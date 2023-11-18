@@ -77,12 +77,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         asyncio.create_task(job_close())
 
-    def mouseMoveEvent(self, event):  # noqa:N802
-        self.last_interaction = datetime.now(timezone.utc)
-
-    def mousePressEvent(self, event):  # noqa:N802
-        self.last_interaction = datetime.now(timezone.utc)
-
     def mouseReleaseEvent(self, event):  # noqa:N802
         self.last_interaction = datetime.now(timezone.utc)
         is_enabled = self.board.isEnabled()
