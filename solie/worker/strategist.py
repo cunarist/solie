@@ -84,7 +84,7 @@ class Strategiest:
         solie.window.comboBox_2.clear()
         solie.window.comboBox.clear()
         for strategy_card in self.strategy_cards:
-            strategy_card.setParent(None)
+            strategy_card.deleteLater()
         self.strategy_cards = []
 
         for strategy in self.strategies:

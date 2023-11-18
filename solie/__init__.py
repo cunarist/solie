@@ -1087,7 +1087,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ show main widgets ■■■■■
 
-        splash_screen.setParent(None)  # type:ignore
+        splash_screen.deleteLater()
         self.board.show()
         self.gauge.show()
 
@@ -1098,7 +1098,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         await ask_popup.done_event.wait()
 
-        ask_popup.setParent(None)  # type:ignore
+        ask_popup.deleteLater()
         return ask_popup.answer
 
     # show an mainpulatable overlap popup
@@ -1108,7 +1108,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         await overlap_popup.done_event.wait()
 
-        overlap_popup.setParent(None)  # type:ignore
+        overlap_popup.deleteLater()
 
 
 def bring_to_life():
