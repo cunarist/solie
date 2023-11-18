@@ -39,8 +39,8 @@ async def monitor():
                         if response.status == 200:
                             is_connected = True
                             break
-                except aiohttp.ClientError:
-                    pass
+                except aiohttp.ClientError as error:
+                    solie.logger.exception(error)
 
         # detect changes
         if _was_connected and not is_connected:
