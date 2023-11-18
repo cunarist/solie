@@ -79,8 +79,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def mouseReleaseEvent(self, event):  # noqa:N802
         self.last_interaction = datetime.now(timezone.utc)
-        is_enabled = self.board.isEnabled()
-        if is_enabled:
+
+        if self.board.isEnabled():
             return
 
         async def job_ask():
