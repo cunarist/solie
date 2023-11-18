@@ -791,7 +791,7 @@ class Transactor:
         mask = data_y != 0
         data_y = data_y[mask]
         data_x = data_x[mask]
-        widget = solie.window.transaction_lines["mark_price"]
+        widget = solie.window.transaction_lines["mark_price"][0]
         widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
@@ -803,7 +803,7 @@ class Transactor:
         mask = data_y != 0
         data_y = data_y[mask]
         data_x = data_x[mask]
-        widget = solie.window.transaction_lines["last_price"]
+        widget = solie.window.transaction_lines["last_price"][0]
         widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
@@ -821,7 +821,7 @@ class Transactor:
         nan_ar[:] = np.nan
         data_x = np.repeat(index_ar, 3)
         data_y = np.stack([nan_ar, zero_ar, value_ar], axis=1).reshape(-1)
-        widget = solie.window.transaction_lines["last_volume"]
+        widget = solie.window.transaction_lines["last_volume"][0]
         widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
@@ -862,7 +862,7 @@ class Transactor:
         else:
             data_x = []
             data_y = []
-        widget = solie.window.transaction_lines["entry_price"]
+        widget = solie.window.transaction_lines["entry_price"][0]
         widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
@@ -983,7 +983,7 @@ class Transactor:
             ],
             axis=1,
         ).reshape(-1)
-        widget = solie.window.transaction_lines["price_rise"]
+        widget = solie.window.transaction_lines["price_rise"][0]
         widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
@@ -1017,7 +1017,7 @@ class Transactor:
             ],
             axis=1,
         ).reshape(-1)
-        widget = solie.window.transaction_lines["price_fall"]
+        widget = solie.window.transaction_lines["price_fall"][0]
         widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
@@ -1051,7 +1051,7 @@ class Transactor:
             ],
             axis=1,
         ).reshape(-1)
-        widget = solie.window.transaction_lines["price_stay"]
+        widget = solie.window.transaction_lines["price_stay"][0]
         widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
@@ -1081,7 +1081,7 @@ class Transactor:
         sr = sr.fillna(value=0)
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = solie.window.transaction_lines["volume"]
+        widget = solie.window.transaction_lines["volume"][0]
         widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
@@ -1090,7 +1090,7 @@ class Transactor:
         # asset
         data_x = asset_record["Result Asset"].index.to_numpy(dtype=np.int64) / 10**9
         data_y = asset_record["Result Asset"].to_numpy(dtype=np.float32)
-        widget = solie.window.transaction_lines["asset"]
+        widget = solie.window.transaction_lines["asset"][0]
         widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
@@ -1104,7 +1104,7 @@ class Transactor:
         sr = sr * (1 + unrealized_changes_sr)
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9 + 5
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = solie.window.transaction_lines["asset_with_unrealized_profit"]
+        widget = solie.window.transaction_lines["asset_with_unrealized_profit"][0]
         widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
@@ -1116,7 +1116,7 @@ class Transactor:
         sr = df["Fill Price"]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = solie.window.transaction_lines["sell"]
+        widget = solie.window.transaction_lines["sell"][0]
         widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return
@@ -1127,7 +1127,7 @@ class Transactor:
         sr = df["Fill Price"]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = solie.window.transaction_lines["buy"]
+        widget = solie.window.transaction_lines["buy"][0]
         widget.setData(data_x, data_y)
         if stop_flag.find(task_name, task_id):
             return

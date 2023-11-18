@@ -117,8 +117,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.plot_widget_5 = pyqtgraph.PlotWidget()
         self.plot_widget_7 = pyqtgraph.PlotWidget()
 
-        self.transaction_lines: dict[str, pyqtgraph.PlotDataItem] = {}
-        self.simulation_lines: dict[str, pyqtgraph.PlotDataItem] = {}
+        self.transaction_lines: dict[str, list[pyqtgraph.PlotDataItem]] = {}
+        self.simulation_lines: dict[str, list[pyqtgraph.PlotDataItem]] = {}
 
         self.collector: collector.Collector
         self.transactor: transactor.Transactor
@@ -562,20 +562,26 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 )
                 for _ in range(2)
             ],
-            "last_price": plot_item.plot(
-                pen=pyqtgraph.mkPen("#5A8CC2"),
-                connect="finite",
-                stepMode="right",
-            ),
-            "mark_price": plot_item.plot(
-                pen=pyqtgraph.mkPen("#3E628A"),
-                connect="finite",
-            ),
+            "last_price": [
+                plot_item.plot(
+                    pen=pyqtgraph.mkPen("#5A8CC2"),
+                    connect="finite",
+                    stepMode="right",
+                )
+            ],
+            "mark_price": [
+                plot_item.plot(
+                    pen=pyqtgraph.mkPen("#3E628A"),
+                    connect="finite",
+                )
+            ],
             "price_indicators": [plot_item.plot(connect="finite") for _ in range(20)],
-            "entry_price": plot_item.plot(
-                pen=pyqtgraph.mkPen("#FFBB00"),
-                connect="finite",
-            ),
+            "entry_price": [
+                plot_item.plot(
+                    pen=pyqtgraph.mkPen("#FFBB00"),
+                    connect="finite",
+                )
+            ],
             "wobbles": [
                 plot_item.plot(
                     pen=pyqtgraph.mkPen("#888888"),
@@ -584,58 +590,76 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 )
                 for _ in range(2)
             ],
-            "price_rise": plot_item.plot(
-                pen=pyqtgraph.mkPen("#70E161"),
-                connect="finite",
-            ),
-            "price_fall": plot_item.plot(
-                pen=pyqtgraph.mkPen("#FF304F"),
-                connect="finite",
-            ),
-            "price_stay": plot_item.plot(
-                pen=pyqtgraph.mkPen("#DDDDDD"),
-                connect="finite",
-            ),
-            "sell": plot_item.plot(
-                pen=pyqtgraph.mkPen(None),  # invisible line
-                symbol="o",
-                symbolBrush="#0055FF",
-                symbolPen=pyqtgraph.mkPen("#BBBBBB"),
-                symbolSize=8,
-            ),
-            "buy": plot_item.plot(
-                pen=pyqtgraph.mkPen(None),  # invisible line
-                symbol="o",
-                symbolBrush="#FF3300",
-                symbolPen=pyqtgraph.mkPen("#BBBBBB"),
-                symbolSize=8,
-            ),
-            "volume": plot_item_4.plot(
-                pen=pyqtgraph.mkPen("#BBBBBB"),
-                connect="all",
-                stepMode="right",
-                fillLevel=0,
-                brush=pyqtgraph.mkBrush(255, 255, 255, 15),
-            ),
-            "last_volume": plot_item_4.plot(
-                pen=pyqtgraph.mkPen("#BBBBBB"),
-                connect="finite",
-            ),
+            "price_rise": [
+                plot_item.plot(
+                    pen=pyqtgraph.mkPen("#70E161"),
+                    connect="finite",
+                )
+            ],
+            "price_fall": [
+                plot_item.plot(
+                    pen=pyqtgraph.mkPen("#FF304F"),
+                    connect="finite",
+                )
+            ],
+            "price_stay": [
+                plot_item.plot(
+                    pen=pyqtgraph.mkPen("#DDDDDD"),
+                    connect="finite",
+                )
+            ],
+            "sell": [
+                plot_item.plot(
+                    pen=pyqtgraph.mkPen(None),  # invisible line
+                    symbol="o",
+                    symbolBrush="#0055FF",
+                    symbolPen=pyqtgraph.mkPen("#BBBBBB"),
+                    symbolSize=8,
+                )
+            ],
+            "buy": [
+                plot_item.plot(
+                    pen=pyqtgraph.mkPen(None),  # invisible line
+                    symbol="o",
+                    symbolBrush="#FF3300",
+                    symbolPen=pyqtgraph.mkPen("#BBBBBB"),
+                    symbolSize=8,
+                )
+            ],
+            "volume": [
+                plot_item_4.plot(
+                    pen=pyqtgraph.mkPen("#BBBBBB"),
+                    connect="all",
+                    stepMode="right",
+                    fillLevel=0,
+                    brush=pyqtgraph.mkBrush(255, 255, 255, 15),
+                )
+            ],
+            "last_volume": [
+                plot_item_4.plot(
+                    pen=pyqtgraph.mkPen("#BBBBBB"),
+                    connect="finite",
+                )
+            ],
             "volume_indicators": [
                 plot_item_4.plot(connect="finite") for _ in range(20)
             ],
             "abstract_indicators": [
                 plot_item_6.plot(connect="finite") for _ in range(20)
             ],
-            "asset_with_unrealized_profit": plot_item_1.plot(
-                pen=pyqtgraph.mkPen("#999999"),
-                connect="finite",
-            ),
-            "asset": plot_item_1.plot(
-                pen=pyqtgraph.mkPen("#FF8700"),
-                connect="finite",
-                stepMode="right",
-            ),
+            "asset_with_unrealized_profit": [
+                plot_item_1.plot(
+                    pen=pyqtgraph.mkPen("#999999"),
+                    connect="finite",
+                )
+            ],
+            "asset": [
+                plot_item_1.plot(
+                    pen=pyqtgraph.mkPen("#FF8700"),
+                    connect="finite",
+                    stepMode="right",
+                )
+            ],
         }
 
         self.plot_widget_1.setXLink(self.plot_widget)
@@ -764,20 +788,26 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 )
                 for _ in range(2)
             ],
-            "last_price": plot_item_2.plot(
-                pen=pyqtgraph.mkPen("#5A8CC2"),
-                connect="finite",
-                stepMode="right",
-            ),
-            "mark_price": plot_item_2.plot(
-                pen=pyqtgraph.mkPen("#3E628A"),
-                connect="finite",
-            ),
+            "last_price": [
+                plot_item_2.plot(
+                    pen=pyqtgraph.mkPen("#5A8CC2"),
+                    connect="finite",
+                    stepMode="right",
+                )
+            ],
+            "mark_price": [
+                plot_item_2.plot(
+                    pen=pyqtgraph.mkPen("#3E628A"),
+                    connect="finite",
+                )
+            ],
             "price_indicators": [plot_item_2.plot(connect="finite") for _ in range(20)],
-            "entry_price": plot_item_2.plot(
-                pen=pyqtgraph.mkPen("#FFBB00"),
-                connect="finite",
-            ),
+            "entry_price": [
+                plot_item_2.plot(
+                    pen=pyqtgraph.mkPen("#FFBB00"),
+                    connect="finite",
+                )
+            ],
             "wobbles": [
                 plot_item_2.plot(
                     pen=pyqtgraph.mkPen("#888888"),
@@ -786,58 +816,76 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 )
                 for _ in range(2)
             ],
-            "price_rise": plot_item_2.plot(
-                pen=pyqtgraph.mkPen("#70E161"),
-                connect="finite",
-            ),
-            "price_fall": plot_item_2.plot(
-                pen=pyqtgraph.mkPen("#FF304F"),
-                connect="finite",
-            ),
-            "price_stay": plot_item_2.plot(
-                pen=pyqtgraph.mkPen("#DDDDDD"),
-                connect="finite",
-            ),
-            "sell": plot_item_2.plot(
-                pen=pyqtgraph.mkPen(None),  # invisible line
-                symbol="o",
-                symbolBrush="#0055FF",
-                symbolPen=pyqtgraph.mkPen("#BBBBBB"),
-                symbolSize=8,
-            ),
-            "buy": plot_item_2.plot(
-                pen=pyqtgraph.mkPen(None),  # invisible line
-                symbol="o",
-                symbolBrush="#FF3300",
-                symbolPen=pyqtgraph.mkPen("#BBBBBB"),
-                symbolSize=8,
-            ),
-            "volume": plot_item_5.plot(
-                pen=pyqtgraph.mkPen("#BBBBBB"),
-                connect="all",
-                stepMode="right",
-                fillLevel=0,
-                brush=pyqtgraph.mkBrush(255, 255, 255, 15),
-            ),
-            "last_volume": plot_item_5.plot(
-                pen=pyqtgraph.mkPen("#BBBBBB"),
-                connect="finite",
-            ),
+            "price_rise": [
+                plot_item_2.plot(
+                    pen=pyqtgraph.mkPen("#70E161"),
+                    connect="finite",
+                )
+            ],
+            "price_fall": [
+                plot_item_2.plot(
+                    pen=pyqtgraph.mkPen("#FF304F"),
+                    connect="finite",
+                )
+            ],
+            "price_stay": [
+                plot_item_2.plot(
+                    pen=pyqtgraph.mkPen("#DDDDDD"),
+                    connect="finite",
+                )
+            ],
+            "sell": [
+                plot_item_2.plot(
+                    pen=pyqtgraph.mkPen(None),  # invisible line
+                    symbol="o",
+                    symbolBrush="#0055FF",
+                    symbolPen=pyqtgraph.mkPen("#BBBBBB"),
+                    symbolSize=8,
+                )
+            ],
+            "buy": [
+                plot_item_2.plot(
+                    pen=pyqtgraph.mkPen(None),  # invisible line
+                    symbol="o",
+                    symbolBrush="#FF3300",
+                    symbolPen=pyqtgraph.mkPen("#BBBBBB"),
+                    symbolSize=8,
+                )
+            ],
+            "volume": [
+                plot_item_5.plot(
+                    pen=pyqtgraph.mkPen("#BBBBBB"),
+                    connect="all",
+                    stepMode="right",
+                    fillLevel=0,
+                    brush=pyqtgraph.mkBrush(255, 255, 255, 15),
+                )
+            ],
+            "last_volume": [
+                plot_item_5.plot(
+                    pen=pyqtgraph.mkPen("#BBBBBB"),
+                    connect="finite",
+                )
+            ],
             "volume_indicators": [
                 plot_item_5.plot(connect="finite") for _ in range(20)
             ],
             "abstract_indicators": [
                 plot_item_7.plot(connect="finite") for _ in range(20)
             ],
-            "asset_with_unrealized_profit": plot_item_3.plot(
-                pen=pyqtgraph.mkPen("#999999"),
-                connect="finite",
-            ),
-            "asset": plot_item_3.plot(
-                pen=pyqtgraph.mkPen("#FF8700"),
-                connect="finite",
-                stepMode="right",
-            ),
+            "asset_with_unrealized_profit": [
+                plot_item_3.plot(
+                    pen=pyqtgraph.mkPen("#999999"),
+                    connect="finite",
+                )
+            ],
+            "asset": [
+                plot_item_3.plot(
+                    pen=pyqtgraph.mkPen("#FF8700"),
+                    connect="finite",
+                    stepMode="right",
+                )
+            ],
         }
 
         self.plot_widget_3.setXLink(self.plot_widget_2)
