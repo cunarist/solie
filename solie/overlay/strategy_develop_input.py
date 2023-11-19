@@ -2,7 +2,7 @@ import aiofiles
 from PySide6 import QtCore, QtWidgets
 
 import solie
-from solie.recipe import outsource
+from solie.recipe import open_browser, outsource
 from solie.widget.script_editor import ScriptEditor
 
 
@@ -71,7 +71,33 @@ class StrategyDevelopInput(QtWidgets.QWidget):
         )
         card_layout.addItem(spacer)
 
-        # function
+        # API docs button
+        async def job_ad(*args):
+            url = "https://solie-docs.cunarist.com/making-strategy/"
+            open_browser.do(url)
+
+        button = QtWidgets.QPushButton("Show API guide", card)
+        outsource.do(button.clicked, job_ad)
+        button.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed,
+            QtWidgets.QSizePolicy.Policy.Fixed,
+        )
+        card_layout.addWidget(button)
+
+        # TA docs button
+        async def job_td(*args):
+            url = "https://github.com/twopirllc/pandas-ta#indicators-by-category"
+            open_browser.do(url)
+
+        button = QtWidgets.QPushButton("Show TA guide", card)
+        outsource.do(button.clicked, job_td)
+        button.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed,
+            QtWidgets.QSizePolicy.Policy.Fixed,
+        )
+        card_layout.addWidget(button)
+
+        # sample script button
         async def job_as(*args):
             # indicators script
             filepath = "./solie/static/sample_indicators_script.txt"
@@ -94,29 +120,27 @@ class StrategyDevelopInput(QtWidgets.QWidget):
             ]
             await solie.window.ask(question)
 
-        # sample script button
-        fill_button = QtWidgets.QPushButton("Fill with sample", card)
-        outsource.do(fill_button.clicked, job_as)
-        fill_button.setSizePolicy(
+        button = QtWidgets.QPushButton("Fill with sample", card)
+        outsource.do(button.clicked, job_as)
+        button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,
         )
-        card_layout.addWidget(fill_button)
+        card_layout.addWidget(button)
 
-        # function
+        # confirm button
         async def job_ss(*args):
             strategy["indicators_script"] = indicators_script_input.toPlainText()
             strategy["decision_script"] = decision_script_input.toPlainText()
             done_event.set()
 
-        # confirm button
-        confirm_button = QtWidgets.QPushButton("Save and close", card)
-        outsource.do(confirm_button.clicked, job_ss)
-        confirm_button.setSizePolicy(
+        button = QtWidgets.QPushButton("Save and close", card)
+        outsource.do(button.clicked, job_ss)
+        button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,
         )
-        card_layout.addWidget(confirm_button)
+        card_layout.addWidget(button)
 
         # spacing
         spacer = QtWidgets.QSpacerItem(
