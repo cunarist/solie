@@ -21,7 +21,7 @@ If writing a script from scratch is burdensome, it`s a good idea to start with a
 You can indent or outdent multiple lines at once while writing a script. Select all the lines you want and press `Tab` or `Shift+Tab`.
 ![](assets/example_021.png)
 
-If the script contains some broken code, a function that is executed periodically, such as graph update, repeatedly generates an error. In this case, the graph may not be updated or the simulation calculation may stop quickly. In that case, find out the cause in the `Status` of the `Manage` tab.
+If the script contains some broken code, a function that is executed periodically, such as graph update, repeatedly generates an error. In this case, the graph may not be updated or the simulation calculation may stop quickly. In that case, find out the cause in the `Logs` inside the `Manage` tab.
 
 ### Strategy's Basic Info
 
