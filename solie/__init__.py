@@ -896,22 +896,18 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ initialize functions ■■■■■
 
-        self.initialize_functions = [
-            self.collector.load,
-            self.transactor.load,
-            self.simulator.load,
-            self.strategist.load,
-            self.manager.load,
-        ]
+        self.initialize_functions.append(self.collector.load)
+        self.initialize_functions.append(self.transactor.load)
+        self.initialize_functions.append(self.simulator.load)
+        self.initialize_functions.append(self.strategist.load)
+        self.initialize_functions.append(self.manager.load)
 
-        # ■■■■■ finalize functions ■■■■■
+        # ■■■■■ finalize functions
 
-        self.finalize_functions = [
-            self.transactor.save_large_data,
-            self.transactor.save_scribbles,
-            self.strategist.save_strategies,
-            self.collector.save_candle_data,
-        ]
+        self.finalize_functions.append(self.transactor.save_large_data)
+        self.finalize_functions.append(self.transactor.save_scribbles)
+        self.finalize_functions.append(self.strategist.save_strategies)
+        self.finalize_functions.append(self.collector.save_candle_data)
 
         # ■■■■■ connect events to functions ■■■■■
 
