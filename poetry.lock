@@ -952,13 +952,13 @@ files = [
 
 [[package]]
 name = "qasync"
-version = "0.27.0"
+version = "0.27.1"
 description = "Python library for using asyncio in Qt-based applications"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "qasync-0.27.0-py3-none-any.whl", hash = "sha256:115e20121eee79069539d7410378dbfccf449944131f0d88106a82c5075afb23"},
-    {file = "qasync-0.27.0.tar.gz", hash = "sha256:c9d7ec6443773a400be0a0476389d0eeab991be687dfcfd001de1e77f16040e5"},
+    {file = "qasync-0.27.1-py3-none-any.whl", hash = "sha256:5d57335723bc7d9b328dadd8cb2ed7978640e4bf2da184889ce50ee3ad2602c7"},
+    {file = "qasync-0.27.1.tar.gz", hash = "sha256:8dc768fd1ee5de1044c7c305eccf2d39d24d87803ea71189d4024fb475f4985f"},
 ]
 
 [[package]]
@@ -1295,4 +1295,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9,<3.13"
-content-hash = "075a13f39c111edafd9346328635c3379051551d70a78e0cdbf3d3af37cfe91a"
+content-hash = "9a277d7b62dd84ed2fa83d31a8e288673852c7009be93b2462188824af3a3a28"
