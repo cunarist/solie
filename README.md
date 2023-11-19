@@ -37,7 +37,7 @@ Install the dependencies. You only have to do this once.
 poetry install
 ```
 
-Activate the poetry shell and run the code.
+Activate the Poetry shell and run the code.
 
 ```bash
 poetry shell
