@@ -94,13 +94,7 @@ class Manager:
 
         self.api_streamers = {}
 
-        # ■■■■■ invoked by the internet connection  ■■■■■
-
-        connected_functions = []
-        check_internet.add_connected_functions(connected_functions)
-
-        disconnected_functions = []
-        check_internet.add_disconnected_functions(disconnected_functions)
+        # ■■■■■ invoked by the internet connection status change  ■■■■■
 
     async def load(self, *args, **kwargs):
         # settings

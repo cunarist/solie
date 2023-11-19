@@ -131,15 +131,9 @@ class Collector:
             )
             self.api_streamers[f"AGG_TRADE_{symbol}"] = api_streamer
 
-        # ■■■■■ invoked by the internet connection  ■■■■■
+        # ■■■■■ invoked by the internet connection status change  ■■■■■
 
-        connected_functions = []
-        check_internet.add_connected_functions(connected_functions)
-
-        disconnected_functions = [
-            lambda: self.clear_aggregate_trades(),
-        ]
-        check_internet.add_disconnected_functions(disconnected_functions)
+        check_internet.add_disconnected_functions(self.clear_aggregate_trades)
 
     async def load(self, *args, **kwargs):
         # candle data

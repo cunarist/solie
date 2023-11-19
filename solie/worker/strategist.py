@@ -8,7 +8,7 @@ from PySide6 import QtGui, QtWidgets
 import solie
 from solie.overlay.strategy_basic_input import StrategyBasicInput
 from solie.overlay.strategy_develop_input import StrategyDevelopInput
-from solie.recipe import check_internet, outsource, standardize, user_settings
+from solie.recipe import outsource, standardize, user_settings
 
 
 class Strategiest:
@@ -25,7 +25,9 @@ class Strategiest:
         # ■■■■■ remember and display ■■■■■
 
         self.strategies = []
-        self.strategy_cards = []
+        self.strategy_cards: list[QtWidgets.QGroupBox] = []
+
+        self.before_selections = {}
 
         self.red_pixmap = QtGui.QPixmap()
         self.red_pixmap.load("./solie/static/icon/traffic_light_red.png")
@@ -40,13 +42,7 @@ class Strategiest:
 
         self.api_streamers = {}
 
-        # ■■■■■ invoked by the internet connection  ■■■■■
-
-        connected_functions = []
-        check_internet.add_connected_functions(connected_functions)
-
-        disconnected_functions = []
-        check_internet.add_disconnected_functions(disconnected_functions)
+        # ■■■■■ invoked by the internet connection status change  ■■■■■
 
     async def load(self, *args, **kwargs):
         # custom strategies
@@ -213,18 +209,15 @@ class Strategiest:
         await self.display_strategies()
 
     async def remember_strategy_selections(self, *args, **kwargs):
-        before_selections = {}
         before_index = solie.window.comboBox_2.currentIndex()
-        before_selections["transactor"] = self.strategies[before_index]
+        self.before_selections["transactor"] = self.strategies[before_index]
         before_index = solie.window.comboBox.currentIndex()
-        before_selections["simulator"] = self.strategies[before_index]
-        return before_selections
+        self.before_selections["simulator"] = self.strategies[before_index]
 
     async def restore_strategy_selections(self, *args, **kwargs):
-        before_selections = args[0]
-        if before_selections["transactor"] in self.strategies:
-            new_index = self.strategies.index(before_selections["transactor"])
+        if self.before_selections["transactor"] in self.strategies:
+            new_index = self.strategies.index(self.before_selections["transactor"])
             solie.window.comboBox_2.setCurrentIndex(new_index)
-        if before_selections["simulator"] in self.strategies:
-            new_index = self.strategies.index(before_selections["simulator"])
+        if self.before_selections["simulator"] in self.strategies:
+            new_index = self.strategies.index(self.before_selections["simulator"])
             solie.window.comboBox.setCurrentIndex(new_index)

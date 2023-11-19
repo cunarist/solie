@@ -1,4 +1,5 @@
 import asyncio
+from typing import Callable, Coroutine
 
 import aiohttp
 
@@ -6,8 +7,8 @@ import solie
 
 is_ready = asyncio.Event()
 _was_connected = False
-_connected_functions = []
-_disconnected_functions = []
+_connected_functions: list[Callable[..., Coroutine]] = []
+_disconnected_functions: list[Callable[..., Coroutine]] = []
 
 
 def connected():
@@ -60,11 +61,11 @@ async def monitor():
         await asyncio.sleep(1)
 
 
-def add_connected_functions(job_list):
+def add_connected_functions(job: Callable[..., Coroutine]):
     global _connected_functions
-    _connected_functions += job_list
+    _connected_functions.append(job)
 
 
-def add_disconnected_functions(job_list):
+def add_disconnected_functions(job: Callable[..., Coroutine]):
     global _disconnected_functions
-    _disconnected_functions += job_list
+    _disconnected_functions.append(job)

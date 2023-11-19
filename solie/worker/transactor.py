@@ -157,16 +157,10 @@ class Transactor:
             )
         }
 
-        # ■■■■■ invoked by the internet connection  ■■■■■
+        # ■■■■■ invoked by the internet connection status change  ■■■■■
 
-        connected_functions = [
-            lambda: self.update_user_data_stream(),
-            lambda: self.watch_binance(),
-        ]
-        check_internet.add_connected_functions(connected_functions)
-
-        disconnected_functions = []
-        check_internet.add_disconnected_functions(disconnected_functions)
+        check_internet.add_connected_functions(self.update_user_data_stream)
+        check_internet.add_connected_functions(self.watch_binance)
 
     async def load(self, *args, **kwargs):
         # scribbles

@@ -14,7 +14,6 @@ from scipy.signal import find_peaks
 import solie
 from solie.definition.rw_lock import RWLock
 from solie.recipe import (
-    check_internet,
     make_indicators,
     simulate_chunk,
     standardize,
@@ -79,13 +78,7 @@ class Simulator:
 
         self.api_streamers = {}
 
-        # ■■■■■ invoked by the internet connection  ■■■■■
-
-        connected_functions = []
-        check_internet.add_connected_functions(connected_functions)
-
-        disconnected_functions = []
-        check_internet.add_disconnected_functions(disconnected_functions)
+        # ■■■■■ invoked by the internet connection status change  ■■■■■
 
     async def load(self, *args, **kwargs):
         text = "Nothing drawn"
