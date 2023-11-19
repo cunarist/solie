@@ -31,21 +31,17 @@ python -m pipx ensurepath
 pipx install poetry
 ```
 
-Install the dependencies.
+Install the dependencies. You only have to do this once.
 
 ```bash
 poetry install
 ```
 
-Activate the poetry shell.
+Activate the poetry shell and run the code.
 
 ```bash
 poetry shell
-```
-
-Run the code.
-
-```bash
+# Once you've activated the shell, you don't need to do it again
 python solie
 ```
 
