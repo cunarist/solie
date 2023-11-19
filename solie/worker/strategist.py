@@ -204,9 +204,11 @@ class Strategiest:
             outsource.do(edit_button.clicked, job_us)
 
     async def add_blank_strategy(self, *args, **kwargs):
+        await self.remember_strategy_selections()
         new_strategy = standardize.strategy()
         self.strategies.append(new_strategy)
         await self.display_strategies()
+        await self.restore_strategy_selections()
 
     async def remember_strategy_selections(self, *args, **kwargs):
         before_index = solie.window.comboBox_2.currentIndex()
