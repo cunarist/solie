@@ -102,7 +102,7 @@ class CoinSelection(QtWidgets.QWidget):
         detail_text = QtWidgets.QLabel()
         detail_text.setText(
             "These are all available coins on Binance."
-            "\nYou can select a minimum of 1 and a maximum of 10."
+            "\nYou can select a minimum of 1 and a maximum of 12."
         )
         detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         detail_text.setWordWrap(True)
@@ -174,14 +174,14 @@ class CoinSelection(QtWidgets.QWidget):
                 is_checked = checkbox.isChecked()
                 if is_checked:
                     selected_symbols.append(symbol)
-            if 1 <= len(selected_symbols) <= 10:
+            if 1 <= len(selected_symbols) <= 12:
                 is_symbol_count_ok = True
                 data_settings["target_symbols"] = selected_symbols
             else:
                 is_symbol_count_ok = False
                 question = [
-                    "Select proper number of symbols",
-                    "You can select a minimum of 1 and a maximum of 10.",
+                    "Select a proper number of coins",
+                    "You can select a minimum of 1 and a maximum of 12.",
                     ["Okay"],
                 ]
                 await solie.window.ask(question)
