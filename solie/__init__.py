@@ -16,19 +16,19 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from qasync import QEventLoop
 
 from solie import introduction
-from solie.instrument.api_requester import ApiRequester
-from solie.instrument.log_handler import LogHandler
-from solie.instrument.percent_axis_item import PercentAxisItem
-from solie.instrument.time_axis_item import TimeAxisItem
+from solie.definition.api_requester import ApiRequester
+from solie.definition.log_handler import LogHandler
+from solie.definition.percent_axis_item import PercentAxisItem
+from solie.definition.time_axis_item import TimeAxisItem
+from solie.overlay.coin_selection import CoinSelection
+from solie.overlay.datapath_input import DatapathInput
+from solie.overlay.token_selection import TokenSelection
 from solie.recipe import check_internet, examine_data_files, outsource, user_settings
-from solie.shelf.coin_selection import CoinSelection
-from solie.shelf.datapath_input import DatapathInput
-from solie.shelf.token_selection import TokenSelection
 from solie.user_interface import Ui_MainWindow
 from solie.widget.ask_popup import AskPopup
 from solie.widget.brand_label import BrandLabel
 from solie.widget.horizontal_divider import HorizontalDivider
-from solie.widget.overlap_popup import OverlapPopup
+from solie.widget.overlay_panel import OverlayPanel
 from solie.widget.splash_screen import SplashScreen
 from solie.widget.symbol_box import SymbolBox
 from solie.worker import collector, manager, simulator, strategist, transactor
@@ -56,7 +56,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                     return
 
             AskPopup.done_event.set()
-            OverlapPopup.done_event.set()
+            OverlayPanel.done_event.set()
 
             self.gauge.hide()
             self.board.hide()
@@ -194,7 +194,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 False,
                 None,
             ]
-            await self.overlap(formation)
+            await self.overlay(formation)
 
         # ■■■■■ check data settings ■■■■■
 
@@ -205,7 +205,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 False,
                 None,
             ]
-            await self.overlap(formation)
+            await self.overlay(formation)
 
         if user_settings.get_data_settings()["target_symbols"] is None:
             formation = [
@@ -214,7 +214,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 False,
                 None,
             ]
-            await self.overlap(formation)
+            await self.overlay(formation)
 
         # ■■■■■ get information about target symbols ■■■■■
 
@@ -1102,13 +1102,13 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         return ask_popup.answer
 
     # show an mainpulatable overlap popup
-    async def overlap(self, formation):
-        overlap_popup = OverlapPopup(self, formation)
-        overlap_popup.show()
+    async def overlay(self, formation):
+        overlay_panel = OverlayPanel(self, formation)
+        overlay_panel.show()
 
-        await overlap_popup.done_event.wait()
+        await overlay_panel.done_event.wait()
 
-        overlap_popup.deleteLater()
+        overlay_panel.deleteLater()
 
 
 def bring_to_life():

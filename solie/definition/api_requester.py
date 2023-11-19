@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 
 import aiohttp
 
-from solie.instrument.api_request_error import ApiRequestError
+from solie.definition.api_request_error import ApiRequestError
 
 
 class ApiRequester:

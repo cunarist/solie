@@ -11,7 +11,7 @@ import aiofiles
 import timesetter
 
 import solie
-from solie.instrument.api_requester import ApiRequester
+from solie.definition.api_requester import ApiRequester
 from solie.recipe import (
     check_internet,
     open_browser,

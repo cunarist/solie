@@ -9,7 +9,7 @@ from solie.widget.transparent_scroll_area import TransparentScrollArea
 # https://stackoverflow.com/questions/67029993/pyqt-creating-a-popup-in-the-window
 
 
-class OverlapPopup(QtWidgets.QWidget):
+class OverlayPanel(QtWidgets.QWidget):
     done_event = asyncio.Event()
 
     def showEvent(self, event):  # noqa:N802

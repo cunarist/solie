@@ -11,9 +11,11 @@ import numpy as np
 import pandas as pd
 
 import solie
-from solie.instrument.api_requester import ApiRequester
-from solie.instrument.api_streamer import ApiStreamer
-from solie.instrument.rw_lock import RWLock
+from solie.definition.api_requester import ApiRequester
+from solie.definition.api_streamer import ApiStreamer
+from solie.definition.rw_lock import RWLock
+from solie.overlay.donation_guide import DonationGuide
+from solie.overlay.download_fill_option import DownloadFillOption
 from solie.recipe import (
     check_internet,
     combine_candle_datas,
@@ -27,8 +29,6 @@ from solie.recipe import (
     stop_flag,
     user_settings,
 )
-from solie.shelf.donation_guide import DonationGuide
-from solie.shelf.download_fill_option import DownloadFillOption
 
 
 class Collector:
@@ -463,7 +463,7 @@ class Collector:
             [answer_container],
         ]
 
-        await solie.window.overlap(formation)
+        await solie.window.overlay(formation)
 
         filling_type = answer_container["filling_type"]
         if filling_type is None:
@@ -820,4 +820,4 @@ class Collector:
             True,
             None,
         ]
-        await solie.window.overlap(formation)
+        await solie.window.overlay(formation)

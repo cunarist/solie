@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 import aiofiles
 
 import solie
-from solie.shelf.long_text_view import LongTextView
+from solie.overlay.long_text_view import LongTextView
 
 
 class LogHandler(logging.Handler):
@@ -61,7 +61,7 @@ class LogHandler(logging.Handler):
                         False,
                         [log_content],
                     ]
-                    await solie.window.overlap(formation)
+                    await solie.window.overlay(formation)
 
                 asyncio.create_task(job())
 

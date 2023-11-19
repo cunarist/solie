@@ -12,7 +12,7 @@ import pandas as pd
 from scipy.signal import find_peaks
 
 import solie
-from solie.instrument.rw_lock import RWLock
+from solie.definition.rw_lock import RWLock
 from solie.recipe import (
     check_internet,
     make_indicators,

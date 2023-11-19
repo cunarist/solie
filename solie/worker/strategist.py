@@ -6,9 +6,9 @@ import aiofiles
 from PySide6 import QtGui, QtWidgets
 
 import solie
+from solie.overlay.strategy_basic_input import StrategyBasicInput
+from solie.overlay.strategy_develop_input import StrategyDevelopInput
 from solie.recipe import check_internet, outsource, standardize, user_settings
-from solie.shelf.strategy_basic_input import StrategyBasicInput
-from solie.shelf.strategy_develop_input import StrategyDevelopInput
 
 
 class Strategiest:
@@ -134,7 +134,7 @@ class Strategiest:
                     True,
                     strategy,
                 ]
-                await solie.window.overlap(formation)
+                await solie.window.overlay(formation)
                 asyncio.create_task(self.display_strategies())
                 asyncio.create_task(self.save_strategies())
                 asyncio.create_task(self.restore_strategy_selections(before_selections))
@@ -151,7 +151,7 @@ class Strategiest:
                     True,
                     strategy,
                 ]
-                await solie.window.overlap(formation)
+                await solie.window.overlay(formation)
                 asyncio.create_task(self.display_strategies())
                 asyncio.create_task(self.save_strategies())
                 asyncio.create_task(self.restore_strategy_selections(before_selections))

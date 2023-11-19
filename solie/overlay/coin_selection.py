@@ -3,7 +3,7 @@ import asyncio
 from PySide6 import QtCore, QtGui, QtWidgets
 
 import solie
-from solie.instrument.api_requester import ApiRequester
+from solie.definition.api_requester import ApiRequester
 from solie.recipe import outsource, user_settings
 from solie.widget.horizontal_divider import HorizontalDivider
 

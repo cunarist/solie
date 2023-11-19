@@ -13,10 +13,11 @@ import numpy as np
 import pandas as pd
 
 import solie
-from solie.instrument.api_request_error import ApiRequestError
-from solie.instrument.api_requester import ApiRequester
-from solie.instrument.api_streamer import ApiStreamer
-from solie.instrument.rw_lock import RWLock
+from solie.definition.api_request_error import ApiRequestError
+from solie.definition.api_requester import ApiRequester
+from solie.definition.api_streamer import ApiStreamer
+from solie.definition.rw_lock import RWLock
+from solie.overlay.long_text_view import LongTextView
 from solie.recipe import (
     ball,
     check_internet,
@@ -28,7 +29,6 @@ from solie.recipe import (
     stop_flag,
     user_settings,
 )
-from solie.shelf.long_text_view import LongTextView
 
 
 class Transactor:
@@ -2300,4 +2300,4 @@ class Transactor:
             True,
             [text],
         ]
-        await solie.window.overlap(formation)
+        await solie.window.overlay(formation)

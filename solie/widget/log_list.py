@@ -1,8 +1,8 @@
 from PySide6 import QtCore, QtGui, QtWidgets
 
 import solie
+from solie.overlay.long_text_view import LongTextView
 from solie.recipe import outsource
-from solie.shelf.long_text_view import LongTextView
 
 
 class LogList(QtWidgets.QListWidget):
@@ -35,4 +35,4 @@ class LogList(QtWidgets.QListWidget):
         text = selected_item.data(QtCore.Qt.ItemDataRole.UserRole)
 
         formation = ["This is the full log", LongTextView, True, [text]]
-        await solie.window.overlap(formation)
+        await solie.window.overlay(formation)
