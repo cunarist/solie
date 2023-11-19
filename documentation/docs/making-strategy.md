@@ -1,6 +1,6 @@
 # How to Make Strategies
 
-Python, the programming language with easy syntax and popularity, is used to create custom strategies.
+Python, known for its straightforward syntax and widespread popularity, is used for creating customized strategies.
 
 ## Basic Knowledge
 
