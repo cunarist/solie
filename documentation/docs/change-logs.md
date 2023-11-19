@@ -10,7 +10,7 @@ See old versions of Solie at a glance.
 
 - Released on November 19, 2023
 - Doesn't include many visual changes
-- Various internal API and perfomance was improved
+- Various internal APIs and perfomance were improved
 - Adopted async system for better concurrency
 - Applied type safety to the entire codebase
 - Switched to Poetry for dependency management
