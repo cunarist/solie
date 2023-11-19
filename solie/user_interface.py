@@ -991,32 +991,25 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_22.addItem(self.horizontalSpacer_19)
 
-        self.formLayout_3 = QFormLayout()
-        self.formLayout_3.setObjectName(u"formLayout_3")
+        self.formLayout_2 = QFormLayout()
+        self.formLayout_2.setObjectName(u"formLayout_2")
         self.label_9 = QLabel(self.groupBox_8)
         self.label_9.setObjectName(u"label_9")
         self.label_9.setMinimumSize(QSize(120, 0))
         self.label_9.setMaximumSize(QSize(120, 16777215))
         self.label_9.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
 
-        self.formLayout_3.setWidget(0, QFormLayout.LabelRole, self.label_9)
-
-        self.checkBox_12 = QCheckBox(self.groupBox_8)
-        self.checkBox_12.setObjectName(u"checkBox_12")
-        self.checkBox_12.setMinimumSize(QSize(360, 0))
-        self.checkBox_12.setMaximumSize(QSize(360, 16777215))
-
-        self.formLayout_3.setWidget(0, QFormLayout.FieldRole, self.checkBox_12)
+        self.formLayout_2.setWidget(0, QFormLayout.LabelRole, self.label_9)
 
         self.checkBox_13 = QCheckBox(self.groupBox_8)
         self.checkBox_13.setObjectName(u"checkBox_13")
         self.checkBox_13.setMinimumSize(QSize(360, 0))
         self.checkBox_13.setMaximumSize(QSize(360, 16777215))
 
-        self.formLayout_3.setWidget(1, QFormLayout.FieldRole, self.checkBox_13)
+        self.formLayout_2.setWidget(0, QFormLayout.FieldRole, self.checkBox_13)
 
 
-        self.horizontalLayout_22.addLayout(self.formLayout_3)
+        self.horizontalLayout_22.addLayout(self.formLayout_2)
 
         self.horizontalSpacer_20 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
@@ -1425,7 +1418,6 @@ class Ui_MainWindow(object):
         self.label_45.setText("")
         self.label_46.setText("")
         self.label_9.setText("")
-        self.checkBox_12.setText(QCoreApplication.translate("MainWindow", u"Match system time with Binance server", None))
         self.checkBox_13.setText(QCoreApplication.translate("MainWindow", u"Disable system's auto update", None))
         self.groupBox_11.setTitle("")
         self.label_47.setText(QCoreApplication.translate("MainWindow", u"Convenience", None))

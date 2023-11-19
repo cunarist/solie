@@ -8,7 +8,7 @@ from collections import deque
 from datetime import datetime, timedelta, timezone
 
 import aiofiles
-import timesetter
+import time_machine
 
 import solie
 from solie.definition.api_requester import ApiRequester
@@ -52,10 +52,13 @@ class Manager:
         self.binance_limits = {}
 
         self.settings = {
-            "match_system_time": True,
             "disable_system_update": False,
             "lock_window": "NEVER",
         }
+
+        time_traveller = time_machine.travel(datetime.now(timezone.utc))
+        time_traveller.start()
+        self.time_traveller = time_traveller
 
         # ■■■■■ repetitive schedules ■■■■■
 
@@ -65,24 +68,24 @@ class Manager:
             second="*",
         )
         solie.window.scheduler.add_job(
-            self.check_online_status,
-            trigger="cron",
-            second="*/10",
-        )
-        solie.window.scheduler.add_job(
             self.display_system_status,
             trigger="cron",
             second="*",
         )
         solie.window.scheduler.add_job(
-            self.disable_system_auto_update,
+            self.check_online_status,
+            trigger="cron",
+            second="*",
+        )
+        solie.window.scheduler.add_job(
+            self.correct_time,
             trigger="cron",
             minute="*",
         )
         solie.window.scheduler.add_job(
-            self.match_system_time,
+            self.disable_system_auto_update,
             trigger="cron",
-            minute="*/10",
+            minute="*",
         )
         solie.window.scheduler.add_job(
             self.check_binance_limits,
@@ -103,7 +106,6 @@ class Manager:
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 content = await file.read()
                 self.settings = json.loads(content)
-        solie.window.checkBox_12.setChecked(self.settings["match_system_time"])
         solie.window.checkBox_13.setChecked(self.settings["disable_system_update"])
         solie.window.comboBox_3.setCurrentIndex(
             value_to.indexes(WINDOW_LOCK_OPTIONS, self.settings["lock_window"])[0]
@@ -115,13 +117,10 @@ class Manager:
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 script = await file.read()
         else:
-            script = ""
+            script = "logger.info(window)"
         solie.window.plainTextEdit.setPlainText(script)
 
     async def change_settings(self, *args, **kwargs):
-        is_checked = solie.window.checkBox_12.isChecked()
-        self.settings["match_system_time"] = True if is_checked else False
-
         is_checked = solie.window.checkBox_13.isChecked()
         self.settings["disable_system_update"] = True if is_checked else False
 
@@ -226,7 +225,7 @@ class Manager:
         server_timestamp = response["serverTime"] / 1000
         server_time = datetime.fromtimestamp(server_timestamp, tz=timezone.utc)
         local_time = datetime.now(timezone.utc)
-        time_difference = (local_time - server_time).total_seconds() - ping / 2
+        time_difference = (server_time - local_time).total_seconds() - ping / 2
         self.online_status["server_time_differences"].append(time_difference)
 
     async def display_system_status(self, *args, **kwargs):
@@ -252,23 +251,25 @@ class Manager:
         text += "  ⦁  "
         text += f"Ping {ping:.3f}s"
         text += "  ⦁  "
-        text += f"Time difference with server {mean_difference:+.3f}s"
+        text += f"Server time difference {mean_difference:+.3f}s"
         text += "  ⦁  "
         text += f"Board {('unlocked' if board_enabled else 'locked')}"
         solie.window.gauge.setText(text)
 
-    async def match_system_time(self, *args, **kwargs):
-        if not self.settings["match_system_time"]:
-            return
-
+    async def correct_time(self, *args, **kwargs):
         server_time_differences = self.online_status["server_time_differences"]
         if len(server_time_differences) < 60:
             return
         mean_difference = sum(server_time_differences) / len(server_time_differences)
-        new_time = datetime.now(timezone.utc) - timedelta(seconds=mean_difference)
-        timesetter.set(new_time)
+        new_time = datetime.now(timezone.utc) + timedelta(seconds=mean_difference)
+
+        self.time_traveller.stop()
+        time_traveller = time_machine.travel(new_time)
+        time_traveller.start()
+        self.time_traveller = time_traveller
+
         server_time_differences.clear()
-        server_time_differences.append(0)
+        server_time_differences.append(0.0)
 
     async def check_binance_limits(self, *args, **kwargs):
         if not check_internet.connected():

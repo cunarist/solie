@@ -1634,7 +1634,7 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                         </spacer>
                        </item>
                        <item>
-                        <layout class="QFormLayout" name="formLayout_3">
+                        <layout class="QFormLayout" name="formLayout_2">
                          <item row="0" column="0">
                           <widget class="QLabel" name="label_9">
                            <property name="minimumSize">
@@ -1658,25 +1658,6 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                           </widget>
                          </item>
                          <item row="0" column="1">
-                          <widget class="QCheckBox" name="checkBox_12">
-                           <property name="minimumSize">
-                            <size>
-                             <width>360</width>
-                             <height>0</height>
-                            </size>
-                           </property>
-                           <property name="maximumSize">
-                            <size>
-                             <width>360</width>
-                             <height>16777215</height>
-                            </size>
-                           </property>
-                           <property name="text">
-                            <string>Match system time with Binance server</string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item row="1" column="1">
                           <widget class="QCheckBox" name="checkBox_13">
                            <property name="minimumSize">
                             <size>
