@@ -1,34 +1,28 @@
 # Basic User Interface
 
-If you're already familiar with Python, using Solie will be quite easy.
-
-## ⚙️ System Recommended Specifications
-
-- Processor: 4 cores or more
-- RAM: 8GB or more
-- Free storage space: 8GB or more
-
 ## 🛒 How to Order Automatically
 
-1. Log in to the Binance website.
-1. Open futures account following the official instructions[🔗](https://www.binance.com/en/support/faq/360033772992).
+Sign in at the Binance [account page](https://accounts.binance.com/).
 
-   > You must first open futures account before proceeding to the next step. The option `Enable Futures` does not exist for API keys generated before opening futures account.
+Open futures account following the official instructions[🔗](https://www.binance.com/en/support/faq/360033772992).
 
-1. On the key issue page[🔗](https://www.binance.com/en/my/settings/api-management), click the `Create API` button to get a key issued.
+> You must first open futures account before proceeding to the next step. The option `Enable Futures` does not exist for API keys generated before opening futures account.
 
-   > The secret key is only visible immediately after creation. If you go back later, it's hidden so you can't see it, so make a copy right away.
+On the key issue page[🔗](https://www.binance.com/en/my/settings/api-management), click the `Create API` button to get a key issued.
 
-1. Check `Enable Futures` in the key edit page.
-   ![](assets/example_008.png)
-1. Open `Transact` tab in Solie.
-1. Enter the two issued keys in Solie. Doing so will receive and record your Binance account information.
-   ![](assets/example_009.png)
-1. Deposit in the form of you choose, such as `USDT` or `BUSD` to Binance futures wallet as per the official instructions[🔗](https://www.binance.com/en/support/faq/360033773532).
+> The secret key is only visible immediately after creation. If you go back later, it will be hidden so that no one can see it. Make a copy of that key right away.
 
-   > You cannot change the asset type on Binance futures, so be sure to first convert to the token you desire in your spot account and then transfer it to your futures account.
+Check `Enable Futures` in the key edit page.
+![](assets/example_008.png)
 
-1. If you check `Auto-transact` in Solie, automatic order is executed.
+Open `Transact` tab in Solie and enter the two issued keys in Solie. Doing so will receive and record your Binance account information.
+![](assets/example_009.png)
+
+Deposit in the form of you choose, such as `USDT` or `BUSD` to Binance futures wallet as per the official instructions[🔗](https://www.binance.com/en/support/faq/360033773532).
+
+> You cannot change the asset type on Binance futures, so be sure to first convert to the token you desire in your spot account and then transfer it to your futures account.
+
+If you check `Auto-transact` in Solie, automatic order will be activate. Be sure that you've chosen the right strategy before you do this. Your money matters.
 
 ## 📈 How to Read Graph and Range Information
 
