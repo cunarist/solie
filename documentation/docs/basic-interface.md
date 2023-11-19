@@ -1,32 +1,8 @@
 # Basic User Interface
 
-## 🛒 How to Order Automatically
-
-Sign in at the Binance [account page](https://accounts.binance.com/).
-
-Open futures account following the official instructions[🔗](https://www.binance.com/en/support/faq/360033772992).
-
-> You must first open futures account before proceeding to the next step. The option `Enable Futures` does not exist for API keys generated before opening futures account.
-
-On the key issue page[🔗](https://www.binance.com/en/my/settings/api-management), click the `Create API` button to get a key issued.
-
-> The secret key is only visible immediately after creation. If you go back later, it will be hidden so that no one can see it. Make a copy of that key right away.
-
-Check `Enable Futures` in the key edit page.
-![](assets/example_008.png)
-
-Open `Transact` tab in Solie and enter the two issued keys in Solie. Doing so will receive and record your Binance account information.
-![](assets/example_009.png)
-
-Deposit in the form of you choose, such as `USDT` or `BUSD` to Binance futures wallet as per the official instructions[🔗](https://www.binance.com/en/support/faq/360033773532).
-
-> You cannot change the asset type on Binance futures, so be sure to first convert to the token you desire in your spot account and then transfer it to your futures account.
-
-If you check `Auto-transact` in Solie, automatic order will be activate. Be sure that you've chosen the right strategy before you do this. Your money matters.
-
 ## 📈 How to Read Graph and Range Information
 
-Only one coin can be displayed at a time. In the lower panel you can select which coins to graph.
+Only one coin can be displayed at a time. In the lower panel you can choose a coin that Solie should draw.
 
 ![](assets/example_023.png)
 
@@ -57,7 +33,31 @@ To get meaningful results, you need to perform simulation calculations with enou
 After the simulation calculation, you can find the points with the lowest unrealized returns. Experiment with varying simulation leverage. You can see when you were closest to a forced liquidation and how dangerous it was. As soon as it approaches -100%, A forced liquidation is made from Binance.
 ![](assets/example_029.png)
 
-> You do not need to recalculate every time you change the simulation leverage. Just enter the desired number and it will be updated shortly on the graph based on the already calculated data.
+> You do not need to recalculate every time you change the simulation leverage. Just enter the desired number and it will be updated shortly on the graph based on the already
+
+## 🛒 How to Order Automatically
+
+Sign in at the Binance [account page](https://accounts.binance.com/).
+
+Open futures account following the official instructions[🔗](https://www.binance.com/en/support/faq/360033772992).
+
+> You must first open futures account before proceeding to the next step. The option `Enable Futures` does not exist for API keys generated before opening futures account.
+
+On the key issue page[🔗](https://www.binance.com/en/my/settings/api-management), click the `Create API` button to get a key issued.
+
+> The secret key is only visible immediately after creation. If you go back later, it will be hidden so that no one can see it. Make a copy of that key right away.
+
+Check `Enable Futures` in the key edit page.
+![](assets/example_008.png)
+
+Open `Transact` tab in Solie and enter the two issued keys in Solie. Doing so will receive and record your Binance account information.
+![](assets/example_009.png)
+
+Deposit in the form of you choose, such as `USDT` or `BUSD` to Binance futures wallet as per the official instructions[🔗](https://www.binance.com/en/support/faq/360033773532).
+
+> You cannot change the asset type on Binance futures, so be sure to first convert to the token you desire in your spot account and then transfer it to your futures account.
+
+If you check `Auto-transact` in Solie, automatic order will be activate. Be sure that you've chosen the right strategy before you do this. Your money matters.calculated data.
 
 ## 🧾 Extra Tips
 

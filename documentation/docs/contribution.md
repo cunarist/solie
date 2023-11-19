@@ -1,52 +1,14 @@
 # Contribution Guide
 
-There are things that must be known in the process of making Solie.
+There are things that must be known in the process of making Solie. Guides below will help you dive into the Solie codebase.
 
-## 🛠️ Procedure
-
-Install Poetry[🔗](https://python-poetry.org/).
-
-```bash
-pip install pipx
-python -m pipx ensurepath
-# You might need to restart the terminal here
-pipx install poetry
-```
-
-Prepare the virtual environment with the command below.
-
-```bash
-poetry install
-```
-
-The user interface can be changed by editing the `./craft/user_interface.ui` file with the `Qt Designer`. Open it with below terminal command.
-
-```bash
-pyside6-designer
-```
-
-After editing the UI file, you have to compile it as a Python module.
-
-```bash
-pyside6-uic craft/user_interface.ui -o solie/user_interface.py
-```
-
-Make a commit in a branch other than `main` and create a pull request.
-
-## 🚦 Rules
-
-- Solie is made purely in Python and uses Poetry as the default package management tool.
-- Use Ruff formatter for formatting and linting.
-- Use Pyright's basic type checking. If you're using Visual Studio Code, Pylance will provide a superset of Pyright’s functionality.
-- It should be easy for general users to use with just a few clicks.
-- It should be developed with the goal of working on both `Windows`, `Linux`, and `macOS`. Do not use platform-dependent packages such as `win32api`.
-- The `print` command is only for development purposes only and should not be included in the final code. If there is information to be shown, it must be displayed in the user interface.
-- When a value is added to data that has a table form, it should be occupied by `datalocks` and then written at once so that one row can always be assumed to be completely intact. Be careful that there is no instantaneous blank space after a new row is added.
-- Time zone information must be included in UTC in `datetime.datetime` object. In addition to this, please include UTC time zone information wherever possible, such as `pandas.DatetimeIndex`.
+Once you're happy with the changes, make a commit in a branch other than `main` and create a pull request.
 
 ## 🧰 Debugging
 
-If there is Python code that you want to run, you can run it in the `Logs` of the `Manage` tab. After writing the code in the `Python Script` input device, the code is executed when the `Run Code` button is pressed. The `print` function won't help you because it prints to the terminal rather than the log list.
+If there is Python code that you want to run, you can run it in the `Logs` of the `Manage` tab. After writing the code in the `Python script` input field, you can press `Run script` button to get the result. The `print` function won't help you because it prints to the terminal rather than the log list.
+
+Note that what you're running here is a real Python code. Therefore, you can import various modules including `solie` from the script.
 
 ![](assets/example_005.png)
 
@@ -82,6 +44,31 @@ logger.debug(log_data)
 ![](assets/example_034.png)
 
 In the `Log output`, all logs that occur during execution are stacked. If an error occurs, it is also logged. If you're writing a strategy script and something doesn't work, you can come here to figure out the cause.
+
+## 🕹️ User Interface
+
+The user interface can be changed by editing the `./craft/user_interface.ui` file with the `Qt Designer`. Open it with below terminal command.
+
+```bash
+pyside6-designer
+```
+
+After editing the UI file, you have to compile it as a Python module.
+
+```bash
+pyside6-uic craft/user_interface.ui -o solie/user_interface.py
+```
+
+## 🚦 Rules
+
+- Solie is made purely in Python and uses Poetry as the default package management tool.
+- Use Ruff formatter for formatting and linting.
+- Use Pyright's basic type checking. If you're using Visual Studio Code, Pylance will provide a superset of Pyright’s functionality.
+- It should be easy for general users to use with just a few clicks.
+- It should be developed with the goal of working on both `Windows`, `Linux`, and `macOS`. Do not use platform-dependent packages such as `win32api`.
+- The `print` command is only for development purposes only and should not be included in the final code. If there is information to be shown, it must be displayed in the user interface.
+- When a value is added to data that has a table form, it should be occupied by `datalocks` and then written at once so that one row can always be assumed to be completely intact. Be careful that there is no instantaneous blank space after a new row is added.
+- Time zone information must be included in UTC in `datetime.datetime` object. In addition to this, please include UTC time zone information wherever possible, such as `pandas.DatetimeIndex`.
 
 ## 🏷️ Variable Terminology
 
