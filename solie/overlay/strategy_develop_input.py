@@ -4,6 +4,7 @@ from PySide6 import QtCore, QtWidgets
 import solie
 from solie.recipe import open_browser, outsource
 from solie.widget.script_editor import ScriptEditor
+from solie.widget.vertical_divider import VerticalDivider
 
 
 class StrategyDevelopInput(QtWidgets.QWidget):
@@ -76,8 +77,21 @@ class StrategyDevelopInput(QtWidgets.QWidget):
             url = "https://solie-docs.cunarist.com/making-strategy/"
             open_browser.do(url)
 
-        button = QtWidgets.QPushButton("Show API guide", card)
+        button = QtWidgets.QPushButton("Show Solie API docs", card)
         outsource.do(button.clicked, job_ad)
+        button.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed,
+            QtWidgets.QSizePolicy.Policy.Fixed,
+        )
+        card_layout.addWidget(button)
+
+        # Pandas docs button
+        async def job_pd(*args):
+            url = "https://pandas.pydata.org/docs/reference/index.html"
+            open_browser.do(url)
+
+        button = QtWidgets.QPushButton("Show Pandas API docs", card)
+        outsource.do(button.clicked, job_pd)
         button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,
@@ -89,13 +103,17 @@ class StrategyDevelopInput(QtWidgets.QWidget):
             url = "https://github.com/twopirllc/pandas-ta#indicators-by-category"
             open_browser.do(url)
 
-        button = QtWidgets.QPushButton("Show TA guide", card)
+        button = QtWidgets.QPushButton("Show TA API docs", card)
         outsource.do(button.clicked, job_td)
         button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,
         )
         card_layout.addWidget(button)
+
+        # Vertical divider
+        divider = VerticalDivider(self)
+        card_layout.addWidget(divider)
 
         # sample script button
         async def job_as(*args):
