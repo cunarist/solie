@@ -2,8 +2,6 @@
 
 See old versions of Solie at a glance.
 
-## Releases
-
 ### Version 8
 
 ![](assets/capture_version_8_0.png)

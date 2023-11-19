@@ -2,7 +2,7 @@
 
 There are things that must be known in the process of making Solie.
 
-## Procedure
+## 🛠️ Procedure
 
 Install Poetry[🔗](https://python-poetry.org/).
 
@@ -33,7 +33,7 @@ pyside6-uic craft/user_interface.ui -o solie/user_interface.py
 
 Make a commit in a branch other than `main` and create a pull request.
 
-## Rules
+## 🚦 Rules
 
 - Solie is made purely in Python and uses Poetry as the default package management tool.
 - Use Ruff formatter for formatting and linting.
@@ -44,7 +44,7 @@ Make a commit in a branch other than `main` and create a pull request.
 - When a value is added to data that has a table form, it should be occupied by `datalocks` and then written at once so that one row can always be assumed to be completely intact. Be careful that there is no instantaneous blank space after a new row is added.
 - Time zone information must be included in UTC in `datetime.datetime` object. In addition to this, please include UTC time zone information wherever possible, such as `pandas.DatetimeIndex`.
 
-## Debugging
+## 🧰 Debugging
 
 If there is Python code that you want to run, you can run it in the `Logs` of the `Manage` tab. After writing the code in the `Python Script` input device, the code is executed when the `Run Code` button is pressed. The `print` function won't help you because it prints to the terminal rather than the log list.
 
@@ -83,8 +83,18 @@ logger.debug(log_data)
 
 In the `Log output`, all logs that occur during execution are stacked. If an error occurs, it is also logged. If you're writing a strategy script and something doesn't work, you can come here to figure out the cause.
 
-## Variable Terminology
+## 🏷️ Variable Terminology
 
 - `amount` has a negative value for a short position and a positive value for a long position. It is expressed in units of each coin, not dollars.
 - `role` has only one of two values, `maker` or `taker`, depending on whether liquidity was supplied at the time of trading.
 - `moment` refers to the reference time used for data recording. Structurally, it points to a row in a series or dataframe.
+
+## 🤲 Development Support
+
+If you are benefiting from Solie's features and find it helpful, why not consider supporting the Solie project? Your generous donations contribute to the growth and development of Solie. 😉
+
+If you feel like so, please consider using the BUSD(BSC) wallet address written below.
+
+```
+0xF9A7E35254cc8A9A9C811849CAF672F10fAB7366
+```

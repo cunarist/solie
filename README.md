@@ -10,11 +10,7 @@
 
 Please note that this solution does not guarantee profitability, as the success of your strategies depends on your decision-making. Solie connects to Binance, retrieves real-time market and account data, saves it on disk, and presents it as an intuitive chart to assist you in developing your strategies.
 
-## 📖 Documentation
-
-Read the [documentation](https://solie-docs.cunarist.com) to understand how to turn on auto-trading, make your own strategies with the interal API, and get involved in Solie development.
-
-## 🛞 How to Use This Thing
+## 🛞 How to Run This Thing
 
 > When using terminal commands from the following steps, always make sure that your current working directory is the folder of this project. Also, you might need to replace `python` with `python3`, `pip` with `pip3` on some platforms from the commands below.
 
@@ -49,13 +45,17 @@ poetry shell
 python solie
 ```
 
-## 📖 Available Platforms
+## 🖥️ Available Platforms
 
 - ✅ Windows: Working fine
 - ✅ Linux: Working fine
 - ⏸️ macOS: [Partially working](https://github.com/cunarist/solie/issues/87)
 
-## 🚪 Development Support
+## 📖 Documentation
+
+Read the [documentation](https://solie-docs.cunarist.com) to understand how to turn on auto-trading, make your own strategies with the interal API, and get involved in Solie development.
+
+## 🤲 Development Support
 
 If you are benefiting from Solie's features and find it helpful, why not consider supporting the Solie project? Your generous donations contribute to the growth and development of Solie. 😉
 
