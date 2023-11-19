@@ -954,73 +954,6 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_13.addWidget(self.groupBox_7)
 
-        self.groupBox_8 = QGroupBox(self.scrollAreaWidgetContents_9)
-        self.groupBox_8.setObjectName(u"groupBox_8")
-        self.groupBox_8.setMinimumSize(QSize(720, 0))
-        self.groupBox_8.setMaximumSize(QSize(720, 16777215))
-        self.verticalLayout_29 = QVBoxLayout(self.groupBox_8)
-        self.verticalLayout_29.setObjectName(u"verticalLayout_29")
-        self.verticalLayout_29.setContentsMargins(80, 40, 80, 40)
-        self.label_44 = QLabel(self.groupBox_8)
-        self.label_44.setObjectName(u"label_44")
-        self.label_44.setAlignment(Qt.AlignCenter)
-
-        self.verticalLayout_29.addWidget(self.label_44)
-
-        self.label_45 = QLabel(self.groupBox_8)
-        self.label_45.setObjectName(u"label_45")
-        self.label_45.setFont(font3)
-
-        self.verticalLayout_29.addWidget(self.label_45)
-
-        self.frame_12 = HorizontalDivider(self.groupBox_8)
-        self.frame_12.setObjectName(u"frame_12")
-        self.frame_12.setFrameShape(QFrame.HLine)
-
-        self.verticalLayout_29.addWidget(self.frame_12)
-
-        self.label_46 = QLabel(self.groupBox_8)
-        self.label_46.setObjectName(u"label_46")
-        self.label_46.setFont(font3)
-
-        self.verticalLayout_29.addWidget(self.label_46)
-
-        self.horizontalLayout_22 = QHBoxLayout()
-        self.horizontalLayout_22.setObjectName(u"horizontalLayout_22")
-        self.horizontalSpacer_19 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-
-        self.horizontalLayout_22.addItem(self.horizontalSpacer_19)
-
-        self.formLayout_2 = QFormLayout()
-        self.formLayout_2.setObjectName(u"formLayout_2")
-        self.label_9 = QLabel(self.groupBox_8)
-        self.label_9.setObjectName(u"label_9")
-        self.label_9.setMinimumSize(QSize(120, 0))
-        self.label_9.setMaximumSize(QSize(120, 16777215))
-        self.label_9.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
-
-        self.formLayout_2.setWidget(0, QFormLayout.LabelRole, self.label_9)
-
-        self.checkBox_13 = QCheckBox(self.groupBox_8)
-        self.checkBox_13.setObjectName(u"checkBox_13")
-        self.checkBox_13.setMinimumSize(QSize(360, 0))
-        self.checkBox_13.setMaximumSize(QSize(360, 16777215))
-
-        self.formLayout_2.setWidget(0, QFormLayout.FieldRole, self.checkBox_13)
-
-
-        self.horizontalLayout_22.addLayout(self.formLayout_2)
-
-        self.horizontalSpacer_20 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-
-        self.horizontalLayout_22.addItem(self.horizontalSpacer_20)
-
-
-        self.verticalLayout_29.addLayout(self.horizontalLayout_22)
-
-
-        self.verticalLayout_13.addWidget(self.groupBox_8)
-
         self.groupBox_11 = QGroupBox(self.scrollAreaWidgetContents_9)
         self.groupBox_11.setObjectName(u"groupBox_11")
         self.groupBox_11.setMinimumSize(QSize(720, 0))
@@ -1413,12 +1346,6 @@ class Ui_MainWindow(object):
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"Path", None))
         self.pushButton_8.setText(QCoreApplication.translate("MainWindow", u"Open with file manager", None))
         self.pushButton_22.setText(QCoreApplication.translate("MainWindow", u"Change", None))
-        self.groupBox_8.setTitle("")
-        self.label_44.setText(QCoreApplication.translate("MainWindow", u"System stability", None))
-        self.label_45.setText("")
-        self.label_46.setText("")
-        self.label_9.setText("")
-        self.checkBox_13.setText(QCoreApplication.translate("MainWindow", u"Disable system's auto update", None))
         self.groupBox_11.setTitle("")
         self.label_47.setText(QCoreApplication.translate("MainWindow", u"Convenience", None))
         self.label_48.setText("")

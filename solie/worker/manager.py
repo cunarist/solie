@@ -1,9 +1,7 @@
 import asyncio
 import json
 import os
-import platform
 import statistics
-import subprocess
 from collections import deque
 from datetime import datetime, timedelta, timezone
 
@@ -52,8 +50,7 @@ class Manager:
         self.binance_limits = {}
 
         self.settings = {
-            "disable_system_update": False,
-            "lock_window": "NEVER",
+            "lock_board": "NEVER",
         }
 
         time_traveller = time_machine.travel(datetime.now(timezone.utc))
@@ -83,11 +80,6 @@ class Manager:
             minute="*",
         )
         solie.window.scheduler.add_job(
-            self.disable_system_auto_update,
-            trigger="cron",
-            minute="*",
-        )
-        solie.window.scheduler.add_job(
             self.check_binance_limits,
             trigger="cron",
             hour="*",
@@ -106,9 +98,8 @@ class Manager:
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 content = await file.read()
                 self.settings = json.loads(content)
-        solie.window.checkBox_13.setChecked(self.settings["disable_system_update"])
         solie.window.comboBox_3.setCurrentIndex(
-            value_to.indexes(WINDOW_LOCK_OPTIONS, self.settings["lock_window"])[0]
+            value_to.indexes(WINDOW_LOCK_OPTIONS, self.settings["lock_board"])[0]
         )
 
         # python script
@@ -121,11 +112,8 @@ class Manager:
         solie.window.plainTextEdit.setPlainText(script)
 
     async def change_settings(self, *args, **kwargs):
-        is_checked = solie.window.checkBox_13.isChecked()
-        self.settings["disable_system_update"] = True if is_checked else False
-
         current_index = solie.window.comboBox_3.currentIndex()
-        self.settings["lock_window"] = WINDOW_LOCK_OPTIONS[current_index]
+        self.settings["lock_board"] = WINDOW_LOCK_OPTIONS[current_index]
 
         filepath = self.workerpath + "/settings.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
@@ -309,23 +297,8 @@ class Manager:
     async def open_documentation(self, *args, **kwargs):
         open_browser.do("https://solie-docs.cunarist.com")
 
-    async def disable_system_auto_update(self, *args, **kwargs):
-        if not self.settings["disable_system_update"]:
-            return
-
-        if platform.system() == "Windows":
-            commands = ["sc", "stop", "wuauserv"]
-            subprocess.run(commands)
-            commands = ["sc", "config", "wuauserv", "start=disabled"]
-            subprocess.run(commands)
-
-        elif platform.system() == "Linux":
-            pass
-        elif platform.system() == "Darwin":  # macOS
-            pass
-
     async def lock_board(self, *args, **kwargs):
-        lock_window_setting = self.settings["lock_window"]
+        lock_window_setting = self.settings["lock_board"]
 
         if lock_window_setting == "NEVER":
             return

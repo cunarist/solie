@@ -977,8 +977,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         job = self.strategist.add_blank_strategy
         outsource.do(self.pushButton_5.clicked, job)
         job = self.manager.change_settings
-        outsource.do(self.checkBox_13.toggled, job)
-        job = self.manager.change_settings
         outsource.do(self.comboBox_3.currentIndexChanged, job)
         job = self.collector.guide_donation
         outsource.do(self.pushButton_9.clicked, job)
