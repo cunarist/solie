@@ -4,6 +4,17 @@ See old versions of Solie at a glance.
 
 ## Releases
 
+### Version 8
+
+![](assets/capture_version_8_0.png)
+
+- Released on November 19, 2023
+- Doesn't include many visual changes
+- Various internal API and perfomance was improved
+- Adopted async system for better concurrency
+- Applied type safety to the entire codebase
+- Switched to Poetry for dependency management
+
 ### Version 7
 
 ![](assets/capture_version_7_0.png)
@@ -95,15 +106,15 @@ See old versions of Solie at a glance.
 - Added splash window
 - Start giving version numbering
 
-## Development Phases
+### Development Phase
 
-### 2022-02-21
+2022-02-21
 
 ![](assets/capture_2022_02_21_1.png)
 
 - Apply syntax highlighting to the script editor
 
-### 2022-02-18
+2022-02-18
 
 ![](assets/capture_2022_02_18_2.png)
 ![](assets/capture_2022_02_18_1.png)
@@ -111,7 +122,7 @@ See old versions of Solie at a glance.
 - Included user manual in the window
 - Apply icons and widgets to more places
 
-### 2022-02-17
+2022-02-17
 
 ![](assets/capture_2022_02_17_2.png)
 ![](assets/capture_2022_02_17_1.png)
@@ -119,49 +130,49 @@ See old versions of Solie at a glance.
 - Added a feature that allows users to select the desired coin
 - Coin icon is also displayed to provide a better experience
 
-### 2022-02-12
+2022-02-12
 
 ![](assets/capture_2022_02_12_1.png)
 
 - Added Support for fast strategy with 0.1s interval using real-time data
 
-### 2022-02-07
+2022-02-07
 
 ![](assets/capture_2022_02_07_1.png)
 
 - Added real-time data collection feature using websocket
 
-### 2022-01-17
+2022-01-17
 
 ![](assets/capture_2022_01_17.png)
 
 - Switched to Binance API instead of web scraping for collecting data
 
-### 2021-12-24
+2021-12-24
 
 ![](assets/capture_2021_12_24_1.png)
 
 - Added status panel to see operation status at a glance
 
-### 2021-12-22
+2021-12-22
 
 ![](assets/capture_2021_12_22_1.png)
 
 - Added the ability to create your own strategy
 
-### 2021-12-21
+2021-12-21
 
 ![](assets/capture_2021_12_21_1.png)
 
 - Changed to light default theme for cross-platform compatibility
 
-### 2021-11-22
+2021-11-22
 
 ![](assets/capture_2021_11_22_1.png)
 
 - Added the ability to organize the output
 
-### 2021-11-20
+2021-11-20
 
 ![](assets/capture_2021_11_20_2.png)
 ![](assets/capture_2021_11_20_1.png)
@@ -169,46 +180,46 @@ See old versions of Solie at a glance.
 - Added confirmation popup
 - Added ability to read historical CSV files
 
-### 2021-11-16
+2021-11-16
 
 ![](assets/capture_2021_11_16_1.png)
 
 - Added volume data collection feature
 
-### 2021-11-12
+2021-11-12
 
 ![](assets/capture_2021_11_12_2.png)
 ![](assets/capture_2021_11_12_1.png)
 
 - Multi-coin support
 
-### 2021-10-29
+2021-10-29
 
 ![](assets/capture_2021_10_29_2.png)
 ![](assets/capture_2021_10_29_1.png)
 
 - Separated price collection algorithms from automatic orders
 
-### 2021-10-14
+2021-10-14
 
 ![](assets/capture_2021_10_14_1.png)
 
 - Improved the first screen
 
-### 2021-07-17
+2021-07-17
 
 ![](assets/capture_2021_07_17_1.png)
 
 - Integrated web manipulation window
 
-### 2021-06-22
+2021-06-22
 
 ![](assets/capture_2021_06_22_2.png)
 ![](assets/capture_2021_06_22_1.png)
 
 - Improved graph navigation to be much faster and easier
 
-### 2021-06-11
+2021-06-11
 
 ![](assets/capture_2021_06_11_2.png)
 ![](assets/capture_2021_06_11_1.png)
@@ -216,19 +227,19 @@ See old versions of Solie at a glance.
 - Made Solie use a separate data storage folder
 - Added user profile feature
 
-### 2021-05-16
+2021-05-16
 
 ![](assets/capture_2021_05_16_1.png)
 
 - Changed screen layout to show more information
 
-### 2021-04-18
+2021-04-18
 
 ![](assets/capture_2021_04_18_1.png)
 
 - Added Phemex automatic ordering feature through web operation
 
-### 2021-02-28
+2021-02-28
 
 ![](assets/capture_2021_02_28_1.png)
 
