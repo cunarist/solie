@@ -6,22 +6,23 @@ authors = ["Cunarist"]
 
 [tool.poetry.dependencies]
 python = "^3.9,<3.13"
-numpy = "1.26.2"
-pandas = "1.5.3"
-scipy = "1.11.3"
-pyside6 = "6.6.0"
-qasync = "0.27.0"
-pyqtgraph = "0.13.3"
-aiohttp = "3.8.6"
-faust-cchardet = "2.1.19"
-aiodns = "3.1.1"
-aiofiles = "23.2.1"
-apscheduler = "3.10.4"
-pygments = "2.16.1"
-yapf = "0.32.0"
-getmac = "0.8.3"
-pandas-ta = { version = "0.3.14b", allow-prereleases = true }
+numpy = "^1.26.2"
+pandas = "^1.5.3"
+scipy = "^1.11.3"
+pyside6 = "^6.6.0"
+qasync = "^0.27.0"
+pyqtgraph = "^0.13.3"
+aiohttp = "^3.8.6"
+faust-cchardet = "^2.1.19"
+aiodns = "^3.1.1"
+aiofiles = "^23.2.1"
+apscheduler = "^3.10.4"
+pygments = "^2.16.1"
+yapf = "^0.32.0"
+getmac = "^0.8.3"
+pandas-ta = { version = "^0.3.14b", allow-prereleases = true }
 time-machine = "^2.13.0"
+pyperclip = "^1.8.2"
 
 [tool.poetry.dev-dependencies]
 ruff = "*"
