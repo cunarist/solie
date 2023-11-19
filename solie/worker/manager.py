@@ -121,7 +121,11 @@ class Manager:
             await file.write(content)
 
     async def open_datapath(self, *args, **kwargs):
-        os.startfile(user_settings.get_app_settings()["datapath"])
+        solie.event_loop.run_in_executor(
+            None,
+            os.startfile,
+            user_settings.get_app_settings()["datapath"],
+        )
 
     async def deselect_log_output(self, *args, **kwargs):
         solie.window.listWidget.clearSelection()
