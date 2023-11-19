@@ -1,10 +1,10 @@
-# How to Use Solie
+# Basic User Interface
 
 If you're already familiar with Python, using Solie will be quite easy.
 
 ## System Recommended Specifications
 
-- Processor: 8 cores or more
+- Processor: 4 cores or more
 - RAM: 8GB or more
 - Free storage space: 8GB or more
 
@@ -40,12 +40,11 @@ The red dot is where you bought, and the blue dot is where you sold.
 
 ![](assets/example_025.png)
 
-When viewing the range information at the top of the graph, two types of information are provided. The one inside parenthesis is the combined contribution of all target coins, and the one outside parenthesis is the single contribution of the currently displayed coin.
+When viewing the range information at the top of the graph, two types of information are provided. The one inside parenthesis is the combined contribution of all target coins, and the one outside the parenthesis is the contribution of only the currently displayed coin.
 ![](assets/example_022.png)
 
 In the price graph and asset graph, each major grid represents 1% and each minor grid represents 0.1%.
 ![](assets/example_026.png)
-![](assets/example_027.png)
 
 In the asset graph, the orange line is the realized asset, and the gray line is the asset that even reflects unrealized profit. The gray line is the asset you are holding at the current price of the position you are holding. In the picture below, you can see the orange line sticking to the gray line as soon as you close the position.
 ![](assets/example_035.png)

@@ -1,7 +1,8 @@
 nav:
-  - index.md
-  - using.md
-  - making-strategy.md
-  - developing.md
-  - change-logs.md
-  - ...
+
+- index.md
+- basic-interface.md
+- making-strategy.md
+- contribution.md
+- change-logs.md
+- ...
