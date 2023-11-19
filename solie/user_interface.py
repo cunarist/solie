@@ -1350,7 +1350,7 @@ class Ui_MainWindow(object):
         self.label_47.setText(QCoreApplication.translate("MainWindow", u"Convenience", None))
         self.label_48.setText("")
         self.label_49.setText("")
-        self.label_51.setText(QCoreApplication.translate("MainWindow", u"Lock the window", None))
+        self.label_51.setText(QCoreApplication.translate("MainWindow", u"Lock the board", None))
         self.comboBox_3.setItemText(0, QCoreApplication.translate("MainWindow", u"Never", None))
         self.comboBox_3.setItemText(1, QCoreApplication.translate("MainWindow", u"After 10 seconds", None))
         self.comboBox_3.setItemText(2, QCoreApplication.translate("MainWindow", u"After 1 minute", None))

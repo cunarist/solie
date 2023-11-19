@@ -1650,7 +1650,7 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                             </size>
                            </property>
                            <property name="text">
-                            <string>Lock the window</string>
+                            <string>Lock the board</string>
                            </property>
                            <property name="alignment">
                             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
