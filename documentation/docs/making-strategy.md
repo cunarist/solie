@@ -117,7 +117,7 @@ The `pandas.Series` object has the following form. A one-dimensional array conta
 2022-02-20 10:42:40+00:00 2630.69
 ```
 
-Solie uses the `pandas-ta` package. Creation of dozens of basic indicators is available with this, including moving average, Bollinger band, double exponential moving average, triple exponential moving average, stochastic, and parabolic. For more information, check the official documentation of `pandas-ta`[🔗](https://github.com/twopirllc/pandas-ta).
+Solie uses the `pandas-ta` package. Creation of dozens of basic indicators is available with this, including moving average, bollinger band, double exponential moving average, triple exponential moving average, stochastic, and parabolic. For more information, check the official documentation of `pandas-ta`[🔗](https://github.com/twopirllc/pandas-ta).
 
 ```python
 for symbol in target_symbols:
@@ -177,7 +177,7 @@ for symbol in target_symbols:
     new_indicators[(symbol, "Price", "Average SMA")] = average_sma
 ```
 
-Below is the code that creates a market overheating indicator with two different moving averages and limits the value to not exceed 1.5. In the picture, you can see that everything above 1.5 is cut off.
+Below is the code that creates a market overheating indicator with two different moving averages and limits the value to not exceed 0.8. In the picture, you can see that everything above 0.8 is cut off.
 
 ```python
 for symbol in target_symbols:
