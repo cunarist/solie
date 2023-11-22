@@ -1,7 +1,6 @@
 import functools
-import pathlib
-from tkinter import filedialog
 
+import xdialog
 from PySide6 import QtCore, QtGui, QtWidgets
 
 import solie
@@ -84,14 +83,11 @@ class DatapathInput(QtWidgets.QWidget):
         async def job_dp():
             nonlocal datapath
 
-            default_path = str(pathlib.Path.home())
-            title_bar_text = "Data folder"
             datapath = await solie.event_loop.run_in_executor(
                 None,
                 functools.partial(
-                    filedialog.askdirectory,
-                    initialdir=default_path,
-                    title=title_bar_text,
+                    xdialog.directory,
+                    title="Data folder",
                 ),
             )
 

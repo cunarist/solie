@@ -25,6 +25,7 @@ getmac = "^0.8.3"
 pandas-ta = { version = "^0.3.14b", allow-prereleases = true }
 time-machine = "^2.13.0"
 pyperclip = "^1.8.2"
+xdialog = "^1.1.1"
 
 [tool.poetry.dev-dependencies]
 ruff = "*"

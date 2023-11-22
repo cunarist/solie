@@ -1195,6 +1195,17 @@ tzdata = {version = "*", markers = "platform_system == \"Windows\""}
 devenv = ["check-manifest", "pytest (>=4.3)", "pytest-cov", "pytest-mock (>=3.3)", "zest.releaser"]
 
 [[package]]
+name = "xdialog"
+version = "1.1.1.1"
+description = "A cross-platform python wrapper for native dialogs."
+optional = false
+python-versions = "*"
+files = [
+    {file = "xdialog-1.1.1.1-py3-none-any.whl", hash = "sha256:fc04afd8e1c32b542a926aa096313fb6d9ffc8e94dc1782b0bdc7733fc487214"},
+    {file = "xdialog-1.1.1.1.tar.gz", hash = "sha256:8d79177b9bb4f85d271e79fcbe2366fa816eaca63d0ea635ac4a265c937040fd"},
+]
+
+[[package]]
 name = "yapf"
 version = "0.32.0"
 description = "A formatter for Python code."
@@ -1311,4 +1322,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9,<3.13"
-content-hash = "9a277d7b62dd84ed2fa83d31a8e288673852c7009be93b2462188824af3a3a28"
+content-hash = "6d7714166ea15bcd3c5d8f446c019fcd37192dea484405df4b4429c12437b56e"

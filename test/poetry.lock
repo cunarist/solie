@@ -903,7 +903,7 @@ files = [
 
 [[package]]
 name = "solie"
-version = "8.0.1"
+version = "8.0.3"
 description = "Backtesting and auto-trading cryptos with intuitive GUI on Binance futures"
 optional = false
 python-versions = "^3.9,<3.13"
@@ -927,6 +927,7 @@ pyside6 = "^6.6.0"
 qasync = "^0.27.1"
 scipy = "^1.11.3"
 time-machine = "^2.13.0"
+xdialog = "^1.1.1"
 yapf = "^0.32.0"
 
 [package.source]
@@ -1028,6 +1029,17 @@ tzdata = {version = "*", markers = "platform_system == \"Windows\""}
 
 [package.extras]
 devenv = ["check-manifest", "pytest (>=4.3)", "pytest-cov", "pytest-mock (>=3.3)", "zest.releaser"]
+
+[[package]]
+name = "xdialog"
+version = "1.1.1.1"
+description = "A cross-platform python wrapper for native dialogs."
+optional = false
+python-versions = "*"
+files = [
+    {file = "xdialog-1.1.1.1-py3-none-any.whl", hash = "sha256:fc04afd8e1c32b542a926aa096313fb6d9ffc8e94dc1782b0bdc7733fc487214"},
+    {file = "xdialog-1.1.1.1.tar.gz", hash = "sha256:8d79177b9bb4f85d271e79fcbe2366fa816eaca63d0ea635ac4a265c937040fd"},
+]
 
 [[package]]
 name = "yapf"
