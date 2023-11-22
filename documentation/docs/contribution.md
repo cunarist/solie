@@ -2,7 +2,37 @@
 
 There are things that must be known in the process of making Solie. Guides below will help you dive into the Solie codebase.
 
-Once you're happy with the changes, make a commit in a branch other than `main` and create a pull request.
+## 🧮 Preparing the Repository
+
+> When using terminal commands from the following steps, always make sure that your current working directory is the folder of this project.
+
+You need to install some components on your system first.
+
+First, install [Python](https://www.python.org/). We recommend using the official installer provided from the website to ensure stability. Don't forget to add `python` command to PATH during the installation.
+
+Then, make sure [Poetry](https://python-poetry.org/) is installed on your system.
+
+```bash
+pip install pipx
+python -m pipx ensurepath
+# You might need to restart the terminal here
+pipx install poetry
+```
+
+Install the dependencies. You only have to do this once.
+
+```bash
+cd package
+poetry install
+```
+
+Activate the Poetry shell and run the code.
+
+```bash
+poetry shell
+# Once you've activated the shell, you don't need to do it again
+python solie
+```
 
 ## 🧰 Debugging
 

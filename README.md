@@ -12,9 +12,7 @@ Please note that this solution does not guarantee profitability, as the success 
 
 ## 🛞 How to Run This Thing
 
-> When using terminal commands from the following steps, always make sure that your current working directory is the folder of this project. Also, you might need to replace `python` with `python3`, `pip` with `pip3` on some platforms from the commands below.
-
-Running Solie is easy, but you need to install some components on your system first. It won't be as hard as you think if you adhere to the following instructions.
+Running Solie is very easy.
 
 First, install [Python](https://www.python.org/). We recommend using the official installer provided from the website to ensure stability. Don't forget to add `python` command to PATH during the installation. You can check that Python is ready with the command below.
 
@@ -22,28 +20,19 @@ First, install [Python](https://www.python.org/). We recommend using the officia
 python --version
 ```
 
-Also, make sure [Poetry](https://python-poetry.org/) is installed on your system.
+Next, open a terminal window and install Solie.
 
-```bash
-pip install pipx
-python -m pipx ensurepath
-# You might need to restart the terminal here
-pipx install poetry
+```
+pip install solie
 ```
 
-Install the dependencies. You only have to do this once.
+Finally, run Solie.
 
-```bash
-poetry install
+```
+python -m solie
 ```
 
-Activate the Poetry shell and run the code.
-
-```bash
-poetry shell
-# Once you've activated the shell, you don't need to do it again
-python solie
-```
+> You might need to replace `python` with `python3`, `pip` with `pip3` on some platforms from the commands above.
 
 ## 🖥️ Available Platforms
 
