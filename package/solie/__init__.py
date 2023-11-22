@@ -23,7 +23,12 @@ from solie.definition.time_axis_item import TimeAxisItem
 from solie.overlay.coin_selection import CoinSelection
 from solie.overlay.datapath_input import DatapathInput
 from solie.overlay.token_selection import TokenSelection
-from solie.recipe import check_internet, examine_data_files, outsource, user_settings
+from solie.recipe import (
+    check_internet,
+    examine_data_files,
+    outsource,
+    user_settings,
+)
 from solie.user_interface import Ui_MainWindow
 from solie.widget.ask_popup import AskPopup
 from solie.widget.brand_label import BrandLabel
@@ -161,6 +166,15 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         pd.set_option("display.max_rows", 100)
         pyqtgraph.setConfigOptions(antialias=True)
 
+        # ■■■■■ window icon ■■■■■
+
+        filepath = f"{introduction.PATH}/static/product_icon.png"
+        async with aiofiles.open(filepath, mode="rb") as file:
+            product_icon_data = await file.read()
+        product_icon_pixmap = QtGui.QPixmap()
+        product_icon_pixmap.loadFromData(product_icon_data)
+        window.setWindowIcon(product_icon_pixmap)
+
         # ■■■■■ guide frame ■■■■■
 
         splash_screen = SplashScreen()
@@ -271,7 +285,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 image_data = await api_requester.bytes(coin_icon_url)
                 pixmap.loadFromData(image_data)
             else:
-                pixmap.load("./solie/static/icon/blank_coin.png")
+                pixmap.load(f"{introduction.PATH}/static/icon/blank_coin.png")
             symbol_pixmaps[symbol] = pixmap
 
         token_icon_url = coin_icon_urls.get(asset_token, "")
@@ -415,7 +429,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         this_layout = self.horizontalLayout_13
         product_icon_pixmap = QtGui.QPixmap()
-        async with aiofiles.open("./solie/static/product_icon.png", mode="rb") as file:
+        filepath = f"{introduction.PATH}/static/product_icon.png"
+        async with aiofiles.open(filepath, mode="rb") as file:
             product_icon_data = await file.read()
         product_icon_pixmap.loadFromData(product_icon_data)
         product_icon_label = QtWidgets.QLabel("", self)
@@ -430,7 +445,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         this_layout.addWidget(spacing_text)
         title_label = BrandLabel(self, "SOLIE", 48)
         this_layout.addWidget(title_label)
-        text = introduction.CURRENT_VERSION
+        text = introduction.VERSION
         label = BrandLabel(self, text, 24)
         this_layout.addWidget(label)
 
@@ -1119,10 +1134,15 @@ def bring_to_life():
     # ■■■■■ theme ■■■■■
 
     # this part should be done after creating the app and before creating the window
-    cwd = os.getcwd()
-    QtGui.QFontDatabase.addApplicationFont(cwd + "/solie/static/source_code_pro.ttf")
-    QtGui.QFontDatabase.addApplicationFont(cwd + "/solie/static/notosans_regular.ttf")
-    QtGui.QFontDatabase.addApplicationFont(cwd + "/solie/static/lexend_bold.ttf")
+    QtGui.QFontDatabase.addApplicationFont(
+        f"{introduction.PATH}/static/source_code_pro.ttf"
+    )
+    QtGui.QFontDatabase.addApplicationFont(
+        f"{introduction.PATH}/static/notosans_regular.ttf"
+    )
+    QtGui.QFontDatabase.addApplicationFont(
+        f"{introduction.PATH}/static/lexend_bold.ttf"
+    )
     default_font = QtGui.QFont("Noto Sans", 9)
     app.setFont(default_font)
 

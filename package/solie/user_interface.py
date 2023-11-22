@@ -34,9 +34,6 @@ class Ui_MainWindow(object):
             MainWindow.setObjectName(u"MainWindow")
         MainWindow.resize(1280, 720)
         MainWindow.setMinimumSize(QSize(1280, 720))
-        icon = QIcon()
-        icon.addFile(u"solie/static/product_icon.png", QSize(), QIcon.Normal, QIcon.Off)
-        MainWindow.setWindowIcon(icon)
         MainWindow.setStyleSheet(u"QPushButton, QComboBox, QLineEdit, QCheckBox, QSpinBox, QDoubleSpinBox {\n"
 "	height: 1.8em;\n"
 "}\n"
@@ -856,7 +853,7 @@ class Ui_MainWindow(object):
         self.scrollArea_9.setWidgetResizable(True)
         self.scrollAreaWidgetContents_9 = QWidget()
         self.scrollAreaWidgetContents_9.setObjectName(u"scrollAreaWidgetContents_9")
-        self.scrollAreaWidgetContents_9.setGeometry(QRect(0, 0, 752, 690))
+        self.scrollAreaWidgetContents_9.setGeometry(QRect(0, 0, 1212, 584))
         self.horizontalLayout_6 = QHBoxLayout(self.scrollAreaWidgetContents_9)
         self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
         self.horizontalSpacer_10 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)

@@ -4,6 +4,8 @@ import os
 
 import aiofiles
 
+from solie import introduction
+
 _app_settings = {
     "datapath": None,
 }
@@ -17,7 +19,7 @@ async def load():
     global _app_settings
     global _data_settings
 
-    filepath = "./note/app_settings.json"
+    filepath = f"{introduction.PATH}/note/app_settings.json"
     if os.path.isfile(filepath):
         async with aiofiles.open(filepath, "r", encoding="utf8") as file:
             content = await file.read()
@@ -39,7 +41,7 @@ async def apply_app_settings(payload):
     global _app_settings
     payload = copy.deepcopy(payload)
     _app_settings = {**_app_settings, **payload}
-    filepath = "./note/app_settings.json"
+    filepath = f"{introduction.PATH}/note/app_settings.json"
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     async with aiofiles.open(filepath, "w", encoding="utf8") as file:
         content = json.dumps(_app_settings, indent=4)

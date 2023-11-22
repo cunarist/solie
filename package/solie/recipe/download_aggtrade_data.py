@@ -15,7 +15,7 @@ def do(target_tuple: tuple) -> pd.DataFrame | None:
         month_string = format(target_tuple[3], "02")
         day_string = format(target_tuple[4], "02")
         url = (
-            "https://data.binance.vision/data/futures/um/daily/aggTrades"
+            "https://data.binance.vision/static/futures/um/daily/aggTrades"
             + f"/{symbol}/{symbol}-aggTrades"
             + f"-{year_string}-{month_string}-{day_string}.zip"
         )
@@ -23,7 +23,7 @@ def do(target_tuple: tuple) -> pd.DataFrame | None:
         year_string = format(target_tuple[2], "04")
         month_string = format(target_tuple[3], "02")
         url = (
-            "https://data.binance.vision/data/futures/um/monthly/aggTrades"
+            "https://data.binance.vision/static/futures/um/monthly/aggTrades"
             + f"/{symbol}/{symbol}-aggTrades"
             + f"-{year_string}-{month_string}.zip"
         )

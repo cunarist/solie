@@ -41,7 +41,9 @@ class SplashScreen(QtWidgets.QFrame):
         this_layout = QtWidgets.QHBoxLayout()
         central_layout.addLayout(this_layout)
         product_icon_pixmap = QtGui.QPixmap()
-        async with aiofiles.open("./solie/static/product_icon.png", mode="rb") as file:
+        async with aiofiles.open(
+            f"{introduction.PATH}/static/product_icon.png", mode="rb"
+        ) as file:
             product_icon_data = await file.read()
         product_icon_pixmap.loadFromData(product_icon_data)
         product_icon_label = QtWidgets.QLabel("", self)
@@ -56,7 +58,7 @@ class SplashScreen(QtWidgets.QFrame):
         this_layout.addWidget(spacing_text)
         title_label = BrandLabel(self, "SOLIE", 48)
         this_layout.addWidget(title_label)
-        text = introduction.CURRENT_VERSION
+        text = introduction.VERSION
         label = BrandLabel(self, text, 24)
         this_layout.addWidget(label)
 

@@ -643,8 +643,6 @@ class Collector:
         async with combined_df.read_lock as wrapper:
             combined_df_inner = wrapper.inner
 
-        del combined_df
-
         async with self.candle_data.write_lock as wrapper:
             inner = wrapper.inner
             df = await solie.event_loop.run_in_executor(

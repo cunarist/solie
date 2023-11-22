@@ -2,6 +2,7 @@ import aiofiles
 from PySide6 import QtCore, QtWidgets
 
 import solie
+from solie import introduction
 from solie.recipe import open_browser, outsource
 from solie.widget.script_editor import ScriptEditor
 from solie.widget.vertical_divider import VerticalDivider
@@ -118,14 +119,14 @@ class StrategyDevelopInput(QtWidgets.QWidget):
         # sample script button
         async def job_as(*args):
             # indicators script
-            filepath = "./solie/static/sample_indicators_script.txt"
+            filepath = f"{introduction.PATH}/static/sample_indicators_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 script = await file.read()
 
             indicators_script_input.setPlainText(script)
 
             # decision script
-            filepath = "./solie/static/sample_decision_script.txt"
+            filepath = f"{introduction.PATH}/static/sample_decision_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 script = await file.read()
 

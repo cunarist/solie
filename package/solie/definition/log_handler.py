@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 import aiofiles
 
 import solie
+from solie import introduction
 from solie.overlay.long_text_view import LongTextView
 
 
@@ -23,11 +24,13 @@ class LogHandler(logging.Handler):
         log_formatter.converter = time.gmtime
         self.setFormatter(log_formatter)
 
-        os.makedirs("./logs", exist_ok=True)
+        os.makedirs(f"{introduction.PATH}/note/logs", exist_ok=True)
         now = self.executed_time
         self.filepath = (
-            f"./logs/{now.year:04}-{now.month:02}-{now.day:02}"
-            + f".{now.hour:02}-{now.minute:02}-{now.second:02}.{now.tzinfo}.txt"
+            f"{introduction.PATH}/note/logs"
+            + f"/{now.year:04}-{now.month:02}-{now.day:02}"
+            + f".{now.hour:02}-{now.minute:02}-{now.second:02}"
+            + f".{now.tzinfo}.txt"
         )
 
     def emit(self, log_record: logging.LogRecord):

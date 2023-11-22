@@ -19,10 +19,6 @@
   <property name="windowTitle">
    <string>Solie</string>
   </property>
-  <property name="windowIcon">
-   <iconset>
-    <normaloff>solie/static/product_icon.png</normaloff>solie/static/product_icon.png</iconset>
-  </property>
   <property name="styleSheet">
    <string notr="true">QPushButton, QComboBox, QLineEdit, QCheckBox, QSpinBox, QDoubleSpinBox {
 	height: 1.8em;
@@ -1318,8 +1314,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>752</width>
-                 <height>690</height>
+                 <width>1212</width>
+                 <height>584</height>
                 </rect>
                </property>
                <layout class="QHBoxLayout" name="horizontalLayout_6">

@@ -6,6 +6,7 @@ import aiofiles
 from PySide6 import QtGui, QtWidgets
 
 import solie
+from solie import introduction
 from solie.overlay.strategy_basic_input import StrategyBasicInput
 from solie.overlay.strategy_develop_input import StrategyDevelopInput
 from solie.recipe import outsource, standardize, user_settings
@@ -30,11 +31,15 @@ class Strategiest:
         self.before_selections = {}
 
         self.red_pixmap = QtGui.QPixmap()
-        self.red_pixmap.load("./solie/static/icon/traffic_light_red.png")
+        self.red_pixmap.load(f"{introduction.PATH}/static/icon/traffic_light_red.png")
         self.yellow_pixmap = QtGui.QPixmap()
-        self.yellow_pixmap.load("./solie/static/icon/traffic_light_yellow.png")
+        self.yellow_pixmap.load(
+            f"{introduction.PATH}/static/icon/traffic_light_yellow.png"
+        )
         self.green_pixmap = QtGui.QPixmap()
-        self.green_pixmap.load("./solie/static/icon/traffic_light_green.png")
+        self.green_pixmap.load(
+            f"{introduction.PATH}/static/icon/traffic_light_green.png"
+        )
 
         # ■■■■■ repetitive schedules ■■■■■
 
@@ -60,11 +65,11 @@ class Strategiest:
                 + " This strategy is only for demonstration purposes."
             )
             first_strategy["risk_level"] = 2
-            filepath = "./solie/static/sample_indicators_script.txt"
+            filepath = f"{introduction.PATH}/static/sample_indicators_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 read_data = await file.read()
                 first_strategy["indicators_script"] = read_data
-            filepath = "./solie/static/sample_decision_script.txt"
+            filepath = f"{introduction.PATH}/static/sample_decision_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 read_data = await file.read()
                 first_strategy["decision_script"] = read_data

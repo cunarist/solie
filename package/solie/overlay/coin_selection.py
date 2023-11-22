@@ -3,12 +3,13 @@ import asyncio
 from PySide6 import QtCore, QtGui, QtWidgets
 
 import solie
+from solie import introduction
 from solie.definition.api_requester import ApiRequester
 from solie.recipe import outsource, user_settings
 from solie.widget.horizontal_divider import HorizontalDivider
 
 
-class TokenSelection(QtWidgets.QWidget):
+class CoinSelection(QtWidgets.QWidget):
     def __init__(self, done_event, payload):
         super().__init__()
         self.is_closed = False
@@ -18,13 +19,14 @@ class TokenSelection(QtWidgets.QWidget):
     async def fill(self, done_event):
         # ■■■■■ for remembering ■■■■■
 
-        token_radioboxes = {}
-
-        # ■■■■■ prepare the api requester ■■■■■
-
         api_requester = ApiRequester()
+        symbol_checkboxes = {}
 
-        # ■■■■■ get all symbols ■■■■■
+        # ■■■■■ get previous things ■■■■■
+
+        asset_token = user_settings.get_data_settings()["asset_token"]
+
+        # ■■■■■ get available symbols ■■■■■
 
         available_symbols = []
 
@@ -36,7 +38,8 @@ class TokenSelection(QtWidgets.QWidget):
         about_symbols = response["symbols"]
         for about_symbol in about_symbols:
             symbol = about_symbol["symbol"]
-            available_symbols.append(symbol)
+            if symbol.endswith(asset_token):
+                available_symbols.append(symbol)
 
         # ■■■■■ get coin informations ■■■■■
 
@@ -58,15 +61,18 @@ class TokenSelection(QtWidgets.QWidget):
             coin_icon_urls[coin_symbol] = about_coin["image"]
             coin_ranks[coin_symbol] = about_coin["market_cap_rank"]
 
-        # ■■■■■ set things ■■■■■
+        # ■■■■■ sort symbols by rank ■■■■■
 
-        available_tokens = ["USDT", "BUSD"]
-        number_of_markets = {token: 0 for token in available_tokens}
-
-        for symbol in available_symbols:
-            for token in available_tokens:
-                if symbol.endswith(token):
-                    number_of_markets[token] += 1
+        for rank in range(250, 0, -1):
+            if rank not in coin_ranks.values():
+                continue
+            index_to_find = list(coin_ranks.values()).index(rank)
+            coin_symbol = list(coin_ranks.keys())[index_to_find]
+            symbol = coin_symbol + asset_token
+            if symbol not in available_symbols:
+                continue
+            original_index = available_symbols.index(symbol)
+            available_symbols.insert(0, available_symbols.pop(original_index))
 
         # ■■■■■ full layout ■■■■■
 
@@ -95,7 +101,10 @@ class TokenSelection(QtWidgets.QWidget):
 
         # explanation
         detail_text = QtWidgets.QLabel()
-        detail_text.setText("These are all available tokens on Binance.")
+        detail_text.setText(
+            "These are all available coins on Binance."
+            "\nYou can select a minimum of 1 and a maximum of 12."
+        )
         detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         detail_text.setWordWrap(True)
         card_layout.addWidget(detail_text)
@@ -119,26 +128,32 @@ class TokenSelection(QtWidgets.QWidget):
         card_layout.addWidget(spacing_text)
 
         # input
-        token_icon_labels = {}
+        symbol_icon_labels = {}
         input_layout = QtWidgets.QGridLayout()
         blank_coin_pixmap = QtGui.QPixmap()
-        blank_coin_pixmap.load("./solie/static/icon/blank_coin.png")
-        for turn, token in enumerate(available_tokens):
+        blank_coin_pixmap.load(f"{introduction.PATH}/static/icon/blank_coin.png")
+        for turn, symbol in enumerate(available_symbols):
+            coin_symbol = symbol.removesuffix(asset_token)
+            coin_name = coin_names.get(coin_symbol, "")
+            coin_rank = coin_ranks.get(coin_symbol, 0)
             this_layout = QtWidgets.QHBoxLayout()
             row = turn // 2
             column = turn % 2
             input_layout.addLayout(this_layout, row, column)
-            radiobutton = QtWidgets.QRadioButton(card)
-            token_radioboxes[token] = radiobutton
-            this_layout.addWidget(radiobutton)
+            checkbox = QtWidgets.QCheckBox(card)
+            symbol_checkboxes[symbol] = checkbox
+            this_layout.addWidget(checkbox)
             icon_label = QtWidgets.QLabel("", card)
             icon_label.setPixmap(blank_coin_pixmap)
             icon_label.setScaledContents(True)
             icon_label.setFixedSize(40, 40)
             icon_label.setMargin(5)
             this_layout.addWidget(icon_label)
-            token_icon_labels[token] = icon_label
-            text = f"{token} ({number_of_markets[token]} coins available)"
+            symbol_icon_labels[symbol] = icon_label
+            if coin_name == "":
+                text = coin_symbol
+            else:
+                text = f"{coin_rank} - {coin_name} ({coin_symbol})"
             text_label = QtWidgets.QLabel(text, card)
             this_layout.addWidget(text_label)
             spacer = QtWidgets.QSpacerItem(
@@ -155,26 +170,27 @@ class TokenSelection(QtWidgets.QWidget):
         # confirm function
         async def job_cf(*args):
             data_settings = {}
-            selected_tokens = []
-            for symbol, radiobox in token_radioboxes.items():
-                is_selected = radiobox.isChecked()
-                if is_selected:
-                    selected_tokens.append(symbol)
-            if len(selected_tokens) == 1:
+            selected_symbols = []
+            for symbol, checkbox in symbol_checkboxes.items():
+                is_checked = checkbox.isChecked()
+                if is_checked:
+                    selected_symbols.append(symbol)
+            if 1 <= len(selected_symbols) <= 12:
                 is_symbol_count_ok = True
-                data_settings["asset_token"] = selected_tokens[0]
+                data_settings["target_symbols"] = selected_symbols
             else:
                 is_symbol_count_ok = False
                 question = [
-                    "Nothing selected",
-                    "Choose one of the tokens.",
+                    "Select a proper number of coins",
+                    "You can select a minimum of 1 and a maximum of 12.",
                     ["Okay"],
                 ]
                 await solie.window.ask(question)
             if is_symbol_count_ok:
                 question = [
                     "Okay to proceed?",
-                    "Solie will treat this token as your asset.",
+                    "You cannot change your selections unless you make a new data"
+                    " folder.",
                     ["No", "Yes"],
                 ]
                 answer = await solie.window.ask(question)
@@ -213,9 +229,10 @@ class TokenSelection(QtWidgets.QWidget):
 
         # ■■■■■ draw coin icons from another task ■■■■■
 
-        async def job_dc():
-            for token, icon_label in token_icon_labels.items():
-                coin_icon_url = coin_icon_urls.get(token, "")
+        async def draw_icons():
+            for symbol, icon_label in symbol_icon_labels.items():
+                coin_symbol = symbol.removesuffix(asset_token)
+                coin_icon_url = coin_icon_urls.get(coin_symbol, "")
                 if coin_icon_url == "":
                     continue
                 image_data = await api_requester.bytes(coin_icon_url)
@@ -227,4 +244,4 @@ class TokenSelection(QtWidgets.QWidget):
 
                 icon_label.setPixmap(pixmap)
 
-        asyncio.create_task(job_dc())
+        asyncio.create_task(draw_icons())
