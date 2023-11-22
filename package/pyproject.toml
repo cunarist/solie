@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "solie"
-version = "8.0.2"
+version = "8.0.3"
 description = "Backtesting and auto-trading cryptos with intuitive GUI on Binance futures"
 authors = ["Cunarist"]
 readme = "README.md"
