@@ -2,9 +2,9 @@
 
 There are things that must be known in the process of making Solie. Guides below will help you dive into the Solie codebase.
 
-## 🧮 Preparing the Repository
+When using terminal commands from the following sections, always make sure that your current working directory is the `package` folder of this project.
 
-> When using terminal commands from the following steps, always make sure that your current working directory is the folder of this project.
+## 🧮 Preparing the Repository
 
 You need to install some components on your system first.
 
@@ -22,7 +22,6 @@ pipx install poetry
 Install the dependencies. You only have to do this once.
 
 ```bash
-cd package
 poetry install
 ```
 
