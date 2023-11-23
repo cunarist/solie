@@ -1,5 +1,4 @@
 import io
-from urllib.error import HTTPError
 from urllib.request import urlopen
 
 import numpy as np
@@ -30,9 +29,15 @@ def do(target_tuple: tuple) -> pd.DataFrame | None:
     else:
         raise ValueError("This download type is not supported")
 
-    try:
-        zipped_csv_data = io.BytesIO(urlopen(url).read())
-    except HTTPError:
+    zipped_csv_data = None
+    for _ in range(5):
+        try:
+            zipped_csv_data = io.BytesIO(urlopen(url).read())
+            break
+        except Exception:
+            pass
+
+    if zipped_csv_data is None:
         return
 
     try:
