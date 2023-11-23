@@ -19,20 +19,28 @@ class ApiStreamer:
         asyncio.create_task(self._close_self())
 
     async def _run_websocket(self):
-        async with self.session.ws_connect(self._url) as ws:
-            async for received_raw in ws:
-                if solie.app_close_event.is_set():
-                    return
-                if received_raw.type in (
-                    aiohttp.WSMsgType.CLOSED,
-                    aiohttp.WSMsgType.ERROR,
-                ):
-                    asyncio.create_task(self._run_websocket())
-                    raise ConnectionError(f"Websocket reconnected:\n{self._url}")
-                else:
-                    received = received_raw.json()
-                    asyncio.create_task(self._when_received(received=received))
+        while True:
+            try:
+                async with self.session.ws_connect(self._url) as websocket:
+                    solie.logger.info(f"Websocket connected: {self._url}")
+                    async for received_raw in websocket:
+                        if solie.app_close_event.is_set():
+                            return
+                        if received_raw.type in (
+                            aiohttp.WSMsgType.CLOSED,
+                            aiohttp.WSMsgType.ERROR,
+                        ):
+                            solie.logger.info(f"Websocket closed: {self._url}")
+                            break
+                        else:
+                            received = received_raw.json()
+                            asyncio.create_task(self._when_received(received=received))
+                    solie.logger.info(f"Websocket stopped: {self._url}")
+            except Exception as error:
+                # Handle errors that might occur due to network issues
+                solie.logger.exception(f"Websocket error: {error}")
+                # Wait for a few seconds before attempting to reconnect
+                await asyncio.sleep(5)
 
     async def _close_self(self):
         await self.session.close()
-        solie.logger.exception(f"Websocket closed:\n{self._url}")
