@@ -148,7 +148,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ app behavior settings ■■■■■
 
         self.should_finalize = False
-        self.should_confirm_closing = True
+        self.should_confirm_closing = False
         self.should_overlap_error = False
         self.last_interaction = datetime.now(timezone.utc)
 
@@ -1070,10 +1070,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.scheduler.start()
 
-        # ■■■■■ activate finalization ■■■■■
-
-        self.should_finalize = True
-
         # ■■■■■ start basic functions ■■■■■
 
         asyncio.create_task(self.collector.get_exchange_information())
@@ -1091,6 +1087,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ wait until the contents are filled ■■■■■
 
         await asyncio.sleep(1)
+
+        # ■■■■■ change closing behavior ■■■■■
+
+        self.should_finalize = True
+        self.should_confirm_closing = True
 
         # ■■■■■ show main widgets ■■■■■
 
