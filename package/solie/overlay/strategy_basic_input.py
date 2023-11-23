@@ -3,7 +3,6 @@ import re
 from PySide6 import QtCore, QtGui, QtWidgets
 
 import solie
-from solie import introduction
 from solie.recipe import compare_versions, outsource
 from solie.widget.horizontal_divider import HorizontalDivider
 
@@ -86,11 +85,11 @@ class StrategyBasicInput(QtWidgets.QWidget):
         this_layout.addRow("Description", description_input)
         risk_level_input = QtWidgets.QComboBox()
         red_pixmap = QtGui.QPixmap()
-        red_pixmap.load(f"{introduction.PATH}/static/icon/traffic_light_red.png")
+        red_pixmap.load(f"{solie.PATH}/static/icon/traffic_light_red.png")
         yellow_pixmap = QtGui.QPixmap()
-        yellow_pixmap.load(f"{introduction.PATH}/static/icon/traffic_light_yellow.png")
+        yellow_pixmap.load(f"{solie.PATH}/static/icon/traffic_light_yellow.png")
         green_pixmap = QtGui.QPixmap()
-        green_pixmap.load(f"{introduction.PATH}/static/icon/traffic_light_green.png")
+        green_pixmap.load(f"{solie.PATH}/static/icon/traffic_light_green.png")
         risk_level_input.addItem(red_pixmap, "High")
         risk_level_input.addItem(yellow_pixmap, "Middle")
         risk_level_input.addItem(green_pixmap, "Low")

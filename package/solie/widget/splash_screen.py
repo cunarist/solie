@@ -3,7 +3,7 @@ import asyncio
 import aiofiles
 from PySide6 import QtGui, QtWidgets
 
-from solie import introduction
+import solie
 from solie.widget.brand_label import BrandLabel
 
 
@@ -42,7 +42,7 @@ class SplashScreen(QtWidgets.QFrame):
         central_layout.addLayout(this_layout)
         product_icon_pixmap = QtGui.QPixmap()
         async with aiofiles.open(
-            f"{introduction.PATH}/static/product_icon.png", mode="rb"
+            f"{solie.PATH}/static/product_icon.png", mode="rb"
         ) as file:
             product_icon_data = await file.read()
         product_icon_pixmap.loadFromData(product_icon_data)
@@ -58,7 +58,7 @@ class SplashScreen(QtWidgets.QFrame):
         this_layout.addWidget(spacing_text)
         title_label = BrandLabel(self, "SOLIE", 48)
         this_layout.addWidget(title_label)
-        text = introduction.VERSION
+        text = solie.VERSION
         label = BrandLabel(self, text, 24)
         this_layout.addWidget(label)
 

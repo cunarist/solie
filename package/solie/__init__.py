@@ -6,6 +6,8 @@ import os
 import sys
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timezone
+from importlib import import_module, metadata
+from inspect import getfile
 from typing import Callable, Coroutine
 
 import aiofiles
@@ -15,7 +17,6 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtCore, QtGui, QtWidgets
 from qasync import QEventLoop
 
-from solie import introduction
 from solie.definition.api_requester import ApiRequester
 from solie.definition.log_handler import LogHandler
 from solie.definition.percent_axis_item import PercentAxisItem
@@ -37,6 +38,9 @@ from solie.widget.overlay_panel import OverlayPanel
 from solie.widget.splash_screen import SplashScreen
 from solie.widget.symbol_box import SymbolBox
 from solie.worker import collector, manager, simulator, strategist, transactor
+
+VERSION = metadata.version("solie")
+PATH = os.path.dirname(getfile(import_module("solie"))).replace("\\", "/")
 
 
 class Window(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -168,7 +172,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ window icon ■■■■■
 
-        filepath = f"{introduction.PATH}/static/product_icon.png"
+        filepath = f"{PATH}/static/product_icon.png"
         async with aiofiles.open(filepath, mode="rb") as file:
             product_icon_data = await file.read()
         product_icon_pixmap = QtGui.QPixmap()
@@ -285,7 +289,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 image_data = await api_requester.bytes(coin_icon_url)
                 pixmap.loadFromData(image_data)
             else:
-                pixmap.load(f"{introduction.PATH}/static/icon/blank_coin.png")
+                pixmap.load(f"{PATH}/static/icon/blank_coin.png")
             symbol_pixmaps[symbol] = pixmap
 
         token_icon_url = coin_icon_urls.get(asset_token, "")
@@ -429,7 +433,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         this_layout = self.horizontalLayout_13
         product_icon_pixmap = QtGui.QPixmap()
-        filepath = f"{introduction.PATH}/static/product_icon.png"
+        filepath = f"{PATH}/static/product_icon.png"
         async with aiofiles.open(filepath, mode="rb") as file:
             product_icon_data = await file.read()
         product_icon_pixmap.loadFromData(product_icon_data)
@@ -445,7 +449,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         this_layout.addWidget(spacing_text)
         title_label = BrandLabel(self, "SOLIE", 48)
         this_layout.addWidget(title_label)
-        text = introduction.VERSION
+        text = VERSION
         label = BrandLabel(self, text, 24)
         this_layout.addWidget(label)
 
@@ -1138,15 +1142,9 @@ def bring_to_life():
     # ■■■■■ theme ■■■■■
 
     # this part should be done after creating the app and before creating the window
-    QtGui.QFontDatabase.addApplicationFont(
-        f"{introduction.PATH}/static/source_code_pro.ttf"
-    )
-    QtGui.QFontDatabase.addApplicationFont(
-        f"{introduction.PATH}/static/notosans_regular.ttf"
-    )
-    QtGui.QFontDatabase.addApplicationFont(
-        f"{introduction.PATH}/static/lexend_bold.ttf"
-    )
+    QtGui.QFontDatabase.addApplicationFont(f"{PATH}/static/source_code_pro.ttf")
+    QtGui.QFontDatabase.addApplicationFont(f"{PATH}/static/notosans_regular.ttf")
+    QtGui.QFontDatabase.addApplicationFont(f"{PATH}/static/lexend_bold.ttf")
     default_font = QtGui.QFont("Noto Sans", 9)
     app.setFont(default_font)
 
