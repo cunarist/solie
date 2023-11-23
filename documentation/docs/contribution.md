@@ -8,7 +8,7 @@ When using terminal commands from the following sections, always make sure that 
 
 You need to install some components on your system first.
 
-First, install [Python](https://www.python.org/). We recommend using the official installer provided from the website to ensure stability. Don't forget to add `python` command to PATH during the installation.
+First, install [Python](https://www.python.org/). We recommend using the official Python installer provided from the website to ensure stability. Don't forget to add `python` command to PATH during the installation.
 
 Then, make sure [Poetry](https://python-poetry.org/) is installed on your system.
 
