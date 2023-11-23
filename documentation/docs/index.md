@@ -43,4 +43,4 @@ python -m solie
 
 - ✅ Windows: Working fine
 - ✅ Linux: Working fine
-- ⏸️ macOS: [Partially working](https://github.com/cunarist/solie/issues/87)
+- ⏸️ macOS: [Currently unstable](https://github.com/cunarist/solie/issues/87)
