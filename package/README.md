@@ -43,7 +43,7 @@ python -m solie
 
 ## 📖 Documentation
 
-Read the [documentation](https://solie-docs.cunarist.com) to understand how to turn on auto-trading, make your own strategies with the interal API, and get involved in Solie development.
+Read the [documentation](https://solie-docs.cunarist.com) to understand how to turn on auto-trading, make your own strategies with the internal API, and get involved in Solie development.
 
 ## 🤲 Development Support
 
