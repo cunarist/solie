@@ -1189,3 +1189,5 @@ def bring_to_life():
     event_loop.create_task(window.boot())
     event_loop.run_until_complete(app_close_event.wait())
     event_loop.close()
+
+    sys.exit()
