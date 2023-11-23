@@ -8,15 +8,15 @@ from datetime import datetime, timezone
 import aiofiles
 
 import solie
-from solie import introduction
 from solie.overlay.long_text_view import LongTextView
 
 
 class LogHandler(logging.Handler):
-    def __init__(self):
+    def __init__(self, log_path: str):
         super().__init__()
 
-        self.executed_time = datetime.now(timezone.utc).replace(microsecond=0)
+        os.makedirs(log_path, exist_ok=True)
+        self.log_path = log_path
 
         log_format = "%(asctime)s.%(msecs)03d %(levelname)s"
         date_format = "%Y-%m-%d %H:%M:%S"
@@ -24,11 +24,9 @@ class LogHandler(logging.Handler):
         log_formatter.converter = time.gmtime
         self.setFormatter(log_formatter)
 
-        os.makedirs(f"{introduction.PATH}/note/logs", exist_ok=True)
-        now = self.executed_time
-        self.filepath = (
-            f"{introduction.PATH}/note/logs"
-            + f"/{now.year:04}-{now.month:02}-{now.day:02}"
+        now = datetime.now(timezone.utc).replace(microsecond=0)
+        self.filename = (
+            f"{now.year:04}-{now.month:02}-{now.day:02}"
             + f".{now.hour:02}-{now.minute:02}-{now.second:02}"
             + f".{now.tzinfo}.txt"
         )
@@ -87,6 +85,7 @@ class LogHandler(logging.Handler):
         solie.window.listWidget.addItem(summarization, log_content)
 
         # save to file
-        async with aiofiles.open(self.filepath, "a", encoding="utf8") as file:
+        filepath = f"{self.log_path}/{self.filename}"
+        async with aiofiles.open(filepath, "a", encoding="utf8") as file:
             await file.write(f"{summarization}\n")
             await file.write(f"{log_content}\n\n")
