@@ -11,8 +11,6 @@ python = "^3.9,<3.13"
 solie = { path = "solie/", develop = true }
 documentation = { path = "documentation/", develop = true }
 
-[tool.poetry.group.docs.dependencies]
-
 [tool.poetry.dev-dependencies]
 ruff = "*"
 pyright = "*"
