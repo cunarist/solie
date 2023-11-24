@@ -1,9 +1,0 @@
-[tool.poetry]
-name = "test"
-version = "0.1.0"
-description = "Check that Solie works fine when published to PyPI"
-authors = ["Cunarist"]
-
-[tool.poetry.dependencies]
-python = "^3.9,<3.13"
-solie = { path = "../package", develop = false }

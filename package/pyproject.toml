@@ -27,15 +27,6 @@ time-machine = "^2.13.0"
 pyperclip = "^1.8.2"
 xdialog = "^1.1.1"
 
-[tool.poetry.dev-dependencies]
-ruff = "*"
-pyright = "*"
-pygount = "*"
-
-[tool.ruff]
-extend-select = ["N", "I", "T20"]
-exclude = ["solie/user_interface.py"]
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "docs"
+name = "documentation"
 version = "0.1.0"
-description = "Documentations for all Cunarist products"
-authors = ["DongHyun Kim <temeddix@gmail.com>"]
+description = ""
+authors = []
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -13,4 +13,4 @@ mkdocs-glightbox = "^0.3.4"
 
 [build-system]
 requires = ["poetry-core"]
-build-backend = "poetry.solie.masonry.api"
+build-backend = "poetry.core.masonry.api"
