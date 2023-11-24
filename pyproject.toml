@@ -4,17 +4,17 @@ version = "0.1.0"
 description = ""
 authors = []
 
-[tool.poetry.group.main.dependencies]
+[tool.poetry.dependencies]
 python = "^3.9,<3.13"
-
-[tool.poetry.group.dev.dependencies]
-solie = { path = "solie/", develop = true }
-documentation = { path = "documentation/", develop = true }
 
 [tool.poetry.dev-dependencies]
 ruff = "*"
 pyright = "*"
 pygount = "*"
+
+[tool.poetry.group.members.dependencies]
+solie = { path = "solie/", develop = true }
+documentation = { path = "documentation/", develop = true }
 
 [tool.ruff]
 extend-select = ["N", "I", "T20"]
@@ -23,7 +23,3 @@ exclude = ["solie/solie/user_interface.py"]
 [tool.pyright]
 typeCheckingMode = "basic"
 ignore = ["solie/solie/user_interface.py"]
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
