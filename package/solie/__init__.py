@@ -1071,6 +1071,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         await asyncio.gather(
             *[job() for job in self.initialize_functions],
+            return_exceptions=True,
         )
 
         # ■■■■■ start repetitive timer ■■■■■
