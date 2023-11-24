@@ -1190,4 +1190,6 @@ def bring_to_life():
     event_loop.run_until_complete(app_close_event.wait())
     event_loop.close()
 
+    # ■■■■■ Make sure nothing happens after Solie ■■■■■
+
     sys.exit()
