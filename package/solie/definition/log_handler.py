@@ -1,14 +1,12 @@
 import asyncio
 import logging
 import os
-import sys
 import time
 from datetime import datetime, timezone
 
 import aiofiles
 
 import solie
-from solie.overlay.long_text_view import LongTextView
 
 
 class LogHandler(logging.Handler):
@@ -52,29 +50,12 @@ class LogHandler(logging.Handler):
             summarization += f" - {first_line_content}"
             summarization = summarization[:80]
 
-        if not solie.app_close_event.is_set():
-            if solie.window.should_overlap_error:
-
-                async def job(log_content=log_content):
-                    formation = [
-                        "There was an error",
-                        LongTextView,
-                        False,
-                        [log_content],
-                    ]
-                    await solie.window.overlay(formation)
-
-                asyncio.create_task(job())
-
-            else:
-                asyncio.create_task(
-                    self.add_log_output(
-                        summarization,
-                        log_content,
-                    ),
-                )
-        else:
-            sys.stdout.write(log_content)
+        asyncio.create_task(
+            self.add_log_output(
+                summarization,
+                log_content,
+            )
+        )
 
     async def add_log_output(self, *args, **kwargs):
         # get the data

@@ -77,9 +77,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.scheduler.shutdown()
             await asyncio.sleep(1)
 
-            self.should_overlap_error = True
-            await asyncio.gather(
-                *[finalize_function() for finalize_function in self.finalize_functions],
+            await asyncio.wait(
+                [asyncio.create_task(job()) for job in self.finalize_functions]
             )
 
             app_close_event.set()
@@ -153,7 +152,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.should_finalize = False
         self.should_confirm_closing = False
-        self.should_overlap_error = False
         self.last_interaction = datetime.now(timezone.utc)
 
         # ■■■■■ hide some of the main widgets ■■■■■
@@ -1069,9 +1067,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ initialize functions ■■■■■
 
-        await asyncio.gather(
-            *[job() for job in self.initialize_functions],
-            return_exceptions=True,
+        await asyncio.wait(
+            [asyncio.create_task(job()) for job in self.initialize_functions]
         )
 
         # ■■■■■ start repetitive timer ■■■■■
