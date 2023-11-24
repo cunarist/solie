@@ -24,7 +24,7 @@ from solie.recipe import (
     open_browser,
     remember_task_durations,
     simply_format,
-    sort_dataframe,
+    sort_pandas,
     standardize,
     stop_flag,
     user_settings,
@@ -150,7 +150,11 @@ class Collector:
                 divided_datas.append(more_df)
             concatenated = pd.concat(divided_datas)
             if not concatenated.index.is_monotonic_increasing:
-                concatenated = concatenated.sort_index()
+                concatenated = await solie.event_loop.run_in_executor(
+                    solie.process_pool,
+                    sort_pandas.do,
+                    concatenated,
+                )
             cell.data = concatenated
         await asyncio.sleep(0)
 
@@ -161,7 +165,11 @@ class Collector:
             original_index = cell.data.index
             unique_index = original_index.drop_duplicates()
             cell.data = cell.data.reindex(unique_index)
-            cell.data = cell.data.sort_index()
+            cell.data = await solie.event_loop.run_in_executor(
+                solie.process_pool,
+                sort_pandas.do,
+                cell.data,
+            )
             cell.data = cell.data.asfreq("10S")
             cell.data = cell.data.astype(np.float32)
 
@@ -277,7 +285,9 @@ class Collector:
                     continue
 
                 recent_candle_data = await solie.event_loop.run_in_executor(
-                    solie.process_pool, sort_dataframe.do, recent_candle_data
+                    solie.process_pool,
+                    sort_pandas.do,
+                    recent_candle_data,
                 )
 
                 from_moment = current_moment - timedelta(hours=24)
@@ -348,7 +358,11 @@ class Collector:
             # read the data again
             temp_df = cell.data[cell.data.index >= split_moment]
             recent_candle_data = recent_candle_data.combine_first(temp_df)
-            recent_candle_data = recent_candle_data.sort_index()
+            recent_candle_data = await solie.event_loop.run_in_executor(
+                solie.process_pool,
+                sort_pandas.do,
+                recent_candle_data,
+            )
             candle_data = pd.concat([original_candle_data, recent_candle_data])
             cell.data = candle_data
 
@@ -774,7 +788,11 @@ class Collector:
             for column_name, new_data_value in new_datas.items():
                 cell.data.loc[before_moment, column_name] = new_data_value
             if not cell.data.index.is_monotonic_increasing:
-                cell.data = cell.data.sort_index()
+                cell.data = await solie.event_loop.run_in_executor(
+                    solie.process_pool,
+                    sort_pandas.do,
+                    cell.data,
+                )
 
         duration = (datetime.now(timezone.utc) - current_moment).total_seconds()
         remember_task_durations.add("add_candle_data", duration)
