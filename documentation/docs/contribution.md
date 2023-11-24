@@ -2,7 +2,7 @@
 
 There are things that must be known in the process of making Solie. Guides below will help you dive into the Solie codebase.
 
-When using terminal commands from the following sections, always make sure that your current working directory is the `package` folder of this project.
+When using terminal commands from the following sections, always make sure that your current working directory is the root folder of the cloned repository.
 
 ## 🧮 Preparing the Repository
 
@@ -30,7 +30,7 @@ Activate the Poetry shell and run the code.
 ```bash
 poetry shell
 # Once you've activated the shell, you don't need to do it again
-python solie
+python -m solie
 ```
 
 ## 🧰 Debugging
@@ -85,7 +85,7 @@ pyside6-designer
 After editing the UI file, you have to compile it as a Python module.
 
 ```bash
-pyside6-uic ../craft/user_interface.ui -o solie/user_interface.py
+pyside6-uic craft/user_interface.ui -o solie/solie/user_interface.py
 ```
 
 ## 🚦 Rules
