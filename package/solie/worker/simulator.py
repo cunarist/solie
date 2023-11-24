@@ -138,9 +138,8 @@ class Simulator:
 
         # ■■■■■ check if the data exists ■■■■■
 
-        async with solie.window.collector.candle_data.read_lock as wrapper:
-            inner = wrapper.inner
-            if len(inner) == 0:
+        async with solie.window.collector.candle_data.read_lock as cell:
+            if len(cell.data) == 0:
                 return
 
         # ■■■■■ wait for the latest data to be added ■■■■■
@@ -153,9 +152,8 @@ class Simulator:
             for _ in range(50):
                 if stop_flag.find(task_name, task_id):
                     return
-                async with solie.window.collector.candle_data.read_lock as wrapper:
-                    inner = wrapper.inner
-                    last_index = inner.index[-1]
+                async with solie.window.collector.candle_data.read_lock as cell:
+                    last_index = cell.data.index[-1]
                     if last_index == before_moment:
                         break
                 await asyncio.sleep(0.1)
@@ -172,13 +170,12 @@ class Simulator:
 
         # ■■■■■ get light data ■■■■■
 
-        async with solie.window.collector.realtime_data_chunks.read_lock as wrapper:
-            inner = wrapper.inner
-            before_chunk = inner[-2].copy()
-            current_chunk = inner[-1].copy()
+        async with solie.window.collector.realtime_data_chunks.read_lock as cell:
+            before_chunk = cell.data[-2].copy()
+            current_chunk = cell.data[-1].copy()
         realtime_data = np.concatenate((before_chunk, current_chunk))
-        async with solie.window.collector.aggregate_trades.read_lock as wrapper:
-            aggregate_trades = wrapper.inner.copy()
+        async with solie.window.collector.aggregate_trades.read_lock as cell:
+            aggregate_trades = cell.data.copy()
 
         # ■■■■■ draw light lines ■■■■■
 
@@ -293,25 +290,21 @@ class Simulator:
 
         # ■■■■■ get heavy data ■■■■■
 
-        async with solie.window.collector.candle_data.read_lock as wrapper:
-            inner = wrapper.inner
-            inner = inner[get_from:slice_until][[symbol]]
-            candle_data = inner.copy()
-        async with self.unrealized_changes.read_lock as wrapper:
-            unrealized_changes = wrapper.inner.copy()
-        async with self.asset_record.read_lock as wrapper:
-            inner = wrapper.inner
-            if len(inner) > 0:
-                last_asset = inner.iloc[-1]["Result Asset"]
+        async with solie.window.collector.candle_data.read_lock as cell:
+            candle_data = cell.data[get_from:slice_until][[symbol]].copy()
+        async with self.unrealized_changes.read_lock as cell:
+            unrealized_changes = cell.data.copy()
+        async with self.asset_record.read_lock as cell:
+            if len(cell.data) > 0:
+                last_asset = cell.data.iloc[-1]["Result Asset"]
             else:
                 last_asset = None
-            before_record = inner[:slice_from]
-            inner = inner[slice_from:]
+            before_record = cell.data[:slice_from]
             if len(before_record) > 0:
                 before_asset = before_record.iloc[-1]["Result Asset"]
             else:
                 before_asset = None
-            asset_record = inner.copy()
+            asset_record = cell.data[slice_from:].copy()
 
         candle_data = candle_data[slice_from:]
 
@@ -644,9 +637,8 @@ class Simulator:
         await self.present()
 
     async def display_available_years(self, *args, **kwargs):
-        async with solie.window.collector.candle_data.read_lock as wrapper:
-            inner = wrapper.inner
-            years_sr = inner.index.year.drop_duplicates()  # type:ignore
+        async with solie.window.collector.candle_data.read_lock as cell:
+            years_sr = cell.data.index.year.drop_duplicates()  # type:ignore
         years = years_sr.tolist()
         years.sort(reverse=True)
         years = [str(year) for year in years]
@@ -696,10 +688,10 @@ class Simulator:
         if stop_flag.find("display_simulation_range_information", task_id):
             return
 
-        async with self.unrealized_changes.read_lock as wrapper:
-            unrealized_changes = wrapper.inner[range_start:range_end].copy()
-        async with self.asset_record.read_lock as wrapper:
-            asset_record = wrapper.inner[range_start:range_end].copy()
+        async with self.unrealized_changes.read_lock as cell:
+            unrealized_changes = cell.data[range_start:range_end].copy()
+        async with self.asset_record.read_lock as cell:
+            asset_record = cell.data[range_start:range_end].copy()
 
         auto_trade_mask = asset_record["Cause"] == "auto_trade"
         asset_changes = asset_record["Result Asset"].pct_change() + 1
@@ -855,9 +847,10 @@ class Simulator:
         slice_until -= timedelta(seconds=1)
 
         # get only year range
-        async with solie.window.collector.candle_data.read_lock as wrapper:
-            df = wrapper.inner
-            year_candle_data = df[slice_from - timedelta(days=7) : slice_until].copy()
+        async with solie.window.collector.candle_data.read_lock as cell:
+            year_candle_data = cell.data[
+                slice_from - timedelta(days=7) : slice_until
+            ].copy()
 
         # interpolate
         year_candle_data = year_candle_data.interpolate()
@@ -1128,11 +1121,11 @@ class Simulator:
         taker_fee = self.presentation_settings["taker_fee"]
         leverage = self.presentation_settings["leverage"]
 
-        async with self.raw_asset_record.read_lock as wrapper:
-            asset_record = wrapper.inner.copy()
+        async with self.raw_asset_record.read_lock as cell:
+            asset_record = cell.data.copy()
 
-        async with self.raw_unrealized_changes.read_lock as wrapper:
-            unrealized_changes = wrapper.inner.copy()
+        async with self.raw_unrealized_changes.read_lock as cell:
+            unrealized_changes = cell.data.copy()
 
         scribbles = self.raw_scribbles.copy()
         account_state = self.raw_account_state.copy()
@@ -1209,10 +1202,10 @@ class Simulator:
 
         self.scribbles = presentation_scribbles
         self.account_state = presentation_account_state
-        async with self.unrealized_changes.write_lock as wrapper:
-            wrapper.replace(presentation_unrealized_changes)
-        async with self.asset_record.write_lock as wrapper:
-            wrapper.replace(presentation_asset_record)
+        async with self.unrealized_changes.write_lock as cell:
+            cell.data = presentation_unrealized_changes
+        async with self.asset_record.write_lock as cell:
+            cell.data = presentation_asset_record
 
         # ■■■■■ display ■■■■■
 
@@ -1340,12 +1333,12 @@ class Simulator:
         account_state_path = path_start + "_account_state.pickle"
 
         try:
-            async with self.raw_asset_record.write_lock as wrapper:
+            async with self.raw_asset_record.write_lock as cell:
                 new = pd.read_pickle(asset_record_path)
-                wrapper.replace(new)
-            async with self.raw_unrealized_changes.write_lock as wrapper:
+                cell.data = new
+            async with self.raw_unrealized_changes.write_lock as cell:
                 new = pd.read_pickle(unrealized_changes_path)
-                wrapper.replace(new)
+                cell.data = new
             async with aiofiles.open(scribbles_path, "rb") as file:
                 content = await file.read()
                 self.raw_scribbles = pickle.loads(content)
@@ -1378,10 +1371,9 @@ class Simulator:
         stop_flag.make("calculate_simulation")
 
     async def analyze_unrealized_peaks(self, *args, **kwargs):
-        async with self.unrealized_changes.read_lock as wrapper:
-            sr = wrapper.inner
-            peak_indexes, _ = find_peaks(-sr, distance=3600 / 10)  # type:ignore
-            peak_sr = sr.iloc[peak_indexes]
+        async with self.unrealized_changes.read_lock as cell:
+            peak_indexes, _ = find_peaks(-cell.data, distance=3600 / 10)  # type:ignore
+            peak_sr = cell.data.iloc[peak_indexes]
         peak_sr = peak_sr.sort_values().iloc[:12]
         if len(peak_sr) < 12:
             question = [

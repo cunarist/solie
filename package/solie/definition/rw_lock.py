@@ -180,23 +180,14 @@ class _ContextManagerMixin:
 T = TypeVar("T")
 
 
-class Wrapper(Generic[T]):
-    def __init__(self, inner: T):
-        self._inner = inner
-
-    @property
-    def inner(self) -> T:
-        return self._inner
-
-    def replace(self, new: T):
-        old = self._inner
-        self._inner = new
-        return old
+class Cell(Generic[T]):
+    def __init__(self, data: T):
+        self.data = data
 
 
 # Lock objects to access the _RWLockCore in reader or writer mode
 class ReadLock(_ContextManagerMixin, Generic[T]):
-    def __init__(self, lock: _RWLockCore, wrapper: Wrapper[T]):
+    def __init__(self, lock: _RWLockCore, wrapper: Cell[T]):
         self._wrapper = wrapper
         self._lock = lock
 
@@ -204,7 +195,7 @@ class ReadLock(_ContextManagerMixin, Generic[T]):
     def locked(self) -> bool:
         return self._lock.read_locked
 
-    async def __aenter__(self) -> Wrapper[T]:
+    async def __aenter__(self) -> Cell[T]:
         await self._lock.acquire_read()
         return self._wrapper
 
@@ -217,7 +208,7 @@ class ReadLock(_ContextManagerMixin, Generic[T]):
 
 
 class WriteLock(_ContextManagerMixin, Generic[T]):
-    def __init__(self, lock: _RWLockCore, wrapper: Wrapper[T]):
+    def __init__(self, lock: _RWLockCore, wrapper: Cell[T]):
         self._wrapper = wrapper
         self._lock = lock
 
@@ -225,7 +216,7 @@ class WriteLock(_ContextManagerMixin, Generic[T]):
     def locked(self) -> bool:
         return self._lock.write_locked
 
-    async def __aenter__(self) -> Wrapper[T]:
+    async def __aenter__(self) -> Cell[T]:
         await self._lock.acquire_write()
         return self._wrapper
 
@@ -246,9 +237,9 @@ class RWLock(Generic[T]):
 
     core = _RWLockCore
 
-    def __init__(self, inner: T, fast: bool = True):
+    def __init__(self, cell_data: T, fast: bool = True):
         loop = asyncio.get_running_loop()
-        self._wrapper = Wrapper(inner)
+        self._wrapper = Cell(cell_data)
         self._loop: Loop = loop
         core = self.core(fast, self._loop)
         self.read_lock = ReadLock(core, self._wrapper)
