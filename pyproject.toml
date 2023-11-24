@@ -8,7 +8,7 @@ authors = []
 python = "^3.9,<3.13"
 
 [tool.poetry.group.dev.dependencies]
-solie = { path = "package/", develop = true }
+solie = { path = "solie/", develop = true }
 documentation = { path = "documentation/", develop = true }
 
 [tool.poetry.group.docs.dependencies]
