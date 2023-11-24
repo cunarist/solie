@@ -20,11 +20,11 @@ pygount = "*"
 
 [tool.ruff]
 extend-select = ["N", "I", "T20"]
-exclude = ["package/solie/user_interface.py"]
+exclude = ["solie/solie/user_interface.py"]
 
 [tool.pyright]
 typeCheckingMode = "basic"
-ignore = ["package/solie/user_interface.py"]
+ignore = ["solie/solie/user_interface.py"]
 
 [build-system]
 requires = ["poetry-core"]
