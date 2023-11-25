@@ -20,6 +20,25 @@ def prepare(event_loop_received: AbstractEventLoop):
 
 
 async def go(callable: Callable[..., T], *args, **kwargs) -> T:
+    """
+    Executes the given callable in a separate process pool
+    using `asyncio`'s `run_in_executor`.
+    This function is intended for executing blocking or CPU-bound operations
+    asynchronously inside asyncio's event loop.
+
+    Example:
+    ```
+    # Define a blocking function
+    def my_blocking_function(a, b):
+        for _ in range(100000):
+            pass
+        return a + b
+
+    # Call the blocking function asynchronously using go
+    result = await go(my_blocking_function, 10, 20)
+    print(result)  # Output: 30
+    ```
+    """
     return await event_loop.run_in_executor(
         process_pool,
         functools.partial(
