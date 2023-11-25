@@ -1065,10 +1065,10 @@ class Simulator:
             for chunk_ouput_data in calculation_output_data:
                 chunk_unrealized_changes = chunk_ouput_data["chunk_unrealized_changes"]
                 concat_data = [unrealized_changes, chunk_unrealized_changes]
-                unrealized_changes = pd.concat(concat_data)
+                unrealized_changes: pd.Series = pd.concat(concat_data)
             mask = ~unrealized_changes.index.duplicated()
             unrealized_changes = unrealized_changes[mask]
-            unrealized_changes = await go(sort_pandas.data_frame, unrealized_changes)
+            unrealized_changes = await go(sort_pandas.series, unrealized_changes)
 
             scribbles = calculation_output_data[-1]["chunk_scribbles"]
             account_state = calculation_output_data[-1]["chunk_account_state"]
@@ -1177,13 +1177,13 @@ class Simulator:
             chunk_asset_changes_list.append(chunk_asset_changes)
 
         unrealized_changes = unrealized_changes * leverage
-        year_asset_changes = pd.concat(chunk_asset_changes_list)
-        year_asset_changes = await go(sort_pandas.data_frame, year_asset_changes)
+        year_asset_changes: pd.Series = pd.concat(chunk_asset_changes_list)
+        year_asset_changes = await go(sort_pandas.series, year_asset_changes)
 
         if len(asset_record) > 0:
             start_point = asset_record.index[0]
             year_asset_changes[start_point] = float(1)
-            year_asset_changes = await go(sort_pandas.data_frame, year_asset_changes)
+            year_asset_changes = await go(sort_pandas.series, year_asset_changes)
         asset_record = asset_record.reindex(year_asset_changes.index)
         asset_record["Result Asset"] = year_asset_changes.cumprod()
 
