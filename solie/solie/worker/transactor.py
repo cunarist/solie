@@ -747,14 +747,14 @@ class Transactor:
         before_moment = current_moment - timedelta(seconds=10)
 
         if periodic:
-            for _ in range(50):
+            for _ in range(10):
                 if stop_flag.find(task_name, task_id):
                     return
                 async with solie.window.collector.candle_data.read_lock as cell:
                     last_index = cell.data.index[-1]
                     if last_index == before_moment:
                         break
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.5)
 
         # ■■■■■ get ready for task duration measurement ■■■■■
 
