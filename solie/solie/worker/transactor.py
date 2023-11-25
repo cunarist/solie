@@ -245,23 +245,23 @@ class Transactor:
     async def organize_data(self, *args, **kwargs):
         async with self.unrealized_changes.write_lock as cell:
             original_index = cell.data.index
-            unique_index = original_index.drop_duplicates()
-            cell.data = cell.data.reindex(unique_index)
-            cell.data = await go(sort_pandas.do, cell.data)
-            cell.data = cell.data.astype(np.float32)
+            unique_index = await go(original_index.drop_duplicates)
+            cell.data = await go(cell.data.reindex, unique_index)
+            cell.data = await go(sort_pandas.series, cell.data)
+            cell.data = await go(cell.data.astype, np.float32)
 
         async with self.auto_order_record.write_lock as cell:
             original_index = cell.data.index
-            unique_index = original_index.drop_duplicates()
-            cell.data = cell.data.reindex(unique_index)
-            cell.data = await go(sort_pandas.do, cell.data)
+            unique_index = await go(original_index.drop_duplicates)
+            cell.data = await go(cell.data.reindex, unique_index)
+            cell.data = await go(sort_pandas.data_frame, cell.data)
             cell.data = cell.data.iloc[-(2**16) :].copy()
 
         async with self.asset_record.write_lock as cell:
             original_index = cell.data.index
-            unique_index = original_index.drop_duplicates()
-            cell.data = cell.data.reindex(unique_index)
-            cell.data = await go(sort_pandas.do, cell.data)
+            unique_index = await go(original_index.drop_duplicates)
+            cell.data = await go(cell.data.reindex, unique_index)
+            cell.data = await go(sort_pandas.data_frame, cell.data)
 
     async def save_large_data(self, *args, **kwargs):
         async with self.unrealized_changes.read_lock as cell:
@@ -529,7 +529,7 @@ class Transactor:
                         else:
                             cell.data.loc[record_time, "Cause"] = "manual_trade"
                     if not cell.data.index.is_monotonic_increasing:
-                        cell.data = await go(sort_pandas.do, cell.data)
+                        cell.data = await go(sort_pandas.data_frame, cell.data)
 
         # ■■■■■ cancel conflicting orders ■■■■■
 
@@ -919,14 +919,14 @@ class Transactor:
                 if slice_from < observed_until:
                     asset_record.loc[observed_until, "Cause"] = "other"
                     asset_record.loc[observed_until, "Result Asset"] = last_asset
-                    asset_record = await go(sort_pandas.do, asset_record)
+                    asset_record = await go(sort_pandas.data_frame, asset_record)
 
         # add the left end
 
         if before_asset is not None:
             asset_record.loc[slice_from, "Cause"] = "other"
             asset_record.loc[slice_from, "Result Asset"] = before_asset
-            asset_record = await go(sort_pandas.do, asset_record)
+            asset_record = await go(sort_pandas.data_frame, asset_record)
 
         # ■■■■■ draw heavy lines ■■■■■
 
@@ -1755,7 +1755,7 @@ class Transactor:
         async with self.unrealized_changes.write_lock as cell:
             cell.data[before_moment] = unrealized_change
             if not cell.data.index.is_monotonic_increasing:
-                cell.data = await go(sort_pandas.do, cell.data)
+                cell.data = await go(sort_pandas.series, cell.data)
 
         # ■■■■■ make an asset trace if it's blank ■■■■■
 
@@ -1793,7 +1793,7 @@ class Transactor:
                 cell.data.loc[current_time, "Cause"] = "other"
                 cell.data.loc[current_time, "Result Asset"] = wallet_balance
                 if not cell.data.index.is_monotonic_increasing:
-                    cell.data = await go(sort_pandas.do, cell.data)
+                    cell.data = await go(sort_pandas.data_frame, cell.data)
         else:
             # when the difference is small enough to consider as an numeric error
             async with self.asset_record.write_lock as cell:
@@ -2169,7 +2169,7 @@ class Transactor:
                 cell.data.loc[update_time, "Symbol"] = order_symbol
                 cell.data.loc[update_time, "Order ID"] = order_id
                 if not cell.data.index.is_monotonic_increasing:
-                    cell.data = await go(sort_pandas.do, cell.data)
+                    cell.data = await go(sort_pandas.data_frame, cell.data)
 
         await asyncio.gather(*[job_1(order) for order in new_orders])
 

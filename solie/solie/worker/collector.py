@@ -151,7 +151,7 @@ class Collector:
                 divided_datas.append(more_df)
             concatenated = pd.concat(divided_datas)
             if not concatenated.index.is_monotonic_increasing:
-                concatenated = await go(sort_pandas.do, concatenated)
+                concatenated = await go(sort_pandas.data_frame, concatenated)
             cell.data = concatenated
         await asyncio.sleep(0)
 
@@ -162,7 +162,7 @@ class Collector:
             original_index = cell.data.index
             unique_index = original_index.drop_duplicates()
             cell.data = cell.data.reindex(unique_index)
-            cell.data = await go(sort_pandas.do, cell.data)
+            cell.data = await go(sort_pandas.data_frame, cell.data)
             cell.data = cell.data.asfreq("10S")
             cell.data = cell.data.astype(np.float32)
 
@@ -277,7 +277,10 @@ class Collector:
                 if symbol in full_symbols:
                     continue
 
-                recent_candle_data = await go(sort_pandas.do, recent_candle_data)
+                recent_candle_data = await go(
+                    sort_pandas.data_frame,
+                    recent_candle_data,
+                )
 
                 from_moment = current_moment - timedelta(hours=24)
                 until_moment = current_moment - timedelta(minutes=1)
@@ -346,7 +349,7 @@ class Collector:
             # read the data again
             temp_df = cell.data[cell.data.index >= split_moment]
             recent_candle_data = recent_candle_data.combine_first(temp_df)
-            recent_candle_data = await go(sort_pandas.do, recent_candle_data)
+            recent_candle_data = await go(sort_pandas.data_frame, recent_candle_data)
             candle_data = pd.concat([original_candle_data, recent_candle_data])
             cell.data = candle_data
 
@@ -758,7 +761,7 @@ class Collector:
             for column_name, new_data_value in new_datas.items():
                 cell.data.loc[before_moment, column_name] = new_data_value
             if not cell.data.index.is_monotonic_increasing:
-                cell.data = await go(sort_pandas.do, cell.data)
+                cell.data = await go(sort_pandas.data_frame, cell.data)
 
         duration = (datetime.now(timezone.utc) - current_moment).total_seconds()
         remember_task_durations.add("add_candle_data", duration)

@@ -325,14 +325,14 @@ class Simulator:
                 if slice_from < observed_until:
                     asset_record.loc[observed_until, "Cause"] = "other"
                     asset_record.loc[observed_until, "Result Asset"] = last_asset
-                    asset_record = await go(sort_pandas.do, asset_record)
+                    asset_record = await go(sort_pandas.data_frame, asset_record)
 
         # add the left end
 
         if before_asset is not None:
             asset_record.loc[slice_from, "Cause"] = "other"
             asset_record.loc[slice_from, "Result Asset"] = before_asset
-            asset_record = await go(sort_pandas.do, asset_record)
+            asset_record = await go(sort_pandas.data_frame, asset_record)
 
         # ■■■■■ draw heavy lines ■■■■■
 
@@ -1059,7 +1059,7 @@ class Simulator:
                 asset_record = pd.concat(concat_data)
             mask = ~asset_record.index.duplicated()
             asset_record = asset_record[mask]
-            asset_record = await go(sort_pandas.do, asset_record)
+            asset_record = await go(sort_pandas.data_frame, asset_record)
 
             unrealized_changes = previous_unrealized_changes
             for chunk_ouput_data in calculation_output_data:
@@ -1068,7 +1068,7 @@ class Simulator:
                 unrealized_changes = pd.concat(concat_data)
             mask = ~unrealized_changes.index.duplicated()
             unrealized_changes = unrealized_changes[mask]
-            unrealized_changes = await go(sort_pandas.do, unrealized_changes)
+            unrealized_changes = await go(sort_pandas.data_frame, unrealized_changes)
 
             scribbles = calculation_output_data[-1]["chunk_scribbles"]
             account_state = calculation_output_data[-1]["chunk_account_state"]
@@ -1178,12 +1178,12 @@ class Simulator:
 
         unrealized_changes = unrealized_changes * leverage
         year_asset_changes = pd.concat(chunk_asset_changes_list)
-        year_asset_changes = await go(sort_pandas.do, year_asset_changes)
+        year_asset_changes = await go(sort_pandas.data_frame, year_asset_changes)
 
         if len(asset_record) > 0:
             start_point = asset_record.index[0]
             year_asset_changes[start_point] = float(1)
-            year_asset_changes = await go(sort_pandas.do, year_asset_changes)
+            year_asset_changes = await go(sort_pandas.data_frame, year_asset_changes)
         asset_record = asset_record.reindex(year_asset_changes.index)
         asset_record["Result Asset"] = year_asset_changes.cumprod()
 
