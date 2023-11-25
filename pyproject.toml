@@ -6,15 +6,13 @@ authors = []
 
 [tool.poetry.dependencies]
 python = "^3.9,<3.13"
+solie = { path = "solie/", develop = true }
+documentation = { path = "documentation/", develop = true }
 
 [tool.poetry.dev-dependencies]
 ruff = "*"
 pyright = "*"
 pygount = "*"
-
-[tool.poetry.group.members.dependencies]
-solie = { path = "solie/", develop = true }
-documentation = { path = "documentation/", develop = true }
 
 [tool.ruff]
 extend-select = ["N", "I", "T20"]
