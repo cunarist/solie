@@ -66,7 +66,7 @@ class Simulator:
         solie.window.scheduler.add_job(
             self.display_available_years,
             trigger="cron",
-            second="*/10",
+            hour="*",
         )
         solie.window.scheduler.add_job(
             self.display_lines,
@@ -150,14 +150,14 @@ class Simulator:
         before_moment = current_moment - timedelta(seconds=10)
 
         if periodic:
-            for _ in range(10):
+            for _ in range(50):
                 if stop_flag.find(task_name, task_id):
                     return
                 async with solie.window.collector.candle_data.read_lock as cell:
                     last_index = cell.data.index[-1]
                     if last_index == before_moment:
                         break
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(0.1)
 
         # ■■■■■ get ready for task duration measurement ■■■■■
 

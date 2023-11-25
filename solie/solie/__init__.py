@@ -1087,6 +1087,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         asyncio.create_task(self.transactor.display_day_range())
         asyncio.create_task(self.simulator.display_lines())
         asyncio.create_task(self.simulator.display_year_range())
+        asyncio.create_task(self.simulator.display_available_years())
         asyncio.create_task(self.manager.check_binance_limits())
         asyncio.create_task(self.manager.display_internal_status())
 

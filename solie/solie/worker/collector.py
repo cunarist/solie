@@ -635,6 +635,7 @@ class Collector:
 
         asyncio.create_task(solie.window.transactor.display_lines())
         asyncio.create_task(solie.window.simulator.display_lines())
+        asyncio.create_task(solie.window.simulator.display_available_years())
 
     async def add_book_tickers(self, *args, **kwargs):
         received: dict = kwargs.get("received")  # type:ignore
