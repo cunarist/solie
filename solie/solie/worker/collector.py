@@ -277,15 +277,12 @@ class Collector:
                 if symbol in full_symbols:
                     continue
 
-                recent_candle_data = await go(
-                    sort_pandas.data_frame,
-                    recent_candle_data,
-                )
-
                 from_moment = current_moment - timedelta(hours=24)
                 until_moment = current_moment - timedelta(minutes=1)
 
-                inspect_df = recent_candle_data[symbol][from_moment:until_moment]
+                inspect_df: pd.DataFrame = recent_candle_data[symbol][
+                    from_moment:until_moment
+                ]
                 base_index = inspect_df.dropna().index
                 temp_sr = pd.Series(0, index=base_index)
                 written_moments = len(temp_sr)

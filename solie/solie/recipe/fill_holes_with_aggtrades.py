@@ -67,4 +67,7 @@ def do(
 
         fill_moment += timedelta(seconds=10)
 
+    recent_candle_data = recent_candle_data.sort_index(axis="index")
+    recent_candle_data = recent_candle_data.sort_index(axis="columns")
+
     return recent_candle_data
