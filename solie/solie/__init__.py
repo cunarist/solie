@@ -15,7 +15,6 @@ import pandas as pd
 import pyqtgraph
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtCore, QtGui, QtWidgets
-from qasync import QEventLoop
 
 from solie.definition.api_requester import ApiRequester
 from solie.definition.log_handler import LogHandler
@@ -1100,7 +1099,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ show main widgets ■■■■■
 
-        splash_screen.deleteLater()
+        splash_screen.setParent(None)
         self.board.show()
         self.gauge.show()
 
@@ -1111,7 +1110,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         await ask_popup.done_event.wait()
 
-        ask_popup.deleteLater()
+        ask_popup.setParent(None)
         return ask_popup.answer
 
     # show an mainpulatable overlap popup
@@ -1121,7 +1120,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         await overlay_panel.done_event.wait()
 
-        overlay_panel.deleteLater()
+        overlay_panel.setParent(None)
 
 
 def bring_to_life():
@@ -1177,7 +1176,7 @@ def bring_to_life():
 
     # ■■■■■ show and run ■■■■■
 
-    event_loop = QEventLoop(app)
+    event_loop = asyncio.new_event_loop()
     asyncio.set_event_loop(event_loop)
 
     app_close_event = asyncio.Event()
@@ -1186,6 +1185,13 @@ def bring_to_life():
     window.setPalette(dark_palette)
     window.show()
 
+    async def process_app_events():
+        interval = 1 / 120
+        while True:
+            app.processEvents()
+            await asyncio.sleep(interval)
+
+    event_loop.create_task(process_app_events())
     event_loop.create_task(window.boot())
     event_loop.run_until_complete(app_close_event.wait())
     event_loop.close()
