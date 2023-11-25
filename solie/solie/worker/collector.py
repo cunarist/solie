@@ -162,7 +162,8 @@ class Collector:
             original_index = cell.data.index
             unique_index = original_index.drop_duplicates()
             cell.data = cell.data.reindex(unique_index)
-            cell.data = await go(sort_pandas.data_frame, cell.data)
+            if not cell.data.index.is_monotonic_increasing:
+                cell.data = await go(sort_pandas.data_frame, cell.data)
             cell.data = cell.data.asfreq("10S")
             cell.data = cell.data.astype(np.float32)
 

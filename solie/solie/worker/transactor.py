@@ -246,19 +246,22 @@ class Transactor:
         async with self.unrealized_changes.write_lock as cell:
             unique_index = cell.data.index.drop_duplicates()
             cell.data = cell.data.reindex(unique_index)
-            cell.data = await go(sort_pandas.series, cell.data)
+            if not cell.data.index.is_monotonic_increasing:
+                cell.data = await go(sort_pandas.series, cell.data)
             cell.data = cell.data.astype(np.float32)
 
         async with self.auto_order_record.write_lock as cell:
             unique_index = cell.data.index.drop_duplicates()
             cell.data = cell.data.reindex(unique_index)
-            cell.data = await go(sort_pandas.data_frame, cell.data)
+            if not cell.data.index.is_monotonic_increasing:
+                cell.data = await go(sort_pandas.data_frame, cell.data)
             cell.data = cell.data.iloc[-(2**16) :].copy()
 
         async with self.asset_record.write_lock as cell:
             unique_index = cell.data.index.drop_duplicates()
             cell.data = cell.data.reindex(unique_index)
-            cell.data = await go(sort_pandas.data_frame, cell.data)
+            if not cell.data.index.is_monotonic_increasing:
+                cell.data = await go(sort_pandas.data_frame, cell.data)
 
     async def save_large_data(self, *args, **kwargs):
         async with self.unrealized_changes.read_lock as cell:
