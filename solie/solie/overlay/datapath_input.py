@@ -1,9 +1,8 @@
-import functools
-
 import xdialog
 from PySide6 import QtCore, QtGui, QtWidgets
 
 import solie
+from solie.parallel import go
 from solie.recipe import outsource, user_settings
 from solie.widget.horizontal_divider import HorizontalDivider
 
@@ -82,15 +81,7 @@ class DatapathInput(QtWidgets.QWidget):
 
         async def job_dp():
             nonlocal datapath
-
-            datapath = await solie.event_loop.run_in_executor(
-                None,
-                functools.partial(
-                    xdialog.directory,
-                    title="Data folder",
-                ),
-            )
-
+            datapath = await go(xdialog.directory, title="Data folder")
             folder_label.setText(datapath)
 
         # choose button

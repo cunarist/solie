@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import statistics
+import webbrowser
 from collections import deque
 from datetime import datetime, timedelta, timezone
 
@@ -10,9 +11,9 @@ import time_machine
 
 import solie
 from solie.definition.api_requester import ApiRequester
+from solie.parallel import go
 from solie.recipe import (
     check_internet,
-    open_browser,
     remember_task_durations,
     simply_format,
     user_settings,
@@ -121,11 +122,7 @@ class Manager:
             await file.write(content)
 
     async def open_datapath(self, *args, **kwargs):
-        solie.event_loop.run_in_executor(
-            None,
-            os.startfile,
-            user_settings.get_app_settings()["datapath"],
-        )
+        await go(os.startfile, user_settings.get_app_settings()["datapath"])
 
     async def deselect_log_output(self, *args, **kwargs):
         solie.window.listWidget.clearSelection()
@@ -147,7 +144,9 @@ class Manager:
                 list_text = "\n".join(texts[:max_tasks_shown]) + "\n..."
             solie.window.label_12.setText(f"{tasks_not_done} total\n\n{list_text}")
 
-            solie.window.label_32.setText(f"Process count: {solie.process_count}")
+            solie.window.label_32.setText(
+                f"Process count: {solie.parallel.process_count}"
+            )
 
             texts = []
             texts.append("Limits")
@@ -299,7 +298,7 @@ class Manager:
         solie.window.close()
 
     async def open_documentation(self, *args, **kwargs):
-        open_browser.do("https://solie-docs.cunarist.com")
+        await go(webbrowser.open, "https://solie-docs.cunarist.com")
 
     async def lock_board(self, *args, **kwargs):
         lock_window_setting = self.settings["lock_board"]

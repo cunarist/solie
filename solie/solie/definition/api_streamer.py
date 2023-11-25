@@ -24,8 +24,6 @@ class ApiStreamer:
                 async with self.session.ws_connect(self._url) as websocket:
                     solie.logger.info(f"Websocket connected: {self._url}")
                     async for received_raw in websocket:
-                        if solie.app_close_event.is_set():
-                            return
                         if received_raw.type in (
                             aiohttp.WSMsgType.CLOSED,
                             aiohttp.WSMsgType.ERROR,

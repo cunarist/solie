@@ -4,6 +4,7 @@ import itertools
 import math
 import os
 import random
+import webbrowser
 from collections import deque
 from datetime import datetime, timedelta, timezone
 
@@ -16,12 +17,12 @@ from solie.definition.api_streamer import ApiStreamer
 from solie.definition.rw_lock import RWLock
 from solie.overlay.donation_guide import DonationGuide
 from solie.overlay.download_fill_option import DownloadFillOption
+from solie.parallel import go
 from solie.recipe import (
     check_internet,
     combine_candle_datas,
     download_aggtrade_data,
     fill_holes_with_aggtrades,
-    open_browser,
     remember_task_durations,
     simply_format,
     sort_pandas,
@@ -150,11 +151,7 @@ class Collector:
                 divided_datas.append(more_df)
             concatenated = pd.concat(divided_datas)
             if not concatenated.index.is_monotonic_increasing:
-                concatenated = await solie.event_loop.run_in_executor(
-                    solie.process_pool,
-                    sort_pandas.do,
-                    concatenated,
-                )
+                concatenated = await go(sort_pandas.do, concatenated)
             cell.data = concatenated
         await asyncio.sleep(0)
 
@@ -165,11 +162,7 @@ class Collector:
             original_index = cell.data.index
             unique_index = original_index.drop_duplicates()
             cell.data = cell.data.reindex(unique_index)
-            cell.data = await solie.event_loop.run_in_executor(
-                solie.process_pool,
-                sort_pandas.do,
-                cell.data,
-            )
+            cell.data = await go(sort_pandas.do, cell.data)
             cell.data = cell.data.asfreq("10S")
             cell.data = cell.data.astype(np.float32)
 
@@ -284,11 +277,7 @@ class Collector:
                 if symbol in full_symbols:
                     continue
 
-                recent_candle_data = await solie.event_loop.run_in_executor(
-                    solie.process_pool,
-                    sort_pandas.do,
-                    recent_candle_data,
-                )
+                recent_candle_data = await go(sort_pandas.do, recent_candle_data)
 
                 from_moment = current_moment - timedelta(hours=24)
                 until_moment = current_moment - timedelta(minutes=1)
@@ -340,8 +329,7 @@ class Collector:
                         aggtrades[last_fetched_id]["T"] / 1000, tz=timezone.utc
                     )
 
-                recent_candle_data = await solie.event_loop.run_in_executor(
-                    solie.process_pool,
+                recent_candle_data = await go(
                     fill_holes_with_aggtrades.do,
                     symbol,
                     recent_candle_data,
@@ -358,11 +346,7 @@ class Collector:
             # read the data again
             temp_df = cell.data[cell.data.index >= split_moment]
             recent_candle_data = recent_candle_data.combine_first(temp_df)
-            recent_candle_data = await solie.event_loop.run_in_executor(
-                solie.process_pool,
-                sort_pandas.do,
-                recent_candle_data,
-            )
+            recent_candle_data = await go(sort_pandas.do, recent_candle_data)
             candle_data = pd.concat([original_candle_data, recent_candle_data])
             cell.data = candle_data
 
@@ -444,7 +428,7 @@ class Collector:
         return cumulation_rate
 
     async def open_binance_data_page(self, *args, **kwargs):
-        open_browser.do("https://www.binance.com/en/landing/data")
+        await go(webbrowser.open, "https://www.binance.com/en/landing/data")
 
     async def download_fill_candle_data(self, *args, **kwargs):
         # ■■■■■ ask filling type ■■■■■
@@ -598,7 +582,7 @@ class Collector:
         # ■■■■■ calculate in parellel ■■■■■
 
         random.shuffle(target_tuples)
-        lanes = solie.process_count
+        lanes = solie.parallel.process_count
         chunk_size = math.ceil(len(target_tuples) / lanes)
         target_tuple_chunks = []
         for turn in range(lanes):
@@ -615,20 +599,11 @@ class Collector:
             for target_tuple in target_tuple_chunk:
                 if stop_flag.find("download_fill_candle_data", task_id):
                     return
-                returned = await solie.event_loop.run_in_executor(
-                    solie.process_pool,
-                    download_aggtrade_data.do,
-                    target_tuple,
-                )
+                returned = await go(download_aggtrade_data.do, target_tuple)
                 if returned is not None:
                     new_df = returned
                     async with combined_df.write_lock as cell:
-                        new = await solie.event_loop.run_in_executor(
-                            solie.process_pool,
-                            combine_candle_datas.do,
-                            new_df,
-                            cell.data,
-                        )
+                        new = await go(combine_candle_datas.do, new_df, cell.data)
                         cell.data = new
                 done_steps += 1
 
@@ -641,12 +616,7 @@ class Collector:
 
         async with combined_df.read_lock as cell_temp:
             async with self.candle_data.write_lock as cell:
-                new = await solie.event_loop.run_in_executor(
-                    solie.process_pool,
-                    combine_candle_datas.do,
-                    cell_temp.data,
-                    cell.data,
-                )
+                new = await go(combine_candle_datas.do, cell_temp.data, cell.data)
                 cell.data = new
 
         # ■■■■■ save ■■■■■
@@ -788,11 +758,7 @@ class Collector:
             for column_name, new_data_value in new_datas.items():
                 cell.data.loc[before_moment, column_name] = new_data_value
             if not cell.data.index.is_monotonic_increasing:
-                cell.data = await solie.event_loop.run_in_executor(
-                    solie.process_pool,
-                    sort_pandas.do,
-                    cell.data,
-                )
+                cell.data = await go(sort_pandas.do, cell.data)
 
         duration = (datetime.now(timezone.utc) - current_moment).total_seconds()
         remember_task_durations.add("add_candle_data", duration)

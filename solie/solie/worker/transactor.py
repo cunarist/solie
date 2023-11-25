@@ -1,11 +1,11 @@
 import asyncio
 import copy
-import functools
 import json
 import math
 import os
 import pickle
 import re
+import webbrowser
 from datetime import datetime, timedelta, timezone
 
 import aiofiles
@@ -18,12 +18,12 @@ from solie.definition.api_requester import ApiRequester
 from solie.definition.api_streamer import ApiStreamer
 from solie.definition.rw_lock import RWLock
 from solie.overlay.long_text_view import LongTextView
+from solie.parallel import go
 from solie.recipe import (
     ball,
     check_internet,
     decide,
     make_indicators,
-    open_browser,
     remember_task_durations,
     sort_pandas,
     standardize,
@@ -247,33 +247,21 @@ class Transactor:
             original_index = cell.data.index
             unique_index = original_index.drop_duplicates()
             cell.data = cell.data.reindex(unique_index)
-            cell.data = await solie.event_loop.run_in_executor(
-                solie.process_pool,
-                sort_pandas.do,
-                cell.data,
-            )
+            cell.data = await go(sort_pandas.do, cell.data)
             cell.data = cell.data.astype(np.float32)
 
         async with self.auto_order_record.write_lock as cell:
             original_index = cell.data.index
             unique_index = original_index.drop_duplicates()
             cell.data = cell.data.reindex(unique_index)
-            cell.data = await solie.event_loop.run_in_executor(
-                solie.process_pool,
-                sort_pandas.do,
-                cell.data,
-            )
+            cell.data = await go(sort_pandas.do, cell.data)
             cell.data = cell.data.iloc[-(2**16) :].copy()
 
         async with self.asset_record.write_lock as cell:
             original_index = cell.data.index
             unique_index = original_index.drop_duplicates()
             cell.data = cell.data.reindex(unique_index)
-            cell.data = await solie.event_loop.run_in_executor(
-                solie.process_pool,
-                sort_pandas.do,
-                cell.data,
-            )
+            cell.data = await go(sort_pandas.do, cell.data)
 
     async def save_large_data(self, *args, **kwargs):
         async with self.unrealized_changes.read_lock as cell:
@@ -541,11 +529,7 @@ class Transactor:
                         else:
                             cell.data.loc[record_time, "Cause"] = "manual_trade"
                     if not cell.data.index.is_monotonic_increasing:
-                        cell.data = await solie.event_loop.run_in_executor(
-                            solie.process_pool,
-                            sort_pandas.do,
-                            cell.data,
-                        )
+                        cell.data = await go(sort_pandas.do, cell.data)
 
         # ■■■■■ cancel conflicting orders ■■■■■
 
@@ -553,13 +537,22 @@ class Transactor:
 
     async def open_exchange(self, *args, **kwargs):
         symbol = self.viewing_symbol
-        open_browser.do(f"https://www.binance.com/en/futures/{symbol}")
+        await go(
+            webbrowser.open,
+            f"https://www.binance.com/en/futures/{symbol}",
+        )
 
     async def open_futures_wallet_page(self, *args, **kwargs):
-        open_browser.do("https://www.binance.com/en/my/wallet/account/futures")
+        await go(
+            webbrowser.open,
+            "https://www.binance.com/en/my/wallet/account/futures",
+        )
 
     async def open_api_management_page(self, *args, **kwargs):
-        open_browser.do("https://www.binance.com/en/my/settings/api-management")
+        await go(
+            webbrowser.open,
+            "https://www.binance.com/en/my/settings/api-management",
+        )
 
     async def update_keys(self, *args, **kwargs):
         server = kwargs.get("server", "real")
@@ -926,22 +919,14 @@ class Transactor:
                 if slice_from < observed_until:
                     asset_record.loc[observed_until, "Cause"] = "other"
                     asset_record.loc[observed_until, "Result Asset"] = last_asset
-                    asset_record = await solie.event_loop.run_in_executor(
-                        solie.process_pool,
-                        sort_pandas.do,
-                        asset_record,
-                    )
+                    asset_record = await go(sort_pandas.do, asset_record)
 
         # add the left end
 
         if before_asset is not None:
             asset_record.loc[slice_from, "Cause"] = "other"
             asset_record.loc[slice_from, "Result Asset"] = before_asset
-            asset_record = await solie.event_loop.run_in_executor(
-                solie.process_pool,
-                sort_pandas.do,
-                asset_record,
-            )
+            asset_record = await go(sort_pandas.do, asset_record)
 
         # ■■■■■ draw heavy lines ■■■■■
 
@@ -1145,14 +1130,11 @@ class Transactor:
 
         indicators_script = strategy["indicators_script"]
 
-        indicators = await solie.event_loop.run_in_executor(
-            solie.process_pool,
-            functools.partial(
-                make_indicators.do,
-                target_symbols=[self.viewing_symbol],
-                candle_data=candle_data,
-                indicators_script=indicators_script,
-            ),
+        indicators = await go(
+            make_indicators.do,
+            target_symbols=[self.viewing_symbol],
+            candle_data=candle_data,
+            indicators_script=indicators_script,
         )
 
         indicators = indicators[slice_from:]
@@ -1405,32 +1387,26 @@ class Transactor:
 
         indicators_script = strategy["indicators_script"]
 
-        indicators = await solie.event_loop.run_in_executor(
-            solie.process_pool,
-            functools.partial(
-                make_indicators.do,
-                target_symbols=target_symbols,
-                candle_data=partial_candle_data,
-                indicators_script=indicators_script,
-            ),
+        indicators = await go(
+            make_indicators.do,
+            target_symbols=target_symbols,
+            candle_data=partial_candle_data,
+            indicators_script=indicators_script,
         )
 
         current_candle_data = partial_candle_data.to_records()[-1]
         current_indicators = indicators.to_records()[-1]
         decision_script = strategy["decision_script"]
 
-        decision, scribbles = await solie.event_loop.run_in_executor(
-            solie.process_pool,
-            functools.partial(
-                decide.choose,
-                target_symbols=target_symbols,
-                current_moment=current_moment,
-                current_candle_data=current_candle_data,
-                current_indicators=current_indicators,
-                account_state=copy.deepcopy(self.account_state),
-                scribbles=self.scribbles,
-                decision_script=decision_script,
-            ),
+        decision, scribbles = await go(
+            decide.choose,
+            target_symbols=target_symbols,
+            current_moment=current_moment,
+            current_candle_data=current_candle_data,
+            current_indicators=current_indicators,
+            account_state=copy.deepcopy(self.account_state),
+            scribbles=self.scribbles,
+            decision_script=decision_script,
         )
         self.scribbles = scribbles
 
@@ -1779,11 +1755,7 @@ class Transactor:
         async with self.unrealized_changes.write_lock as cell:
             cell.data[before_moment] = unrealized_change
             if not cell.data.index.is_monotonic_increasing:
-                cell.data = await solie.event_loop.run_in_executor(
-                    solie.process_pool,
-                    sort_pandas.do,
-                    cell.data,
-                )
+                cell.data = await go(sort_pandas.do, cell.data)
 
         # ■■■■■ make an asset trace if it's blank ■■■■■
 
@@ -1821,11 +1793,7 @@ class Transactor:
                 cell.data.loc[current_time, "Cause"] = "other"
                 cell.data.loc[current_time, "Result Asset"] = wallet_balance
                 if not cell.data.index.is_monotonic_increasing:
-                    cell.data = await solie.event_loop.run_in_executor(
-                        solie.process_pool,
-                        sort_pandas.do,
-                        cell.data,
-                    )
+                    cell.data = await go(sort_pandas.do, cell.data)
         else:
             # when the difference is small enough to consider as an numeric error
             async with self.asset_record.write_lock as cell:
@@ -2201,11 +2169,7 @@ class Transactor:
                 cell.data.loc[update_time, "Symbol"] = order_symbol
                 cell.data.loc[update_time, "Order ID"] = order_id
                 if not cell.data.index.is_monotonic_increasing:
-                    cell.data = await solie.event_loop.run_in_executor(
-                        solie.process_pool,
-                        sort_pandas.do,
-                        cell.data,
-                    )
+                    cell.data = await go(sort_pandas.do, cell.data)
 
         await asyncio.gather(*[job_1(order) for order in new_orders])
 

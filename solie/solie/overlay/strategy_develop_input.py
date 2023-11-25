@@ -1,8 +1,11 @@
+import webbrowser
+
 import aiofiles
 from PySide6 import QtCore, QtWidgets
 
 import solie
-from solie.recipe import open_browser, outsource
+from solie.parallel import go
+from solie.recipe import outsource
 from solie.widget.script_editor import ScriptEditor
 from solie.widget.vertical_divider import VerticalDivider
 
@@ -75,7 +78,7 @@ class StrategyDevelopInput(QtWidgets.QWidget):
         # API docs button
         async def job_ad(*args):
             url = "https://solie-docs.cunarist.com/making-strategy/"
-            open_browser.do(url)
+            await go(webbrowser.open, url)
 
         button = QtWidgets.QPushButton("Show Solie API docs", card)
         outsource.do(button.clicked, job_ad)
@@ -88,7 +91,7 @@ class StrategyDevelopInput(QtWidgets.QWidget):
         # Pandas docs button
         async def job_pd(*args):
             url = "https://pandas.pydata.org/docs/reference/index.html"
-            open_browser.do(url)
+            await go(webbrowser.open, url)
 
         button = QtWidgets.QPushButton("Show Pandas API docs", card)
         outsource.do(button.clicked, job_pd)
@@ -101,7 +104,7 @@ class StrategyDevelopInput(QtWidgets.QWidget):
         # TA docs button
         async def job_td(*args):
             url = "https://github.com/twopirllc/pandas-ta#indicators-by-category"
-            open_browser.do(url)
+            await go(webbrowser.open, url)
 
         button = QtWidgets.QPushButton("Show TA API docs", card)
         outsource.do(button.clicked, job_td)

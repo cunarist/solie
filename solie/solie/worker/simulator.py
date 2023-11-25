@@ -1,5 +1,4 @@
 import asyncio
-import functools
 import math
 import os
 import pickle
@@ -13,6 +12,7 @@ from scipy.signal import find_peaks
 
 import solie
 from solie.definition.rw_lock import RWLock
+from solie.parallel import go
 from solie.recipe import (
     make_indicators,
     simulate_chunk,
@@ -325,22 +325,14 @@ class Simulator:
                 if slice_from < observed_until:
                     asset_record.loc[observed_until, "Cause"] = "other"
                     asset_record.loc[observed_until, "Result Asset"] = last_asset
-                    asset_record = await solie.event_loop.run_in_executor(
-                        solie.process_pool,
-                        sort_pandas.do,
-                        asset_record,
-                    )
+                    asset_record = await go(sort_pandas.do, asset_record)
 
         # add the left end
 
         if before_asset is not None:
             asset_record.loc[slice_from, "Cause"] = "other"
             asset_record.loc[slice_from, "Result Asset"] = before_asset
-            asset_record = await solie.event_loop.run_in_executor(
-                solie.process_pool,
-                sort_pandas.do,
-                asset_record,
-            )
+            asset_record = await go(sort_pandas.do, asset_record)
 
         # ■■■■■ draw heavy lines ■■■■■
 
@@ -543,14 +535,11 @@ class Simulator:
 
         indicators_script = strategy["indicators_script"]
 
-        indicators = await solie.event_loop.run_in_executor(
-            solie.process_pool,
-            functools.partial(
-                make_indicators.do,
-                target_symbols=[self.viewing_symbol],
-                candle_data=candle_data,
-                indicators_script=indicators_script,
-            ),
+        indicators = await go(
+            make_indicators.do,
+            target_symbols=[self.viewing_symbol],
+            candle_data=candle_data,
+            indicators_script=indicators_script,
         )
 
         indicators = indicators[slice_from:]
@@ -945,7 +934,7 @@ class Simulator:
         # ■■■■■ prepare per chunk data ■■■■■
 
         calculation_input_data = []
-        progress_list = solie.communicator.list([0])
+        progress_list = solie.parallel.communicator.list([0])
 
         if should_calculate:
             decision_script = strategy["decision_script"]
@@ -953,14 +942,11 @@ class Simulator:
 
             # a little more data for generation
             provide_from = calculate_from - timedelta(days=7)
-            year_indicators = await solie.event_loop.run_in_executor(
-                solie.process_pool,
-                functools.partial(
-                    make_indicators.do,
-                    target_symbols=target_symbols,
-                    candle_data=year_candle_data[provide_from:calculate_until],
-                    indicators_script=indicators_script,
-                ),
+            year_indicators = await go(
+                make_indicators.do,
+                target_symbols=target_symbols,
+                candle_data=year_candle_data[provide_from:calculate_until],
+                indicators_script=indicators_script,
             )
 
             # range cut
@@ -978,7 +964,7 @@ class Simulator:
                 ]
 
                 chunk_count = len(chunk_candle_data_list)
-                progress_list = solie.communicator.list([0] * chunk_count)
+                progress_list = solie.parallel.communicator.list([0] * chunk_count)
 
                 for turn, chunk_candle_data in enumerate(chunk_candle_data_list):
                     chunk_index = chunk_candle_data.index
@@ -1039,9 +1025,7 @@ class Simulator:
 
         if should_calculate:
             futures = [
-                solie.event_loop.run_in_executor(
-                    solie.process_pool, simulate_chunk.do, input_data
-                )
+                go(simulate_chunk.do, input_data)
                 for input_data in calculation_input_data
             ]
             gathered = asyncio.gather(*futures)
@@ -1075,11 +1059,7 @@ class Simulator:
                 asset_record = pd.concat(concat_data)
             mask = ~asset_record.index.duplicated()
             asset_record = asset_record[mask]
-            asset_record = await solie.event_loop.run_in_executor(
-                solie.process_pool,
-                sort_pandas.do,
-                asset_record,
-            )
+            asset_record = await go(sort_pandas.do, asset_record)
 
             unrealized_changes = previous_unrealized_changes
             for chunk_ouput_data in calculation_output_data:
@@ -1088,11 +1068,7 @@ class Simulator:
                 unrealized_changes = pd.concat(concat_data)
             mask = ~unrealized_changes.index.duplicated()
             unrealized_changes = unrealized_changes[mask]
-            unrealized_changes = await solie.event_loop.run_in_executor(
-                solie.process_pool,
-                sort_pandas.do,
-                unrealized_changes,
-            )
+            unrealized_changes = await go(sort_pandas.do, unrealized_changes)
 
             scribbles = calculation_output_data[-1]["chunk_scribbles"]
             account_state = calculation_output_data[-1]["chunk_account_state"]
@@ -1202,20 +1178,12 @@ class Simulator:
 
         unrealized_changes = unrealized_changes * leverage
         year_asset_changes = pd.concat(chunk_asset_changes_list)
-        year_asset_changes = await solie.event_loop.run_in_executor(
-            solie.process_pool,
-            sort_pandas.do,
-            year_asset_changes,
-        )
+        year_asset_changes = await go(sort_pandas.do, year_asset_changes)
 
         if len(asset_record) > 0:
             start_point = asset_record.index[0]
             year_asset_changes[start_point] = float(1)
-            year_asset_changes = await solie.event_loop.run_in_executor(
-                solie.process_pool,
-                sort_pandas.do,
-                year_asset_changes,
-            )
+            year_asset_changes = await go(sort_pandas.do, year_asset_changes)
         asset_record = asset_record.reindex(year_asset_changes.index)
         asset_record["Result Asset"] = year_asset_changes.cumprod()
 

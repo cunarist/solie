@@ -1,10 +1,8 @@
 import asyncio
 import logging
 import math
-import multiprocessing
 import os
 import sys
-from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timezone
 from importlib import import_module, metadata
 from inspect import getfile
@@ -16,6 +14,7 @@ import pyqtgraph
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtCore, QtGui, QtWidgets
 
+from solie import parallel
 from solie.definition.api_requester import ApiRequester
 from solie.definition.log_handler import LogHandler
 from solie.definition.percent_axis_item import PercentAxisItem
@@ -48,7 +47,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         async def job_close():
             if not self.should_finalize:
-                app_close_event.set()
+                self.app_close_event.set()
 
             if self.should_confirm_closing:
                 question = [
@@ -80,7 +79,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 [asyncio.create_task(job()) for job in self.finalize_functions]
             )
 
-            app_close_event.set()
+            self.app_close_event.set()
 
         asyncio.create_task(job_close())
 
@@ -105,6 +104,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def __init__(self):
         super().__init__()
+
+        self.app_close_event = asyncio.Event()
+
         self.price_labels = {}
         self.last_interaction = datetime.now(timezone.utc)
 
@@ -1103,6 +1105,15 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.board.show()
         self.gauge.show()
 
+    async def process_app_events(self):
+        interval = 1 / 120
+        app_instance = QtCore.QCoreApplication.instance()
+        if app_instance is None:
+            raise ValueError("App instance is none, cannot process events")
+        while True:
+            app_instance.processEvents()
+            await asyncio.sleep(interval)
+
     # show an ask popup and blocks the stack
     async def ask(self, question):
         ask_popup = AskPopup(self, question)
@@ -1125,20 +1136,15 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
 def bring_to_life():
     global window
-    global event_loop
-    global process_count
-    global process_pool
-    global communicator
-    global app_close_event
     global logger
 
-    # ■■■■■ app ■■■■■
+    # ■■■■■ App ■■■■■
 
     app = QtWidgets.QApplication(sys.argv)
 
-    # ■■■■■ theme ■■■■■
+    # ■■■■■ Theme ■■■■■
 
-    # this part should be done after creating the app and before creating the window
+    # This part should be done after creating the app and before creating the window.
     QtGui.QFontDatabase.addApplicationFont(f"{PATH}/static/source_code_pro.ttf")
     QtGui.QFontDatabase.addApplicationFont(f"{PATH}/static/notosans_regular.ttf")
     QtGui.QFontDatabase.addApplicationFont(f"{PATH}/static/lexend_bold.ttf")
@@ -1163,38 +1169,25 @@ def bring_to_life():
     app.setStyle("Fusion")
     app.setPalette(dark_palette)
 
-    # ■■■■■ prepare parallelism ■■■■■
-
-    process_count = multiprocessing.cpu_count()
-    process_pool = ProcessPoolExecutor(process_count)
-    communicator = multiprocessing.Manager()
-
-    # ■■■■■ create logger ■■■■■
+    # ■■■■■ Create logger ■■■■■
 
     logger = logging.getLogger("solie")
     logger.setLevel("DEBUG")
 
-    # ■■■■■ show and run ■■■■■
+    # ■■■■■ Show and run ■■■■■
 
     event_loop = asyncio.new_event_loop()
     asyncio.set_event_loop(event_loop)
-
-    app_close_event = asyncio.Event()
 
     window = Window()
     window.setPalette(dark_palette)
     window.show()
 
-    async def process_app_events():
-        interval = 1 / 120
-        while True:
-            app.processEvents()
-            await asyncio.sleep(interval)
+    parallel.prepare(event_loop)
 
-    event_loop.create_task(process_app_events())
+    event_loop.create_task(window.process_app_events())
     event_loop.create_task(window.boot())
-    event_loop.run_until_complete(app_close_event.wait())
-    event_loop.close()
+    event_loop.run_until_complete(window.app_close_event.wait())
 
     # ■■■■■ Make sure nothing happens after Solie ■■■■■
 
