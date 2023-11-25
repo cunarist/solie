@@ -66,7 +66,7 @@ class Simulator:
         solie.window.scheduler.add_job(
             self.display_available_years,
             trigger="cron",
-            second="*",
+            second="*/10",
         )
         solie.window.scheduler.add_job(
             self.display_lines,
@@ -636,7 +636,7 @@ class Simulator:
 
     async def display_available_years(self, *args, **kwargs):
         async with solie.window.collector.candle_data.read_lock as cell:
-            years_sr = cell.data.index.year.drop_duplicates()  # type:ignore
+            years_sr = await go(cell.data.index.year.drop_duplicates)  # type:ignore
         years = years_sr.tolist()
         years.sort(reverse=True)
         years = [str(year) for year in years]
