@@ -271,6 +271,8 @@ class Collector:
         async with self.candle_data.read_lock as cell:
             recent_candle_data = cell.data[cell.data.index >= split_moment].copy()
 
+        did_fill = False
+
         target_symbols = user_settings.get_data_settings()["target_symbols"]
         while len(full_symbols) < len(target_symbols) and request_count < 10:
             for symbol in target_symbols:
@@ -296,8 +298,8 @@ class Collector:
                     temp_sr[from_moment] = np.nan
                 if until_moment not in temp_sr.index:
                     temp_sr[until_moment] = np.nan
-                temp_sr = temp_sr.asfreq("10S")
-                isnan_sr = temp_sr.isna()
+                temp_sr = await go(temp_sr.asfreq, "10S")
+                isnan_sr = await go(temp_sr.isna)
                 nan_index = isnan_sr[isnan_sr == 1].index
                 moment_to_fill_from: datetime = nan_index[0]  # type:ignore
 
@@ -337,7 +339,12 @@ class Collector:
                     moment_to_fill_from,
                     last_fetched_time,
                 )
+                did_fill = True
+
         self.secret_memory["markets_gone"] = markets_gone
+
+        if not did_fill:
+            return
 
         # combine
         async with self.candle_data.write_lock as cell:
