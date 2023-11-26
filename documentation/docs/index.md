@@ -25,7 +25,7 @@ First, install [Python](https://www.python.org/). Don't forget to add `python` c
 python --version
 ```
 
-Next, open a terminal window and install Solie.
+Next, install Solie.
 
 ```
 pip install solie
