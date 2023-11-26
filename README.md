@@ -19,7 +19,7 @@ Solie connects to Binance, retrieves real-time market and account data, saves it
 
 Running Solie is very easy.
 
-First, install [Python](https://www.python.org/). Don't forget to add `python` command to PATH during the installation. You can check that Python is ready with the command below.
+First, install [Python](https://www.python.org/). Don't forget to add `python` command to PATH during the installation. You can check that Python is ready with the terminal command below.
 
 ```bash
 python --version
