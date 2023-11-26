@@ -244,22 +244,26 @@ class Transactor:
 
     async def organize_data(self, *args, **kwargs):
         async with self.unrealized_changes.write_lock as cell:
-            unique_index = cell.data.index.drop_duplicates()
-            cell.data = cell.data.reindex(unique_index)
+            if not cell.data.index.is_unique:
+                unique_index = cell.data.index.drop_duplicates()
+                cell.data = cell.data.reindex(unique_index)
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await go(sort_pandas.series, cell.data)
-            cell.data = cell.data.astype(np.float32)
 
         async with self.auto_order_record.write_lock as cell:
-            unique_index = cell.data.index.drop_duplicates()
-            cell.data = cell.data.reindex(unique_index)
+            if not cell.data.index.is_unique:
+                unique_index = cell.data.index.drop_duplicates()
+                cell.data = cell.data.reindex(unique_index)
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await go(sort_pandas.data_frame, cell.data)
-            cell.data = cell.data.iloc[-(2**16) :].copy()
+            max_length = 2**16
+            if len(cell.data) > max_length:
+                cell.data = cell.data.iloc[-max_length:].copy()
 
         async with self.asset_record.write_lock as cell:
-            unique_index = cell.data.index.drop_duplicates()
-            cell.data = cell.data.reindex(unique_index)
+            if not cell.data.index.is_unique:
+                unique_index = cell.data.index.drop_duplicates()
+                cell.data = cell.data.reindex(unique_index)
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await go(sort_pandas.data_frame, cell.data)
 
