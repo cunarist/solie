@@ -900,9 +900,9 @@ class Simulator:
             # when calculating properly
             try:
                 filepath = asset_record_path
-                previous_asset_record = pd.read_pickle(filepath)
+                previous_asset_record = await go(pd.read_pickle, filepath)
                 filepath = unrealized_changes_path
-                previous_unrealized_changes = pd.read_pickle(filepath)
+                previous_unrealized_changes = await go(pd.read_pickle, filepath)
                 async with aiofiles.open(scribbles_path, "rb") as file:
                     content = await file.read()
                     previous_scribbles = pickle.loads(content)
@@ -1100,8 +1100,8 @@ class Simulator:
         # ■■■■■ save if properly calculated ■■■■■
 
         if not only_visible and should_calculate:
-            asset_record.to_pickle(asset_record_path)
-            unrealized_changes.to_pickle(unrealized_changes_path)
+            await go(asset_record.to_pickle, asset_record_path)
+            await go(unrealized_changes.to_pickle, unrealized_changes_path)
             async with aiofiles.open(scribbles_path, "wb") as file:
                 content = pickle.dumps(scribbles)
                 await file.write(content)
@@ -1333,10 +1333,10 @@ class Simulator:
 
         try:
             async with self.raw_asset_record.write_lock as cell:
-                new = pd.read_pickle(asset_record_path)
+                new = await go(pd.read_pickle, asset_record_path)
                 cell.data = new
             async with self.raw_unrealized_changes.write_lock as cell:
-                new = pd.read_pickle(unrealized_changes_path)
+                new = await go(pd.read_pickle, unrealized_changes_path)
                 cell.data = new
             async with aiofiles.open(scribbles_path, "rb") as file:
                 content = await file.read()

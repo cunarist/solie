@@ -4,6 +4,7 @@ import os
 import aiofiles
 import pandas as pd
 
+from solie.parallel import go
 from solie.recipe import user_settings
 
 
@@ -27,10 +28,10 @@ async def do():
     # 5.0: symbol column was added to auto order record
     try:
         filepath = f"{datapath}/transactor/auto_order_record.pickle"
-        auto_order_record = pd.read_pickle(filepath)
+        auto_order_record: pd.DataFrame = await go(pd.read_pickle, filepath)
         if "Symbol" not in auto_order_record.columns:
             auto_order_record["Symbol"] = ""
-            auto_order_record.to_pickle(filepath)
+            await go(auto_order_record.to_pickle, filepath)
     except Exception:
         pass
 
@@ -68,8 +69,8 @@ async def do():
     # 6.3: auto_trade and manual_trade
     try:
         filepath = f"{datapath}/transactor/asset_record.pickle"
-        asset_record = pd.read_pickle(filepath)
+        asset_record: pd.DataFrame = await go(pd.read_pickle, filepath)
         asset_record["Cause"] = asset_record["Cause"].replace("trade", "auto_trade")
-        asset_record.to_pickle(filepath)
+        await go(asset_record.to_pickle, filepath)
     except Exception:
         pass

@@ -221,7 +221,7 @@ class Transactor:
         # unrealized changes
         try:
             filepath = self.workerpath + "/unrealized_changes.pickle"
-            self.unrealized_changes = RWLock(pd.read_pickle(filepath))
+            self.unrealized_changes = RWLock(await go(pd.read_pickle, filepath))
         except FileNotFoundError:
             pass
         await asyncio.sleep(0)
@@ -229,7 +229,7 @@ class Transactor:
         # asset record
         try:
             filepath = self.workerpath + "/asset_record.pickle"
-            self.asset_record = RWLock(pd.read_pickle(filepath))
+            self.asset_record = RWLock(await go(pd.read_pickle, filepath))
         except FileNotFoundError:
             pass
         await asyncio.sleep(0)
@@ -237,7 +237,7 @@ class Transactor:
         # auto order record
         try:
             filepath = self.workerpath + "/auto_order_record.pickle"
-            self.auto_order_record = RWLock(pd.read_pickle(filepath))
+            self.auto_order_record = RWLock(await go(pd.read_pickle, filepath))
         except FileNotFoundError:
             pass
         await asyncio.sleep(0)
@@ -270,15 +270,24 @@ class Transactor:
     async def save_large_data(self, *args, **kwargs):
         async with self.unrealized_changes.read_lock as cell:
             unrealized_changes = cell.data.copy()
-        unrealized_changes.to_pickle(self.workerpath + "/unrealized_changes.pickle")
+        await go(
+            unrealized_changes.to_pickle,
+            self.workerpath + "/unrealized_changes.pickle",
+        )
 
         async with self.auto_order_record.read_lock as cell:
             auto_order_record = cell.data.copy()
-        auto_order_record.to_pickle(self.workerpath + "/auto_order_record.pickle")
+        await go(
+            auto_order_record.to_pickle,
+            self.workerpath + "/auto_order_record.pickle",
+        )
 
         async with self.asset_record.read_lock as cell:
             asset_record = cell.data.copy()
-        asset_record.to_pickle(self.workerpath + "/asset_record.pickle")
+        await go(
+            asset_record.to_pickle,
+            self.workerpath + "/asset_record.pickle",
+        )
 
     async def save_scribbles(self, *args, **kwargs):
         filepath = self.workerpath + "/scribbles.pickle"

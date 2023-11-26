@@ -147,7 +147,7 @@ class Collector:
             divided_datas = [cell.data]
             for year in years:
                 filepath = f"{self.workerpath}/candle_data_{year}.pickle"
-                more_df = pd.read_pickle(filepath)
+                more_df = await go(pd.read_pickle, filepath)
                 divided_datas.append(more_df)
             concatenated = pd.concat(divided_datas)
             if not concatenated.index.is_monotonic_increasing:
@@ -190,11 +190,15 @@ class Collector:
         filepath = f"{self.workerpath}/candle_data_{current_year}.pickle"
 
         async with self.candle_data.read_lock as cell:
-            year_df = cell.data[cell.data.index.year == current_year].copy()  # type:ignore
+            mask = cell.data.index.year == current_year  # type:ignore
+            year_df: pd.DataFrame = cell.data[mask].copy()
 
         # ■■■■■ make a new file ■■■■■
 
-        year_df.to_pickle(filepath + ".new")
+        await go(
+            year_df.to_pickle,
+            filepath + ".new",
+        )
 
         # ■■■■■ safely replace the existing file ■■■■■
 
@@ -220,9 +224,12 @@ class Collector:
 
         for year in years:
             async with self.candle_data.read_lock as cell:
-                year_df = cell.data[cell.data.index.year == year].copy()  # type:ignore
-            filepath = f"{self.workerpath}/candle_data_{year}.pickle"
-            year_df.to_pickle(filepath)
+                mask = cell.data.index.year == year  # type:ignore
+                year_df: pd.DataFrame = cell.data[mask].copy()
+            await go(
+                year_df.to_pickle,
+                f"{self.workerpath}/candle_data_{year}.pickle",
+            )
 
     async def get_exchange_information(self, *args, **kwargs):
         if not check_internet.connected():
