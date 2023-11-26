@@ -7,7 +7,7 @@
 
 ![Preview](https://github.com/cunarist/solie/assets/66480156/8521df2b-a315-4e00-8963-1db287e0c8ce)
 
-**Solie** is a trading bot designed for targeting the futures markets of Binance.
+**Solie** is a GUI trading bot designed for targeting the futures markets of Binance.
 
 It enables you to create and customize your own trading strategies, simulating them using real historical data from Binance with the power of Python.
 
