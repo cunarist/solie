@@ -202,22 +202,25 @@ class Manager:
         if not check_internet.connected():
             return
 
-        request_time = datetime.now(timezone.utc)
-        payload = {}
-        response = await self.api_requester.binance(
-            http_method="GET",
-            path="/fapi/v1/time",
-            payload=payload,
-        )
-        response_time = datetime.now(timezone.utc)
-        ping = (response_time - request_time).total_seconds()
-        self.online_status["ping"] = ping
+        async def job():
+            request_time = datetime.now(timezone.utc)
+            payload = {}
+            response = await self.api_requester.binance(
+                http_method="GET",
+                path="/fapi/v1/time",
+                payload=payload,
+            )
+            response_time = datetime.now(timezone.utc)
+            ping = (response_time - request_time).total_seconds()
+            self.online_status["ping"] = ping
 
-        server_timestamp = response["serverTime"] / 1000
-        server_time = datetime.fromtimestamp(server_timestamp, tz=timezone.utc)
-        local_time = datetime.now(timezone.utc)
-        time_difference = (server_time - local_time).total_seconds() - ping / 2
-        self.online_status["server_time_differences"].append(time_difference)
+            server_timestamp = response["serverTime"] / 1000
+            server_time = datetime.fromtimestamp(server_timestamp, tz=timezone.utc)
+            local_time = datetime.now(timezone.utc)
+            time_difference = (server_time - local_time).total_seconds() - ping / 2
+            self.online_status["server_time_differences"].append(time_difference)
+
+        asyncio.create_task(job())
 
     async def display_system_status(self, *args, **kwargs):
         time = datetime.now(timezone.utc)
