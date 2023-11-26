@@ -46,7 +46,7 @@ class Manager:
 
         self.online_status = {
             "ping": 0,
-            "server_time_differences": deque(maxlen=120),
+            "server_time_differences": deque(maxlen=60),
         }
         self.binance_limits = {}
 
@@ -233,7 +233,7 @@ class Manager:
         if len(deque_data) > 0:
             mean_difference = sum(deque_data) / len(deque_data)
         else:
-            mean_difference = 0
+            mean_difference = 0.0
 
         text = ""
         text += f"Current time UTC {time_text}"
@@ -252,7 +252,7 @@ class Manager:
 
     async def correct_time(self, *args, **kwargs):
         server_time_differences = self.online_status["server_time_differences"]
-        if len(server_time_differences) < 60:
+        if len(server_time_differences) < 30:
             return
         mean_difference = sum(server_time_differences) / len(server_time_differences)
         new_time = datetime.now(timezone.utc) + timedelta(seconds=mean_difference)
@@ -261,9 +261,6 @@ class Manager:
         time_traveller = time_machine.travel(new_time)
         time_traveller.start()
         self.time_traveller = time_traveller
-
-        server_time_differences.clear()
-        server_time_differences.append(0.0)
 
     async def check_binance_limits(self, *args, **kwargs):
         if not check_internet.connected():
