@@ -354,7 +354,11 @@ class Collector:
             # read the data again
             temp_df = cell.data[cell.data.index >= split_moment]
             recent_candle_data = recent_candle_data.combine_first(temp_df)
-            recent_candle_data = await go(sort_pandas.data_frame, recent_candle_data)
+            if not recent_candle_data.index.is_monotonic_increasing:
+                recent_candle_data = await go(
+                    sort_pandas.data_frame,
+                    recent_candle_data,
+                )
             candle_data = pd.concat([original_candle_data, recent_candle_data])
             cell.data = candle_data
 

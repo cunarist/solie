@@ -919,14 +919,16 @@ class Transactor:
                 if slice_from < observed_until:
                     asset_record.loc[observed_until, "Cause"] = "other"
                     asset_record.loc[observed_until, "Result Asset"] = last_asset
-                    asset_record = await go(sort_pandas.data_frame, asset_record)
+                    if not asset_record.index.is_monotonic_increasing:
+                        asset_record = await go(sort_pandas.data_frame, asset_record)
 
         # add the left end
 
         if before_asset is not None:
             asset_record.loc[slice_from, "Cause"] = "other"
             asset_record.loc[slice_from, "Result Asset"] = before_asset
-            asset_record = await go(sort_pandas.data_frame, asset_record)
+            if not asset_record.index.is_monotonic_increasing:
+                asset_record = await go(sort_pandas.data_frame, asset_record)
 
         # ■■■■■ draw heavy lines ■■■■■
 

@@ -2,8 +2,7 @@ import pandas as pd
 
 
 def data_frame(data: pd.DataFrame) -> pd.DataFrame:
-    data = data.sort_index(axis="index")
-    data = data.sort_index(axis="columns")
+    data = data.sort_index()
     return data
 
 
