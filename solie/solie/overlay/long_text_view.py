@@ -1,7 +1,4 @@
-import pyperclip
 from PySide6 import QtCore, QtGui, QtWidgets
-
-from solie.recipe import outsource
 
 
 class LongTextView(QtWidgets.QWidget):
@@ -25,16 +22,3 @@ class LongTextView(QtWidgets.QWidget):
             QtCore.Qt.TextInteractionFlag.TextSelectableByMouse
         )
         cards_layout.addWidget(label)
-
-        # Copy to clipboard button
-
-        async def job_cc(*args):
-            pyperclip.copy(long_text)
-
-        button = QtWidgets.QPushButton("Copy to clipboard")
-        outsource.do(button.clicked, job_cc)
-        button.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed,
-        )
-        full_layout.addWidget(button)
