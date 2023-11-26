@@ -636,11 +636,10 @@ class Simulator:
 
     async def display_available_years(self, *args, **kwargs):
         async with solie.window.collector.candle_data.read_lock as cell:
-            years_sr = await go(cell.data.index.year.drop_duplicates)  # type:ignore
-        years = years_sr.tolist()
-        years.sort(reverse=True)
-        years = [str(year) for year in years]
+            first_year: int = cell.data.index[0].year
+            last_year: int = cell.data.index[-1].year
 
+        years = [str(year) for year in range(last_year, first_year - 1, -1)]
         widget = solie.window.comboBox_5
         choices = [int(widget.itemText(i)) for i in range(widget.count())]
         choices.sort(reverse=True)
