@@ -9,7 +9,7 @@ from solie.widget.horizontal_divider import HorizontalDivider
 
 
 class TokenSelection(QtWidgets.QWidget):
-    def __init__(self, done_event, payload):
+    def __init__(self, done_event: asyncio.Event, payload):
         super().__init__()
         self.is_closed = False
 

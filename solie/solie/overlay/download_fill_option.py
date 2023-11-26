@@ -1,10 +1,12 @@
+import asyncio
+
 from PySide6 import QtWidgets
 
 from solie.recipe import outsource
 
 
 class DownloadFillOption(QtWidgets.QWidget):
-    def __init__(self, done_event, payload):
+    def __init__(self, done_event: asyncio.Event, payload):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()

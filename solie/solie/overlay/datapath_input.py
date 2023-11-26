@@ -1,3 +1,5 @@
+import asyncio
+
 import xdialog
 from PySide6 import QtCore, QtGui, QtWidgets
 
@@ -8,7 +10,7 @@ from solie.widget.horizontal_divider import HorizontalDivider
 
 
 class DatapathInput(QtWidgets.QWidget):
-    def __init__(self, done_event, payload):
+    def __init__(self, done_event: asyncio.Event, payload):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()

@@ -1,3 +1,4 @@
+import asyncio
 import webbrowser
 
 import aiofiles
@@ -11,7 +12,7 @@ from solie.widget.vertical_divider import VerticalDivider
 
 
 class StrategyDevelopInput(QtWidgets.QWidget):
-    def __init__(self, done_event, payload):
+    def __init__(self, done_event: asyncio.Event, payload):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
