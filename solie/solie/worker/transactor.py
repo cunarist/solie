@@ -139,11 +139,6 @@ class Transactor:
             minute="*",
         )
         solie.window.scheduler.add_job(
-            self.update_user_data_stream,
-            trigger="cron",
-            minute="*/10",
-        )
-        solie.window.scheduler.add_job(
             self.save_large_data,
             trigger="cron",
             hour="*",
@@ -160,7 +155,6 @@ class Transactor:
 
         # ■■■■■ invoked by the internet connection status change  ■■■■■
 
-        check_internet.add_connected_functions(self.update_user_data_stream)
         check_internet.add_connected_functions(self.watch_binance)
 
     async def load(self, *args, **kwargs):
