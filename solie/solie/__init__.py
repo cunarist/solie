@@ -42,6 +42,41 @@ PATH = os.path.dirname(getfile(import_module("solie"))).replace("\\", "/")
 
 
 class Window(QtWidgets.QMainWindow, Ui_MainWindow):
+    def __init__(self):
+        super().__init__()
+
+        self.app_close_event = asyncio.Event()
+
+        self.price_labels = {}
+        self.last_interaction = datetime.now(timezone.utc)
+
+        self.plot_widget = pyqtgraph.PlotWidget()
+        self.plot_widget_1 = pyqtgraph.PlotWidget()
+        self.plot_widget_4 = pyqtgraph.PlotWidget()
+        self.plot_widget_6 = pyqtgraph.PlotWidget()
+
+        self.plot_widget_2 = pyqtgraph.PlotWidget()
+        self.plot_widget_3 = pyqtgraph.PlotWidget()
+        self.plot_widget_5 = pyqtgraph.PlotWidget()
+        self.plot_widget_7 = pyqtgraph.PlotWidget()
+
+        self.transaction_lines: dict[str, list[pyqtgraph.PlotDataItem]] = {}
+        self.simulation_lines: dict[str, list[pyqtgraph.PlotDataItem]] = {}
+
+        self.collector: collector.Collector
+        self.transactor: transactor.Transactor
+        self.simulator: simulator.Simulator
+        self.strategist: strategist.Strategiest
+        self.manager: manager.Manager
+
+        self.initialize_functions: list[Callable[..., Coroutine]] = []
+        self.finalize_functions: list[Callable[..., Coroutine]] = []
+        self.scheduler = AsyncIOScheduler(timezone="UTC")
+
+        self.should_finalize = False
+        self.should_confirm_closing = False
+        self.last_interaction = datetime.now(timezone.utc)
+
     def closeEvent(self, event):  # noqa:N802
         event.ignore()
 
@@ -102,61 +137,33 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         asyncio.create_task(job_ask())
 
-    def __init__(self):
-        super().__init__()
+    async def live(self):
+        asyncio.create_task(self.boot())
+        asyncio.create_task(window.process_app_events())
+        await self.app_close_event.wait()
 
-        self.app_close_event = asyncio.Event()
-
-        self.price_labels = {}
-        self.last_interaction = datetime.now(timezone.utc)
-
-        self.plot_widget = pyqtgraph.PlotWidget()
-        self.plot_widget_1 = pyqtgraph.PlotWidget()
-        self.plot_widget_4 = pyqtgraph.PlotWidget()
-        self.plot_widget_6 = pyqtgraph.PlotWidget()
-
-        self.plot_widget_2 = pyqtgraph.PlotWidget()
-        self.plot_widget_3 = pyqtgraph.PlotWidget()
-        self.plot_widget_5 = pyqtgraph.PlotWidget()
-        self.plot_widget_7 = pyqtgraph.PlotWidget()
-
-        self.transaction_lines: dict[str, list[pyqtgraph.PlotDataItem]] = {}
-        self.simulation_lines: dict[str, list[pyqtgraph.PlotDataItem]] = {}
-
-        self.collector: collector.Collector
-        self.transactor: transactor.Transactor
-        self.simulator: simulator.Simulator
-        self.strategist: strategist.Strategiest
-        self.manager: manager.Manager
-
-        self.initialize_functions: list[Callable[..., Coroutine]] = []
-        self.finalize_functions: list[Callable[..., Coroutine]] = []
-        self.scheduler = AsyncIOScheduler(timezone="UTC")
-
-        # ■■■■■ do basic Qt things ■■■■■
+    async def boot(self):
+        # ■■■■■ Do basic Qt things ■■■■■
 
         self.setupUi(self)
         self.setMouseTracking(True)
 
-        # ■■■■■ basic sizing ■■■■■
+        # ■■■■■ Basic sizing ■■■■■
 
-        self.resize(0, 0)  # to smallest size possible
+        self.resize(0, 0)  # To smallest size possible
         self.splitter.setSizes([3, 1, 1, 2])
         self.splitter_2.setSizes([3, 1, 1, 2])
 
-        # ■■■■■ app behavior settings ■■■■■
-
-        self.should_finalize = False
-        self.should_confirm_closing = False
-        self.last_interaction = datetime.now(timezone.utc)
-
-        # ■■■■■ hide some of the main widgets ■■■■■
+        # ■■■■■ Hide some of the main widgets ■■■■■
 
         self.gauge.hide()
         self.board.hide()
 
-    async def boot(self):
-        # ■■■■■ global settings of packages ■■■■■
+        # ■■■■■ Show the window ■■■■■
+
+        self.show()
+
+        # ■■■■■ Global settings of packages ■■■■■
 
         os.get_terminal_size = lambda *args: os.terminal_size((150, 90))
         pd.set_option("display.precision", 6)
@@ -164,7 +171,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         pd.set_option("display.max_rows", 100)
         pyqtgraph.setConfigOptions(antialias=True)
 
-        # ■■■■■ window icon ■■■■■
+        # ■■■■■ Window icon ■■■■■
 
         filepath = f"{PATH}/static/product_icon.png"
         async with aiofiles.open(filepath, mode="rb") as file:
@@ -173,19 +180,19 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         product_icon_pixmap.loadFromData(product_icon_data)
         window.setWindowIcon(product_icon_pixmap)
 
-        # ■■■■■ guide frame ■■■■■
+        # ■■■■■ Guide frame ■■■■■
 
         splash_screen = SplashScreen()
         self.centralWidget().layout().addWidget(splash_screen)
 
-        # ■■■■■ start basic things ■■■■■
+        # ■■■■■ Start basic things ■■■■■
 
         await user_settings.load()
         await examine_data_files.do()
         await user_settings.load()
         asyncio.create_task(check_internet.monitor())
 
-        # ■■■■■ request internet connection ■■■■■
+        # ■■■■■ Request internet connection ■■■■■
 
         await check_internet.is_ready.wait()
         while not check_internet.connected():
@@ -197,7 +204,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             await self.ask(question)
             await asyncio.sleep(1)
 
-        # ■■■■■ check app settings ■■■■■
+        # ■■■■■ Check app settings ■■■■■
 
         if user_settings.get_app_settings()["datapath"] is None:
             formation = [
@@ -208,7 +215,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             ]
             await self.overlay(formation)
 
-        # ■■■■■ check data settings ■■■■■
+        # ■■■■■ Check data settings ■■■■■
 
         if user_settings.get_data_settings()["asset_token"] is None:
             formation = [
@@ -228,7 +235,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             ]
             await self.overlay(formation)
 
-        # ■■■■■ get information about target symbols ■■■■■
+        # ■■■■■ Get information about target symbols ■■■■■
 
         api_requester = ApiRequester()
 
@@ -265,7 +272,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.alias_to_symbol[alias] = symbol
             self.symbol_to_alias[symbol] = alias
 
-        # ■■■■■ make widgets according to the data_settings ■■■■■
+        # ■■■■■ Make widgets according to the data_settings ■■■■■
 
         token_text_size = 14
         name_text_size = 11
@@ -423,7 +430,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         )
         self.horizontalLayout_17.addItem(spacer)
 
-        # ■■■■■ show product icon and title ■■■■■
+        # ■■■■■ Show product icon and title ■■■■■
 
         this_layout = self.horizontalLayout_13
         product_icon_pixmap = QtGui.QPixmap()
@@ -447,7 +454,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         label = BrandLabel(self, text, 24)
         this_layout.addWidget(label)
 
-        # ■■■■■ transaction graph widgets ■■■■■
+        # ■■■■■ Transaction graph widgets ■■■■■
 
         self.plot_widget.setBackground("#252525")
         self.plot_widget_1.setBackground("#252525")
@@ -673,7 +680,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.plot_widget_4.setXLink(self.plot_widget_1)
         self.plot_widget_6.setXLink(self.plot_widget_4)
 
-        # ■■■■■ simulation graph widgets ■■■■■
+        # ■■■■■ Simulation graph widgets ■■■■■
 
         self.plot_widget_2.setBackground("#252525")
         self.plot_widget_3.setBackground("#252525")
@@ -899,7 +906,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.plot_widget_5.setXLink(self.plot_widget_3)
         self.plot_widget_7.setXLink(self.plot_widget_5)
 
-        # ■■■■■ workers ■■■■■
+        # ■■■■■ Workers ■■■■■
 
         self.collector = collector.Collector()
         self.transactor = transactor.Transactor()
@@ -907,7 +914,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.strategist = strategist.Strategiest()
         self.manager = manager.Manager()
 
-        # ■■■■■ initialize functions ■■■■■
+        # ■■■■■ Initialize functions ■■■■■
 
         self.initialize_functions.append(self.collector.load)
         self.initialize_functions.append(self.transactor.load)
@@ -915,16 +922,16 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.initialize_functions.append(self.strategist.load)
         self.initialize_functions.append(self.manager.load)
 
-        # ■■■■■ finalize functions
+        # ■■■■■ Finalize functions
 
         self.finalize_functions.append(self.transactor.save_large_data)
         self.finalize_functions.append(self.transactor.save_scribbles)
         self.finalize_functions.append(self.strategist.save_strategies)
         self.finalize_functions.append(self.collector.save_candle_data)
 
-        # ■■■■■ connect events to functions ■■■■■
+        # ■■■■■ Connect events to functions ■■■■■
 
-        # special widgets
+        # Special widgets
         job = self.transactor.display_range_information
         outsource.do(self.plot_widget.sigRangeChanged, job)
         job = self.transactor.set_minimum_view_range
@@ -934,7 +941,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         job = self.simulator.set_minimum_view_range
         outsource.do(self.plot_widget_2.sigRangeChanged, job)
 
-        # normal widgets
+        # Normal widgets
         job = self.simulator.update_calculation_settings
         outsource.do(self.comboBox.currentIndexChanged, job)
         job = self.transactor.update_automation_settings
@@ -994,7 +1001,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         job = self.collector.guide_donation
         outsource.do(self.pushButton_9.clicked, job)
 
-        # ■■■■■ submenu actions ■■■■■
+        # ■■■■■ Submenu actions ■■■■■
 
         action_menu = QtWidgets.QMenu(self)
         self.pushButton_13.setMenu(action_menu)
@@ -1053,7 +1060,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         new_action = action_menu.addAction(text)
         outsource.do(new_action.triggered, job)
 
-        # ■■■■■ prepare logging ■■■■■
+        # ■■■■■ Prepare logging ■■■■■
 
         datapath = user_settings.get_app_settings()["datapath"]
         log_path = f"{datapath}/+logs"
@@ -1061,17 +1068,17 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         logging.getLogger().addHandler(log_handler)
         logger.info("Started up")
 
-        # ■■■■■ initialize functions ■■■■■
+        # ■■■■■ Initialize functions ■■■■■
 
         await asyncio.wait(
             [asyncio.create_task(job()) for job in self.initialize_functions]
         )
 
-        # ■■■■■ start repetitive timer ■■■■■
+        # ■■■■■ Start repetitive timer ■■■■■
 
         self.scheduler.start()
 
-        # ■■■■■ start basic functions ■■■■■
+        # ■■■■■ Start basic functions ■■■■■
 
         asyncio.create_task(self.collector.get_exchange_information())
         asyncio.create_task(self.strategist.display_strategies())
@@ -1086,20 +1093,22 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         asyncio.create_task(self.manager.check_binance_limits())
         asyncio.create_task(self.manager.display_internal_status())
 
-        # ■■■■■ wait until the contents are filled ■■■■■
+        # ■■■■■ Wait until the contents are filled ■■■■■
 
         await asyncio.sleep(1)
 
-        # ■■■■■ change closing behavior ■■■■■
+        # ■■■■■ Change closing behavior ■■■■■
 
         self.should_finalize = True
         self.should_confirm_closing = True
 
-        # ■■■■■ show main widgets ■■■■■
+        # ■■■■■ Show main widgets ■■■■■
 
         splash_screen.setParent(None)
         self.board.show()
         self.gauge.show()
+
+        await self.app_close_event.wait()
 
     async def process_app_events(self):
         interval = 1 / 120
@@ -1172,18 +1181,11 @@ def bring_to_life():
 
     # ■■■■■ Show and run ■■■■■
 
-    event_loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(event_loop)
-
     window = Window()
     window.setPalette(dark_palette)
-    window.show()
 
-    parallel.prepare(event_loop)
-
-    event_loop.create_task(window.process_app_events())
-    event_loop.create_task(window.boot())
-    event_loop.run_until_complete(window.app_close_event.wait())
+    parallel.prepare()
+    asyncio.run(window.live())
 
     # ■■■■■ Make sure nothing happens after Solie ■■■■■
 
