@@ -194,7 +194,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ Request internet connection ■■■■■
 
-        await check_internet.is_ready.wait()
+        await check_internet.is_checked.wait()
         while not check_internet.connected():
             question = [
                 "No internet connection",
