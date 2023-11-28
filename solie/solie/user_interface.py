@@ -1369,7 +1369,7 @@ class Ui_MainWindow(object):
         self.label_37.setText(QCoreApplication.translate("MainWindow", u"Async tasks", None))
         self.label_38.setText(QCoreApplication.translate("MainWindow", u"Number of transactions inside latest candle", None))
         self.label_39.setText(QCoreApplication.translate("MainWindow", u"Binance API usage and limits", None))
-        self.label_40.setText(QCoreApplication.translate("MainWindow", u"(Preserved)", None))
+        self.label_40.setText(QCoreApplication.translate("MainWindow", u"(Reserved)", None))
         self.label_41.setText(QCoreApplication.translate("MainWindow", u"Task durations", None))
         self.label_42.setText(QCoreApplication.translate("MainWindow", u"Process pool", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_7), QCoreApplication.translate("MainWindow", u"Status", None))

@@ -2068,7 +2068,7 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
               <item row="2" column="2">
                <widget class="QLabel" name="label_40">
                 <property name="text">
-                 <string>(Preserved)</string>
+                 <string>(Reserved)</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>
