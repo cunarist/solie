@@ -139,7 +139,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
     async def live(self):
         asyncio.create_task(self.boot())
-        asyncio.create_task(window.process_app_events())
+        asyncio.create_task(self.process_app_events())
         await self.app_close_event.wait()
 
     async def boot(self):
@@ -178,7 +178,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             product_icon_data = await file.read()
         product_icon_pixmap = QtGui.QPixmap()
         product_icon_pixmap.loadFromData(product_icon_data)
-        window.setWindowIcon(product_icon_pixmap)
+        self.setWindowIcon(product_icon_pixmap)
 
         # ■■■■■ Guide frame ■■■■■
 
