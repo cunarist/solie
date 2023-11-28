@@ -22,7 +22,7 @@ async def go(callable: Callable[..., T], *args, **kwargs) -> T:
     Executes the given callable in a separate process pool
     using `asyncio`'s `run_in_executor`.
     This function is intended for executing blocking or CPU-bound operations
-    asynchronously inside `asyncio`'s event loop.
+    asynchronously outside `asyncio`'s event loop.
 
     Example:
     ```
