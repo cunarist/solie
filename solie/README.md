@@ -28,13 +28,15 @@ python --version
 Next, install Solie.
 
 ```
-pip install solie
+pip install pipx
+python -m pipx ensurepath
+pipx install solie
 ```
 
 Finally, run Solie.
 
 ```
-python -m solie
+solie
 ```
 
 > We recommend using the official Python installer provided from the website to ensure stability. Also, you might need to replace `python` with `python3`, `pip` with `pip3` on some platforms from the commands above.
