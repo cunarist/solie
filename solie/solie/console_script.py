@@ -10,8 +10,14 @@ def start():
             os.path.dirname(python_interpreter),
             "pythonw.exe",
         )
-    command = [python_interpreter, "-m", "solie"]
-    subprocess.Popen(
-        command,
-        creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
-    )
+        command = [python_interpreter, "-m", "solie"]
+        subprocess.Popen(
+            command,
+            creationflags=subprocess.DETACHED_PROCESS,
+        )
+    else:
+        command = ["nohup", python_interpreter, "-m", "solie"]
+        subprocess.Popen(
+            command,
+            preexec_fn=os.setpgrp,
+        )
