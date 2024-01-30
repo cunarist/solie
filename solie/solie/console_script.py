@@ -13,6 +13,5 @@ def start():
     command = [python_interpreter, "-m", "solie"]
     subprocess.Popen(
         command,
-        creationflags=subprocess.DETACHED_PROCESS,  # Windows
-        start_new_session=True,  # Unix
+        creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
     )
