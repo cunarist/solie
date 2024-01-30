@@ -16,8 +16,8 @@ def start():
             creationflags=subprocess.DETACHED_PROCESS,
         )
     else:
-        command = ["nohup", python_interpreter, "-m", "solie"]
+        command = [python_interpreter, "-m", "solie"]
         subprocess.Popen(
             command,
-            preexec_fn=os.setpgrp,
+            start_new_session=True,
         )
