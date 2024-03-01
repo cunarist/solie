@@ -235,11 +235,11 @@ Variables provided by default are as follows. You can use these without any impo
 You can extract a `Series` column from the candle `DataFrame` like this.
 
 ```python
-open_price = current_candle_data(str(("BTCUSDT", "Open")))
-high_price = current_candle_data(str(("BTCUSDT", "High")))
-low_price = current_candle_data(str(("BTCUSDT", "Low")))
-close_price = current_candle_data(str(("BTCUSDT", "Close")))
-sum_volume = current_candle_data(str(("BTCUSDT", "Volume")))
+open_price = current_candle_data[str(("BTCUSDT", "Open"))]
+high_price = current_candle_data[str(("BTCUSDT", "High"))]
+low_price = current_candle_data[str(("BTCUSDT", "Low"))]
+close_price = current_candle_data[str(("BTCUSDT", "Close"))]
+sum_volume = current_candle_data[str(("BTCUSDT", "Volume"))]
 ```
 
 `account_state` object provided by the API has a structure like this.
@@ -287,7 +287,7 @@ You can check the indicator's current value with `str`ized `tuple` key.
 
 ```python
 # Creating an indicator named SMA in the Price category with the indicators script
-sma_value = current_indicators(str(("BTCUSDT", "Price", "SMA"))))
+sma_value = current_indicators[str(("BTCUSDT", "Price", "SMA"))]
 ```
 
 ### Decision Types
@@ -329,7 +329,7 @@ decision[symbol]["now_sell"] = {
 Command `later_up_close` puts an order that will close the position when the price goes up to that boundary. Corresponds to Binance order `Stop Market Buy` or `Take Profit Market Sell` with `Close Position` enabled.
 
 ```python
-current_price = current_candle_data(str((symbol, "Close")))
+current_price = current_candle_data[str((symbol, "Close"))]
 decision[symbol]["later_up_close"] = {
     "boundary": current_price * 1.05,
 }
@@ -338,7 +338,7 @@ decision[symbol]["later_up_close"] = {
 Command `later_down_close` puts an order that will close the position when the price goes down to that boundary. Corresponds to Binance order `Stop Market Sell` or `Take Profit Market Buy` with `Close Position` enabled.
 
 ```python
-current_price = current_candle_data(str((symbol, "Close")))
+current_price = current_candle_data[str((symbol, "Close"))]
 decision[symbol]["later_down_close"] = {
     "boundary": current_price * 0.95,
 }
@@ -347,7 +347,7 @@ decision[symbol]["later_down_close"] = {
 Command `later_up_buy` puts an order to buy when the price goes up to that boundary. Corresponds to Binance order `Stop Market Buy`.
 
 ```python
-current_price = current_candle_data(str((symbol, "Close")))
+current_price = current_candle_data[str((symbol, "Close"))]
 wallet_balance = account_state["wallet_balance"]
 decision[symbol]["later_up_buy"] = {
     "boundary": current_price * 1.05,
@@ -358,7 +358,7 @@ decision[symbol]["later_up_buy"] = {
 Command `later_down_buy` puts an order to buy when the price goes down to that boundary. Corresponds to Binance order `Take Profit Market Buy`.
 
 ```python
-current_price = current_candle_data(str((symbol, "Close")))
+current_price = current_candle_data[str((symbol, "Close"))]
 wallet_balance = account_state["wallet_balance"]
 decision[symbol]["later_down_buy"] = {
     "boundary": current_price * 0.95,
@@ -369,7 +369,7 @@ decision[symbol]["later_down_buy"] = {
 Command `later_up_sell` puts an order to buy sell when the price goes up to that boundary. Corresponds to Binance order `Take Profit Market Sell`.
 
 ```python
-current_price = current_candle_data(str((symbol, "Close")))
+current_price = current_candle_data[str((symbol, "Close"))]
 wallet_balance = account_state["wallet_balance"]
 decision[symbol]["later_up_sell"] = {
     "boundary": current_price * 1.05,
@@ -380,7 +380,7 @@ decision[symbol]["later_up_sell"] = {
 Command `later_down_sell` puts an order to sell when the price goes down to that boundary.Corresponds to Binance order `Stop Market Sell`.
 
 ```python
-current_price = current_candle_data(str((symbol, "Close")))
+current_price = current_candle_data[str((symbol, "Close"))]
 wallet_balance = account_state["wallet_balance"]
 decision[symbol]["later_down_sell"] = {
     "boundary": current_price * 0.95,
@@ -391,7 +391,7 @@ decision[symbol]["later_down_sell"] = {
 Command `book_buy` puts a limit buy order that is added to the order book. Corresponds to Binance order `Limit Buy`.
 
 ```python
-current_price = current_candle_data(str((symbol, "Close")))
+current_price = current_candle_data[str((symbol, "Close"))]
 wallet_balance = account_state["wallet_balance"]
 decision[symbol]["book_buy"] = {
     "boundary": current_price * 0.95,
@@ -402,7 +402,7 @@ decision[symbol]["book_buy"] = {
 Command `book_sell` puts a limit sell order that is added to the order book. Corresponds to Binance order `Limit Sell`.
 
 ```python
-current_price = current_candle_data(str((symbol, "Close")))
+current_price = current_candle_data[str((symbol, "Close"))]
 wallet_balance = account_state["wallet_balance"]
 decision[symbol]["book_sell"] = {
     "boundary": current_price * 1.05,
