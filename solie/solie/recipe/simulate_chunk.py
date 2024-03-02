@@ -504,9 +504,11 @@ def do(dataset):
 
         # ■■■■■ report the progress in seconds ■■■■■
 
-        progress_list[target_progress] = max(
-            (current_moment - first_calculation_moment).total_seconds(), 0
-        )
+        progress_in_time: pd.Timedelta = current_moment - first_calculation_moment
+        progress_in_seconds = progress_in_time.total_seconds()
+        if progress_in_seconds % 3600 == 0:
+            # Do NOT report the progress too often for the sake of performance
+            progress_list[target_progress] = max(progress_in_seconds, 0)
 
     # ■■■■■ convert back numpy objects to pandas objects ■■■■■
 
