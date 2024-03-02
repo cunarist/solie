@@ -19,11 +19,11 @@ def do(dataset):
     progress_list = dataset["progress_list"]
     target_progress = dataset["target_progress"]
     target_symbols = dataset["target_symbols"]
-    calculation_index = dataset["calculation_index"]
-    chunk_candle_data = dataset["chunk_candle_data"]
-    chunk_indicators = dataset["chunk_indicators"]
-    chunk_asset_record = dataset["chunk_asset_record"]
-    chunk_unrealized_changes = dataset["chunk_unrealized_changes"]
+    calculation_index: pd.DatetimeIndex = dataset["calculation_index"]
+    chunk_candle_data: pd.DataFrame = dataset["chunk_candle_data"]
+    chunk_indicators: pd.DataFrame = dataset["chunk_indicators"]
+    chunk_asset_record: pd.DataFrame = dataset["chunk_asset_record"]
+    chunk_unrealized_changes: pd.Series = dataset["chunk_unrealized_changes"]
     chunk_scribbles = dataset["chunk_scribbles"]
     chunk_account_state = dataset["chunk_account_state"]
     chunk_virtual_state = dataset["chunk_virtual_state"]
@@ -365,9 +365,9 @@ def do(dataset):
             current_amount = chunk_virtual_state["locations"][symbol]["amount"]
             current_margin = abs(current_amount) * current_entry_price
             current_margin = float(current_margin)
-            chunk_account_state["positions"][symbol][
-                "entry_price"
-            ] = current_entry_price
+            chunk_account_state["positions"][symbol]["entry_price"] = (
+                current_entry_price
+            )
             chunk_account_state["positions"][symbol]["margin"] = current_margin
             if chunk_virtual_state["locations"][symbol]["amount"] > 0:
                 chunk_account_state["positions"][symbol]["direction"] = "long"
@@ -515,13 +515,13 @@ def do(dataset):
     chunk_asset_record.index.name = None
     chunk_asset_record.index = pd.to_datetime(chunk_asset_record.index, utc=True)
 
-    chunk_unrealized_changes = pd.DataFrame(chunk_unrealized_changes_ar)
-    chunk_unrealized_changes = chunk_unrealized_changes.set_index("index")
-    chunk_unrealized_changes.index.name = None
-    chunk_unrealized_changes.index = pd.to_datetime(
-        chunk_unrealized_changes.index, utc=True
+    chunk_unrealized_changes_df = pd.DataFrame(chunk_unrealized_changes_ar)
+    chunk_unrealized_changes_df = chunk_unrealized_changes_df.set_index("index")
+    chunk_unrealized_changes_df.index.name = None
+    chunk_unrealized_changes_df.index = pd.to_datetime(
+        chunk_unrealized_changes_df.index, utc=True
     )
-    chunk_unrealized_changes = chunk_unrealized_changes["0"]
+    chunk_unrealized_changes = chunk_unrealized_changes_df["0"]
 
     # ■■■■■ return calculated data ■■■■■
 
