@@ -1,4 +1,3 @@
-import copy
 import math
 import random
 from datetime import datetime, timedelta, timezone
@@ -492,7 +491,7 @@ def do(dataset):
             current_moment=current_moment,
             current_candle_data=current_candle_data,
             current_indicators=current_indicators,
-            account_state=copy.deepcopy(chunk_account_state),
+            account_state=chunk_account_state,
             scribbles=chunk_scribbles,
             decision_script=decision_script,
         )
