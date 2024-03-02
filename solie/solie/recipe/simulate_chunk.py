@@ -23,10 +23,10 @@ def do(dataset):
     chunk_indicators: pd.DataFrame = dataset["chunk_indicators"]
     chunk_asset_record: pd.DataFrame = dataset["chunk_asset_record"]
     chunk_unrealized_changes: pd.Series = dataset["chunk_unrealized_changes"]
-    chunk_scribbles = dataset["chunk_scribbles"]
-    chunk_account_state = dataset["chunk_account_state"]
-    chunk_virtual_state = dataset["chunk_virtual_state"]
-    decision_script = dataset["decision_script"]
+    chunk_scribbles: dict = dataset["chunk_scribbles"]
+    chunk_account_state: dict = dataset["chunk_account_state"]
+    chunk_virtual_state: dict = dataset["chunk_virtual_state"]
+    decision_script: str = dataset["decision_script"]
 
     # ■■■■■ basic values ■■■■■
 
@@ -56,7 +56,7 @@ def do(dataset):
     # ■■■■■ actual loop calculation ■■■■■
 
     calculation_index_length = len(calculation_index_ar)
-    decision_script = compile(decision_script, "<string>", "exec")
+    decision_script_compiled = compile(decision_script, "<string>", "exec")
     first_calculation_moment = calculation_index_ar[0]
 
     for cycle in range(calculation_index_length):
@@ -364,16 +364,16 @@ def do(dataset):
             current_amount = chunk_virtual_state["locations"][symbol]["amount"]
             current_margin = abs(current_amount) * current_entry_price
             current_margin = float(current_margin)
-            chunk_account_state["positions"][symbol]["entry_price"] = (
-                current_entry_price
-            )
-            chunk_account_state["positions"][symbol]["margin"] = current_margin
+            symbol_position = {}
+            symbol_position["entry_price"] = current_entry_price
+            symbol_position["margin"] = current_margin
             if chunk_virtual_state["locations"][symbol]["amount"] > 0:
-                chunk_account_state["positions"][symbol]["direction"] = "long"
+                symbol_position["direction"] = "long"
             if chunk_virtual_state["locations"][symbol]["amount"] < 0:
-                chunk_account_state["positions"][symbol]["direction"] = "short"
+                symbol_position["direction"] = "short"
             if chunk_virtual_state["locations"][symbol]["amount"] == 0:
-                chunk_account_state["positions"][symbol]["direction"] = "none"
+                symbol_position["direction"] = "none"
+            chunk_account_state["positions"][symbol] = symbol_position
 
             # placements
             symbol_placements = chunk_virtual_state["placements"][symbol]
@@ -491,9 +491,9 @@ def do(dataset):
             current_moment=current_moment,
             current_candle_data=current_candle_data,
             current_indicators=current_indicators,
-            account_state=chunk_account_state,
+            account_state=chunk_account_state.copy(),
             scribbles=chunk_scribbles,
-            decision_script=decision_script,
+            decision_script=decision_script_compiled,
         )
 
         for symbol_key, symbol_decision in decision.items():
