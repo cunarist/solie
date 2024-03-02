@@ -73,7 +73,7 @@ def do(dataset):
                 continue
 
             would_trade_happen = False
-            did_found_new_trade = False
+            is_new_trade_found = False
             amount_shift = 0
             fill_price = 0
             role = ""
@@ -346,7 +346,7 @@ def do(dataset):
                     chunk_virtual_state["available_balance"] += returned_margin
                     chunk_virtual_state["available_balance"] += realized_profit
 
-                did_found_new_trade = True
+                is_new_trade_found = True
 
                 if chunk_virtual_state["available_balance"] < 0:
                     text = ""
@@ -395,7 +395,7 @@ def do(dataset):
 
             # ■■■■■ record (symbol dependent) ■■■■■
 
-            if did_found_new_trade:
+            if is_new_trade_found:
                 fill_time = before_moment + timedelta(milliseconds=decision_lag)
                 fill_time = np.datetime64(fill_time)
                 while fill_time in asset_record_ar["index"]:
