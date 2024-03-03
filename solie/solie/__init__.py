@@ -1140,6 +1140,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 def bring_to_life():
+    # ■■■■■ Global variables ■■■■■
+
     global window
     global logger
 

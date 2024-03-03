@@ -6,9 +6,6 @@ authors = ["Cunarist"]
 readme = "README.md"
 repository = "https://github.com/cunarist/solie"
 
-[tool.poetry.scripts]
-solie = "solie.console_script:start"
-
 [tool.poetry.dependencies]
 python = "^3.9,<3.13"
 numpy = "^1.26.2"
