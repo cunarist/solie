@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "solie"
-version = "8.1.0"
+version = "8.2.0"
 description = "The ultimate GUI trading bot designed for targeting the futures markets of Binance"
 authors = ["Cunarist"]
 readme = "README.md"
