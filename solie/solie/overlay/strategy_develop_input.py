@@ -76,49 +76,6 @@ class StrategyDevelopInput(QtWidgets.QWidget):
         )
         card_layout.addItem(spacer)
 
-        # API docs button
-        async def job_ad(*args):
-            url = "https://solie-docs.cunarist.com/making-strategy/"
-            await go(webbrowser.open, url)
-
-        button = QtWidgets.QPushButton("Show Solie API docs", card)
-        outsource.do(button.clicked, job_ad)
-        button.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed,
-        )
-        card_layout.addWidget(button)
-
-        # Pandas docs button
-        async def job_pd(*args):
-            url = "https://pandas.pydata.org/docs/reference/index.html"
-            await go(webbrowser.open, url)
-
-        button = QtWidgets.QPushButton("Show Pandas API docs", card)
-        outsource.do(button.clicked, job_pd)
-        button.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed,
-        )
-        card_layout.addWidget(button)
-
-        # TA docs button
-        async def job_td(*args):
-            url = "https://github.com/twopirllc/pandas-ta#indicators-by-category"
-            await go(webbrowser.open, url)
-
-        button = QtWidgets.QPushButton("Show TA API docs", card)
-        outsource.do(button.clicked, job_td)
-        button.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed,
-        )
-        card_layout.addWidget(button)
-
-        # Vertical divider
-        divider = VerticalDivider(self)
-        card_layout.addWidget(divider)
-
         # sample script button
         async def job_as(*args):
             # indicators script
@@ -163,6 +120,41 @@ class StrategyDevelopInput(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.Policy.Fixed,
         )
         card_layout.addWidget(button)
+
+        # Vertical divider
+        divider = VerticalDivider(self)
+        card_layout.addWidget(divider)
+
+        # action menu
+        action_menu = QtWidgets.QMenu(self)
+        action_button = QtWidgets.QPushButton()
+        action_button.setText("☰")
+        action_button.setMenu(action_menu)
+        card_layout.addWidget(action_button)
+
+        # API docs button
+        async def job_ad(*args):
+            url = "https://solie-docs.cunarist.com/making-strategy/"
+            await go(webbrowser.open, url)
+
+        new_action = action_menu.addAction("Show Solie API docs")
+        outsource.do(new_action.triggered, job_ad)
+
+        # Pandas docs button
+        async def job_pd(*args):
+            url = "https://pandas.pydata.org/docs/reference/index.html"
+            await go(webbrowser.open, url)
+
+        new_action = action_menu.addAction("Show Pandas API docs")
+        outsource.do(new_action.triggered, job_pd)
+
+        # TA docs button
+        async def job_td(*args):
+            url = "https://github.com/twopirllc/pandas-ta#indicators-by-category"
+            await go(webbrowser.open, url)
+
+        new_action = action_menu.addAction("Show TA API docs")
+        outsource.do(new_action.triggered, job_td)
 
         # spacing
         spacer = QtWidgets.QSpacerItem(
