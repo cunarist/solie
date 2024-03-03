@@ -156,6 +156,12 @@ class Strategiest:
             card_layout.addWidget(edit_button)
             outsource.do(edit_button.clicked, job_eb)
 
+            action_menu = QtWidgets.QMenu(solie.window)
+            action_button = QtWidgets.QPushButton()
+            action_button.setText("☰")
+            action_button.setMenu(action_menu)
+            card_layout.addWidget(action_button)
+
             async def job_rs(strategy=strategy):
                 question = [
                     "Remove this strategy?",
@@ -171,9 +177,20 @@ class Strategiest:
                 asyncio.create_task(self.save_strategies())
                 asyncio.create_task(self.restore_strategy_selections())
 
-            edit_button = QtWidgets.QPushButton("Remove")
-            card_layout.addWidget(edit_button)
-            outsource.do(edit_button.clicked, job_rs)
+            new_action = action_menu.addAction("Remove")
+            outsource.do(new_action.triggered, job_rs)
+
+            async def job_dp(strategy=strategy):
+                await self.remember_strategy_selections()
+                duplicated = strategy.copy()
+                duplicated["code_name"] = standardize.create_strategy_code_name()
+                self.strategies.append(duplicated)
+                asyncio.create_task(self.display_strategies())
+                asyncio.create_task(self.save_strategies())
+                asyncio.create_task(self.restore_strategy_selections())
+
+            new_action = action_menu.addAction("Duplicate")
+            outsource.do(new_action.triggered, job_dp)
 
             async def job_ss(strategy=strategy):
                 await self.remember_strategy_selections()

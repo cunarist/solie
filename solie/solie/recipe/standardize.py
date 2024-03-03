@@ -59,9 +59,14 @@ def unrealized_changes():
     return pd.Series(index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32)
 
 
-def strategy():
+def create_strategy_code_name() -> str:
     ingredients = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     code_name = "".join(random.choice(ingredients) for _ in range(6))
+    return code_name
+
+
+def strategy():
+    code_name = create_strategy_code_name()
     return {
         "code_name": code_name,
         "readable_name": "A New Blank Strategy",
