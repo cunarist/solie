@@ -42,13 +42,13 @@ class DonationGuide(QtWidgets.QWidget):
         text += " Your generous donations contribute to"
         text += " the growth and development of Solie."
         text += "\n\nIf you feel like so, please consider"
-        text += " using the BUSD(BSC) wallet address written below."
+        text += " using the USDT(ETH mainnet) wallet address written below."
         label = QtWidgets.QLabel(text)
         label.setWordWrap(True)
         card_layout.addWidget(label)
 
         # address text
-        text = "0xF9A7E35254cc8A9A9C811849CAF672F10fAB7366"
+        text = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
         lineedit_widget = QtWidgets.QLineEdit(text)
         lineedit_widget.setReadOnly(True)
         lineedit_widget.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)

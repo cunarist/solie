@@ -63,13 +63,3 @@ Note that on Windows, giving the extension `.pyw` to the file allows you to hide
 ## 📖 Documentation
 
 Read the [documentation](https://solie-docs.cunarist.com) to understand how to turn on auto-trading, make your own strategies with the internal API, and get involved in Solie development.
-
-## 🤲 Development Support
-
-If you are benefiting from Solie's features and find it helpful, why not consider supporting the Solie project? Your generous donations contribute to the growth and development of Solie. 😉
-
-If you feel like so, please consider using the BUSD(BSC) wallet address written below.
-
-```
-0xF9A7E35254cc8A9A9C811849CAF672F10fAB7366
-```
