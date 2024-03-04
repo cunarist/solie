@@ -31,7 +31,7 @@ Then, install Solie.
 pip install solie
 ```
 
-### Inside Terminal
+### Running Inside Terminal
 
 You can easily run Solie with the command below.
 
@@ -39,7 +39,7 @@ You can easily run Solie with the command below.
 python -m solie
 ```
 
-### With a Script File
+### Running With a Script File
 
 For convenience, you can make a custom Python script file that has the extension `.py`. Just copy and paste the content below in the file.
 
