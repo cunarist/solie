@@ -15,9 +15,9 @@ Please note that while this solution provides tools for strategy development, pr
 
 Solie connects to Binance, retrieves real-time market and account data, saves it on disk, and presents it as intuitive charts to assist users in strategy development.
 
-## 🛞 How to Run This Thing
+## 🛞 Usage
 
-Running Solie is very easy.
+### Preparation
 
 First, install [Python](https://www.python.org/). Don't forget to add `python` command to PATH during the installation. You can check that Python is ready with the terminal command below.
 
@@ -25,26 +25,39 @@ First, install [Python](https://www.python.org/). Don't forget to add `python` c
 python --version
 ```
 
-Next, install Solie.
+Then, install Solie.
 
 ```
-pip install pipx
-python -m pipx ensurepath
-pipx install solie
+pip install solie
 ```
 
-Finally, run Solie.
+### Running Inside Terminal
+
+You can easily run Solie with the command below.
 
 ```
-solie
+python -m solie
 ```
 
-> We recommend using the official Python installer provided from the website to ensure stability. Also, you might need to replace `python` with `python3`, `pip` with `pip3` on some platforms from the commands above.
+### Running With a Script File
+
+For convenience, you can make a custom Python script file that has the extension `.py`. Just copy and paste the content below in the file.
+
+```python
+import solie
+
+if __name__ == "__main__":
+    solie.bring_to_life()
+```
+
+Solie will be brought to life once you execute the Python script file.
+
+Note that on Windows, giving the extension `.pyw` to the file allows you to hide the terminal window and only leave the GUI.
 
 ## 🖥️ Available Platforms
 
-- ✅ Windows: Working fine
-- ✅ Linux: Working fine
+- ✅ Windows: Fully supported
+- ✅ Linux: Fully supported
 - ⏸️ macOS: [Currently unstable](https://github.com/cunarist/solie/issues/87)
 
 ## 📖 Documentation
