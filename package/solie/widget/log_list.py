@@ -1,5 +1,6 @@
-import solie
 from PySide6 import QtCore, QtGui, QtWidgets
+
+import solie
 from solie.overlay.long_text_view import LongTextView
 from solie.recipe import outsource
 

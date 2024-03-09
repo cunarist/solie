@@ -1,6 +1,7 @@
 import asyncio
 
 from PySide6 import QtCore, QtGui, QtWidgets
+
 from solie.recipe import outsource
 from solie.widget.popup_box import PopupBox
 

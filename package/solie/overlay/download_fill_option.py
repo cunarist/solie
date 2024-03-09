@@ -1,6 +1,7 @@
 import asyncio
 
 from PySide6 import QtWidgets
+
 from solie.recipe import outsource
 
 

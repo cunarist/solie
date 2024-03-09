@@ -1,6 +1,7 @@
 import asyncio
 
 from PySide6 import QtCore, QtGui, QtWidgets
+
 from solie.widget.horizontal_divider import HorizontalDivider
 
 

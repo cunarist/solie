@@ -1,8 +1,9 @@
 import asyncio
 
 import aiofiles
-import solie
 from PySide6 import QtGui, QtWidgets
+
+import solie
 from solie.widget.brand_label import BrandLabel
 
 

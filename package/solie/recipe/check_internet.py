@@ -2,6 +2,7 @@ import asyncio
 from typing import Callable, Coroutine
 
 import aiohttp
+
 import solie
 
 is_checked = asyncio.Event()

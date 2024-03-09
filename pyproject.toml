@@ -10,10 +10,6 @@ ruff = "*"
 pyright = "*"
 pygount = "*"
 
-[tool.ruff]
-extend-select = ["N", "I", "T20"]
-exclude = ["package/solie/user_interface.py"]
-
 [tool.pyright]
 typeCheckingMode = "basic"
 ignore = ["package/solie/user_interface.py"]

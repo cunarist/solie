@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from urllib.parse import urlencode
 
 import aiohttp
+
 from solie.definition.api_request_error import ApiRequestError
 
 

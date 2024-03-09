@@ -1,6 +1,7 @@
 import math
 
 from pyqtgraph import AxisItem
+
 from solie.recipe import simply_format
 
 

@@ -3,6 +3,7 @@ from urllib.request import urlopen
 
 import numpy as np
 import pandas as pd
+
 from solie.definition.download_preset import DownloadPreset
 
 
