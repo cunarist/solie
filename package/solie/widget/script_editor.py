@@ -1,8 +1,7 @@
 from PySide6 import QtCore, QtGui, QtWidgets
+from solie.definition.syntax_highlighter import SyntaxHighlighter
 from yapf.yapflib.errors import YapfError
 from yapf.yapflib.yapf_api import FormatCode
-
-from solie.definition.syntax_highlighter import SyntaxHighlighter
 
 
 class ScriptEditor(QtWidgets.QPlainTextEdit):

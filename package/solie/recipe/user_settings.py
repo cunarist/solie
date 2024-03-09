@@ -3,7 +3,6 @@ import json
 import os
 
 import aiofiles
-
 import solie
 
 _app_settings = {

@@ -3,7 +3,6 @@ import os
 
 import aiofiles
 import pandas as pd
-
 from solie.parallel import go
 from solie.recipe import user_settings
 

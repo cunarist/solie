@@ -7,9 +7,8 @@ from collections import deque
 from datetime import datetime, timedelta, timezone
 
 import aiofiles
-import time_machine
-
 import solie
+import time_machine
 from solie.definition.api_requester import ApiRequester
 from solie.parallel import go
 from solie.recipe import (

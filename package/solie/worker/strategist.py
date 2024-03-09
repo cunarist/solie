@@ -3,9 +3,8 @@ import json
 import os
 
 import aiofiles
-from PySide6 import QtGui, QtWidgets
-
 import solie
+from PySide6 import QtGui, QtWidgets
 from solie.overlay.strategy_basic_input import StrategyBasicInput
 from solie.overlay.strategy_develop_input import StrategyDevelopInput
 from solie.recipe import outsource, standardize, user_settings

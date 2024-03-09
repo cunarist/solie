@@ -4,7 +4,6 @@ from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import pandas as pd
-
 from solie.definition.simluation_error import SimulationError
 from solie.recipe import decide
 

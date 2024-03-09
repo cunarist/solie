@@ -1,9 +1,8 @@
 import asyncio
 import re
 
-from PySide6 import QtCore, QtGui, QtWidgets
-
 import solie
+from PySide6 import QtCore, QtGui, QtWidgets
 from solie.recipe import compare_versions, outsource
 from solie.widget.horizontal_divider import HorizontalDivider
 

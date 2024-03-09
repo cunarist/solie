@@ -11,7 +11,6 @@ from datetime import datetime, timedelta, timezone
 import aiofiles
 import numpy as np
 import pandas as pd
-
 import solie
 from solie.definition.api_request_error import ApiRequestError
 from solie.definition.api_requester import ApiRequester

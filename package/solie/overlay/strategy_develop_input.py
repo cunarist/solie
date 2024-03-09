@@ -2,9 +2,8 @@ import asyncio
 import webbrowser
 
 import aiofiles
-from PySide6 import QtCore, QtWidgets
-
 import solie
+from PySide6 import QtCore, QtWidgets
 from solie.parallel import go
 from solie.recipe import outsource
 from solie.widget.script_editor import ScriptEditor

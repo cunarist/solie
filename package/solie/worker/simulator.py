@@ -9,9 +9,8 @@ from typing import List
 import aiofiles
 import numpy as np
 import pandas as pd
-from scipy.signal import find_peaks
-
 import solie
+from scipy.signal import find_peaks
 from solie.definition.rw_lock import RWLock
 from solie.parallel import go
 from solie.recipe import (

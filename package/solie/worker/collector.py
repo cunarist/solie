@@ -10,7 +10,6 @@ from typing import Dict, List, Set
 
 import numpy as np
 import pandas as pd
-
 import solie
 from solie.definition.api_requester import ApiRequester
 from solie.definition.api_streamer import ApiStreamer
