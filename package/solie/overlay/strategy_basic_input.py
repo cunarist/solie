@@ -4,7 +4,7 @@ import re
 from PySide6 import QtCore, QtGui, QtWidgets
 
 import solie
-from solie.recipe import compare_versions, outsource
+from solie.utility import compare_versions, outsource
 from solie.widget.horizontal_divider import HorizontalDivider
 
 

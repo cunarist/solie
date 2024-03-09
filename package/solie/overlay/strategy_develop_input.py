@@ -6,7 +6,7 @@ from PySide6 import QtCore, QtWidgets
 
 import solie
 from solie.parallel import go
-from solie.recipe import outsource
+from solie.utility import outsource
 from solie.widget.script_editor import ScriptEditor
 from solie.widget.vertical_divider import VerticalDivider
 

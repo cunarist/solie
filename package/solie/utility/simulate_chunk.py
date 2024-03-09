@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from solie.definition.errors import SimulationError
-from solie.recipe import decide
+from solie.utility import decide
 
 
 def do(dataset):

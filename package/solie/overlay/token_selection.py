@@ -4,7 +4,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 import solie
 from solie.definition.api_requester import ApiRequester
-from solie.recipe import outsource, user_settings
+from solie.utility import outsource, user_settings
 from solie.widget.horizontal_divider import HorizontalDivider
 
 

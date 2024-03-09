@@ -20,7 +20,7 @@ from solie.definition.structs import DownloadPreset
 from solie.overlay.donation_guide import DonationGuide
 from solie.overlay.download_fill_option import DownloadFillOption
 from solie.parallel import go
-from solie.recipe import (
+from solie.utility import (
     check_internet,
     combine_candle_datas,
     download_aggtrade_data,

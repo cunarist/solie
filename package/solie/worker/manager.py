@@ -13,7 +13,7 @@ import time_machine
 import solie
 from solie.definition.api_requester import ApiRequester
 from solie.parallel import go
-from solie.recipe import (
+from solie.utility import (
     check_internet,
     remember_task_durations,
     simply_format,

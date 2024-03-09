@@ -14,7 +14,7 @@ from scipy.signal import find_peaks
 import solie
 from solie.definition.rw_lock import RWLock
 from solie.parallel import go
-from solie.recipe import (
+from solie.utility import (
     make_indicators,
     simply_format,
     simulate_chunk,

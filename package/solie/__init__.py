@@ -22,13 +22,13 @@ from solie.definition.time_axis_item import TimeAxisItem
 from solie.overlay.coin_selection import CoinSelection
 from solie.overlay.datapath_input import DatapathInput
 from solie.overlay.token_selection import TokenSelection
-from solie.recipe import (
+from solie.user_interface import Ui_MainWindow
+from solie.utility import (
     check_internet,
     examine_data_files,
     outsource,
     user_settings,
 )
-from solie.user_interface import Ui_MainWindow
 from solie.widget.ask_popup import AskPopup
 from solie.widget.brand_label import BrandLabel
 from solie.widget.horizontal_divider import HorizontalDivider

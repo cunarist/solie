@@ -5,7 +5,7 @@ import aiofiles
 import pandas as pd
 
 from solie.parallel import go
-from solie.recipe import user_settings
+from solie.utility import user_settings
 
 
 async def do():

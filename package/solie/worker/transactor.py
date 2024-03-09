@@ -20,7 +20,7 @@ from solie.definition.errors import ApiRequestError
 from solie.definition.rw_lock import RWLock
 from solie.overlay.long_text_view import LongTextView
 from solie.parallel import go
-from solie.recipe import (
+from solie.utility import (
     ball,
     check_internet,
     decide,

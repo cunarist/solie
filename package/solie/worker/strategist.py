@@ -8,7 +8,7 @@ from PySide6 import QtGui, QtWidgets
 import solie
 from solie.overlay.strategy_basic_input import StrategyBasicInput
 from solie.overlay.strategy_develop_input import StrategyDevelopInput
-from solie.recipe import outsource, standardize, user_settings
+from solie.utility import outsource, standardize, user_settings
 
 
 class Strategiest:

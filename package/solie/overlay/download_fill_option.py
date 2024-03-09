@@ -2,7 +2,7 @@ import asyncio
 
 from PySide6 import QtWidgets
 
-from solie.recipe import outsource
+from solie.utility import outsource
 
 
 class DownloadFillOption(QtWidgets.QWidget):

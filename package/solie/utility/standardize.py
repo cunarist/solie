@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
 
-from solie.recipe import user_settings
+from solie.utility import user_settings
 
 
 def candle_data():
