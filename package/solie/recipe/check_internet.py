@@ -1,9 +1,10 @@
 import asyncio
+import logging
 from typing import Callable, Coroutine
 
 import aiohttp
 
-import solie
+_LOGGER = logging.getLogger("solie")
 
 is_checked = asyncio.Event()
 _was_connected = False
@@ -47,11 +48,11 @@ async def monitor():
         if _was_connected and not is_connected:
             for job in _disconnected_functions:
                 asyncio.create_task(job())
-            solie.logger.warning("Internet disconnected")
+            _LOGGER.warning("Internet disconnected")
         elif not _was_connected and is_connected:
             for job in _connected_functions:
                 asyncio.create_task(job())
-            solie.logger.info("Internet connected")
+            _LOGGER.info("Internet connected")
 
         # remember connection state
         _was_connected = is_connected

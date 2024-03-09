@@ -1,5 +1,6 @@
 import asyncio
 import itertools
+import logging
 import math
 import os
 import random
@@ -607,7 +608,7 @@ class Collector:
         # ■■■■■ add to log ■■■■■
 
         text = "Filled the candle data with the history data downloaded from Binance"
-        solie.logger.info(text)
+        logging.getLogger("solie").info(text)
 
         # ■■■■■ display to graphs ■■■■■
 
