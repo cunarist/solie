@@ -15,6 +15,7 @@ import pandas as pd
 import solie
 from solie.definition.api_requester import ApiRequester
 from solie.definition.api_streamer import ApiStreamer
+from solie.definition.download_target import DownloadTarget
 from solie.definition.rw_lock import RWLock
 from solie.overlay.donation_guide import DonationGuide
 from solie.overlay.download_fill_option import DownloadFillOption
@@ -449,15 +450,15 @@ class Collector:
 
         task_id = stop_flag.make("download_fill_candle_data")
 
-        target_tuples = []
+        download_targets: List[DownloadTarget] = []
         target_symbols = user_settings.get_data_settings()["target_symbols"]
         if filling_type == 0:
             current_year = datetime.now(timezone.utc).year
             for year in range(2020, current_year):
                 for month in range(1, 12 + 1):
                     for symbol in target_symbols:
-                        target_tuples.append(
-                            (
+                        download_targets.append(
+                            DownloadTarget(
                                 symbol,
                                 "monthly",
                                 year,
@@ -471,8 +472,8 @@ class Collector:
                     days_in_month = calendar.monthrange(2019, 1)[1]
                     for day in range(1, days_in_month + 1):
                         for symbol in target_symbols:
-                            target_tuples.append(
-                                (
+                            download_targets.append(
+                                DownloadTarget(
                                     symbol,
                                     "daily",
                                     year,
@@ -485,8 +486,8 @@ class Collector:
             current_month = datetime.now(timezone.utc).month
             for month in range(1, current_month):
                 for symbol in target_symbols:
-                    target_tuples.append(
-                        (
+                    download_targets.append(
+                        DownloadTarget(
                             symbol,
                             "monthly",
                             current_year,
@@ -500,8 +501,8 @@ class Collector:
                 days_in_month = calendar.monthrange(2019, 1)[1]
                 for day in range(1, days_in_month + 1):
                     for symbol in target_symbols:
-                        target_tuples.append(
-                            (
+                        download_targets.append(
+                            DownloadTarget(
                                 symbol,
                                 "daily",
                                 current_year,
@@ -515,8 +516,8 @@ class Collector:
             current_day = datetime.now(timezone.utc).day
             for target_day in range(1, current_day):
                 for symbol in target_symbols:
-                    target_tuples.append(
-                        (
+                    download_targets.append(
+                        DownloadTarget(
                             symbol,
                             "daily",
                             current_year,
@@ -529,8 +530,8 @@ class Collector:
             yesterday = now - timedelta(hours=24)
             day_before_yesterday = yesterday - timedelta(hours=24)
             for symbol in target_symbols:
-                target_tuples.append(
-                    (
+                download_targets.append(
+                    DownloadTarget(
                         symbol,
                         "daily",
                         day_before_yesterday.year,
@@ -538,8 +539,8 @@ class Collector:
                         day_before_yesterday.day,
                     ),
                 )
-                target_tuples.append(
-                    (
+                download_targets.append(
+                    DownloadTarget(
                         symbol,
                         "daily",
                         yesterday.year,
@@ -548,7 +549,9 @@ class Collector:
                     ),
                 )
 
-        total_steps = len(target_tuples)
+        random.shuffle(download_targets)
+
+        total_steps = len(download_targets)
         done_steps = 0
 
         # ■■■■■ play the progress bar ■■■■■
@@ -578,34 +581,25 @@ class Collector:
 
         # ■■■■■ calculate in parellel ■■■■■
 
-        random.shuffle(target_tuples)
-        lanes = solie.parallel.process_count
-        chunk_size = math.ceil(len(target_tuples) / lanes)
-        target_tuple_chunks = []
-        for turn in range(lanes):
-            new_chunk = target_tuples[turn * chunk_size : (turn + 1) * chunk_size]
-            target_tuple_chunks.append(new_chunk)
-
         # Make an empty dataframe, but of same types with that of candle data
         async with self.candle_data.read_lock as cell:
             combined_df = RWLock(cell.data.iloc[0:0].copy())
 
-        async def download_fill(target_tuple_chunk):
+        async def download_fill(download_target):
             nonlocal done_steps
             nonlocal combined_df
 
-            for target_tuple in target_tuple_chunk:
-                if stop_flag.find("download_fill_candle_data", task_id):
-                    return
-                returned = await go(download_aggtrade_data.do, target_tuple)
-                if returned is not None:
-                    new_df = returned
-                    async with combined_df.write_lock as cell:
-                        new = await go(combine_candle_datas.do, new_df, cell.data)
-                        cell.data = new
-                done_steps += 1
+            if stop_flag.find("download_fill_candle_data", task_id):
+                return
+            returned = await go(download_aggtrade_data.do, download_target)
+            if returned is not None:
+                new_df = returned
+                async with combined_df.write_lock as cell:
+                    new = await go(combine_candle_datas.do, new_df, cell.data)
+                    cell.data = new
+            done_steps += 1
 
-        await asyncio.gather(*[download_fill(chunk) for chunk in target_tuple_chunks])
+        await asyncio.gather(*[download_fill(t) for t in download_targets])
 
         if stop_flag.find("download_fill_candle_data", task_id):
             return

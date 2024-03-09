@@ -4,23 +4,25 @@ from urllib.request import urlopen
 import numpy as np
 import pandas as pd
 
+from solie.definition.download_target import DownloadTarget
 
-def do(target_tuple: tuple) -> pd.DataFrame | None:
-    symbol = target_tuple[0]
-    download_type = target_tuple[1]
 
-    if download_type == "daily":
-        year_string = format(target_tuple[2], "04")
-        month_string = format(target_tuple[3], "02")
-        day_string = format(target_tuple[4], "02")
+def do(download_target: DownloadTarget) -> pd.DataFrame | None:
+    symbol = download_target.symbol
+    unit_size = download_target.unit_size
+
+    if unit_size == "daily":
+        year_string = format(download_target.year, "04")
+        month_string = format(download_target.month, "02")
+        day_string = format(download_target.day, "02")
         url = (
             "https://data.binance.vision/data/futures/um/daily/aggTrades"
             + f"/{symbol}/{symbol}-aggTrades"
             + f"-{year_string}-{month_string}-{day_string}.zip"
         )
-    elif download_type == "monthly":
-        year_string = format(target_tuple[2], "04")
-        month_string = format(target_tuple[3], "02")
+    elif unit_size == "monthly":
+        year_string = format(download_target.year, "04")
+        month_string = format(download_target.month, "02")
         url = (
             "https://data.binance.vision/data/futures/um/monthly/aggTrades"
             + f"/{symbol}/{symbol}-aggTrades"
