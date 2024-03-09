@@ -15,6 +15,7 @@ from solie.definition.rw_lock import RWLock
 from solie.parallel import go
 from solie.recipe import (
     make_indicators,
+    simply_format,
     simulate_chunk,
     sort_pandas,
     standardize,
@@ -637,20 +638,21 @@ class Simulator:
         await self.present()
 
     async def display_available_years(self, *args, **kwargs):
-        async with solie.window.collector.candle_data.read_lock as cell:
-            first_year: int = cell.data.index[0].year
-            last_year: int = cell.data.index[-1].year
+        years = [
+            int(simply_format.numeric(filename))
+            for filename in os.listdir(solie.window.collector.workerpath)
+            if filename.startswith("candle_data_") and filename.endswith(".pickle")
+        ]
+        years.sort(reverse=True)
 
-        years = [str(year) for year in range(last_year, first_year - 1, -1)]
         widget = solie.window.comboBox_5
         choices = [int(widget.itemText(i)) for i in range(widget.count())]
         choices.sort(reverse=True)
-        choices = [str(choice) for choice in choices]
 
         if years != choices:
             # if it's changed
             solie.window.comboBox_5.clear()
-            solie.window.comboBox_5.addItems(years)
+            solie.window.comboBox_5.addItems([str(y) for y in years])
 
     async def simulate_only_visible(self, *args, **kwargs):
         await self.calculate(only_visible=True)

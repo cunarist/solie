@@ -7,6 +7,7 @@ import random
 import webbrowser
 from collections import deque
 from datetime import datetime, timedelta, timezone
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -24,7 +25,6 @@ from solie.recipe import (
     download_aggtrade_data,
     fill_holes_with_aggtrades,
     remember_task_durations,
-    simply_format,
     sort_pandas,
     standardize,
     stop_flag,
@@ -138,21 +138,14 @@ class Collector:
 
     async def load(self, *args, **kwargs):
         # candle data
-        years = [
-            int(simply_format.numeric(filename))
-            for filename in os.listdir(self.workerpath)
-            if filename.startswith("candle_data_") and filename.endswith(".pickle")
-        ]
+        current_year = datetime.now(timezone.utc).year
         async with self.candle_data.write_lock as cell:
-            divided_datas = [cell.data]
-            for year in years:
-                filepath = f"{self.workerpath}/candle_data_{year}.pickle"
-                more_df = await go(pd.read_pickle, filepath)
-                divided_datas.append(more_df)
-            concatenated = pd.concat(divided_datas)
-            if not concatenated.index.is_monotonic_increasing:
-                concatenated = await go(sort_pandas.data_frame, concatenated)
-            cell.data = concatenated
+            filepath = f"{self.workerpath}/candle_data_{current_year}.pickle"
+            if os.path.isfile(filepath):
+                df = await go(pd.read_pickle, filepath)
+                if not df.index.is_monotonic_increasing:
+                    df = await go(sort_pandas.data_frame, df)
+                cell.data = df
         await asyncio.sleep(0)
 
     async def organize_data(self, *args, **kwargs):
@@ -216,20 +209,6 @@ class Collector:
             os.rename(filepath + ".new", filepath)
         except FileNotFoundError:
             pass
-
-    async def save_all_years_candle_data(self, *args, **kwargs):
-        async with self.candle_data.read_lock as cell:
-            years_sr = cell.data.index.year.drop_duplicates()  # type:ignore
-            years = years_sr.tolist()
-
-        for year in years:
-            async with self.candle_data.read_lock as cell:
-                mask = cell.data.index.year == year  # type:ignore
-                year_df: pd.DataFrame = cell.data[mask].copy()
-            await go(
-                year_df.to_pickle,
-                f"{self.workerpath}/candle_data_{year}.pickle",
-            )
 
     async def get_exchange_information(self, *args, **kwargs):
         if not check_internet.connected():
@@ -607,6 +586,7 @@ class Collector:
             new_chunk = target_tuples[turn * chunk_size : (turn + 1) * chunk_size]
             target_tuple_chunks.append(new_chunk)
 
+        # Make an empty dataframe, but of same types with that of candle data
         async with self.candle_data.read_lock as cell:
             combined_df = RWLock(cell.data.iloc[0:0].copy())
 
@@ -630,16 +610,34 @@ class Collector:
         if stop_flag.find("download_fill_candle_data", task_id):
             return
 
-        # ■■■■■ combine ■■■■■
+        # ■■■■■ combine and save ■■■■■
 
+        # Gather information about years.
+        current_year = datetime.now(timezone.utc).year
+        async with combined_df.read_lock as cell:
+            years_sr = cell.data.index.year.drop_duplicates()  # type:ignore
+            all_years = years_sr.tolist()
+        previous_years: List[int] = [y for y in all_years if y < current_year]
+
+        # For data of current year, pass it to this collector worker
+        # and store them in the memory.
         async with combined_df.read_lock as cell_temp:
             async with self.candle_data.write_lock as cell:
-                new = await go(combine_candle_datas.do, cell_temp.data, cell.data)
+                mask = cell_temp.data.index.year == current_year  # type:ignore
+                year_df: pd.DataFrame = cell_temp.data[mask].copy()
+                new = await go(combine_candle_datas.do, year_df, cell.data)
                 cell.data = new
 
-        # ■■■■■ save ■■■■■
-
-        await self.save_all_years_candle_data()
+        # For data of previous years,
+        # save them in the disk.
+        for previous_year in previous_years:
+            async with combined_df.read_lock as cell:
+                mask = cell.data.index.year == previous_year  # type:ignore
+                year_df: pd.DataFrame = cell.data[mask].copy()
+            await go(
+                year_df.to_pickle,
+                f"{self.workerpath}/candle_data_{previous_year}.pickle",
+            )
 
         # ■■■■■ add to log ■■■■■
 
