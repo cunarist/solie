@@ -182,7 +182,7 @@ T = TypeVar("T")
 
 class Cell(Generic[T]):
     def __init__(self, data: T):
-        self.data = data
+        self.data: T = data
 
 
 # Lock objects to access the _RWLockCore in reader or writer mode
