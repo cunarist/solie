@@ -13,9 +13,9 @@ import numpy as np
 import pandas as pd
 
 import solie
-from solie.definition.api_request_error import ApiRequestError
 from solie.definition.api_requester import ApiRequester
 from solie.definition.api_streamer import ApiStreamer
+from solie.definition.errors import ApiRequestError
 from solie.definition.rw_lock import RWLock
 from solie.overlay.long_text_view import LongTextView
 from solie.parallel import go
@@ -509,7 +509,9 @@ class Transactor:
                         recorded_value = symbol_df.loc[recorded_time, "Margin Ratio"]
                         new_value = recorded_value + added_margin_ratio
                         cell.data.loc[recorded_time, "Margin Ratio"] = new_value
-                        last_asset: float = cell.data.loc[last_index, "Result Asset"]  # type:ignore
+                        last_asset: float = cell.data.loc[
+                            last_index, "Result Asset"
+                        ]  # type:ignore
                         new_value = last_asset + added_revenue
                         cell.data.loc[last_index, "Result Asset"] = new_value
                     else:
@@ -528,7 +530,9 @@ class Transactor:
                         cell.data.loc[record_time, "Margin Ratio"] = new_value
                         new_value = order_id
                         cell.data.loc[record_time, "Order ID"] = new_value
-                        last_asset: float = cell.data.loc[last_index, "Result Asset"]  # type:ignore
+                        last_asset: float = cell.data.loc[
+                            last_index, "Result Asset"
+                        ]  # type:ignore
                         new_value = last_asset + added_revenue
                         cell.data.loc[record_time, "Result Asset"] = new_value
                         if order_id in unique_order_ids:

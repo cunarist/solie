@@ -1,2 +1,0 @@
-class ApiRequestError(Exception):
-    pass

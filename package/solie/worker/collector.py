@@ -14,8 +14,8 @@ import pandas as pd
 import solie
 from solie.definition.api_requester import ApiRequester
 from solie.definition.api_streamer import ApiStreamer
-from solie.definition.download_preset import DownloadPreset
 from solie.definition.rw_lock import RWLock
+from solie.definition.structs import DownloadPreset
 from solie.overlay.donation_guide import DonationGuide
 from solie.overlay.download_fill_option import DownloadFillOption
 from solie.parallel import go
