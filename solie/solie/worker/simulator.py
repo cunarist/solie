@@ -4,6 +4,7 @@ import os
 import pickle
 import re
 from datetime import datetime, timedelta, timezone
+from typing import List
 
 import aiofiles
 import numpy as np
@@ -276,11 +277,17 @@ class Simulator:
         # ■■■■■ set range of heavy data ■■■■■
 
         if should_draw_all_years:
+            years = [
+                int(simply_format.numeric(filename))
+                for filename in os.listdir(solie.window.collector.workerpath)
+                if filename.startswith("candle_data_") and filename.endswith(".pickle")
+            ]
             slice_from = datetime.fromtimestamp(0, tz=timezone.utc)
             slice_until = datetime.now(timezone.utc)
             slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
         else:
             year = self.calculation_settings["year"]
+            years = [year]
             slice_from = datetime(year, 1, 1, tzinfo=timezone.utc)
             if year == datetime.now(timezone.utc).year:
                 slice_until = datetime.now(timezone.utc)
@@ -288,12 +295,17 @@ class Simulator:
             else:
                 slice_until = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
         slice_until -= timedelta(seconds=1)
-        get_from = slice_from - timedelta(days=7)
 
         # ■■■■■ get heavy data ■■■■■
 
-        async with solie.window.collector.candle_data.read_lock as cell:
-            candle_data = cell.data[get_from:slice_until][[symbol]].copy()
+        divided_datas: List[pd.DataFrame] = []
+        for year in years:
+            filepath = f"{solie.window.collector.workerpath}/candle_data_{year}.pickle"
+            more_df = await go(pd.read_pickle, filepath)
+            divided_datas.append(more_df)
+        candle_data = await go(pd.concat, divided_datas)
+        if not candle_data.index.is_monotonic_increasing:
+            candle_data = await go(sort_pandas.data_frame, candle_data)
         async with self.unrealized_changes.read_lock as cell:
             unrealized_changes = cell.data.copy()
         async with self.asset_record.read_lock as cell:
@@ -830,30 +842,23 @@ class Simulator:
 
         prepare_step = 2
 
-        # ■■■■■ get datas ■■■■■
+        # ■■■■■ Get data ■■■■■
 
-        # set range
-        if self.should_draw_all_years:
-            slice_from = datetime(1970, 1, 1, tzinfo=timezone.utc)
-        else:
-            slice_from = datetime(year, 1, 1, tzinfo=timezone.utc)
+        # Set ranges
+        slice_from = datetime(year, 1, 1, tzinfo=timezone.utc)
 
-        if self.should_draw_all_years:
-            slice_until = datetime(2200, 1, 1, tzinfo=timezone.utc)
-        elif year == datetime.now(timezone.utc).year:
+        if year == datetime.now(timezone.utc).year:
             slice_until = datetime.now(timezone.utc)
             slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
         else:
             slice_until = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
         slice_until -= timedelta(seconds=1)
 
-        # get only year range
-        async with solie.window.collector.candle_data.read_lock as cell:
-            year_candle_data = cell.data[
-                slice_from - timedelta(days=7) : slice_until
-            ].copy()
+        # Get the candle data of this year.
+        filepath = f"{solie.window.collector.workerpath}/candle_data_{year}.pickle"
+        year_candle_data: pd.DataFrame = await go(pd.read_pickle, filepath)
 
-        # interpolate
+        # Interpolate so that there's no inappropriate holes.
         year_candle_data = year_candle_data.interpolate()
 
         prepare_step = 3

@@ -55,10 +55,12 @@ class Collector:
         for symbol in user_settings.get_data_settings()["target_symbols"]:
             self.aggtrade_candle_sizes[symbol] = 0
 
-        # candle data
+        # Candle data.
+        # It's expected to have only the data of current year,
+        # while data of previous years are stored in the disk.
         self.candle_data = RWLock(standardize.candle_data())
 
-        # realtime data chunks
+        # Realtime data chunks
         field_names = itertools.product(
             user_settings.get_data_settings()["target_symbols"],
             ("Best Bid Price", "Best Ask Price", "Mark Price"),
@@ -70,7 +72,7 @@ class Collector:
             deque([np.recarray(shape=(0,), dtype=dtpye) for _ in range(2)], maxlen=64)
         )
 
-        # aggregate trades
+        # Aggregate trades
         field_names = itertools.product(
             user_settings.get_data_settings()["target_symbols"],
             ("Price", "Volume"),
@@ -143,7 +145,7 @@ class Collector:
         async with self.candle_data.write_lock as cell:
             filepath = f"{self.workerpath}/candle_data_{current_year}.pickle"
             if os.path.isfile(filepath):
-                df = await go(pd.read_pickle, filepath)
+                df: pd.DataFrame = await go(pd.read_pickle, filepath)
                 if not df.index.is_monotonic_increasing:
                     df = await go(sort_pandas.data_frame, df)
                 cell.data = df
