@@ -1,5 +1,4 @@
 import asyncio
-import calendar
 import itertools
 import math
 import os
