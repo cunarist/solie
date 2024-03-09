@@ -467,23 +467,7 @@ class Collector:
                                 month,
                             )
                         )
-        if filling_type == 1:
-            current_year = datetime.now(timezone.utc).year
-            for year in range(2020, current_year):
-                for month in range(1, 12 + 1):
-                    days_in_month = calendar.monthrange(2019, 1)[1]
-                    for day in range(1, days_in_month + 1):
-                        for symbol in target_symbols:
-                            download_presets.append(
-                                DownloadPreset(
-                                    symbol,
-                                    "daily",
-                                    year,
-                                    month,
-                                    day,
-                                )
-                            )
-        if filling_type == 2:
+        elif filling_type == 1:
             current_year = datetime.now(timezone.utc).year
             current_month = datetime.now(timezone.utc).month
             for month in range(1, current_month):
@@ -496,23 +480,7 @@ class Collector:
                             month,
                         )
                     )
-        if filling_type == 3:
-            current_year = datetime.now(timezone.utc).year
-            current_month = datetime.now(timezone.utc).month
-            for month in range(1, current_month):
-                days_in_month = calendar.monthrange(2019, 1)[1]
-                for day in range(1, days_in_month + 1):
-                    for symbol in target_symbols:
-                        download_presets.append(
-                            DownloadPreset(
-                                symbol,
-                                "daily",
-                                current_year,
-                                month,
-                                day,
-                            )
-                        )
-        elif filling_type == 4:
+        elif filling_type == 2:
             current_year = datetime.now(timezone.utc).year
             current_month = datetime.now(timezone.utc).month
             current_day = datetime.now(timezone.utc).day
@@ -527,7 +495,7 @@ class Collector:
                             target_day,
                         )
                     )
-        elif filling_type == 5:
+        elif filling_type == 3:
             now = datetime.now(timezone.utc)
             yesterday = now - timedelta(hours=24)
             day_before_yesterday = yesterday - timedelta(hours=24)
