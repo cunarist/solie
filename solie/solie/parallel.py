@@ -14,7 +14,7 @@ def prepare():
 
     # Use only half of the cores
     # as stuffing all the cores with tasks leads to a system slowdown.
-    process_count = int(multiprocessing.cpu_count() / 2)
+    process_count = multiprocessing.cpu_count()
     process_pool = ProcessPoolExecutor(process_count)
     communicator = multiprocessing.Manager()
 
