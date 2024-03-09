@@ -12,7 +12,9 @@ def prepare():
     global process_pool
     global communicator
 
-    process_count = multiprocessing.cpu_count()
+    # Use only half of the cores
+    # as stuffing all the cores with tasks leads to a system slowdown.
+    process_count = int(multiprocessing.cpu_count() / 2)
     process_pool = ProcessPoolExecutor(process_count)
     communicator = multiprocessing.Manager()
 

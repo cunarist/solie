@@ -4,10 +4,10 @@ from urllib.request import urlopen
 import numpy as np
 import pandas as pd
 
-from solie.definition.download_target import DownloadTarget
+from solie.definition.download_preset import DownloadPreset
 
 
-def do(download_target: DownloadTarget) -> pd.DataFrame | None:
+def do(download_target: DownloadPreset) -> pd.DataFrame | None:
     symbol = download_target.symbol
     unit_size = download_target.unit_size
 

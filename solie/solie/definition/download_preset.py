@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class DownloadTarget:
+class DownloadPreset:
     symbol: str
     unit_size: str  # "daily" or "monthly"
     year: int

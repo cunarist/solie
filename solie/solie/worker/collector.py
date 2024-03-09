@@ -7,7 +7,7 @@ import random
 import webbrowser
 from collections import deque
 from datetime import datetime, timedelta, timezone
-from typing import List
+from typing import Dict, List, Set
 
 import numpy as np
 import pandas as pd
@@ -15,7 +15,7 @@ import pandas as pd
 import solie
 from solie.definition.api_requester import ApiRequester
 from solie.definition.api_streamer import ApiStreamer
-from solie.definition.download_target import DownloadTarget
+from solie.definition.download_preset import DownloadPreset
 from solie.definition.rw_lock import RWLock
 from solie.overlay.donation_guide import DonationGuide
 from solie.overlay.download_fill_option import DownloadFillOption
@@ -450,15 +450,15 @@ class Collector:
 
         task_id = stop_flag.make("download_fill_candle_data")
 
-        download_targets: List[DownloadTarget] = []
+        download_presets: List[DownloadPreset] = []
         target_symbols = user_settings.get_data_settings()["target_symbols"]
         if filling_type == 0:
             current_year = datetime.now(timezone.utc).year
             for year in range(2020, current_year):
                 for month in range(1, 12 + 1):
                     for symbol in target_symbols:
-                        download_targets.append(
-                            DownloadTarget(
+                        download_presets.append(
+                            DownloadPreset(
                                 symbol,
                                 "monthly",
                                 year,
@@ -472,8 +472,8 @@ class Collector:
                     days_in_month = calendar.monthrange(2019, 1)[1]
                     for day in range(1, days_in_month + 1):
                         for symbol in target_symbols:
-                            download_targets.append(
-                                DownloadTarget(
+                            download_presets.append(
+                                DownloadPreset(
                                     symbol,
                                     "daily",
                                     year,
@@ -486,8 +486,8 @@ class Collector:
             current_month = datetime.now(timezone.utc).month
             for month in range(1, current_month):
                 for symbol in target_symbols:
-                    download_targets.append(
-                        DownloadTarget(
+                    download_presets.append(
+                        DownloadPreset(
                             symbol,
                             "monthly",
                             current_year,
@@ -501,8 +501,8 @@ class Collector:
                 days_in_month = calendar.monthrange(2019, 1)[1]
                 for day in range(1, days_in_month + 1):
                     for symbol in target_symbols:
-                        download_targets.append(
-                            DownloadTarget(
+                        download_presets.append(
+                            DownloadPreset(
                                 symbol,
                                 "daily",
                                 current_year,
@@ -516,8 +516,8 @@ class Collector:
             current_day = datetime.now(timezone.utc).day
             for target_day in range(1, current_day):
                 for symbol in target_symbols:
-                    download_targets.append(
-                        DownloadTarget(
+                    download_presets.append(
+                        DownloadPreset(
                             symbol,
                             "daily",
                             current_year,
@@ -530,8 +530,8 @@ class Collector:
             yesterday = now - timedelta(hours=24)
             day_before_yesterday = yesterday - timedelta(hours=24)
             for symbol in target_symbols:
-                download_targets.append(
-                    DownloadTarget(
+                download_presets.append(
+                    DownloadPreset(
                         symbol,
                         "daily",
                         day_before_yesterday.year,
@@ -539,8 +539,8 @@ class Collector:
                         day_before_yesterday.day,
                     ),
                 )
-                download_targets.append(
-                    DownloadTarget(
+                download_presets.append(
+                    DownloadPreset(
                         symbol,
                         "daily",
                         yesterday.year,
@@ -549,9 +549,9 @@ class Collector:
                     ),
                 )
 
-        random.shuffle(download_targets)
+        random.shuffle(download_presets)
 
-        total_steps = len(download_targets)
+        total_steps = len(download_presets)
         done_steps = 0
 
         # ■■■■■ play the progress bar ■■■■■
@@ -581,57 +581,59 @@ class Collector:
 
         # ■■■■■ calculate in parellel ■■■■■
 
-        # Make an empty dataframe, but of same types with that of candle data
-        async with self.candle_data.read_lock as cell:
-            combined_df = RWLock(cell.data.iloc[0:0].copy())
-
-        async def download_fill(download_target):
-            nonlocal done_steps
-            nonlocal combined_df
-
-            if stop_flag.find("download_fill_candle_data", task_id):
-                return
-            returned = await go(download_aggtrade_data.do, download_target)
-            if returned is not None:
-                new_df = returned
-                async with combined_df.write_lock as cell:
-                    new = await go(combine_candle_datas.do, new_df, cell.data)
-                    cell.data = new
-            done_steps += 1
-
-        await asyncio.gather(*[download_fill(t) for t in download_targets])
-
-        if stop_flag.find("download_fill_candle_data", task_id):
-            return
-
-        # ■■■■■ combine and save ■■■■■
-
         # Gather information about years.
         current_year = datetime.now(timezone.utc).year
-        async with combined_df.read_lock as cell:
-            years_sr = cell.data.index.year.drop_duplicates()  # type:ignore
-            all_years = years_sr.tolist()
-        previous_years: List[int] = [y for y in all_years if y < current_year]
+        all_years: Set[int] = {t.year for t in download_presets}
 
-        # For data of current year, pass it to this collector worker
-        # and store them in the memory.
-        async with combined_df.read_lock as cell_temp:
-            async with self.candle_data.write_lock as cell:
-                mask = cell_temp.data.index.year == current_year  # type:ignore
-                year_df: pd.DataFrame = cell_temp.data[mask].copy()
-                new = await go(combine_candle_datas.do, year_df, cell.data)
-                cell.data = new
+        # Download and save historical data by year for lower memory usage.
+        # Key is the year, value is the list of download presets.
+        classified_download_presets: Dict[int, List[DownloadPreset]] = {
+            y: [] for y in all_years
+        }
+        for download_preset in download_presets:
+            classified_download_presets[download_preset.year].append(download_preset)
 
-        # For data of previous years,
-        # save them in the disk.
-        for previous_year in previous_years:
-            async with combined_df.read_lock as cell:
-                mask = cell.data.index.year == previous_year  # type:ignore
-                year_df: pd.DataFrame = cell.data[mask].copy()
-            await go(
-                year_df.to_pickle,
-                f"{self.workerpath}/candle_data_{previous_year}.pickle",
-            )
+        for preset_year, download_presets in classified_download_presets.items():
+            # Make an empty dataframe, but of same types with that of candle data.
+            async with self.candle_data.read_lock as cell:
+                combined_df = RWLock(cell.data.iloc[0:0].copy())
+
+            async def download_fill(download_preset):
+                nonlocal done_steps
+                nonlocal combined_df
+
+                if stop_flag.find("download_fill_candle_data", task_id):
+                    return
+
+                returned = await go(download_aggtrade_data.do, download_preset)
+                if returned is not None:
+                    new_df = returned
+                    async with combined_df.write_lock as cell:
+                        new = await go(combine_candle_datas.do, new_df, cell.data)
+                        cell.data = new
+
+                done_steps += 1
+
+            await asyncio.gather(*[download_fill(p) for p in download_presets])
+
+            if preset_year < current_year:
+                # For data of previous years,
+                # save them in the disk.
+                async with combined_df.read_lock as cell:
+                    await go(
+                        cell.data.to_pickle,
+                        f"{self.workerpath}/candle_data_{preset_year}.pickle",
+                    )
+            else:
+                # For data of current year, pass it to this collector worker
+                # and store them in the memory.
+                async with combined_df.read_lock as cell:
+                    async with self.candle_data.write_lock as cell_worker:
+                        cell_worker.data = await go(
+                            combine_candle_datas.do,
+                            cell.data,
+                            cell_worker.data,
+                        )
 
         # ■■■■■ add to log ■■■■■
 
