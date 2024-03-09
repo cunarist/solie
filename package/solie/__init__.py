@@ -1066,7 +1066,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         log_path = f"{datapath}/+logs"
         log_handler = LogHandler(log_path)
         logging.getLogger().addHandler(log_handler)
-        logger = logging.getLogger("solie")
         logger.info("Started up")
 
         # ■■■■■ Initialize functions ■■■■■
@@ -1144,6 +1143,7 @@ def bring_to_life():
     # ■■■■■ Global variables ■■■■■
 
     global window
+    global logger
 
     # ■■■■■ App ■■■■■
 

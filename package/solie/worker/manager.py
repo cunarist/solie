@@ -1,6 +1,5 @@
 import asyncio
 import json
-import logging
 import os
 import statistics
 import webbrowser
@@ -196,7 +195,7 @@ class Manager:
         filepath = self.workerpath + "/python_script.txt"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             await file.write(script_text)
-        namespace = {"window": solie.window, "logger": logging.getLogger("solie")}
+        namespace = {"window": solie.window, "logger": solie.logger}
         exec(script_text, namespace)
 
     async def check_online_status(self, *args, **kwargs):

@@ -1,7 +1,6 @@
 import asyncio
 import copy
 import json
-import logging
 import math
 import os
 import pickle
@@ -326,7 +325,7 @@ class Transactor:
 
         if event_type == "listenKeyExpired":
             text = "Binance user data stream listen key got expired"
-            logging.getLogger("solie").warning(text)
+            solie.logger.warning(text)
             await self.update_user_data_stream()
 
         if event_type == "ACCOUNT_UPDATE":

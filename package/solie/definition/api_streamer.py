@@ -1,10 +1,9 @@
 import asyncio
-import logging
 from typing import Callable, Coroutine
 
 import aiohttp
 
-_LOGGER = logging.getLogger("solie")
+import solie
 
 
 class ApiStreamer:
@@ -23,21 +22,21 @@ class ApiStreamer:
         while True:
             try:
                 async with self.session.ws_connect(self._url) as websocket:
-                    _LOGGER.info(f"Websocket connected: {self._url}")
+                    solie.logger.info(f"Websocket connected: {self._url}")
                     async for received_raw in websocket:
                         if received_raw.type in (
                             aiohttp.WSMsgType.CLOSED,
                             aiohttp.WSMsgType.ERROR,
                         ):
-                            _LOGGER.info(f"Websocket closed: {self._url}")
+                            solie.logger.info(f"Websocket closed: {self._url}")
                             break
                         else:
                             received = received_raw.json()
                             asyncio.create_task(self._when_received(received=received))
-                    _LOGGER.info(f"Websocket stopped: {self._url}")
+                    solie.logger.info(f"Websocket stopped: {self._url}")
             except Exception as error:
                 # Handle errors that might occur due to network issues
-                _LOGGER.exception(f"Websocket error: {error}")
+                solie.logger.exception(f"Websocket error: {error}")
                 # Wait for a few seconds before attempting to reconnect
                 await asyncio.sleep(5)
 
