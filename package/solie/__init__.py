@@ -1111,7 +1111,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         await self.app_close_event.wait()
 
     async def process_app_events(self):
-        interval = 1 / 120
+        interval = 1 / 240
         app_instance = QtCore.QCoreApplication.instance()
         if app_instance is None:
             raise ValueError("App instance is none, cannot process events")
