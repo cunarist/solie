@@ -1,4 +1,4 @@
-acquire_ratio = 0.8 / len(target_symbols)  # Distribute asset by symbols count
+acquire_ratio = 0.8 / len(target_symbols)  # Distribute asset by symbol count
 wallet_balance = account_state["wallet_balance"]
 
 for symbol in target_symbols:
