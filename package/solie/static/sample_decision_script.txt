@@ -1,6 +1,7 @@
-for symbol in target_symbols:
+acquire_ratio = 0.8 / len(target_symbols)  # distribute by symbols count
+wallet_balance = account_state["wallet_balance"]
 
-    acquire_ratio = 0.8 / len(target_symbols)  # distribute by symbols count
+for symbol in target_symbols:
 
     current_price = current_candle_data[str((symbol, "Close"))]
 
@@ -9,7 +10,6 @@ for symbol in target_symbols:
     indicator_key = str((symbol, "Price", "SMA Two (#FF6666)"))
     price_sma_two = current_indicators[indicator_key]
 
-    wallet_balance = account_state["wallet_balance"]
     position_direction = account_state["positions"][symbol]["direction"]
     position_margin = account_state["positions"][symbol]["margin"]
 
