@@ -509,9 +509,7 @@ class Transactor:
                         recorded_value = symbol_df.loc[recorded_time, "Margin Ratio"]
                         new_value = recorded_value + added_margin_ratio
                         cell.data.loc[recorded_time, "Margin Ratio"] = new_value
-                        last_asset: float = cell.data.loc[
-                            last_index, "Result Asset"
-                        ]  # type:ignore
+                        last_asset: float = cell.data.loc[last_index, "Result Asset"]  # type:ignore
                         new_value = last_asset + added_revenue
                         cell.data.loc[last_index, "Result Asset"] = new_value
                     else:
@@ -530,9 +528,7 @@ class Transactor:
                         cell.data.loc[record_time, "Margin Ratio"] = new_value
                         new_value = order_id
                         cell.data.loc[record_time, "Order ID"] = new_value
-                        last_asset: float = cell.data.loc[
-                            last_index, "Result Asset"
-                        ]  # type:ignore
+                        last_asset: float = cell.data.loc[last_index, "Result Asset"]  # type:ignore
                         new_value = last_asset + added_revenue
                         cell.data.loc[record_time, "Result Asset"] = new_value
                         if order_id in unique_order_ids:
@@ -2166,7 +2162,7 @@ class Transactor:
 
         # ■■■■■ actually place orders ■■■■■
 
-        async def job_1(payload):
+        async def job_po(payload):
             response = await self.api_requester.binance(
                 http_method="POST",
                 path="/fapi/v1/order",
@@ -2184,16 +2180,16 @@ class Transactor:
                 if not cell.data.index.is_monotonic_increasing:
                     cell.data = await go(sort_pandas.data_frame, cell.data)
 
-        await asyncio.gather(*[job_1(order) for order in new_orders])
+        await asyncio.gather(*[job_po(order) for order in new_orders])
 
-        async def job_2(payload):
+        async def job_cc(payload):
             await self.api_requester.binance(
                 http_method="DELETE",
                 path="/fapi/v1/allOpenOrders",
                 payload=payload,
             )
 
-        await asyncio.gather(*[job_2(order) for order in new_orders])
+        await asyncio.gather(*[job_cc(order) for order in cancel_orders])
 
         # ■■■■■ record task duration ■■■■■
 
