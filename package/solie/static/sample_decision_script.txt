@@ -1,4 +1,4 @@
-acquire_ratio = 0.8 / len(target_symbols)  # Distribute asset by symbol count
+acquire_ratio = 0.8 / len(target_symbols)  # Split asset by symbol count
 wallet_balance = account_state["wallet_balance"]
 
 for symbol in target_symbols:
@@ -14,7 +14,7 @@ for symbol in target_symbols:
     position_margin = account_state["positions"][symbol]["margin"]
 
     scribbles["remember_data"] = True  # Remember something
-    remember_data = scribbles.get("remember_data", False)  # Retrieve it later
+    remember_data = scribbles.get("remember_data", False)  # Get it later
 
     if position_direction == "none":
         if price_sma_one > price_sma_two:
