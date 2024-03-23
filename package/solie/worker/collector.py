@@ -583,7 +583,7 @@ class Collector:
 
                 done_steps += 1
 
-            await asyncio.gather(*[download_fill(p) for p in download_presets])
+            await asyncio.gather(download_fill(p) for p in download_presets)
 
             if preset_year < current_year:
                 # For data of previous years,

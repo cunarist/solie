@@ -2180,7 +2180,7 @@ class Transactor:
                 if not cell.data.index.is_monotonic_increasing:
                     cell.data = await go(sort_pandas.data_frame, cell.data)
 
-        await asyncio.gather(*[job_po(order) for order in new_orders])
+        await asyncio.gather(job_po(order) for order in new_orders)
 
         async def job_cc(payload):
             await self.api_requester.binance(
@@ -2189,7 +2189,7 @@ class Transactor:
                 payload=payload,
             )
 
-        await asyncio.gather(*[job_cc(order) for order in cancel_orders])
+        await asyncio.gather(job_cc(order) for order in cancel_orders)
 
         # ■■■■■ record task duration ■■■■■
 
@@ -2245,7 +2245,7 @@ class Transactor:
             except ApiRequestError:
                 pass
 
-        await asyncio.gather(*[job(conflict) for conflict in conflicting_order_tuples])
+        await asyncio.gather(job(conflict) for conflict in conflicting_order_tuples)
 
     async def pan_view_range(self, *args, **kwargs):
         if not self.should_draw_frequently:
