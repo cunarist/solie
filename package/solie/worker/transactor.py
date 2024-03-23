@@ -1955,8 +1955,12 @@ class Transactor:
 
         # ■■■■■ prepare orders ■■■■■
 
+        # These orders must be executed one after another.
+        # For example, some `later_orders` expect a position made from `now_orders`
         cancel_orders = []
-        new_orders = []
+        now_orders = []
+        book_orders = []
+        later_orders = []
 
         for symbol in user_settings.get_data_settings()["target_symbols"]:
             if symbol not in decision.keys():
@@ -1998,7 +2002,7 @@ class Transactor:
                     "quantity": quantity,
                     "reduceOnly": True,
                 }
-                new_orders.append(new_order)
+                now_orders.append(new_order)
 
             if "now_buy" in decision[symbol]:
                 command = decision[symbol]["now_buy"]
@@ -2011,7 +2015,7 @@ class Transactor:
                     "side": "BUY",
                     "quantity": ball.ceil(quantity, quantity_precision),
                 }
-                new_orders.append(new_order)
+                now_orders.append(new_order)
 
             if "now_sell" in decision[symbol]:
                 command = decision[symbol]["now_sell"]
@@ -2024,7 +2028,39 @@ class Transactor:
                     "side": "SELL",
                     "quantity": ball.ceil(quantity, quantity_precision),
                 }
-                new_orders.append(new_order)
+                now_orders.append(new_order)
+
+            if "book_buy" in decision[symbol]:
+                command = decision[symbol]["book_buy"]
+                notional = max(minimum_notional, command["margin"] * leverage)
+                boundary = command["boundary"]
+                quantity = min(maximum_quantity, notional / boundary)
+                new_order = {
+                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                    "symbol": symbol,
+                    "type": "LIMIT",
+                    "side": "BUY",
+                    "quantity": ball.ceil(quantity, quantity_precision),
+                    "price": round(boundary, price_precision),
+                    "timeInForce": "GTC",
+                }
+                book_orders.append(new_order)
+
+            if "book_sell" in decision[symbol]:
+                command = decision[symbol]["book_sell"]
+                notional = max(minimum_notional, command["margin"] * leverage)
+                boundary = command["boundary"]
+                quantity = min(maximum_quantity, notional / boundary)
+                new_order = {
+                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                    "symbol": symbol,
+                    "type": "LIMIT",
+                    "side": "SELL",
+                    "quantity": ball.ceil(quantity, quantity_precision),
+                    "price": round(boundary, price_precision),
+                    "timeInForce": "GTC",
+                }
+                book_orders.append(new_order)
 
             if "later_up_close" in decision[symbol]:
                 command = decision[symbol]["later_up_close"]
@@ -2045,7 +2081,7 @@ class Transactor:
                     "stopPrice": round(command["boundary"], price_precision),
                     "closePosition": True,
                 }
-                new_orders.append(new_order)
+                later_orders.append(new_order)
 
             if "later_down_close" in decision[symbol]:
                 command = decision[symbol]["later_down_close"]
@@ -2066,7 +2102,7 @@ class Transactor:
                     "stopPrice": round(command["boundary"], price_precision),
                     "closePosition": True,
                 }
-                new_orders.append(new_order)
+                later_orders.append(new_order)
 
             if "later_up_buy" in decision[symbol]:
                 command = decision[symbol]["later_up_buy"]
@@ -2081,7 +2117,7 @@ class Transactor:
                     "quantity": ball.ceil(quantity, quantity_precision),
                     "stopPrice": round(boundary, price_precision),
                 }
-                new_orders.append(new_order)
+                later_orders.append(new_order)
 
             if "later_down_buy" in decision[symbol]:
                 command = decision[symbol]["later_down_buy"]
@@ -2096,7 +2132,7 @@ class Transactor:
                     "quantity": ball.ceil(quantity, quantity_precision),
                     "stopPrice": round(boundary, price_precision),
                 }
-                new_orders.append(new_order)
+                later_orders.append(new_order)
 
             if "later_up_sell" in decision[symbol]:
                 command = decision[symbol]["later_up_sell"]
@@ -2111,7 +2147,7 @@ class Transactor:
                     "quantity": ball.ceil(quantity, quantity_precision),
                     "stopPrice": round(boundary, price_precision),
                 }
-                new_orders.append(new_order)
+                later_orders.append(new_order)
 
             if "later_down_sell" in decision[symbol]:
                 command = decision[symbol]["later_down_sell"]
@@ -2126,43 +2162,22 @@ class Transactor:
                     "quantity": ball.ceil(quantity, quantity_precision),
                     "stopPrice": round(boundary, price_precision),
                 }
-                new_orders.append(new_order)
-
-            if "book_buy" in decision[symbol]:
-                command = decision[symbol]["book_buy"]
-                notional = max(minimum_notional, command["margin"] * leverage)
-                boundary = command["boundary"]
-                quantity = min(maximum_quantity, notional / boundary)
-                new_order = {
-                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                    "symbol": symbol,
-                    "type": "LIMIT",
-                    "side": "BUY",
-                    "quantity": ball.ceil(quantity, quantity_precision),
-                    "price": round(boundary, price_precision),
-                    "timeInForce": "GTC",
-                }
-                new_orders.append(new_order)
-
-            if "book_sell" in decision[symbol]:
-                command = decision[symbol]["book_sell"]
-                notional = max(minimum_notional, command["margin"] * leverage)
-                boundary = command["boundary"]
-                quantity = min(maximum_quantity, notional / boundary)
-                new_order = {
-                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                    "symbol": symbol,
-                    "type": "LIMIT",
-                    "side": "SELL",
-                    "quantity": ball.ceil(quantity, quantity_precision),
-                    "price": round(boundary, price_precision),
-                    "timeInForce": "GTC",
-                }
-                new_orders.append(new_order)
+                later_orders.append(new_order)
 
         # ■■■■■ actually place orders ■■■■■
 
-        async def job_po(payload):
+        async def job_cancel_order(payload):
+            await self.api_requester.binance(
+                http_method="DELETE",
+                path="/fapi/v1/allOpenOrders",
+                payload=payload,
+            )
+
+        await asyncio.wait(
+            [asyncio.create_task(job_cancel_order(order)) for order in cancel_orders]
+        )
+
+        async def job_new_order(payload):
             response = await self.api_requester.binance(
                 http_method="POST",
                 path="/fapi/v1/order",
@@ -2180,16 +2195,15 @@ class Transactor:
                 if not cell.data.index.is_monotonic_increasing:
                     cell.data = await go(sort_pandas.data_frame, cell.data)
 
-        await asyncio.gather(job_po(order) for order in new_orders)
-
-        async def job_cc(payload):
-            await self.api_requester.binance(
-                http_method="DELETE",
-                path="/fapi/v1/allOpenOrders",
-                payload=payload,
-            )
-
-        await asyncio.gather(job_cc(order) for order in cancel_orders)
+        await asyncio.wait(
+            [asyncio.create_task(job_new_order(order)) for order in now_orders]
+        )
+        await asyncio.wait(
+            [asyncio.create_task(job_new_order(order)) for order in book_orders]
+        )
+        await asyncio.wait(
+            [asyncio.create_task(job_new_order(order)) for order in later_orders]
+        )
 
         # ■■■■■ record task duration ■■■■■
 
