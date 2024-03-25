@@ -604,6 +604,7 @@ class Collector:
                             cell.data,
                             cell_worker.data,
                         )
+                await self.save_candle_data()
 
         # ■■■■■ add to log ■■■■■
 
