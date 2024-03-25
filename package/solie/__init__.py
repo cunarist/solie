@@ -1005,7 +1005,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         action_menu = QtWidgets.QMenu(self)
         self.pushButton_13.setMenu(action_menu)
-        text = "Open binance historical data webpage"
+        text = "Open historical data webpage of Binance"
         job = self.collector.open_binance_data_page
         new_action = action_menu.addAction(text)
         outsource.do(new_action.triggered, job)
@@ -1016,15 +1016,15 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         action_menu = QtWidgets.QMenu(self)
         self.pushButton_12.setMenu(action_menu)
-        text = "Open binance exchange"
+        text = "Open Binance exchange"
         job = self.transactor.open_exchange
         new_action = action_menu.addAction(text)
         outsource.do(new_action.triggered, job)
-        text = "Open binance futures wallet"
+        text = "Open Binance futures wallet"
         job = self.transactor.open_futures_wallet_page
         new_action = action_menu.addAction(text)
         outsource.do(new_action.triggered, job)
-        text = "Open binance API management webpage"
+        text = "Open Binance API management webpage"
         job = self.transactor.open_api_management_page
         new_action = action_menu.addAction(text)
         outsource.do(new_action.triggered, job)
