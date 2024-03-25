@@ -2173,9 +2173,9 @@ class Transactor:
                 payload=payload,
             )
 
-        await asyncio.wait(
-            [asyncio.create_task(job_cancel_order(order)) for order in cancel_orders]
-        )
+        if cancel_orders:
+            tasks = [asyncio.create_task(job_cancel_order(o)) for o in cancel_orders]
+            await asyncio.wait(tasks)
 
         async def job_new_order(payload):
             response = await self.api_requester.binance(
@@ -2195,15 +2195,17 @@ class Transactor:
                 if not cell.data.index.is_monotonic_increasing:
                     cell.data = await go(sort_pandas.data_frame, cell.data)
 
-        await asyncio.wait(
-            [asyncio.create_task(job_new_order(order)) for order in now_orders]
-        )
-        await asyncio.wait(
-            [asyncio.create_task(job_new_order(order)) for order in book_orders]
-        )
-        await asyncio.wait(
-            [asyncio.create_task(job_new_order(order)) for order in later_orders]
-        )
+        if now_orders:
+            tasks = [asyncio.create_task(job_new_order(o)) for o in now_orders]
+            await asyncio.wait(tasks)
+
+        if book_orders:
+            tasks = [asyncio.create_task(job_new_order(o)) for o in book_orders]
+            await asyncio.wait(tasks)
+
+        if later_orders:
+            tasks = [asyncio.create_task(job_new_order(o)) for o in later_orders]
+            await asyncio.wait(tasks)
 
         # ■■■■■ record task duration ■■■■■
 
