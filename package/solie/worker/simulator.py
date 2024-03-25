@@ -303,7 +303,7 @@ class Simulator:
             filepath = f"{solie.window.collector.workerpath}/candle_data_{year}.pickle"
             more_df = await go(pd.read_pickle, filepath)
             divided_datas.append(more_df)
-        candle_data = await go(pd.concat, divided_datas)
+        candle_data: pd.DataFrame = await go(pd.concat, divided_datas)
         if not candle_data.index.is_monotonic_increasing:
             candle_data = await go(sort_pandas.data_frame, candle_data)
         async with self.unrealized_changes.read_lock as cell:
