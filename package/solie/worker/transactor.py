@@ -1485,6 +1485,10 @@ class Transactor:
             await file.write(content)
 
     async def watch_binance(self, *args, **kwargs):
+        # ■■■■■ Basic data ■■■■■
+
+        target_symbols = user_settings.get_data_settings()["target_symbols"]
+
         # ■■■■■ check internet connection ■■■■■
 
         if not check_internet.connected():
@@ -1592,12 +1596,8 @@ class Transactor:
             )
             about_open_orders[symbol] = response
 
-        await asyncio.gather(
-            *[
-                job(symbol)
-                for symbol in user_settings.get_data_settings()["target_symbols"]
-            ]
-        )
+        tasks = [asyncio.create_task(job(s)) for s in target_symbols]
+        await asyncio.wait(tasks)
 
         # ■■■■■ update account state ■■■■■
 
@@ -1838,12 +1838,8 @@ class Transactor:
                         payload=payload,
                     )
 
-            await asyncio.gather(
-                *[
-                    job_1(symbol)
-                    for symbol in user_settings.get_data_settings()["target_symbols"]
-                ]
-            )
+            tasks = [asyncio.create_task(job_1(s)) for s in target_symbols]
+            await asyncio.wait(tasks)
 
             async def job_2(symbol):
                 about_position = {}
@@ -1877,12 +1873,8 @@ class Transactor:
                         payload=payload,
                     )
 
-            await asyncio.gather(
-                *[
-                    job_2(symbol)
-                    for symbol in user_settings.get_data_settings()["target_symbols"]
-                ]
-            )
+            tasks = [asyncio.create_task(job_2(s)) for s in target_symbols]
+            await asyncio.wait(tasks)
 
             try:
                 timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
@@ -2261,7 +2253,8 @@ class Transactor:
             except ApiRequestError:
                 pass
 
-        await asyncio.gather(job(conflict) for conflict in conflicting_order_tuples)
+        tasks = [asyncio.create_task(job(c)) for c in conflicting_order_tuples]
+        await asyncio.wait(tasks)
 
     async def pan_view_range(self, *args, **kwargs):
         if not self.should_draw_frequently:
