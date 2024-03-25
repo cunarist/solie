@@ -54,6 +54,7 @@ def do(**kwargs) -> pd.DataFrame:
         "new_indicators": new_indicators,
     }
     exec(indicators_script, namespace)
+    new_indicators = {k: v for k, v in new_indicators.items() if v is not None}
 
     # ■■■■■ concatenate individual indicators into one ■■■■■
 
