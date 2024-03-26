@@ -1408,7 +1408,7 @@ class Transactor:
             current_moment=current_moment,
             current_candle_data=current_candle_data,
             current_indicators=current_indicators,
-            account_state=copy.deepcopy(self.account_state),
+            account_state=self.account_state,
             scribbles=self.scribbles,
             decision_script=decision_script,
         )
