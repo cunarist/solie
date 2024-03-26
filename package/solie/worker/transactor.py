@@ -1,5 +1,4 @@
 import asyncio
-import copy
 import json
 import math
 import os
