@@ -1032,10 +1032,11 @@ class Simulator:
         calculation_output_data = []
 
         if should_calculate:
-            gathered = asyncio.gather(
+            coroutines = [
                 go(simulate_chunk.do, input_data)
                 for input_data in calculation_input_data
-            )
+            ]
+            gathered = asyncio.gather(*coroutines)
 
             total_seconds = (calculate_until - calculate_from).total_seconds()
 

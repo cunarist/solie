@@ -39,7 +39,7 @@ class ApiRequester:
         elif server == "futures":
             url = "https://fapi.binance.com"
         else:
-            raise ApiRequestError("This Binance server is supported")
+            raise ValueError("This Binance server is not supported")
         url += path
         url += "?" + query_string + "&signature=" + signature
 
@@ -62,7 +62,7 @@ class ApiRequester:
             error_message = response["msg"]
             text = "There was a problem with Binance API request"
             text += f" (Error {error_code}: {error_message})"
-            raise ApiRequestError(text)
+            raise ApiRequestError(text, payload)
 
         return response
 
@@ -95,6 +95,6 @@ class ApiRequester:
             text = f"There was a problem with bytes request (HTTP {status_code})"
             text += "\n"
             text += url
-            raise ApiRequestError(text)
+            raise ApiRequestError(text, None)
 
         return response

@@ -1383,7 +1383,7 @@ class Transactor:
 
         # ■■■■■ get the candle data ■■■■■
 
-        slice_from = datetime.now(timezone.utc) - timedelta(days=7)
+        slice_from = datetime.now(timezone.utc) - timedelta(days=28)
         async with solie.window.collector.candle_data.read_lock as cell:
             partial_candle_data = cell.data[slice_from:].copy()
 
@@ -1978,6 +1978,7 @@ class Transactor:
                 cancel_orders.append(cancel_order)
 
             if "now_close" in decision[symbol]:
+                is_possible = True
                 command = decision[symbol]["now_close"]
                 quantity = maximum_quantity
                 if self.account_state["positions"][symbol]["direction"] == "long":
@@ -1985,20 +1986,22 @@ class Transactor:
                 elif self.account_state["positions"][symbol]["direction"] == "short":
                     side = "BUY"
                 else:
-                    side = "NONE"
-                new_order = {
-                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                    "symbol": symbol,
-                    "type": "MARKET",
-                    "side": side,
-                    "quantity": quantity,
-                    "reduceOnly": True,
-                }
-                now_orders.append(new_order)
+                    side = "NONE"  # Dummy
+                    is_possible = False
+                if is_possible:
+                    new_order = {
+                        "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                        "symbol": symbol,
+                        "type": "MARKET",
+                        "side": side,
+                        "quantity": quantity,
+                        "reduceOnly": True,
+                    }
+                    now_orders.append(new_order)
 
             if "now_buy" in decision[symbol]:
                 command = decision[symbol]["now_buy"]
-                notional = max(minimum_notional, command["margin"] * leverage)
+                notional = max(minimum_notional, float(command["margin"]) * leverage)
                 quantity = min(maximum_quantity, notional / current_price)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2011,7 +2014,7 @@ class Transactor:
 
             if "now_sell" in decision[symbol]:
                 command = decision[symbol]["now_sell"]
-                notional = max(minimum_notional, command["margin"] * leverage)
+                notional = max(minimum_notional, float(command["margin"]) * leverage)
                 quantity = min(maximum_quantity, notional / current_price)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2024,8 +2027,8 @@ class Transactor:
 
             if "book_buy" in decision[symbol]:
                 command = decision[symbol]["book_buy"]
-                notional = max(minimum_notional, command["margin"] * leverage)
-                boundary = command["boundary"]
+                notional = max(minimum_notional, float(command["margin"]) * leverage)
+                boundary = float(command["boundary"])
                 quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2040,8 +2043,8 @@ class Transactor:
 
             if "book_sell" in decision[symbol]:
                 command = decision[symbol]["book_sell"]
-                notional = max(minimum_notional, command["margin"] * leverage)
-                boundary = command["boundary"]
+                notional = max(minimum_notional, float(command["margin"]) * leverage)
+                boundary = float(command["boundary"])
                 quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2055,6 +2058,7 @@ class Transactor:
                 book_orders.append(new_order)
 
             if "later_up_close" in decision[symbol]:
+                is_possible = True
                 command = decision[symbol]["later_up_close"]
                 if self.account_state["positions"][symbol]["direction"] == "long":
                     new_order_side = "SELL"
@@ -2063,19 +2067,22 @@ class Transactor:
                     new_order_side = "BUY"
                     new_order_type = "STOP_MARKET"
                 else:
-                    new_order_side = "NONE"
-                    new_order_type = "NONE"
-                new_order = {
-                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                    "symbol": symbol,
-                    "type": new_order_type,
-                    "side": new_order_side,
-                    "stopPrice": round(command["boundary"], price_precision),
-                    "closePosition": True,
-                }
-                later_orders.append(new_order)
+                    new_order_side = "NONE"  # Dummy
+                    new_order_type = "NONE"  # Dummy
+                    is_possible = False
+                if is_possible:
+                    new_order = {
+                        "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                        "symbol": symbol,
+                        "type": new_order_type,
+                        "side": new_order_side,
+                        "stopPrice": round(float(command["boundary"]), price_precision),
+                        "closePosition": True,
+                    }
+                    later_orders.append(new_order)
 
             if "later_down_close" in decision[symbol]:
+                is_possible = True
                 command = decision[symbol]["later_down_close"]
                 if self.account_state["positions"][symbol]["direction"] == "long":
                     new_order_side = "SELL"
@@ -2084,22 +2091,24 @@ class Transactor:
                     new_order_side = "BUY"
                     new_order_type = "TAKE_PROFIT_MARKET"
                 else:
-                    new_order_side = "NONE"
-                    new_order_type = "NONE"
-                new_order = {
-                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                    "symbol": symbol,
-                    "type": new_order_type,
-                    "side": new_order_side,
-                    "stopPrice": round(command["boundary"], price_precision),
-                    "closePosition": True,
-                }
-                later_orders.append(new_order)
+                    new_order_side = "NONE"  # Dummy
+                    new_order_type = "NONE"  # Dummy
+                    is_possible = False
+                if is_possible:
+                    new_order = {
+                        "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                        "symbol": symbol,
+                        "type": new_order_type,
+                        "side": new_order_side,
+                        "stopPrice": round(float(command["boundary"]), price_precision),
+                        "closePosition": True,
+                    }
+                    later_orders.append(new_order)
 
             if "later_up_buy" in decision[symbol]:
                 command = decision[symbol]["later_up_buy"]
-                notional = max(minimum_notional, command["margin"] * leverage)
-                boundary = command["boundary"]
+                notional = max(minimum_notional, float(command["margin"]) * leverage)
+                boundary = float(command["boundary"])
                 quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2113,8 +2122,8 @@ class Transactor:
 
             if "later_down_buy" in decision[symbol]:
                 command = decision[symbol]["later_down_buy"]
-                notional = max(minimum_notional, command["margin"] * leverage)
-                boundary = command["boundary"]
+                notional = max(minimum_notional, float(command["margin"]) * leverage)
+                boundary = float(command["boundary"])
                 quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2128,8 +2137,8 @@ class Transactor:
 
             if "later_up_sell" in decision[symbol]:
                 command = decision[symbol]["later_up_sell"]
-                notional = max(minimum_notional, command["margin"] * leverage)
-                boundary = command["boundary"]
+                notional = max(minimum_notional, float(command["margin"]) * leverage)
+                boundary = float(command["boundary"])
                 quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2143,8 +2152,8 @@ class Transactor:
 
             if "later_down_sell" in decision[symbol]:
                 command = decision[symbol]["later_down_sell"]
-                notional = max(minimum_notional, command["margin"] * leverage)
-                boundary = command["boundary"]
+                notional = max(minimum_notional, float(command["margin"]) * leverage)
+                boundary = float(command["boundary"])
                 quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2253,8 +2262,9 @@ class Transactor:
             except ApiRequestError:
                 pass
 
-        tasks = [asyncio.create_task(job(c)) for c in conflicting_order_tuples]
-        await asyncio.wait(tasks)
+        if conflicting_order_tuples:
+            tasks = [asyncio.create_task(job(c)) for c in conflicting_order_tuples]
+            await asyncio.wait(tasks)
 
     async def pan_view_range(self, *args, **kwargs):
         if not self.should_draw_frequently:

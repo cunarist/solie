@@ -46,7 +46,7 @@ Variables provided by default are as follows. You can use these without any impo
 - `pd`(`module`): Python package `pandas`.
 - `np`(`module`): Python package `numpy`.
 - `target_symbols`(`list`): The symbols being observed.
-- `candle_data`(`pandas.DataFrame`): Candle data. Extra 7 days of data before desired calculation range is included.
+- `candle_data`(`pandas.DataFrame`): Candle data. Extra 28 days of data before desired calculation range is included.
 - `new_indicators`(`dict`): An object that holds newly created indicators.
 
 ### Basic Syntax
