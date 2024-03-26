@@ -22,6 +22,7 @@ from solie.parallel import go
 from solie.utility import (
     ball,
     check_internet,
+    convert,
     decide,
     make_indicators,
     remember_task_durations,
@@ -335,23 +336,16 @@ class Transactor:
 
             asset_token = user_settings.get_data_settings()["asset_token"]
 
-            about_asset = {}
-            if asset_token in [about_asset["a"] for about_asset in about_assets]:
-                for about_asset in about_assets:
-                    asset_name = about_asset["a"]
-                    if asset_name == asset_token:
-                        break
-
+            about_assets_keyed = convert.list_to_dict(about_assets, "a")
+            if asset_token in about_assets_keyed:
+                about_asset = about_assets_keyed[asset_token]
                 wallet_balance = float(about_asset["wb"])
                 self.wallet_balance_state = wallet_balance
 
-            if "BOTH" in [about_position["ps"] for about_position in about_positions]:
-                for about_position in about_positions:
-                    position_side = about_position["ps"]
-                    if position_side == "BOTH":
-                        break
+            about_positions_keyed = convert.list_to_dict(about_positions, "ps")
+            if "BOTH" in about_positions_keyed:
+                about_position = about_positions_keyed["BOTH"]
 
-                about_position = {}
                 target_symbols = user_settings.get_data_settings()["target_symbols"]
                 if about_position["s"] not in target_symbols:
                     return

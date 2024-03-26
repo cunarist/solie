@@ -14,10 +14,10 @@ from solie.definition.api_requester import ApiRequester
 from solie.parallel import go
 from solie.utility import (
     check_internet,
+    convert,
     remember_task_durations,
     simply_format,
     user_settings,
-    value_to,
 )
 
 WINDOW_LOCK_OPTIONS = (
@@ -100,7 +100,9 @@ class Manager:
                 content = await file.read()
                 self.settings = json.loads(content)
         solie.window.comboBox_3.setCurrentIndex(
-            value_to.indexes(WINDOW_LOCK_OPTIONS, self.settings["lock_board"])[0]
+            convert.value_to_indexes(WINDOW_LOCK_OPTIONS, self.settings["lock_board"])[
+                0
+            ]
         )
 
         # python script
