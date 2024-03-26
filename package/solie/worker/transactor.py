@@ -1482,6 +1482,7 @@ class Transactor:
         # ■■■■■ Basic data ■■■■■
 
         target_symbols = user_settings.get_data_settings()["target_symbols"]
+        asset_token = user_settings.get_data_settings()["asset_token"]
 
         # ■■■■■ check internet connection ■■■■■
 
@@ -1507,35 +1508,23 @@ class Transactor:
         for about_symbol in about_exchange["symbols"]:
             symbol = about_symbol["symbol"]
 
-            about_filter = {}
+            about_filters = about_symbol["filters"]
+            about_filters_keyed = convert.list_to_dict(about_filters, "filterType")
 
-            for about_filter in about_symbol["filters"]:
-                if about_filter["filterType"] == "MIN_NOTIONAL":
-                    break
-            minimum_notional = float(about_filter["notional"])
+            minimum_notional = float(about_filters_keyed["MIN_NOTIONAL"]["notional"])
             self.secret_memory["minimum_notionals"][symbol] = minimum_notional
 
-            for about_filter in about_symbol["filters"]:
-                if about_filter["filterType"] == "LOT_SIZE":
-                    break
-            maximum_quantity = float(about_filter["maxQty"])
-            for about_filter in about_symbol["filters"]:
-                if about_filter["filterType"] == "MARKET_LOT_SIZE":
-                    break
-            maximum_quantity = min(maximum_quantity, float(about_filter["maxQty"]))
+            maximum_quantity = min(
+                float(about_filters_keyed["LOT_SIZE"]["maxQty"]),
+                float(about_filters_keyed["MARKET_LOT_SIZE"]["maxQty"]),
+            )
             self.secret_memory["maximum_quantities"][symbol] = maximum_quantity
 
-            for about_filter in about_symbol["filters"]:
-                if about_filter["filterType"] == "PRICE_FILTER":
-                    break
-            ticksize = float(about_filter["tickSize"])
+            ticksize = float(about_filters_keyed["PRICE_FILTER"]["tickSize"])
             price_precision = int(math.log10(1 / ticksize))
             self.secret_memory["price_precisions"][symbol] = price_precision
 
-            for about_filter in about_symbol["filters"]:
-                if about_filter["filterType"] == "LOT_SIZE":
-                    break
-            stepsize = float(about_filter["stepSize"])
+            stepsize = float(about_filters_keyed["LOT_SIZE"]["stepSize"])
             quantity_precision = int(math.log10(1 / stepsize))
             self.secret_memory["quantity_precisions"][symbol] = quantity_precision
 
@@ -1599,19 +1588,18 @@ class Transactor:
         self.account_state["observed_until"] = current_moment
 
         # wallet_balance
-        about_asset = {}
-        for about_asset in about_account["assets"]:
-            if about_asset["asset"] == user_settings.get_data_settings()["asset_token"]:
-                break
+        about_assets = about_account["assets"]
+        about_assets_keyed = convert.list_to_dict(about_assets, "asset")
+        about_asset = about_assets_keyed[asset_token]
         wallet_balance = float(about_asset["walletBalance"])
         self.account_state["wallet_balance"] = wallet_balance
 
+        about_positions = about_account["positions"]
+        about_positions_keyed = convert.list_to_dict(about_positions, "symbol")
+
         # positions
-        for symbol in user_settings.get_data_settings()["target_symbols"]:
-            about_position = {}
-            for about_position in about_account["positions"]:
-                if about_position["symbol"] == symbol:
-                    break
+        for symbol in target_symbols:
+            about_position = about_positions_keyed[symbol]
 
             if float(about_position["notional"]) > 0:
                 direction = "long"
@@ -1634,15 +1622,11 @@ class Transactor:
 
         # open orders
         open_orders = {}
-        for symbol in user_settings.get_data_settings()["target_symbols"]:
+        for symbol in target_symbols:
             open_orders[symbol] = {}
 
-        for symbol in user_settings.get_data_settings()["target_symbols"]:
-            about_position = {}
-            for about_position in about_account["positions"]:
-                if about_position["symbol"] == symbol:
-                    break
-
+        for symbol in target_symbols:
+            about_position = about_positions_keyed[symbol]
             leverage = int(about_position["leverage"])
 
             for about_open_order in about_open_orders[symbol]:
@@ -1734,19 +1718,13 @@ class Transactor:
 
         # ■■■■■ update hidden state ■■■■■
 
-        for symbol in user_settings.get_data_settings()["target_symbols"]:
-            about_position = {}
-            for about_position in about_account["positions"]:
-                if about_position["symbol"] == symbol:
-                    break
+        for symbol in target_symbols:
+            about_position = about_positions_keyed[symbol]
             leverage = int(about_position["leverage"])
             self.secret_memory["leverages"][symbol] = leverage
 
         # ■■■■■ record unrealized change ■■■■■
 
-        for about_asset in about_account["assets"]:
-            if about_asset["asset"] == user_settings.get_data_settings()["asset_token"]:
-                break
         # unrealized profit is not included in walletBalance
         wallet_balance = float(about_asset["walletBalance"])
         if wallet_balance != 0:
@@ -1764,12 +1742,6 @@ class Transactor:
 
         async with self.asset_record.write_lock as cell:
             if len(cell.data) == 0:
-                for about_asset in about_account["assets"]:
-                    if (
-                        about_asset["asset"]
-                        == user_settings.get_data_settings()["asset_token"]
-                    ):
-                        break
                 wallet_balance = float(about_asset["walletBalance"])
                 current_time = datetime.now(timezone.utc)
                 cell.data.loc[current_time, "Cause"] = "other"
@@ -1777,9 +1749,6 @@ class Transactor:
 
         # ■■■■■ when the wallet balance changed for no good reason ■■■■■
 
-        for about_asset in about_account["assets"]:
-            if about_asset["asset"] == user_settings.get_data_settings()["asset_token"]:
-                break
         wallet_balance = float(about_asset["walletBalance"])
 
         async with self.asset_record.read_lock as cell:
@@ -1808,10 +1777,7 @@ class Transactor:
         if self.automation_settings["should_transact"]:
 
             async def job_1(symbol):
-                about_position = {}
-                for about_position in about_account["positions"]:
-                    if about_position["symbol"] == symbol:
-                        break
+                about_position = about_positions_keyed[symbol]
                 current_leverage = int(about_position["leverage"])
 
                 desired_leverage = self.mode_settings["desired_leverage"]
@@ -1836,10 +1802,7 @@ class Transactor:
             await asyncio.wait(tasks)
 
             async def job_2(symbol):
-                about_position = {}
-                for about_position in about_account["positions"]:
-                    if about_position["symbol"] == symbol:
-                        break
+                about_position = about_positions_keyed[symbol]
 
                 isolated = about_position["isolated"]
                 notional = float(about_position["notional"])
