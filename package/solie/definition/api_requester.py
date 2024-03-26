@@ -60,8 +60,7 @@ class ApiRequester:
         if "code" in response and response["code"] != 200:
             error_code = response["code"]
             error_message = response["msg"]
-            text = "There was a problem with Binance API request"
-            text += f" (Error {error_code}: {error_message})"
+            text = f"Binance error code {error_code}\n{error_message}"
             raise ApiRequestError(text, payload)
 
         return response
@@ -92,9 +91,7 @@ class ApiRequester:
 
         status_code = raw_response.status
         if status_code != 200:
-            text = f"There was a problem with bytes request (HTTP {status_code})"
-            text += "\n"
-            text += url
+            text = f"HTTP {status_code}\n{url}"
             raise ApiRequestError(text, None)
 
         return response

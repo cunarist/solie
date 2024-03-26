@@ -1484,18 +1484,18 @@ class Transactor:
         target_symbols = user_settings.get_data_settings()["target_symbols"]
         asset_token = user_settings.get_data_settings()["asset_token"]
 
-        # ■■■■■ check internet connection ■■■■■
+        # ■■■■■ Check internet connection ■■■■■
 
         if not check_internet.connected():
             return
 
-        # ■■■■■ moment ■■■■■
+        # ■■■■■ Moment ■■■■■
 
         current_moment = datetime.now(timezone.utc).replace(microsecond=0)
         current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
         before_moment = current_moment - timedelta(seconds=10)
 
-        # ■■■■■ request exchange information ■■■■■
+        # ■■■■■ Request exchange information ■■■■■
 
         payload = {}
         response = await self.api_requester.binance(
@@ -1528,7 +1528,7 @@ class Transactor:
             quantity_precision = int(math.log10(1 / stepsize))
             self.secret_memory["quantity_precisions"][symbol] = quantity_precision
 
-        # ■■■■■ request leverage bracket information ■■■■■
+        # ■■■■■ Request leverage bracket information ■■■■■
 
         try:
             payload = {
@@ -1549,7 +1549,7 @@ class Transactor:
             # when the key is not ready
             return
 
-        # ■■■■■ request account information ■■■■■
+        # ■■■■■ Request account information ■■■■■
 
         try:
             payload = {
@@ -1582,7 +1582,7 @@ class Transactor:
         tasks = [asyncio.create_task(job(s)) for s in target_symbols]
         await asyncio.wait(tasks)
 
-        # ■■■■■ update account state ■■■■■
+        # ■■■■■ Update account state ■■■■■
 
         # observed until
         self.account_state["observed_until"] = current_moment
@@ -1716,14 +1716,14 @@ class Transactor:
 
         self.account_state["open_orders"] = open_orders
 
-        # ■■■■■ update hidden state ■■■■■
+        # ■■■■■ Update hidden state ■■■■■
 
         for symbol in target_symbols:
             about_position = about_positions_keyed[symbol]
             leverage = int(about_position["leverage"])
             self.secret_memory["leverages"][symbol] = leverage
 
-        # ■■■■■ record unrealized change ■■■■■
+        # ■■■■■ Record unrealized change ■■■■■
 
         # unrealized profit is not included in walletBalance
         wallet_balance = float(about_asset["walletBalance"])
@@ -1738,7 +1738,7 @@ class Transactor:
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await go(sort_pandas.series, cell.data)
 
-        # ■■■■■ make an asset trace if it's blank ■■■■■
+        # ■■■■■ Make an asset trace if it's blank ■■■■■
 
         async with self.asset_record.write_lock as cell:
             if len(cell.data) == 0:
@@ -1747,7 +1747,7 @@ class Transactor:
                 cell.data.loc[current_time, "Cause"] = "other"
                 cell.data.loc[current_time, "Result Asset"] = wallet_balance
 
-        # ■■■■■ when the wallet balance changed for no good reason ■■■■■
+        # ■■■■■ When the wallet balance changed for no good reason ■■■■■
 
         wallet_balance = float(about_asset["walletBalance"])
 
@@ -1772,7 +1772,7 @@ class Transactor:
                 last_index = cell.data.index[-1]
                 cell.data.loc[last_index, "Result Asset"] = wallet_balance
 
-        # ■■■■■ correct mode of the account market if automation is turned on ■■■■■
+        # ■■■■■ Correct mode of the account market if automation is turned on ■■■■■
 
         if self.automation_settings["should_transact"]:
 
@@ -1885,9 +1885,16 @@ class Transactor:
         self.secret_memory["is_key_restrictions_satisfied"] = is_satisfied
 
     async def place_orders(self, *args, **kwargs):
-        task_start_time = datetime.now(timezone.utc)
-
         decision = args[0]
+        target_symbols = user_settings.get_data_settings()["target_symbols"]
+
+        current_prices: dict[str, float] = {}
+        for symbol in target_symbols:
+            async with solie.window.collector.aggregate_trades.read_lock as cell:
+                ar = cell.data[-10000:].copy()
+            temp_ar = ar[str((symbol, "Price"))]
+            temp_ar = temp_ar[temp_ar != 0]
+            current_prices[symbol] = float(temp_ar[-1])
 
         # cancel_all
         # now_close
@@ -1902,30 +1909,42 @@ class Transactor:
         # book_buy
         # book_sell
 
-        # ■■■■■ prepare orders ■■■■■
+        # ■■■■■ Prepare closure functions ■■■■■
+
+        async def job_cancel_order(payload):
+            await self.api_requester.binance(
+                http_method="DELETE",
+                path="/fapi/v1/allOpenOrders",
+                payload=payload,
+            )
+
+        async def job_new_order(payload):
+            response = await self.api_requester.binance(
+                http_method="POST",
+                path="/fapi/v1/order",
+                payload=payload,
+            )
+            order_symbol = response["symbol"]
+            order_id = response["orderId"]
+            timestamp = response["updateTime"] / 1000
+            update_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+            async with self.auto_order_record.write_lock as cell:
+                while update_time in cell.data.index:
+                    update_time += timedelta(milliseconds=1)
+                cell.data.loc[update_time, "Symbol"] = order_symbol
+                cell.data.loc[update_time, "Order ID"] = order_id
+                if not cell.data.index.is_monotonic_increasing:
+                    cell.data = await go(sort_pandas.data_frame, cell.data)
+
+        # ■■■■■ Do cancel orders ■■■■■
 
         # These orders must be executed one after another.
         # For example, some `later_orders` expect a position made from `now_orders`
         cancel_orders = []
-        now_orders = []
-        book_orders = []
-        later_orders = []
 
-        for symbol in user_settings.get_data_settings()["target_symbols"]:
-            if symbol not in decision.keys():
+        for symbol in target_symbols:
+            if symbol not in decision:
                 continue
-
-            async with solie.window.collector.aggregate_trades.read_lock as cell:
-                ar = cell.data[-10000:].copy()
-            temp_ar = ar[str((symbol, "Price"))]
-            temp_ar = temp_ar[temp_ar != 0]
-            current_price = float(temp_ar[-1])
-
-            leverage = self.secret_memory["leverages"][symbol]
-            maximum_quantity = self.secret_memory["maximum_quantities"][symbol]
-            minimum_notional = self.secret_memory["minimum_notionals"][symbol]
-            price_precision = self.secret_memory["price_precisions"][symbol]
-            quantity_precision = self.secret_memory["quantity_precisions"][symbol]
 
             if "cancel_all" in decision[symbol]:
                 cancel_order = {
@@ -1933,6 +1952,25 @@ class Transactor:
                     "symbol": symbol,
                 }
                 cancel_orders.append(cancel_order)
+
+        if cancel_orders:
+            tasks = [asyncio.create_task(job_cancel_order(o)) for o in cancel_orders]
+            await asyncio.wait(tasks)
+
+        # ■■■■■ Do now orders ■■■■■
+
+        now_orders = []
+
+        for symbol in target_symbols:
+            if symbol not in decision:
+                continue
+
+            current_price = current_prices[symbol]
+            leverage = self.secret_memory["leverages"][symbol]
+            maximum_quantity = self.secret_memory["maximum_quantities"][symbol]
+            minimum_notional = self.secret_memory["minimum_notionals"][symbol]
+            price_precision = self.secret_memory["price_precisions"][symbol]
+            quantity_precision = self.secret_memory["quantity_precisions"][symbol]
 
             if "now_close" in decision[symbol]:
                 is_possible = True
@@ -1953,6 +1991,7 @@ class Transactor:
                         "side": side,
                         "quantity": quantity,
                         "reduceOnly": True,
+                        "newOrderRespType": "RESULT",
                     }
                     now_orders.append(new_order)
 
@@ -1966,6 +2005,7 @@ class Transactor:
                     "type": "MARKET",
                     "side": "BUY",
                     "quantity": ball.ceil(quantity, quantity_precision),
+                    "newOrderRespType": "RESULT",
                 }
                 now_orders.append(new_order)
 
@@ -1979,8 +2019,32 @@ class Transactor:
                     "type": "MARKET",
                     "side": "SELL",
                     "quantity": ball.ceil(quantity, quantity_precision),
+                    "newOrderRespType": "RESULT",
                 }
                 now_orders.append(new_order)
+
+        if now_orders:
+            tasks = [asyncio.create_task(job_new_order(o)) for o in now_orders]
+            await asyncio.wait(tasks)
+
+        # ■■■■■ Wait for the positions to be affected by now orders ■■■■■
+
+        await asyncio.sleep(2.0)
+
+        # ■■■■■ Do book orders ■■■■■
+
+        book_orders = []
+
+        for symbol in target_symbols:
+            if symbol not in decision:
+                continue
+
+            current_price = current_prices[symbol]
+            leverage = self.secret_memory["leverages"][symbol]
+            maximum_quantity = self.secret_memory["maximum_quantities"][symbol]
+            minimum_notional = self.secret_memory["minimum_notionals"][symbol]
+            price_precision = self.secret_memory["price_precisions"][symbol]
+            quantity_precision = self.secret_memory["quantity_precisions"][symbol]
 
             if "book_buy" in decision[symbol]:
                 command = decision[symbol]["book_buy"]
@@ -2013,6 +2077,25 @@ class Transactor:
                     "timeInForce": "GTC",
                 }
                 book_orders.append(new_order)
+
+        if book_orders:
+            tasks = [asyncio.create_task(job_new_order(o)) for o in book_orders]
+            await asyncio.wait(tasks)
+
+        # ■■■■■ Do later orders ■■■■■
+
+        later_orders = []
+
+        for symbol in target_symbols:
+            if symbol not in decision:
+                continue
+
+            current_price = current_prices[symbol]
+            leverage = self.secret_memory["leverages"][symbol]
+            maximum_quantity = self.secret_memory["maximum_quantities"][symbol]
+            minimum_notional = self.secret_memory["minimum_notionals"][symbol]
+            price_precision = self.secret_memory["price_precisions"][symbol]
+            quantity_precision = self.secret_memory["quantity_precisions"][symbol]
 
             if "later_up_close" in decision[symbol]:
                 is_possible = True
@@ -2122,54 +2205,9 @@ class Transactor:
                 }
                 later_orders.append(new_order)
 
-        # ■■■■■ actually place orders ■■■■■
-
-        async def job_cancel_order(payload):
-            await self.api_requester.binance(
-                http_method="DELETE",
-                path="/fapi/v1/allOpenOrders",
-                payload=payload,
-            )
-
-        if cancel_orders:
-            tasks = [asyncio.create_task(job_cancel_order(o)) for o in cancel_orders]
-            await asyncio.wait(tasks)
-
-        async def job_new_order(payload):
-            response = await self.api_requester.binance(
-                http_method="POST",
-                path="/fapi/v1/order",
-                payload=payload,
-            )
-            order_symbol = response["symbol"]
-            order_id = response["orderId"]
-            timestamp = response["updateTime"] / 1000
-            update_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-            async with self.auto_order_record.write_lock as cell:
-                while update_time in cell.data.index:
-                    update_time += timedelta(milliseconds=1)
-                cell.data.loc[update_time, "Symbol"] = order_symbol
-                cell.data.loc[update_time, "Order ID"] = order_id
-                if not cell.data.index.is_monotonic_increasing:
-                    cell.data = await go(sort_pandas.data_frame, cell.data)
-
-        if now_orders:
-            tasks = [asyncio.create_task(job_new_order(o)) for o in now_orders]
-            await asyncio.wait(tasks)
-
-        if book_orders:
-            tasks = [asyncio.create_task(job_new_order(o)) for o in book_orders]
-            await asyncio.wait(tasks)
-
         if later_orders:
             tasks = [asyncio.create_task(job_new_order(o)) for o in later_orders]
             await asyncio.wait(tasks)
-
-        # ■■■■■ record task duration ■■■■■
-
-        duration = datetime.now(timezone.utc) - task_start_time
-        duration = duration.total_seconds()
-        remember_task_durations.add("place_orders", duration)
 
     async def clear_positions_and_open_orders(self, *args, **kwargs):
         decision = {}
