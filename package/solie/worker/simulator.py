@@ -559,7 +559,7 @@ class Simulator:
             indicators_script=indicators_script,
         )
 
-        indicators = indicators[slice_from:]
+        indicators = indicators[slice_from:slice_until]
 
         # ■■■■■ draw strategy lines ■■■■■
 
