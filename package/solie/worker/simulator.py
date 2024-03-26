@@ -303,9 +303,11 @@ class Simulator:
             filepath = f"{solie.window.collector.workerpath}/candle_data_{year}.pickle"
             more_df = await go(pd.read_pickle, filepath)
             divided_datas.append(more_df)
-        candle_data: pd.DataFrame = await go(pd.concat, divided_datas)
-        if not candle_data.index.is_monotonic_increasing:
-            candle_data = await go(sort_pandas.data_frame, candle_data)
+        candle_data_original: pd.DataFrame = await go(pd.concat, divided_datas)
+        if not candle_data_original.index.is_monotonic_increasing:
+            candle_data_original = await go(
+                sort_pandas.data_frame, candle_data_original
+            )
         async with self.unrealized_changes.read_lock as cell:
             unrealized_changes = cell.data.copy()
         async with self.asset_record.read_lock as cell:
@@ -320,7 +322,7 @@ class Simulator:
                 before_asset = None
             asset_record = cell.data[slice_from:].copy()
 
-        candle_data = candle_data[slice_from:]
+        candle_data = candle_data_original[slice_from:]
 
         # ■■■■■ maniuplate heavy data ■■■■■
 
@@ -553,7 +555,7 @@ class Simulator:
         indicators = await go(
             make_indicators.do,
             target_symbols=[self.viewing_symbol],
-            candle_data=candle_data,
+            candle_data=candle_data_original,
             indicators_script=indicators_script,
         )
 

@@ -875,19 +875,20 @@ class Transactor:
         # ■■■■■ set range of heavy data ■■■■■
 
         if should_draw_frequently:
+            get_from = datetime.now(timezone.utc) - timedelta(days=28)
             slice_from = datetime.now(timezone.utc) - timedelta(hours=24)
             slice_until = datetime.now(timezone.utc)
         else:
             current_year = datetime.now(timezone.utc).year
+            get_from = datetime(current_year, 1, 1, tzinfo=timezone.utc)
             slice_from = datetime(current_year, 1, 1, tzinfo=timezone.utc)
             slice_until = datetime.now(timezone.utc)
         slice_until -= timedelta(seconds=1)
-        get_from = slice_from - timedelta(days=7)
 
         # ■■■■■ get heavy data ■■■■■
 
         async with solie.window.collector.candle_data.read_lock as cell:
-            candle_data = cell.data[get_from:slice_until][[symbol]].copy()
+            candle_data_original = cell.data[get_from:slice_until][[symbol]].copy()
         async with self.unrealized_changes.read_lock as cell:
             unrealized_changes = cell.data.copy()
         async with self.asset_record.read_lock as cell:
@@ -902,7 +903,7 @@ class Transactor:
                 before_asset = None
             asset_record = cell.data[slice_from:].copy()
 
-        candle_data = candle_data[slice_from:]
+        candle_data = candle_data_original[slice_from:]
 
         # ■■■■■ maniuplate heavy data ■■■■■
 
@@ -1136,7 +1137,7 @@ class Transactor:
         indicators = await go(
             make_indicators.do,
             target_symbols=[self.viewing_symbol],
-            candle_data=candle_data,
+            candle_data=candle_data_original,
             indicators_script=indicators_script,
         )
 
