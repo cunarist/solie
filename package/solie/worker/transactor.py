@@ -1308,65 +1308,61 @@ class Transactor:
         solie.window.label_16.setText(text)
 
     async def perform_transaction(self, *args, **kwargs):
-        # ■■■■■ stop if internet connection is not present ■■■■
+        # ■■■■■ Stop if internet connection is not present ■■■■
 
         if not check_internet.connected():
             return
 
-        # ■■■■■ stop if the automation is turned off ■■■■■
+        # ■■■■■ Stop if the automation is turned off ■■■■■
 
         if not self.automation_settings["should_transact"]:
             return
 
-        # ■■■■■ stop if conditions are not met ■■■■■
+        # ■■■■■ Stop if conditions are not met ■■■■■
 
         if not self.secret_memory["is_key_restrictions_satisfied"]:
             return
 
-        # ■■■■■ stop if the accumulation rate is not 100% ■■■■■
+        # ■■■■■ Stop if the accumulation rate is not 100% ■■■■■
 
         cumulation_rate = await solie.window.collector.get_candle_data_cumulation_rate()
         if cumulation_rate < 1:
-            is_cycle_done = True
             return
 
-        # ■■■■■ play the progress bar ■■■■■
+        # ■■■■■ Moment ■■■■■
+
+        current_moment = datetime.now(timezone.utc).replace(microsecond=0)
+        current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
+        before_moment = current_moment - timedelta(seconds=10)
+
+        # ■■■■■ Play the progress bar ■■■■■
 
         is_cycle_done = False
 
         async def play_progress_bar():
-            start_time = datetime.now(timezone.utc)
             passed_time = timedelta(seconds=0)
             while passed_time < timedelta(seconds=10):
-                passed_time = datetime.now(timezone.utc) - start_time
+                passed_time = datetime.now(timezone.utc) - current_moment
                 if not is_cycle_done:
                     new_value = int(passed_time / timedelta(seconds=10) * 1000)
                 else:
                     before_value = solie.window.progressBar_2.value()
                     remaining = 1000 - before_value
                     new_value = before_value + math.ceil(remaining * 0.2)
-
                 solie.window.progressBar_2.setValue(new_value)
                 await asyncio.sleep(0.01)
-
             solie.window.progressBar_2.setValue(0)
 
         asyncio.create_task(play_progress_bar())
 
-        # ■■■■■ moment ■■■■■
-
-        current_moment = datetime.now(timezone.utc).replace(microsecond=0)
-        current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
-        before_moment = current_moment - timedelta(seconds=10)
-
-        # ■■■■■ check if the data exists ■■■■■
+        # ■■■■■ Check if the data exists ■■■■■
 
         async with solie.window.collector.candle_data.read_lock as cell:
             if len(cell.data) == 0:
                 # case when the app is executed for the first time
                 return
 
-        # ■■■■■ wait for the latest data to be added ■■■■■
+        # ■■■■■ Wait for the latest data to be added ■■■■■
 
         for _ in range(50):
             async with solie.window.collector.candle_data.read_lock as cell:
@@ -1375,13 +1371,13 @@ class Transactor:
                     break
             await asyncio.sleep(0.1)
 
-        # ■■■■■ get the candle data ■■■■■
+        # ■■■■■ Get the candle data ■■■■■
 
         slice_from = datetime.now(timezone.utc) - timedelta(days=28)
         async with solie.window.collector.candle_data.read_lock as cell:
             partial_candle_data = cell.data[slice_from:].copy()
 
-        # ■■■■■ make decision ■■■■■
+        # ■■■■■ Make decision ■■■■■
 
         target_symbols = user_settings.get_data_settings()["target_symbols"]
 
@@ -1413,13 +1409,13 @@ class Transactor:
         )
         self.scribbles = scribbles
 
-        # ■■■■■ record task duration ■■■■■
+        # ■■■■■ Record task duration ■■■■■
 
         is_cycle_done = True
         duration = (datetime.now(timezone.utc) - current_moment).total_seconds()
         remember_task_durations.add("perform_transaction", duration)
 
-        # ■■■■■ place order ■■■■■
+        # ■■■■■ Place order ■■■■■
 
         await self.place_orders(decision)
 
