@@ -484,8 +484,8 @@ def do(dataset):
 
         # ■■■■■ make decision and place order ■■■■■
 
-        current_candle_data = candle_data_ar[cycle]
-        current_indicators = indicators_ar[cycle]
+        current_candle_data: np.record = candle_data_ar[cycle]
+        current_indicators: np.record = indicators_ar[cycle]
         decision, chunk_scribbles = decide.choose(
             target_symbols=target_symbols,
             current_moment=current_moment,

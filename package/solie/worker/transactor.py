@@ -1375,7 +1375,7 @@ class Transactor:
 
         slice_from = datetime.now(timezone.utc) - timedelta(days=28)
         async with solie.window.collector.candle_data.read_lock as cell:
-            partial_candle_data = cell.data[slice_from:].copy()
+            candle_data = cell.data[slice_from:].copy()
 
         # ■■■■■ Make decision ■■■■■
 
@@ -1389,12 +1389,13 @@ class Transactor:
         indicators = await go(
             make_indicators.do,
             target_symbols=target_symbols,
-            candle_data=partial_candle_data,
+            candle_data=candle_data,
             indicators_script=indicators_script,
+            only_last_index=True,
         )
 
-        current_candle_data = partial_candle_data.to_records()[-1]
-        current_indicators = indicators.to_records()[-1]
+        current_candle_data: np.record = candle_data.tail(1).to_records()[-1]
+        current_indicators: np.record = indicators.to_records()[-1]
         decision_script = strategy["decision_script"]
 
         decision, scribbles = await go(

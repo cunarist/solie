@@ -11,6 +11,7 @@ def do(
     target_symbols: list[str],
     candle_data: pd.DataFrame,
     indicators_script: str | CodeType,
+    only_last_index: bool = False,
 ) -> pd.DataFrame:
     # ■■■■■ interpolate nans ■■■■■
 
@@ -66,4 +67,7 @@ def do(
 
     indicators = indicators.iloc[:-1]
 
-    return indicators
+    if only_last_index:
+        return indicators.tail(1)
+    else:
+        return indicators
