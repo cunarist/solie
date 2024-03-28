@@ -87,12 +87,6 @@ class Transactor:
         # ■■■■■ repetitive schedules ■■■■■
 
         solie.window.scheduler.add_job(
-            self.display_lines,
-            trigger="cron",
-            second="*",
-            kwargs={"only_light_lines": True, "frequent": True},
-        )
-        solie.window.scheduler.add_job(
             self.display_status_information,
             trigger="cron",
             second="*",
@@ -717,12 +711,8 @@ class Transactor:
 
         periodic = kwargs.get("periodic", False)
         frequent = kwargs.get("frequent", False)
-        only_light_lines = kwargs.get("only_light_lines", False)
 
-        if only_light_lines:
-            task_name = "display_light_transaction_lines"
-        else:
-            task_name = "display_all_transaction_lines"
+        task_name = "display_transaction_lines"
 
         task_id = stop_flag.make(task_name)
 
@@ -859,17 +849,6 @@ class Transactor:
         if stop_flag.find(task_name, task_id):
             return
         await asyncio.sleep(0)
-
-        # ■■■■■ record task duration ■■■■■
-
-        if only_light_lines:
-            duration = (datetime.now(timezone.utc) - task_start_time).total_seconds()
-            remember_task_durations.add(task_name, duration)
-
-        # ■■■■■ stop if the target is only light lines ■■■■■
-
-        if only_light_lines:
-            return
 
         # ■■■■■ set range of heavy data ■■■■■
 
@@ -1383,13 +1362,18 @@ class Transactor:
 
         indicators_script = strategy["indicators_script"]
 
-        indicators = await go(
-            make_indicators.do,
-            target_symbols=target_symbols,
-            candle_data=candle_data,
-            indicators_script=indicators_script,
-            only_last_index=True,
-        )
+        # Split the candle data by symbol before sending to reduct UI lags
+        indicators_per_symbol: dict[str, pd.DataFrame] = {}
+        for symbol in target_symbols:
+            symbol_indicators = await go(
+                make_indicators.do,
+                target_symbols=[symbol],
+                candle_data=candle_data[[symbol]],
+                indicators_script=indicators_script,
+                only_last_index=True,
+            )
+            indicators_per_symbol[symbol] = symbol_indicators
+        indicators = pd.concat(indicators_per_symbol.values(), axis=1)
 
         current_candle_data: np.record = candle_data.tail(1).to_records()[-1]
         current_indicators: np.record = indicators.to_records()[-1]

@@ -8,7 +8,7 @@ task_durations = {
     "collector_organize_data": deque(maxlen=60),
     "perform_transaction": deque(maxlen=360),
     "display_light_transaction_lines": deque(maxlen=60),
-    "display_all_transaction_lines": deque(maxlen=20),
+    "display_transaction_lines": deque(maxlen=20),
 }
 
 
