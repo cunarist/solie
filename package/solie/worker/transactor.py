@@ -1308,22 +1308,20 @@ class Transactor:
         solie.window.label_16.setText(text)
 
     async def perform_transaction(self, *args, **kwargs):
-        # ■■■■■ Stop if internet connection is not present ■■■■
+        # ■■■■■ Clear the progress bar ■■■■
+
+        solie.window.progressBar_2.setValue(0)
+
+        # ■■■■■ Stop if conditions are not met ■■■■
 
         if not check_internet.connected():
             return
 
-        # ■■■■■ Stop if the automation is turned off ■■■■■
-
         if not self.automation_settings["should_transact"]:
             return
 
-        # ■■■■■ Stop if conditions are not met ■■■■■
-
         if not self.secret_memory["is_key_restrictions_satisfied"]:
             return
-
-        # ■■■■■ Stop if the accumulation rate is not 100% ■■■■■
 
         cumulation_rate = await solie.window.collector.get_candle_data_cumulation_rate()
         if cumulation_rate < 1:
@@ -1351,7 +1349,6 @@ class Transactor:
                     new_value = before_value + math.ceil(remaining * 0.2)
                 solie.window.progressBar_2.setValue(new_value)
                 await asyncio.sleep(0.01)
-            solie.window.progressBar_2.setValue(0)
 
         asyncio.create_task(play_progress_bar())
 
