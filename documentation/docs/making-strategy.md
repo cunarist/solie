@@ -42,12 +42,17 @@ Indicators script is used to create indicators used for graph display and decisi
 
 Variables provided by default are as follows. You can use these without any import statements.
 
-- `ta`(`module`): Python package `pandas-ta`. Used for making indicators.
-- `pd`(`module`): Python package `pandas`.
-- `np`(`module`): Python package `numpy`.
 - `target_symbols`(`list`): The symbols being observed.
 - `candle_data`(`pandas.DataFrame`): Candle data. Extra 28 days of data before desired calculation range is included.
 - `new_indicators`(`dict`): An object that holds newly created indicators.
+
+!!! warning
+
+    Though these variables are still accessible in version 8, they will be removed in version 9. Use the explicit `import` statements to use these modules.
+
+    - `ta`(`module`): Python package `pandas-ta`. Used for making indicators.
+    - `pd`(`module`): Python package `pandas`.
+    - `np`(`module`): Python package `numpy`.
 
 ### Basic Syntax
 
@@ -213,10 +218,6 @@ The decision script is executed repeatedly every 10 seconds, which is the time l
 
 Variables provided by default are as follows. You can use these without any import statements.
 
-- `datetime`(`class`): part of the Python standard library.
-- `timezone`(`class`): part of the Python standard library.
-- `timedelta`(`class`): part of the Python standard library.
-- `math`(`module`): part of the Python standard library.
 - `target_symbols`(`list`): The symbols being observed.
 - `current_moment`(`datetime.datetime`): The current time rounded down to the base time. For example, if the current exact time is 14:03:22.335 on January 3, 2022, then `current_moment` appears as 14:03:20 on January 3, 2022 in the 10-second interval.
 
@@ -229,6 +230,15 @@ Variables provided by default are as follows. You can use these without any impo
 - `scribbles`(`dict`): Free writing space where you can write anything. After making a strategic decision, you can put whatever you want to remember inside this object.
 
 - `decision`(`dict`): This is the core object that contains the strategic judgment.
+
+!!! warning
+
+    Though these variables are still accessible in version 8, they will be removed in version 9. Use the explicit `import` statements to use these modules.
+
+    - `datetime`(`class`): part of the Python standard library.
+    - `timezone`(`class`): part of the Python standard library.
+    - `timedelta`(`class`): part of the Python standard library.
+    - `math`(`module`): part of the Python standard library.
 
 ### Basic Syntax
 
