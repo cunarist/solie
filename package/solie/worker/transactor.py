@@ -1365,16 +1365,18 @@ class Transactor:
         indicators_script = strategy["indicators_script"]
 
         # Split the candle data by symbol before calculation to reduct UI lags
-        coroutines = [
-            go(
-                make_indicators.do,
-                target_symbols=[s],
-                candle_data=candle_data[[s]],
-                indicators_script=indicators_script,
-                only_last_index=True,
+        coroutines = []
+        for symbol in target_symbols:
+            coroutines.append(
+                go(
+                    make_indicators.do,
+                    target_symbols=[symbol],
+                    candle_data=candle_data[[symbol]],
+                    indicators_script=indicators_script,
+                    only_last_index=True,
+                )
             )
-            for s in target_symbols
-        ]
+            await asyncio.sleep(0)
         symbol_indicators = await asyncio.gather(*coroutines)
         indicators = pd.concat(symbol_indicators, axis=1)
 
