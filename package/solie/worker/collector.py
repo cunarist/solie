@@ -7,7 +7,6 @@ import webbrowser
 from collections import deque
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Dict, List, Set
 
 import numpy as np
 import pandas as pd
@@ -452,7 +451,7 @@ class Collector:
 
         task_id = stop_flag.make("download_fill_candle_data")
 
-        download_presets: List[DownloadPreset] = []
+        download_presets: list[DownloadPreset] = []
         target_symbols = user_settings.get_data_settings()["target_symbols"]
         if filling_type == 0:
             current_year = datetime.now(timezone.utc).year
@@ -553,11 +552,11 @@ class Collector:
 
         # Gather information about years.
         current_year = datetime.now(timezone.utc).year
-        all_years: Set[int] = {t.year for t in download_presets}
+        all_years: set[int] = {t.year for t in download_presets}
 
         # Download and save historical data by year for lower memory usage.
         # Key is the year, value is the list of download presets.
-        classified_download_presets: Dict[int, List[DownloadPreset]] = {
+        classified_download_presets: dict[int, list[DownloadPreset]] = {
             y: [] for y in all_years
         }
         for download_preset in download_presets:

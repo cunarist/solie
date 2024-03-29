@@ -5,7 +5,6 @@ import pickle
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import List
 
 import aiofiles
 import numpy as np
@@ -300,7 +299,7 @@ class Simulator:
 
         # ■■■■■ get heavy data ■■■■■
 
-        divided_datas: List[pd.DataFrame] = []
+        divided_datas: list[pd.DataFrame] = []
         for year in years:
             filepath = solie.window.collector.workerpath / f"candle_data_{year}.pickle"
             more_df = await go(pd.read_pickle, filepath)

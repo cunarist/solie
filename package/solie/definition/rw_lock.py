@@ -1,9 +1,9 @@
 import asyncio
 from collections import deque
-from typing import Any, Deque, Generic, List, Optional, Tuple, TypeVar
+from typing import Any, Generic, TypeVar
 
 Loop = asyncio.AbstractEventLoop
-OptLoop = Optional[Loop]
+OptLoop = Loop | None
 
 # silence LGTM service alerts
 Future = asyncio.Future
@@ -18,12 +18,12 @@ class _RWLockCore:
     def __init__(self, fast: bool, loop: Loop):
         self._do_yield = not fast
         self._loop: Loop = loop
-        self._read_waiters: Deque[Future[None]] = deque()
-        self._write_waiters: Deque[Future[None]] = deque()
+        self._read_waiters: deque[Future[None]] = deque()
+        self._write_waiters: deque[Future[None]] = deque()
         self._r_state: int = 0
         self._w_state: int = 0
         # tasks will be few, so a list is not inefficient
-        self._owning: List[Tuple[Task[Any], int]] = []
+        self._owning: list[tuple[Task[Any], int]] = []
 
     @property
     def read_locked(self) -> bool:
@@ -167,7 +167,7 @@ class _ContextManagerMixin:
         # statement for locks.
         return None
 
-    async def __aexit__(self, *args: List[Any]):
+    async def __aexit__(self, *args: list[Any]):
         self.release()
 
     async def acquire(self):
