@@ -6,6 +6,7 @@ import random
 import webbrowser
 from collections import deque
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Dict, List, Set
 
 import numpy as np
@@ -36,7 +37,8 @@ class Collector:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        self.workerpath = user_settings.get_app_settings()["datapath"] + "/collector"
+        datapath = Path(user_settings.get_app_settings()["datapath"])
+        self.workerpath = datapath / "collector"
         os.makedirs(self.workerpath, exist_ok=True)
 
         # ■■■■■ worker secret memory ■■■■■
@@ -142,7 +144,7 @@ class Collector:
         # candle data
         current_year = datetime.now(timezone.utc).year
         async with self.candle_data.write_lock as cell:
-            filepath = f"{self.workerpath}/candle_data_{current_year}.pickle"
+            filepath = self.workerpath / f"candle_data_{current_year}.pickle"
             if os.path.isfile(filepath):
                 df: pd.DataFrame = await go(pd.read_pickle, filepath)
                 if not df.index.is_monotonic_increasing:
@@ -182,7 +184,9 @@ class Collector:
         # ■■■■■ default values ■■■■■
 
         current_year = datetime.now(timezone.utc).year
-        filepath = f"{self.workerpath}/candle_data_{current_year}.pickle"
+        filepath = self.workerpath / f"candle_data_{current_year}.pickle"
+        filepath_new = self.workerpath / f"candle_data_{current_year}.pickle.new"
+        filepath_backup = self.workerpath / f"candle_data_{current_year}.pickle.backup"
 
         async with self.candle_data.read_lock as cell:
             mask = cell.data.index.year == current_year  # type:ignore
@@ -190,25 +194,22 @@ class Collector:
 
         # ■■■■■ make a new file ■■■■■
 
-        await go(
-            year_df.to_pickle,
-            filepath + ".new",
-        )
+        await go(year_df.to_pickle, filepath_new)
 
         # ■■■■■ safely replace the existing file ■■■■■
 
         try:
-            os.remove(filepath + ".backup")
+            os.remove(filepath_backup)
         except FileNotFoundError:
             pass
 
         try:
-            os.rename(filepath, filepath + ".backup")
+            os.rename(filepath, filepath_backup)
         except FileNotFoundError:
             pass
 
         try:
-            os.rename(filepath + ".new", filepath)
+            os.rename(filepath_new, filepath)
         except FileNotFoundError:
             pass
 
@@ -592,7 +593,7 @@ class Collector:
                 async with combined_df.read_lock as cell:
                     await go(
                         cell.data.to_pickle,
-                        f"{self.workerpath}/candle_data_{preset_year}.pickle",
+                        self.workerpath / f"candle_data_{preset_year}.pickle",
                     )
             else:
                 # For data of current year, pass it to this collector worker

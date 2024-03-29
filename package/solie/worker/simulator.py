@@ -4,6 +4,7 @@ import os
 import pickle
 import re
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import List
 
 import aiofiles
@@ -29,7 +30,8 @@ class Simulator:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        self.workerpath = user_settings.get_app_settings()["datapath"] + "/simulator"
+        datapath = Path(user_settings.get_app_settings()["datapath"])
+        self.workerpath = datapath / "simulator"
         os.makedirs(self.workerpath, exist_ok=True)
 
         # ■■■■■ worker secret memory ■■■■■
@@ -300,7 +302,7 @@ class Simulator:
 
         divided_datas: List[pd.DataFrame] = []
         for year in years:
-            filepath = f"{solie.window.collector.workerpath}/candle_data_{year}.pickle"
+            filepath = solie.window.collector.workerpath / f"candle_data_{year}.pickle"
             more_df = await go(pd.read_pickle, filepath)
             divided_datas.append(more_df)
         candle_data_original: pd.DataFrame = await go(pd.concat, divided_datas)
@@ -833,12 +835,13 @@ class Simulator:
         should_parallelize = strategy["parallelized_simulation"]
         chunk_length = strategy["chunk_division"]
 
-        path_start = f"{self.workerpath}/{strategy_code_name}_{strategy_version}_{year}"
-        asset_record_path = path_start + "_asset_record.pickle"
-        unrealized_changes_path = path_start + "_unrealized_changes.pickle"
-        scribbles_path = path_start + "_scribbles.pickle"
-        account_state_path = path_start + "_account_state.pickle"
-        virtual_state_path = path_start + "_virtual_state.pickle"
+        workerpath = self.workerpath
+        prefix = f"{strategy_code_name}_{strategy_version}_{year}"
+        asset_record_path = workerpath / f"{prefix}_asset_record.pickle"
+        unrealized_changes_path = workerpath / f"{prefix}_unrealized_changes.pickle"
+        scribbles_path = workerpath / f"{prefix}_scribbles.pickle"
+        account_state_path = workerpath / f"{prefix}_account_state.pickle"
+        virtual_state_path = workerpath / f"{prefix}_virtual_state.pickle"
 
         target_symbols = user_settings.get_data_settings()["target_symbols"]
 
@@ -857,7 +860,7 @@ class Simulator:
         slice_until -= timedelta(seconds=1)
 
         # Get the candle data of this year.
-        filepath = f"{solie.window.collector.workerpath}/candle_data_{year}.pickle"
+        filepath = solie.window.collector.workerpath / f"candle_data_{year}.pickle"
         year_candle_data: pd.DataFrame = await go(pd.read_pickle, filepath)
 
         # Interpolate so that there's no inappropriate holes.
@@ -1261,12 +1264,13 @@ class Simulator:
         strategy_code_name = strategy["code_name"]
         strategy_version = strategy["version"]
 
-        path_start = f"{self.workerpath}/{strategy_code_name}_{strategy_version}_{year}"
-        asset_record_path = path_start + "_asset_record.pickle"
-        unrealized_changes_path = path_start + "_unrealized_changes.pickle"
-        scribbles_path = path_start + "_scribbles.pickle"
-        account_state_path = path_start + "_account_state.pickle"
-        virtual_state_path = path_start + "_virtual_state.pickle"
+        workerpath = self.workerpath
+        prefix = f"{strategy_code_name}_{strategy_version}_{year}"
+        asset_record_path = workerpath / f"{prefix}_asset_record.pickle"
+        unrealized_changes_path = workerpath / f"{prefix}_unrealized_changes.pickle"
+        scribbles_path = workerpath / f"{prefix}_scribbles.pickle"
+        account_state_path = workerpath / f"{prefix}_account_state.pickle"
+        virtual_state_path = workerpath / f"{prefix}_virtual_state.pickle"
 
         does_file_exist = False
 
@@ -1334,11 +1338,12 @@ class Simulator:
         strategy_code_name = strategy["code_name"]
         strategy_version = strategy["version"]
 
-        path_start = f"{self.workerpath}/{strategy_code_name}_{strategy_version}_{year}"
-        asset_record_path = path_start + "_asset_record.pickle"
-        unrealized_changes_path = path_start + "_unrealized_changes.pickle"
-        scribbles_path = path_start + "_scribbles.pickle"
-        account_state_path = path_start + "_account_state.pickle"
+        workerpath = self.workerpath
+        prefix = f"{strategy_code_name}_{strategy_version}_{year}"
+        asset_record_path = workerpath / f"{prefix}_asset_record.pickle"
+        unrealized_changes_path = workerpath / f"{prefix}_unrealized_changes.pickle"
+        scribbles_path = workerpath / f"{prefix}_scribbles.pickle"
+        account_state_path = workerpath / f"{prefix}_account_state.pickle"
 
         try:
             async with self.raw_asset_record.write_lock as cell:

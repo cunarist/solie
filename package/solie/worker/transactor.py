@@ -6,6 +6,7 @@ import pickle
 import re
 import webbrowser
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import aiofiles
 import numpy as np
@@ -36,7 +37,8 @@ class Transactor:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        self.workerpath = user_settings.get_app_settings()["datapath"] + "/transactor"
+        datapath = Path(user_settings.get_app_settings()["datapath"])
+        self.workerpath = datapath / "transactor"
         os.makedirs(self.workerpath, exist_ok=True)
 
         # ■■■■■ worker secret memory ■■■■■
@@ -154,7 +156,7 @@ class Transactor:
     async def load(self, *args, **kwargs):
         # scribbles
         try:
-            filepath = self.workerpath + "/scribbles.pickle"
+            filepath = self.workerpath / "scribbles.pickle"
             async with aiofiles.open(filepath, "rb") as file:
                 content = await file.read()
                 self.scribbles = pickle.loads(content)
@@ -164,7 +166,7 @@ class Transactor:
 
         # automation settings
         try:
-            filepath = self.workerpath + "/automation_settings.json"
+            filepath = self.workerpath / "automation_settings.json"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 content = await file.read()
                 read_data = json.loads(content)
@@ -179,7 +181,7 @@ class Transactor:
 
         # mode settings
         try:
-            filepath = self.workerpath + "/mode_settings.json"
+            filepath = self.workerpath / "mode_settings.json"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 content = await file.read()
                 read_data = json.loads(content)
@@ -192,7 +194,7 @@ class Transactor:
 
         # keys
         try:
-            filepath = self.workerpath + "/keys.json"
+            filepath = self.workerpath / "keys.json"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 content = await file.read()
                 keys = json.loads(content)
@@ -208,7 +210,7 @@ class Transactor:
 
         # unrealized changes
         try:
-            filepath = self.workerpath + "/unrealized_changes.pickle"
+            filepath = self.workerpath / "unrealized_changes.pickle"
             self.unrealized_changes = RWLock(await go(pd.read_pickle, filepath))
         except FileNotFoundError:
             pass
@@ -216,7 +218,7 @@ class Transactor:
 
         # asset record
         try:
-            filepath = self.workerpath + "/asset_record.pickle"
+            filepath = self.workerpath / "asset_record.pickle"
             self.asset_record = RWLock(await go(pd.read_pickle, filepath))
         except FileNotFoundError:
             pass
@@ -224,7 +226,7 @@ class Transactor:
 
         # auto order record
         try:
-            filepath = self.workerpath + "/auto_order_record.pickle"
+            filepath = self.workerpath / "auto_order_record.pickle"
             self.auto_order_record = RWLock(await go(pd.read_pickle, filepath))
         except FileNotFoundError:
             pass
@@ -260,25 +262,25 @@ class Transactor:
             unrealized_changes = cell.data.copy()
         await go(
             unrealized_changes.to_pickle,
-            self.workerpath + "/unrealized_changes.pickle",
+            self.workerpath / "unrealized_changes.pickle",
         )
 
         async with self.auto_order_record.read_lock as cell:
             auto_order_record = cell.data.copy()
         await go(
             auto_order_record.to_pickle,
-            self.workerpath + "/auto_order_record.pickle",
+            self.workerpath / "auto_order_record.pickle",
         )
 
         async with self.asset_record.read_lock as cell:
             asset_record = cell.data.copy()
         await go(
             asset_record.to_pickle,
-            self.workerpath + "/asset_record.pickle",
+            self.workerpath / "asset_record.pickle",
         )
 
     async def save_scribbles(self, *args, **kwargs):
-        filepath = self.workerpath + "/scribbles.pickle"
+        filepath = self.workerpath / "scribbles.pickle"
         async with aiofiles.open(filepath, "wb") as file:
             content = pickle.dumps(self.scribbles)
             await file.write(content)
@@ -560,7 +562,7 @@ class Transactor:
 
         self.keys = new_keys
 
-        filepath = self.workerpath + "/keys.json"
+        filepath = self.workerpath / "keys.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             content = json.dumps(new_keys, indent=4)
             await file.write(content)
@@ -592,7 +594,7 @@ class Transactor:
 
         # ■■■■■ save ■■■■■
 
-        filepath = self.workerpath + "/automation_settings.json"
+        filepath = self.workerpath / "automation_settings.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             content = json.dumps(self.automation_settings, indent=4)
             await file.write(content)
@@ -1451,7 +1453,7 @@ class Transactor:
 
         # ■■■■■ save ■■■■■
 
-        filepath = self.workerpath + "/mode_settings.json"
+        filepath = self.workerpath / "mode_settings.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             content = json.dumps(self.mode_settings, indent=4)
             await file.write(content)

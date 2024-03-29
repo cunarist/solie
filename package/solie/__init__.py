@@ -6,6 +6,7 @@ import sys
 from datetime import datetime, timezone
 from importlib import import_module, metadata
 from inspect import getfile
+from pathlib import Path
 from typing import Callable, Coroutine
 
 import aiofiles
@@ -38,7 +39,7 @@ from solie.widget.symbol_box import SymbolBox
 from solie.worker import collector, manager, simulator, strategist, transactor
 
 VERSION = metadata.version("solie")
-PATH = os.path.dirname(getfile(import_module("solie"))).replace("\\", "/")
+PATH = Path(os.path.dirname(getfile(import_module("solie"))))
 
 
 class Window(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -173,7 +174,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ Window icon ■■■■■
 
-        filepath = f"{PATH}/static/product_icon.png"
+        filepath = PATH / "static" / "product_icon.png"
         async with aiofiles.open(filepath, mode="rb") as file:
             product_icon_data = await file.read()
         product_icon_pixmap = QtGui.QPixmap()
@@ -290,7 +291,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 image_data = await api_requester.bytes(coin_icon_url)
                 pixmap.loadFromData(image_data)
             else:
-                pixmap.load(f"{PATH}/static/icon/blank_coin.png")
+                pixmap.load(str(PATH / "static" / "icon" / "blank_coin.png"))
             symbol_pixmaps[symbol] = pixmap
 
         token_icon_url = coin_icon_urls.get(asset_token, "")
@@ -434,7 +435,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         this_layout = self.horizontalLayout_13
         product_icon_pixmap = QtGui.QPixmap()
-        filepath = f"{PATH}/static/product_icon.png"
+        filepath = PATH / "static" / "product_icon.png"
         async with aiofiles.open(filepath, mode="rb") as file:
             product_icon_data = await file.read()
         product_icon_pixmap.loadFromData(product_icon_data)
@@ -1062,8 +1063,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ Prepare logging ■■■■■
 
-        datapath = user_settings.get_app_settings()["datapath"]
-        log_path = f"{datapath}/+logs"
+        datapath = Path(user_settings.get_app_settings()["datapath"])
+        log_path = datapath / "+logs"
         log_handler = LogHandler(log_path)
         logging.getLogger().addHandler(log_handler)
         logger.info("Started up")
@@ -1152,9 +1153,10 @@ def bring_to_life():
     # ■■■■■ Theme ■■■■■
 
     # This part should be done after creating the app and before creating the window.
-    QtGui.QFontDatabase.addApplicationFont(f"{PATH}/static/source_code_pro.ttf")
-    QtGui.QFontDatabase.addApplicationFont(f"{PATH}/static/notosans_regular.ttf")
-    QtGui.QFontDatabase.addApplicationFont(f"{PATH}/static/lexend_bold.ttf")
+    staticpath = PATH / "static"
+    QtGui.QFontDatabase.addApplicationFont(str(staticpath / "source_code_pro.ttf"))
+    QtGui.QFontDatabase.addApplicationFont(str(staticpath / "notosans_regular.ttf"))
+    QtGui.QFontDatabase.addApplicationFont(str(staticpath / "lexend_bold.ttf"))
     default_font = QtGui.QFont("Noto Sans", 9)
     app.setFont(default_font)
 

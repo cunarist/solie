@@ -122,7 +122,7 @@ class TokenSelection(QtWidgets.QWidget):
         token_icon_labels = {}
         input_layout = QtWidgets.QGridLayout()
         blank_coin_pixmap = QtGui.QPixmap()
-        blank_coin_pixmap.load(f"{solie.PATH}/static/icon/blank_coin.png")
+        blank_coin_pixmap.load(str(solie.PATH / "static" / "icon/blank_coin.png"))
         for turn, token in enumerate(available_tokens):
             this_layout = QtWidgets.QHBoxLayout()
             row = turn // 2

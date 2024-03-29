@@ -1,6 +1,7 @@
 import copy
 import json
 import os
+from pathlib import Path
 
 import aiofiles
 
@@ -19,14 +20,14 @@ async def load():
     global _app_settings
     global _data_settings
 
-    filepath = f"{solie.PATH}/note/app_settings.json"
+    filepath = solie.PATH / "note" / "app_settings.json"
     if os.path.isfile(filepath):
         async with aiofiles.open(filepath, "r", encoding="utf8") as file:
             content = await file.read()
             _app_settings = json.loads(content)
 
-    datapath = _app_settings["datapath"]
-    filepath = f"{datapath}/data_settings.json"
+    datapath = Path(_app_settings["datapath"] or "")
+    filepath = datapath / "data_settings.json"
     if os.path.isfile(filepath):
         async with aiofiles.open(filepath, "r", encoding="utf8") as file:
             content = await file.read()
@@ -41,7 +42,7 @@ async def apply_app_settings(payload):
     global _app_settings
     payload = copy.deepcopy(payload)
     _app_settings = {**_app_settings, **payload}
-    filepath = f"{solie.PATH}/note/app_settings.json"
+    filepath = solie.PATH / "note" / "app_settings.json"
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     async with aiofiles.open(filepath, "w", encoding="utf8") as file:
         content = json.dumps(_app_settings, indent=4)
@@ -56,9 +57,10 @@ async def apply_data_settings(payload):
     global _data_settings
     payload = copy.deepcopy(payload)
     _data_settings = {**_data_settings, **payload}
-    datapath = _app_settings["datapath"]
-    if datapath is not None:
-        filepath = f"{datapath}/data_settings.json"
+    datapath_str = _app_settings["datapath"]
+    if datapath_str is not None:
+        datapath = Path(datapath_str)
+        filepath = datapath / "data_settings.json"
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             content = json.dumps(_data_settings, indent=4)

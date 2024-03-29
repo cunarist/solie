@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+from pathlib import Path
 
 import aiofiles
 from PySide6 import QtGui, QtWidgets
@@ -15,7 +16,8 @@ class Strategiest:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        self.workerpath = user_settings.get_app_settings()["datapath"] + "/strategist"
+        datapath = Path(user_settings.get_app_settings()["datapath"])
+        self.workerpath = datapath / "strategist"
         os.makedirs(self.workerpath, exist_ok=True)
 
         # ■■■■■ worker secret memory ■■■■■
@@ -29,12 +31,13 @@ class Strategiest:
 
         self.before_selections = {}
 
+        iconpath = solie.PATH / "static" / "icon"
         self.red_pixmap = QtGui.QPixmap()
-        self.red_pixmap.load(f"{solie.PATH}/static/icon/traffic_light_red.png")
+        self.red_pixmap.load(str(iconpath / "traffic_light_red.png"))
         self.yellow_pixmap = QtGui.QPixmap()
-        self.yellow_pixmap.load(f"{solie.PATH}/static/icon/traffic_light_yellow.png")
+        self.yellow_pixmap.load(str(iconpath / "traffic_light_yellow.png"))
         self.green_pixmap = QtGui.QPixmap()
-        self.green_pixmap.load(f"{solie.PATH}/static/icon/traffic_light_green.png")
+        self.green_pixmap.load(str(iconpath / "traffic_light_green.png"))
 
         # ■■■■■ repetitive schedules ■■■■■
 
@@ -47,7 +50,7 @@ class Strategiest:
     async def load(self, *args, **kwargs):
         # custom strategies
         try:
-            filepath = self.workerpath + "/strategies.json"
+            filepath = self.workerpath / "strategies.json"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 content = await file.read()
                 self.strategies = json.loads(content)
@@ -60,18 +63,18 @@ class Strategiest:
                 + " This strategy is only for demonstration purposes."
             )
             first_strategy["risk_level"] = 2
-            filepath = f"{solie.PATH}/static/sample_indicators_script.txt"
+            filepath = solie.PATH / "static" / "sample_indicators_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 read_data = await file.read()
                 first_strategy["indicators_script"] = read_data
-            filepath = f"{solie.PATH}/static/sample_decision_script.txt"
+            filepath = solie.PATH / "static" / "sample_decision_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 read_data = await file.read()
                 first_strategy["decision_script"] = read_data
             self.strategies = [first_strategy]
 
     async def save_strategies(self, *args, **kwargs):
-        filepath = self.workerpath + "/strategies.json"
+        filepath = self.workerpath / "strategies.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             content = json.dumps(self.strategies, indent=4)
             await file.write(content)

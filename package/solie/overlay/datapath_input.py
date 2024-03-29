@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 
 import xdialog
 from PySide6 import QtCore, QtGui, QtWidgets
@@ -79,12 +80,12 @@ class DatapathInput(QtWidgets.QWidget):
         spacing_text.setFont(spacing_text_font)
         card_layout.addWidget(spacing_text)
 
-        datapath = ""
+        datapath: Path | None = None
 
         async def job_dp():
             nonlocal datapath
-            datapath = await go(xdialog.directory, title="Data folder")
-            folder_label.setText(datapath)
+            datapath = Path(await go(xdialog.directory, title="Data folder"))
+            folder_label.setText(str(datapath))
 
         # choose button
         this_layout = QtWidgets.QHBoxLayout()
@@ -100,7 +101,7 @@ class DatapathInput(QtWidgets.QWidget):
         # ■■■■■ a card ■■■■■
 
         async def job_ac():
-            if datapath == "":
+            if datapath is None:
                 question = [
                     "Data folder is not chosen",
                     "Choose your data folder first.",
@@ -108,7 +109,7 @@ class DatapathInput(QtWidgets.QWidget):
                 ]
                 await solie.window.ask(question)
             else:
-                await user_settings.apply_app_settings({"datapath": datapath})
+                await user_settings.apply_app_settings({"datapath": str(datapath)})
                 await user_settings.load()
                 done_event.set()
 

@@ -5,6 +5,7 @@ import statistics
 import webbrowser
 from collections import deque
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import aiofiles
 import time_machine
@@ -33,7 +34,8 @@ class Manager:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        self.workerpath = user_settings.get_app_settings()["datapath"] + "/manager"
+        datapath = Path(user_settings.get_app_settings()["datapath"])
+        self.workerpath = datapath / "manager"
         os.makedirs(self.workerpath, exist_ok=True)
 
         # ■■■■■ worker secret memory ■■■■■
@@ -94,7 +96,7 @@ class Manager:
 
     async def load(self, *args, **kwargs):
         # settings
-        filepath = self.workerpath + "/settings.json"
+        filepath = self.workerpath / "settings.json"
         if os.path.isfile(filepath):
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 content = await file.read()
@@ -106,7 +108,7 @@ class Manager:
         )
 
         # python script
-        filepath = self.workerpath + "/python_script.txt"
+        filepath = self.workerpath / "python_script.txt"
         if os.path.isfile(filepath):
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 script = await file.read()
@@ -118,7 +120,7 @@ class Manager:
         current_index = solie.window.comboBox_3.currentIndex()
         self.settings["lock_board"] = WINDOW_LOCK_OPTIONS[current_index]
 
-        filepath = self.workerpath + "/settings.json"
+        filepath = self.workerpath / "settings.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             content = json.dumps(self.settings, indent=4)
             await file.write(content)
@@ -194,7 +196,7 @@ class Manager:
 
     async def run_script(self, *args, **kwargs):
         script_text = solie.window.plainTextEdit.toPlainText()
-        filepath = self.workerpath + "/python_script.txt"
+        filepath = self.workerpath / "python_script.txt"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             await file.write(script_text)
         namespace = {"window": solie.window, "logger": solie.logger}

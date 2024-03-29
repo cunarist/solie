@@ -79,14 +79,14 @@ class StrategyDevelopInput(QtWidgets.QWidget):
         # sample script button
         async def job_as(*args):
             # indicators script
-            filepath = f"{solie.PATH}/static/sample_indicators_script.txt"
+            filepath = solie.PATH / "static" / "sample_indicators_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 script = await file.read()
 
             indicators_script_input.setPlainText(script)
 
             # decision script
-            filepath = f"{solie.PATH}/static/sample_decision_script.txt"
+            filepath = solie.PATH / "static" / "sample_decision_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 script = await file.read()
 

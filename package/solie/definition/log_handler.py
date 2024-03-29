@@ -3,6 +3,7 @@ import logging
 import os
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 
 import aiofiles
 
@@ -10,7 +11,7 @@ import solie
 
 
 class LogHandler(logging.Handler):
-    def __init__(self, log_path: str):
+    def __init__(self, log_path: Path):
         super().__init__()
 
         os.makedirs(log_path, exist_ok=True)
@@ -66,7 +67,7 @@ class LogHandler(logging.Handler):
         solie.window.listWidget.addItem(summarization, log_content)
 
         # save to file
-        filepath = f"{self.log_path}/{self.filename}"
+        filepath = self.log_path / self.filename
         async with aiofiles.open(filepath, "a", encoding="utf8") as file:
             await file.write(f"{summarization}\n")
             await file.write(f"{log_content}\n\n")
