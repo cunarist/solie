@@ -1364,18 +1364,19 @@ class Transactor:
 
         indicators_script = strategy["indicators_script"]
 
-        # Split the candle data by symbol before sending to reduct UI lags
-        indicators_per_symbol: dict[str, pd.DataFrame] = {}
-        for symbol in target_symbols:
-            symbol_indicators = await go(
+        # Split the candle data by symbol before calculation to reduct UI lags
+        coroutines = [
+            go(
                 make_indicators.do,
-                target_symbols=[symbol],
-                candle_data=candle_data[[symbol]],
+                target_symbols=[s],
+                candle_data=candle_data[[s]],
                 indicators_script=indicators_script,
                 only_last_index=True,
             )
-            indicators_per_symbol[symbol] = symbol_indicators
-        indicators = pd.concat(indicators_per_symbol.values(), axis=1)
+            for s in target_symbols
+        ]
+        symbol_indicators = await asyncio.gather(*coroutines)
+        indicators = pd.concat(symbol_indicators, axis=1)
 
         current_candle_data: np.record = candle_data.tail(1).to_records()[-1]
         current_indicators: np.record = indicators.to_records()[-1]
