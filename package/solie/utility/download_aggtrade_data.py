@@ -43,7 +43,7 @@ def do(download_target: DownloadPreset) -> pd.DataFrame | None:
         return
 
     try:
-        df = pd.concat(
+        df: pd.DataFrame = pd.concat(
             pd.read_csv(
                 zipped_csv_data,
                 compression="zip",
@@ -56,7 +56,7 @@ def do(download_target: DownloadPreset) -> pd.DataFrame | None:
     except ValueError:
         # when there is a header line in start of the file
         # from august 2022, header is included from binance
-        df = pd.concat(
+        df: pd.DataFrame = pd.concat(
             pd.read_csv(
                 zipped_csv_data,
                 compression="zip",
@@ -89,31 +89,31 @@ def do(download_target: DownloadPreset) -> pd.DataFrame | None:
 
     # process data
 
-    close_sr = df[1].resample("10s").agg("last")
+    close_sr: pd.Series = df[1].resample("10s").agg("last")  # type: ignore
     close_sr = close_sr.reindex(valid_index)
-    close_sr = close_sr.fillna(method="ffill")
+    close_sr = close_sr.ffill()
     close_sr = close_sr.astype(np.float32)
     close_sr.name = (symbol, "Close")
 
-    open_sr = df[1].resample("10s").agg("first")
+    open_sr: pd.Series = df[1].resample("10s").agg("first")  # type: ignore
     open_sr = open_sr.reindex(valid_index)
     open_sr = open_sr.fillna(value=close_sr)
     open_sr = open_sr.astype(np.float32)
     open_sr.name = (symbol, "Open")
 
-    high_sr = df[1].resample("10s").agg("max")
+    high_sr: pd.Series = df[1].resample("10s").agg("max")  # type: ignore
     high_sr = high_sr.reindex(valid_index)
     high_sr = high_sr.fillna(value=close_sr)
     high_sr = high_sr.astype(np.float32)
     high_sr.name = (symbol, "High")
 
-    low_sr = df[1].resample("10s").agg("min")
+    low_sr: pd.Series = df[1].resample("10s").agg("min")  # type: ignore
     low_sr = low_sr.reindex(valid_index)
     low_sr = low_sr.fillna(value=close_sr)
     low_sr = low_sr.astype(np.float32)
     low_sr.name = (symbol, "Low")
 
-    volume_sr = df[2].resample("10s").agg("sum")
+    volume_sr: pd.Series = df[2].resample("10s").agg("sum")  # type: ignore
     volume_sr = volume_sr.reindex(valid_index)
     volume_sr = volume_sr.fillna(value=0)
     volume_sr = volume_sr.astype(np.float32)
