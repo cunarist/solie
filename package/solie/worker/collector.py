@@ -431,14 +431,12 @@ class Collector:
     async def download_fill_candle_data(self, *args, **kwargs):
         # ■■■■■ ask filling type ■■■■■
 
-        answer_container = {"filling_type": None}
-
-        await solie.window.overlay(
+        overlay_widget = await solie.window.overlay(
             "Choose the range to fill",
-            DownloadFillOption(answer_container),
+            DownloadFillOption(),
         )
+        filling_type = overlay_widget.result
 
-        filling_type: int | None = answer_container["filling_type"]
         if filling_type is None:
             return
 

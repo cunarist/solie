@@ -6,7 +6,7 @@ from .base_overlay import BaseOverlay
 
 
 class DownloadFillOption(BaseOverlay):
-    def __init__(self, answer_container):
+    def __init__(self):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
@@ -64,10 +64,11 @@ class DownloadFillOption(BaseOverlay):
         cards_layout.addWidget(card)
 
         # option buttons
+        self.result: int | None = None
         for turn, text in enumerate(fill_options):
 
             async def job(turn=turn, *args, **kwargs):
-                answer_container["filling_type"] = turn
+                self.result = turn
                 self.done_event.set()
 
             option_button = QtWidgets.QPushButton(text, card)
