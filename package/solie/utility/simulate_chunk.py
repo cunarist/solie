@@ -1,6 +1,8 @@
 import math
 import random
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from multiprocessing.managers import ListProxy
 
 import numpy as np
 import pandas as pd
@@ -9,24 +11,49 @@ from solie.definition.errors import SimulationError
 from solie.utility import decide
 
 
-def do(dataset):
+@dataclass
+class CalculationInput:
+    progress_list: ListProxy
+    target_progress: int
+    target_symbols: list[str]
+    calculation_index: pd.DatetimeIndex
+    chunk_candle_data: pd.DataFrame
+    chunk_indicators: pd.DataFrame
+    chunk_asset_record: pd.DataFrame
+    chunk_unrealized_changes: pd.Series
+    chunk_scribbles: dict
+    chunk_account_state: dict
+    chunk_virtual_state: dict
+    decision_script: str
+
+
+@dataclass
+class CalculationOutput:
+    chunk_asset_record: pd.DataFrame
+    chunk_unrealized_changes: pd.Series
+    chunk_scribbles: dict
+    chunk_account_state: dict
+    chunk_virtual_state: dict
+
+
+def do(calculation_input: CalculationInput) -> CalculationOutput:
     # leverage is treated as 1
     # because those are going to be applied at the presentation phase
 
     # ■■■■■ get data ■■■■■
 
-    progress_list = dataset["progress_list"]
-    target_progress = dataset["target_progress"]
-    target_symbols = dataset["target_symbols"]
-    calculation_index: pd.DatetimeIndex = dataset["calculation_index"]
-    chunk_candle_data: pd.DataFrame = dataset["chunk_candle_data"]
-    chunk_indicators: pd.DataFrame = dataset["chunk_indicators"]
-    chunk_asset_record: pd.DataFrame = dataset["chunk_asset_record"]
-    chunk_unrealized_changes: pd.Series = dataset["chunk_unrealized_changes"]
-    chunk_scribbles: dict = dataset["chunk_scribbles"]
-    chunk_account_state: dict = dataset["chunk_account_state"]
-    chunk_virtual_state: dict = dataset["chunk_virtual_state"]
-    decision_script: str = dataset["decision_script"]
+    progress_list = calculation_input.progress_list
+    target_progress = calculation_input.target_progress
+    target_symbols = calculation_input.target_symbols
+    calculation_index = calculation_input.calculation_index
+    chunk_candle_data = calculation_input.chunk_candle_data
+    chunk_indicators = calculation_input.chunk_indicators
+    chunk_asset_record = calculation_input.chunk_asset_record
+    chunk_unrealized_changes = calculation_input.chunk_unrealized_changes
+    chunk_scribbles = calculation_input.chunk_scribbles
+    chunk_account_state = calculation_input.chunk_account_state
+    chunk_virtual_state = calculation_input.chunk_virtual_state
+    decision_script = calculation_input.decision_script
 
     # ■■■■■ basic values ■■■■■
 
@@ -35,15 +62,14 @@ def do(dataset):
     # ■■■■■ return blank data if there's nothing to calculate ■■■■■
 
     if len(calculation_index) == 0:
-        dataset = {
-            "chunk_asset_record": chunk_asset_record,
-            "chunk_unrealized_changes": chunk_unrealized_changes,
-            "chunk_scribbles": chunk_scribbles,
-            "chunk_account_state": chunk_account_state,
-            "chunk_virtual_state": chunk_virtual_state,
-        }
-
-        return dataset
+        calculation_output = CalculationOutput(
+            chunk_asset_record=chunk_asset_record,
+            chunk_unrealized_changes=chunk_unrealized_changes,
+            chunk_scribbles=chunk_scribbles,
+            chunk_account_state=chunk_account_state,
+            chunk_virtual_state=chunk_virtual_state,
+        )
+        return calculation_output
 
     # ■■■■■ convert to numpy objects for fast calculation ■■■■■
 
@@ -526,12 +552,11 @@ def do(dataset):
 
     # ■■■■■ return calculated data ■■■■■
 
-    dataset = {
-        "chunk_asset_record": chunk_asset_record,
-        "chunk_unrealized_changes": chunk_unrealized_changes,
-        "chunk_scribbles": chunk_scribbles,
-        "chunk_account_state": chunk_account_state,
-        "chunk_virtual_state": chunk_virtual_state,
-    }
-
-    return dataset
+    calculation_output = CalculationOutput(
+        chunk_asset_record=chunk_asset_record,
+        chunk_unrealized_changes=chunk_unrealized_changes,
+        chunk_scribbles=chunk_scribbles,
+        chunk_account_state=chunk_account_state,
+        chunk_virtual_state=chunk_virtual_state,
+    )
+    return calculation_output

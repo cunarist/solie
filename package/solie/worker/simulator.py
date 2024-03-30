@@ -949,7 +949,7 @@ class Simulator:
 
         # ■■■■■ prepare per chunk data ■■■■■
 
-        calculation_input_data = []
+        calculation_inputs: list[simulate_chunk.CalculationInput] = []
         progress_list = solie.parallel.communicator.list([0])
 
         if should_calculate:
@@ -967,7 +967,7 @@ class Simulator:
 
             # range cut
             needed_candle_data = year_candle_data[calculate_from:calculate_until]
-            needed_index = needed_candle_data.index
+            needed_index: pd.DatetimeIndex = needed_candle_data.index  # type: ignore
             needed_indicators = year_indicators.reindex(needed_index)
 
             if should_parallelize:
@@ -1000,38 +1000,38 @@ class Simulator:
                         chunk_account_state = blank_account_state
                         chunk_virtual_state = blank_virtual_state
 
-                    dataset = {
-                        "progress_list": progress_list,
-                        "target_progress": turn,
-                        "target_symbols": target_symbols,
-                        "calculation_index": chunk_index,
-                        "chunk_candle_data": chunk_candle_data,
-                        "chunk_indicators": chunk_indicators,
-                        "chunk_asset_record": chunk_asset_record,
-                        "chunk_unrealized_changes": chunk_unrealized_changes,
-                        "chunk_scribbles": chunk_scribbles,
-                        "chunk_account_state": chunk_account_state,
-                        "chunk_virtual_state": chunk_virtual_state,
-                        "decision_script": decision_script,
-                    }
-                    calculation_input_data.append(dataset)
+                    calculation_input = simulate_chunk.CalculationInput(
+                        progress_list=progress_list,
+                        target_progress=turn,
+                        target_symbols=target_symbols,
+                        calculation_index=chunk_index,
+                        chunk_candle_data=chunk_candle_data,
+                        chunk_indicators=chunk_indicators,
+                        chunk_asset_record=chunk_asset_record,
+                        chunk_unrealized_changes=chunk_unrealized_changes,
+                        chunk_scribbles=chunk_scribbles,
+                        chunk_account_state=chunk_account_state,
+                        chunk_virtual_state=chunk_virtual_state,
+                        decision_script=decision_script,
+                    )
+                    calculation_inputs.append(calculation_input)
 
             else:
-                dataset = {
-                    "progress_list": progress_list,
-                    "target_progress": 0,
-                    "target_symbols": target_symbols,
-                    "calculation_index": needed_index,
-                    "chunk_candle_data": needed_candle_data,
-                    "chunk_indicators": needed_indicators,
-                    "chunk_asset_record": previous_asset_record,
-                    "chunk_unrealized_changes": previous_unrealized_changes,
-                    "chunk_scribbles": previous_scribbles,
-                    "chunk_account_state": previous_account_state,
-                    "chunk_virtual_state": previous_virtual_state,
-                    "decision_script": decision_script,
-                }
-                calculation_input_data.append(dataset)
+                calculation_input = simulate_chunk.CalculationInput(
+                    progress_list=progress_list,
+                    target_progress=0,
+                    target_symbols=target_symbols,
+                    calculation_index=needed_index,
+                    chunk_candle_data=needed_candle_data,
+                    chunk_indicators=needed_indicators,
+                    chunk_asset_record=previous_asset_record,
+                    chunk_unrealized_changes=previous_unrealized_changes,
+                    chunk_scribbles=previous_scribbles,
+                    chunk_account_state=previous_account_state,
+                    chunk_virtual_state=previous_virtual_state,
+                    decision_script=decision_script,
+                )
+                calculation_inputs.append(calculation_input)
 
         prepare_step = 6
 
@@ -1041,8 +1041,7 @@ class Simulator:
 
         if should_calculate:
             coroutines = [
-                go(simulate_chunk.do, input_data)
-                for input_data in calculation_input_data
+                go(simulate_chunk.do, input_data) for input_data in calculation_inputs
             ]
             gathered = asyncio.gather(*coroutines)
 
@@ -1070,7 +1069,7 @@ class Simulator:
         if should_calculate:
             asset_record = previous_asset_record
             for chunk_ouput_data in calculation_output_data:
-                chunk_asset_record = chunk_ouput_data["chunk_asset_record"]
+                chunk_asset_record = chunk_ouput_data.chunk_asset_record
                 concat_data = [asset_record, chunk_asset_record]
                 asset_record: pd.DataFrame = pd.concat(concat_data)  # type:ignore
             mask = ~asset_record.index.duplicated()
@@ -1080,7 +1079,7 @@ class Simulator:
 
             unrealized_changes = previous_unrealized_changes
             for chunk_ouput_data in calculation_output_data:
-                chunk_unrealized_changes = chunk_ouput_data["chunk_unrealized_changes"]
+                chunk_unrealized_changes = chunk_ouput_data.chunk_unrealized_changes
                 concat_data = [unrealized_changes, chunk_unrealized_changes]
                 unrealized_changes: pd.Series = pd.concat(concat_data)  # type:ignore
             mask = ~unrealized_changes.index.duplicated()
@@ -1088,9 +1087,9 @@ class Simulator:
             if not unrealized_changes.index.is_monotonic_increasing:
                 unrealized_changes = await go(sort_pandas.series, unrealized_changes)
 
-            scribbles = calculation_output_data[-1]["chunk_scribbles"]
-            account_state = calculation_output_data[-1]["chunk_account_state"]
-            virtual_state = calculation_output_data[-1]["chunk_virtual_state"]
+            scribbles = calculation_output_data[-1].chunk_scribbles
+            account_state = calculation_output_data[-1].chunk_account_state
+            virtual_state = calculation_output_data[-1].chunk_virtual_state
 
         else:
             asset_record = previous_asset_record
