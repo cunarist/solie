@@ -23,7 +23,6 @@ from solie.utility import (
     stop_flag,
     user_settings,
 )
-from solie.widget.ask_popup import Question
 
 
 class Simulator:
@@ -1290,16 +1289,15 @@ class Simulator:
             does_file_exist = True
 
         if not does_file_exist:
-            question = Question(
+            await solie.window.ask(
                 "No calculation data on this combination",
                 f"You should calculate first on year {year} with strategy code name"
                 f" {strategy_code_name} version {strategy_version}.",
                 ["Okay"],
             )
-            await solie.window.ask(question)
             return
         else:
-            question = Question(
+            answer = await solie.window.ask(
                 "Are you sure you want to delete calculation data on this combination?",
                 "If you do, you should perform the calculation again to see the"
                 f" prediction on year {year} with strategy code name"
@@ -1307,7 +1305,6 @@ class Simulator:
                 " other combinations does not get affected.",
                 ["Cancel", "Delete"],
             )
-            answer = await solie.window.ask(question)
             if answer in (0, 1):
                 return
 
@@ -1369,13 +1366,12 @@ class Simulator:
             }
             await self.present()
         except FileNotFoundError:
-            question = Question(
+            await solie.window.ask(
                 "No calculation data on this combination",
                 f"You should calculate first on year {year} with strategy code name"
                 f" {strategy_code_name} version {strategy_version}.",
                 ["Okay"],
             )
-            await solie.window.ask(question)
             return
 
     async def match_graph_range(self, *args, **kwargs):
@@ -1393,24 +1389,22 @@ class Simulator:
             peak_sr = cell.data.iloc[peak_indexes]
         peak_sr = peak_sr.sort_values().iloc[:12]
         if len(peak_sr) < 12:
-            question = Question(
+            await solie.window.ask(
                 "Calculation data is either missing or too short",
                 "Cannot get the list of meaningful spots with lowest unrealized"
                 " profit.",
                 ["Okay"],
             )
-            await solie.window.ask(question)
         else:
             text_lines = [
                 f"{index} {peak_value:+.2f}%"
                 for index, peak_value in peak_sr.iteritems()
             ]
-            question = Question(
+            await solie.window.ask(
                 "Spots with lowest unrealized profit",
                 "\n".join(text_lines),
                 ["Okay"],
             )
-            await solie.window.ask(question)
 
     async def toggle_combined_draw(self, *args, **kwargs):
         is_checked = args[0]

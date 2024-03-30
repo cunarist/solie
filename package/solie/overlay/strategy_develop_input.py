@@ -6,7 +6,6 @@ from PySide6 import QtCore, QtWidgets
 import solie
 from solie.parallel import go
 from solie.utility import outsource
-from solie.widget.ask_popup import Question
 from solie.widget.script_editor import ScriptEditor
 from solie.widget.vertical_divider import VerticalDivider
 
@@ -94,12 +93,11 @@ class StrategyDevelopInput(BaseOverlay):
 
             decision_script_input.setPlainText(script)
 
-            question = Question(
+            await solie.window.ask(
                 "Sample scripts applied",
                 "It is not yet saved. Modify the code as you want.",
                 ["Okay"],
             )
-            await solie.window.ask(question)
 
         button = QtWidgets.QPushButton("Fill with sample", card)
         outsource.do(button.clicked, job_as)

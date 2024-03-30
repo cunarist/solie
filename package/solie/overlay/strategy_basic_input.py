@@ -4,7 +4,6 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 import solie
 from solie.utility import compare_versions, outsource
-from solie.widget.ask_popup import Question
 from solie.widget.horizontal_divider import HorizontalDivider
 
 from .base_overlay import BaseOverlay
@@ -165,12 +164,11 @@ class StrategyBasicInput(BaseOverlay):
             if re.fullmatch(r"[A-Z]{6}", code_name):
                 strategy["code_name"] = code_name
             else:
-                question = Question(
+                await solie.window.ask(
                     "Code name format is wrong.",
                     "You should make the code name with 6 capital letters.",
                     ["Okay"],
                 )
-                await solie.window.ask(question)
                 return
             strategy["readable_name"] = readable_name_input.text()
             version = version_input.text()
@@ -178,22 +176,20 @@ class StrategyBasicInput(BaseOverlay):
                 if not compare_versions.is_left_higher(strategy["version"], version):
                     strategy["version"] = version
                 else:
-                    question = Question(
+                    await solie.window.ask(
                         "Version is lower.",
                         "You can't lower the version of your strategy. It should only"
                         " go up higher.",
                         ["Okay"],
                     )
-                    await solie.window.ask(question)
                     return
             else:
-                question = Question(
+                await solie.window.ask(
                     "Version format is wrong.",
                     "You should write the version in two numeric fields, divided by a"
                     " single dot.",
                     ["Okay"],
                 )
-                await solie.window.ask(question)
                 return
             strategy["description"] = description_input.toPlainText()
             strategy["risk_level"] = risk_level_input.currentIndex()

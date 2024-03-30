@@ -1,5 +1,4 @@
 import asyncio
-from dataclasses import dataclass
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
@@ -7,13 +6,6 @@ from solie.utility import outsource
 from solie.widget.popup_box import PopupBox
 
 # https://stackoverflow.com/questions/67029993/pyqt-creating-a-popup-in-the-window
-
-
-@dataclass
-class Question:
-    main_text: str
-    detail_text: str
-    options: list[str]
 
 
 class AskPopup(QtWidgets.QWidget):
@@ -30,7 +22,13 @@ class AskPopup(QtWidgets.QWidget):
             self.setGeometry(source.rect())
         return super().eventFilter(source, event)
 
-    def __init__(self, parent: QtWidgets.QMainWindow, question: Question):
+    def __init__(
+        self,
+        parent: QtWidgets.QMainWindow,
+        main_text: str,
+        detail_text: str,
+        options: list[str],
+    ):
         # ■■■■■ the basic ■■■■■
 
         super().__init__(parent)
@@ -99,14 +97,14 @@ class AskPopup(QtWidgets.QWidget):
         content_box_layout.addItem(widget)
 
         # title
-        main_text = QtWidgets.QLabel()
-        main_text.setText(question.main_text)
-        main_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        main_text_widget = QtWidgets.QLabel()
+        main_text_widget.setText(main_text)
+        main_text_widget.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         main_text_font = QtGui.QFont()
         main_text_font.setPointSize(12)
-        main_text.setFont(main_text_font)
-        main_text.setWordWrap(True)
-        content_box_layout.addWidget(main_text)
+        main_text_widget.setFont(main_text_font)
+        main_text_widget.setWordWrap(True)
+        content_box_layout.addWidget(main_text_widget)
 
         # spacing
         spacing_text = QtWidgets.QLabel("")
@@ -116,11 +114,11 @@ class AskPopup(QtWidgets.QWidget):
         content_box_layout.addWidget(spacing_text)
 
         # explanation
-        detail_text = QtWidgets.QLabel()
-        detail_text.setText(question.detail_text)
-        detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        detail_text.setWordWrap(True)
-        content_box_layout.addWidget(detail_text)
+        detail_text_widget = QtWidgets.QLabel()
+        detail_text_widget.setText(detail_text)
+        detail_text_widget.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        detail_text_widget.setWordWrap(True)
+        content_box_layout.addWidget(detail_text_widget)
 
         # spacing
         widget = QtWidgets.QSpacerItem(
@@ -133,7 +131,7 @@ class AskPopup(QtWidgets.QWidget):
 
         # line including selection buttons
         this_layout = QtWidgets.QHBoxLayout()
-        for turn, option in enumerate(question.options):
+        for turn, option in enumerate(options):
             option_button = QtWidgets.QPushButton(option, content_box)
 
             async def job(answer=turn + 1, *args, **kwargs):

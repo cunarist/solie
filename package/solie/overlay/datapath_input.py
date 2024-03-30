@@ -6,7 +6,6 @@ from PySide6 import QtCore, QtGui, QtWidgets
 import solie
 from solie.parallel import go
 from solie.utility import outsource, user_settings
-from solie.widget.ask_popup import Question
 from solie.widget.horizontal_divider import HorizontalDivider
 
 from .base_overlay import BaseOverlay
@@ -104,12 +103,11 @@ class DatapathInput(BaseOverlay):
 
         async def job_ac():
             if datapath is None:
-                question = Question(
+                await solie.window.ask(
                     "Data folder is not chosen",
                     "Choose your data folder first.",
                     ["Okay"],
                 )
-                await solie.window.ask(question)
             else:
                 await user_settings.apply_app_settings({"datapath": str(datapath)})
                 await user_settings.load()

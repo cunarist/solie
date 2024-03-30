@@ -31,7 +31,7 @@ from solie.utility import (
     outsource,
     user_settings,
 )
-from solie.widget.ask_popup import AskPopup, Question
+from solie.widget.ask_popup import AskPopup
 from solie.widget.brand_label import BrandLabel
 from solie.widget.horizontal_divider import HorizontalDivider
 from solie.widget.overlay_panel import OverlayPanel
@@ -87,14 +87,13 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.app_close_event.set()
 
             if self.should_confirm_closing:
-                question = Question(
+                answer = await self.ask(
                     "Really quit?",
                     "If Solie is not turned on, data collection gets stopped as well."
                     " Solie will proceed to finalizations such as closing network"
                     " connections and saving data.",
                     ["Cancel", "Shut down"],
                 )
-                answer = await self.ask(question)
 
                 if answer in (0, 1):
                     return
@@ -127,12 +126,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             return
 
         async def job_ask():
-            question = Question(
+            answer = await self.ask(
                 "Board is locked. Do you want to unlock it?",
                 "You will be able to manipulate the board again.",
                 ["No", "Yes"],
             )
-            answer = await self.ask(question)
             if answer in (0, 1):
                 return
             self.board.setEnabled(True)
@@ -198,12 +196,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         await check_internet.is_checked.wait()
         while not check_internet.connected():
-            question = Question(
+            await self.ask(
                 "No internet connection",
                 "Internet connection is necessary for Solie to start up.",
                 ["Okay"],
             )
-            await self.ask(question)
             await asyncio.sleep(1)
 
         # ■■■■■ Check app settings ■■■■■
@@ -1116,8 +1113,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             await asyncio.sleep(interval)
 
     # show an ask popup and blocks the stack
-    async def ask(self, question: Question) -> int:
-        ask_popup = AskPopup(self, question)
+    async def ask(self, main_text: str, detail_text: str, options: list[str]) -> int:
+        ask_popup = AskPopup(self, main_text, detail_text, options)
         ask_popup.show()
 
         await ask_popup.done_event.wait()

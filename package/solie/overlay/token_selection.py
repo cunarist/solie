@@ -5,7 +5,6 @@ from PySide6 import QtCore, QtGui, QtWidgets
 import solie
 from solie.definition.api_requester import ApiRequester
 from solie.utility import outsource, user_settings
-from solie.widget.ask_popup import Question
 from solie.widget.horizontal_divider import HorizontalDivider
 
 from .base_overlay import BaseOverlay
@@ -168,19 +167,17 @@ class TokenSelection(BaseOverlay):
                 data_settings["asset_token"] = selected_tokens[0]
             else:
                 is_symbol_count_ok = False
-                question = Question(
+                await solie.window.ask(
                     "Nothing selected",
                     "Choose one of the tokens.",
                     ["Okay"],
                 )
-                await solie.window.ask(question)
             if is_symbol_count_ok:
-                question = Question(
+                answer = await solie.window.ask(
                     "Okay to proceed?",
                     "Solie will treat this token as your asset.",
                     ["No", "Yes"],
                 )
-                answer = await solie.window.ask(question)
                 if answer in (0, 1):
                     return
                 await user_settings.apply_data_settings(data_settings)
