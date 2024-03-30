@@ -1378,7 +1378,7 @@ class Transactor:
             )
             await asyncio.sleep(0)
         symbol_indicators = await asyncio.gather(*coroutines)
-        indicators = pd.concat(symbol_indicators, axis=1)
+        indicators = pd.concat(symbol_indicators, axis="columns")
 
         current_candle_data: np.record = candle_data.tail(1).to_records()[-1]
         current_indicators: np.record = indicators.to_records()[-1]
