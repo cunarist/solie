@@ -1,4 +1,5 @@
 import asyncio
+from dataclasses import dataclass
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
@@ -6,6 +7,13 @@ from solie.utility import outsource
 from solie.widget.popup_box import PopupBox
 
 # https://stackoverflow.com/questions/67029993/pyqt-creating-a-popup-in-the-window
+
+
+@dataclass
+class Question:
+    main_text: str
+    detail_text: str
+    options: list[str]
 
 
 class AskPopup(QtWidgets.QWidget):
@@ -22,7 +30,7 @@ class AskPopup(QtWidgets.QWidget):
             self.setGeometry(source.rect())
         return super().eventFilter(source, event)
 
-    def __init__(self, parent, question):
+    def __init__(self, parent: QtWidgets.QMainWindow, question: Question):
         # ■■■■■ the basic ■■■■■
 
         super().__init__(parent)
@@ -92,7 +100,7 @@ class AskPopup(QtWidgets.QWidget):
 
         # title
         main_text = QtWidgets.QLabel()
-        main_text.setText(question[0])
+        main_text.setText(question.main_text)
         main_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         main_text_font = QtGui.QFont()
         main_text_font.setPointSize(12)
@@ -109,7 +117,7 @@ class AskPopup(QtWidgets.QWidget):
 
         # explanation
         detail_text = QtWidgets.QLabel()
-        detail_text.setText(question[1])
+        detail_text.setText(question.detail_text)
         detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         detail_text.setWordWrap(True)
         content_box_layout.addWidget(detail_text)
@@ -125,7 +133,7 @@ class AskPopup(QtWidgets.QWidget):
 
         # line including selection buttons
         this_layout = QtWidgets.QHBoxLayout()
-        for turn, option in enumerate(question[2]):
+        for turn, option in enumerate(question.options):
             option_button = QtWidgets.QPushButton(option, content_box)
 
             async def job(answer=turn + 1, *args, **kwargs):

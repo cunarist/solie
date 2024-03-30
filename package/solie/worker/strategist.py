@@ -10,6 +10,7 @@ import solie
 from solie.overlay.strategy_basic_input import StrategyBasicInput
 from solie.overlay.strategy_develop_input import StrategyDevelopInput
 from solie.utility import outsource, standardize, user_settings
+from solie.widget.ask_popup import Question
 
 
 class Strategiest:
@@ -166,11 +167,11 @@ class Strategiest:
             card_layout.addWidget(action_button)
 
             async def job_rs(strategy=strategy):
-                question = [
+                question = Question(
                     "Remove this strategy?",
                     "Once you remove this, it cannot be recovered.",
                     ["Remove"],
-                ]
+                )
                 answer = await solie.window.ask(question)
                 if answer == 0:
                     return

@@ -31,6 +31,7 @@ from solie.utility import (
     stop_flag,
     user_settings,
 )
+from solie.widget.ask_popup import Question
 
 
 class Transactor:
@@ -1432,7 +1433,7 @@ class Transactor:
         lowest_max_leverage = min(target_max_leverages.values())
 
         if lowest_max_leverage < desired_leverage:
-            question = [
+            question = Question(
                 "Leverage on some symbols cannot be set as desired",
                 "Binance has its own leverage limit per market. For some symbols,"
                 " leverage will be set as high as it can be, but not as same as the"
@@ -1440,18 +1441,18 @@ class Transactor:
                 " unrealized changes and profit turns out to be a bit lower than"
                 " simulation prediction with the same leverage.",
                 ["Show details", "Okay"],
-            ]
+            )
             answer = await solie.window.ask(question)
             if answer == 1:
                 texts = []
                 for symbol, max_leverage in target_max_leverages.items():
                     texts.append(f"{symbol} {max_leverage}")
                 text = "\n".join(texts)
-                question = [
+                question = Question(
                     "These are highest available leverages",
                     text,
                     ["Okay"],
-                ]
+                )
                 await solie.window.ask(question)
 
         # ■■■■■ save ■■■■■

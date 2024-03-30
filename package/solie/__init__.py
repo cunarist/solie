@@ -30,7 +30,7 @@ from solie.utility import (
     outsource,
     user_settings,
 )
-from solie.widget.ask_popup import AskPopup
+from solie.widget.ask_popup import AskPopup, Question
 from solie.widget.brand_label import BrandLabel
 from solie.widget.horizontal_divider import HorizontalDivider
 from solie.widget.overlay_panel import OverlayPanel
@@ -86,13 +86,13 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.app_close_event.set()
 
             if self.should_confirm_closing:
-                question = [
+                question = Question(
                     "Really quit?",
                     "If Solie is not turned on, data collection gets stopped as well."
                     " Solie will proceed to finalizations such as closing network"
                     " connections and saving data.",
                     ["Cancel", "Shut down"],
-                ]
+                )
                 answer = await self.ask(question)
 
                 if answer in (0, 1):
@@ -126,11 +126,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             return
 
         async def job_ask():
-            question = [
+            question = Question(
                 "Board is locked. Do you want to unlock it?",
                 "You will be able to manipulate the board again.",
                 ["No", "Yes"],
-            ]
+            )
             answer = await self.ask(question)
             if answer in (0, 1):
                 return
@@ -197,11 +197,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         await check_internet.is_checked.wait()
         while not check_internet.connected():
-            question = [
+            question = Question(
                 "No internet connection",
                 "Internet connection is necessary for Solie to start up.",
                 ["Okay"],
-            ]
+            )
             await self.ask(question)
             await asyncio.sleep(1)
 
@@ -1121,7 +1121,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             await asyncio.sleep(interval)
 
     # show an ask popup and blocks the stack
-    async def ask(self, question):
+    async def ask(self, question: Question):
         ask_popup = AskPopup(self, question)
         ask_popup.show()
 

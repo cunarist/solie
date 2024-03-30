@@ -5,6 +5,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 import solie
 from solie.definition.api_requester import ApiRequester
 from solie.utility import outsource, user_settings
+from solie.widget.ask_popup import Question
 from solie.widget.horizontal_divider import HorizontalDivider
 
 
@@ -179,19 +180,19 @@ class CoinSelection(QtWidgets.QWidget):
                 data_settings["target_symbols"] = selected_symbols
             else:
                 is_symbol_count_ok = False
-                question = [
+                question = Question(
                     "Select a proper number of coins",
                     "You can select a minimum of 1 and a maximum of 12.",
                     ["Okay"],
-                ]
+                )
                 await solie.window.ask(question)
             if is_symbol_count_ok:
-                question = [
+                question = Question(
                     "Okay to proceed?",
                     "You cannot change your selections unless you make a new data"
                     " folder.",
                     ["No", "Yes"],
-                ]
+                )
                 answer = await solie.window.ask(question)
                 if answer in (0, 1):
                     return
