@@ -4,10 +4,8 @@ import math
 import os
 import sys
 from datetime import datetime, timezone
-from importlib import import_module, metadata
-from inspect import getfile
 from pathlib import Path
-from typing import Callable, Coroutine
+from typing import Callable, Coroutine, TypeVar
 
 import aiofiles
 import pandas as pd
@@ -15,7 +13,7 @@ import pyqtgraph
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from solie import parallel
+from solie import info, parallel
 from solie.definition.api_requester import ApiRequester
 from solie.definition.log_handler import LogHandler
 from solie.definition.percent_axis_item import PercentAxisItem
@@ -39,8 +37,7 @@ from solie.widget.splash_screen import SplashScreen
 from solie.widget.symbol_box import SymbolBox
 from solie.worker import collector, manager, simulator, strategist, transactor
 
-VERSION = metadata.version("solie")
-PATH = Path(os.path.dirname(getfile(import_module("solie"))))
+W = TypeVar("W", bound=BaseOverlay)
 
 
 class Window(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -49,7 +46,10 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.app_close_event = asyncio.Event()
 
-        self.price_labels = {}
+        self.app_settings: user_settings.AppSettings
+        self.data_settings: user_settings.DataSettings
+
+        self.price_labels: dict[str, QtWidgets.QLabel] = {}
         self.last_interaction = datetime.now(timezone.utc)
 
         self.plot_widget = pyqtgraph.PlotWidget()
@@ -173,7 +173,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ Window icon ■■■■■
 
-        filepath = PATH / "static" / "product_icon.png"
+        filepath = info.PATH / "static" / "product_icon.png"
         async with aiofiles.open(filepath, mode="rb") as file:
             product_icon_data = await file.read()
         product_icon_pixmap = QtGui.QPixmap()
@@ -185,15 +185,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         splash_screen = SplashScreen()
         self.centralWidget().layout().addWidget(splash_screen)
 
-        # ■■■■■ Start basic things ■■■■■
-
-        await user_settings.load()
-        await examine_data_files.do()
-        await user_settings.load()
-        asyncio.create_task(check_internet.monitor())
-
         # ■■■■■ Request internet connection ■■■■■
 
+        asyncio.create_task(check_internet.monitor())
         await check_internet.is_checked.wait()
         while not check_internet.connected():
             await self.ask(
@@ -205,35 +199,63 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ Check app settings ■■■■■
 
-        if user_settings.get_app_settings()["datapath"] is None:
-            await self.overlay(
+        app_settings = await user_settings.read_app_settings()
+
+        if not app_settings:
+            overlay_widget = await self.overlay(
                 "Choose your data folder",
                 DatapathInput(),
                 False,
             )
+            datapath = overlay_widget.result
+            app_settings = user_settings.AppSettings(
+                datapath=str(datapath),
+            )
+            await user_settings.save_app_settings(app_settings)
+
+        self.app_settings = app_settings
+
+        # ■■■■■ Get app settings ■■■■■
+
+        datapath = Path(app_settings.datapath)
 
         # ■■■■■ Check data settings ■■■■■
 
-        if user_settings.get_data_settings()["asset_token"] is None:
-            await self.overlay(
+        data_settings = await user_settings.read_data_settings(datapath)
+
+        if data_settings is None:
+            overlay_widget = await self.overlay(
                 "Choose a token to treat as your asset",
                 TokenSelection(),
                 False,
             )
-
-        if user_settings.get_data_settings()["target_symbols"] is None:
-            await self.overlay(
+            asset_token = overlay_widget.result
+            overlay_widget = await self.overlay(
                 "Choose coins to observe and trade",
-                CoinSelection(),
+                CoinSelection(asset_token),
                 False,
             )
+            target_symbols = overlay_widget.result
+            data_settings = user_settings.DataSettings(
+                asset_token=asset_token,
+                target_symbols=target_symbols,
+            )
+            await user_settings.save_data_settings(data_settings, datapath)
+
+        self.data_settings = data_settings
+
+        # ■■■■■ Get data settings ■■■■■
+
+        asset_token = data_settings.asset_token
+        target_symbols = data_settings.target_symbols
+
+        # ■■■■■ Check the status of data files ■■■■■
+
+        await examine_data_files.do()
 
         # ■■■■■ Get information about target symbols ■■■■■
 
         api_requester = ApiRequester()
-
-        asset_token = user_settings.get_data_settings()["asset_token"]
-        target_symbols = user_settings.get_data_settings()["target_symbols"]
         response = await api_requester.coingecko(
             "GET",
             "/api/v3/coins/markets",
@@ -283,7 +305,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 image_data = await api_requester.bytes(coin_icon_url)
                 pixmap.loadFromData(image_data)
             else:
-                pixmap.load(str(PATH / "static" / "icon" / "blank_coin.png"))
+                pixmap.load(str(info.PATH / "static" / "icon" / "blank_coin.png"))
             symbol_pixmaps[symbol] = pixmap
 
         token_icon_url = coin_icon_urls.get(asset_token, "")
@@ -291,7 +313,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         image_data = await api_requester.bytes(token_icon_url)
         token_pixmap.loadFromData(image_data)
 
-        text = user_settings.get_app_settings()["datapath"]
+        text = str(datapath)
         self.lineEdit.setText(text)
         self.lineEdit.setCursorPosition(len(text))
 
@@ -427,7 +449,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         this_layout = self.horizontalLayout_13
         product_icon_pixmap = QtGui.QPixmap()
-        filepath = PATH / "static" / "product_icon.png"
+        filepath = info.PATH / "static" / "product_icon.png"
         async with aiofiles.open(filepath, mode="rb") as file:
             product_icon_data = await file.read()
         product_icon_pixmap.loadFromData(product_icon_data)
@@ -443,7 +465,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         this_layout.addWidget(spacing_text)
         title_label = BrandLabel(self, "SOLIE", 48)
         this_layout.addWidget(title_label)
-        text = VERSION
+        text = info.VERSION
         label = BrandLabel(self, text, 24)
         this_layout.addWidget(label)
 
@@ -1055,7 +1077,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ Prepare logging ■■■■■
 
-        datapath = Path(user_settings.get_app_settings()["datapath"])
         log_path = datapath / "+logs"
         log_handler = LogHandler(log_path)
         logging.getLogger().addHandler(log_handler)
@@ -1123,12 +1144,14 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         return ask_popup.answer
 
     # show an mainpulatable overlap popup
-    async def overlay(self, title: str, widget: BaseOverlay, close_button=True):
+    async def overlay(self, title: str, widget: W, close_button=True) -> W:
         overlay_panel = OverlayPanel(self, title, widget, close_button)
         overlay_panel.show()
 
         await widget.done_event.wait()
         overlay_panel.setParent(None)
+
+        return widget
 
 
 def bring_to_life():
@@ -1144,7 +1167,7 @@ def bring_to_life():
     # ■■■■■ Theme ■■■■■
 
     # This part should be done after creating the app and before creating the window.
-    staticpath = PATH / "static"
+    staticpath = info.PATH / "static"
     QtGui.QFontDatabase.addApplicationFont(str(staticpath / "source_code_pro.ttf"))
     QtGui.QFontDatabase.addApplicationFont(str(staticpath / "notosans_regular.ttf"))
     QtGui.QFontDatabase.addApplicationFont(str(staticpath / "lexend_bold.ttf"))

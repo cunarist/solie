@@ -4,7 +4,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 import solie
 from solie.definition.api_requester import ApiRequester
-from solie.utility import outsource, user_settings
+from solie.utility import outsource
 from solie.widget.horizontal_divider import HorizontalDivider
 
 from .base_overlay import BaseOverlay
@@ -20,7 +20,7 @@ class TokenSelection(BaseOverlay):
     async def fill(self, done_event):
         # ■■■■■ for remembering ■■■■■
 
-        token_radioboxes = {}
+        token_radioboxes: dict[str, QtWidgets.QRadioButton] = {}
 
         # ■■■■■ prepare the api requester ■■■■■
 
@@ -124,7 +124,7 @@ class TokenSelection(BaseOverlay):
         token_icon_labels = {}
         input_layout = QtWidgets.QGridLayout()
         blank_coin_pixmap = QtGui.QPixmap()
-        blank_coin_pixmap.load(str(solie.PATH / "static" / "icon/blank_coin.png"))
+        blank_coin_pixmap.load(str(solie.info.PATH / "static" / "icon/blank_coin.png"))
         for turn, token in enumerate(available_tokens):
             this_layout = QtWidgets.QHBoxLayout()
             row = turn // 2
@@ -154,25 +154,22 @@ class TokenSelection(BaseOverlay):
 
         # ■■■■■ a card ■■■■■
 
+        self.result: str
+
         # confirm function
         async def job_cf(*args):
-            data_settings = {}
             selected_tokens = []
             for symbol, radiobox in token_radioboxes.items():
                 is_selected = radiobox.isChecked()
                 if is_selected:
                     selected_tokens.append(symbol)
-            if len(selected_tokens) == 1:
-                is_symbol_count_ok = True
-                data_settings["asset_token"] = selected_tokens[0]
-            else:
-                is_symbol_count_ok = False
+            if len(selected_tokens) == 0:
                 await solie.window.ask(
                     "Nothing selected",
                     "Choose one of the tokens.",
                     ["Okay"],
                 )
-            if is_symbol_count_ok:
+            if len(selected_tokens) == 1:
                 answer = await solie.window.ask(
                     "Okay to proceed?",
                     "Solie will treat this token as your asset.",
@@ -180,10 +177,9 @@ class TokenSelection(BaseOverlay):
                 )
                 if answer in (0, 1):
                     return
-                await user_settings.apply_data_settings(data_settings)
-                await user_settings.load()
                 self.is_closed = True
-                done_event.set()
+                self.result = selected_tokens[0]
+                self.done_event.set()
 
         # card structure
         card = QtWidgets.QGroupBox()

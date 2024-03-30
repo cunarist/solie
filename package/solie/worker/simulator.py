@@ -21,7 +21,6 @@ from solie.utility import (
     sort_pandas,
     standardize,
     stop_flag,
-    user_settings,
 )
 
 
@@ -29,7 +28,7 @@ class Simulator:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        datapath = Path(user_settings.get_app_settings()["datapath"])
+        datapath = Path(solie.window.app_settings.datapath)
         self.workerpath = datapath / "simulator"
         os.makedirs(self.workerpath, exist_ok=True)
 
@@ -39,7 +38,7 @@ class Simulator:
 
         # ■■■■■ remember and display ■■■■■
 
-        self.viewing_symbol = user_settings.get_data_settings()["target_symbols"][0]
+        self.viewing_symbol = solie.window.data_settings.target_symbols[0]
         self.should_draw_all_years = False
 
         self.about_viewing = None
@@ -842,7 +841,7 @@ class Simulator:
         account_state_path = workerpath / f"{prefix}_account_state.pickle"
         virtual_state_path = workerpath / f"{prefix}_virtual_state.pickle"
 
-        target_symbols = user_settings.get_data_settings()["target_symbols"]
+        target_symbols = solie.window.data_settings.target_symbols
 
         prepare_step = 2
 

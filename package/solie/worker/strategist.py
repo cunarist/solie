@@ -9,14 +9,14 @@ from PySide6 import QtGui, QtWidgets
 import solie
 from solie.overlay.strategy_basic_input import StrategyBasicInput
 from solie.overlay.strategy_develop_input import StrategyDevelopInput
-from solie.utility import outsource, standardize, user_settings
+from solie.utility import outsource, standardize
 
 
 class Strategiest:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        datapath = Path(user_settings.get_app_settings()["datapath"])
+        datapath = Path(solie.window.app_settings.datapath)
         self.workerpath = datapath / "strategist"
         os.makedirs(self.workerpath, exist_ok=True)
 
@@ -31,7 +31,7 @@ class Strategiest:
 
         self.before_selections = {}
 
-        iconpath = solie.PATH / "static" / "icon"
+        iconpath = solie.info.PATH / "static" / "icon"
         self.red_pixmap = QtGui.QPixmap()
         self.red_pixmap.load(str(iconpath / "traffic_light_red.png"))
         self.yellow_pixmap = QtGui.QPixmap()
@@ -63,11 +63,11 @@ class Strategiest:
                 + " This strategy is only for demonstration purposes."
             )
             first_strategy["risk_level"] = 2
-            filepath = solie.PATH / "static" / "sample_indicators_script.txt"
+            filepath = solie.info.PATH / "static" / "sample_indicators_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 read_data = await file.read()
                 first_strategy["indicators_script"] = read_data
-            filepath = solie.PATH / "static" / "sample_decision_script.txt"
+            filepath = solie.info.PATH / "static" / "sample_decision_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 read_data = await file.read()
                 first_strategy["decision_script"] = read_data

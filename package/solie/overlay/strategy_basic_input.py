@@ -86,7 +86,7 @@ class StrategyBasicInput(BaseOverlay):
         description_input.setPlainText(strategy["description"])
         this_layout.addRow("Description", description_input)
         risk_level_input = QtWidgets.QComboBox()
-        iconpath = solie.PATH / "static" / "icon"
+        iconpath = solie.info.PATH / "static" / "icon"
         red_pixmap = QtGui.QPixmap()
         red_pixmap.load(str(iconpath / "traffic_light_red.png"))
         yellow_pixmap = QtGui.QPixmap()

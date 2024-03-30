@@ -5,12 +5,12 @@ from pathlib import Path
 import aiofiles
 import pandas as pd
 
+import solie
 from solie.parallel import go
-from solie.utility import user_settings
 
 
 async def do():
-    datapath_str = user_settings.get_app_settings()["datapath"]
+    datapath_str = solie.window.app_settings.datapath
     if datapath_str is None:
         return
     datapath = Path(datapath_str)

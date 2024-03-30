@@ -5,7 +5,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 import solie
 from solie.parallel import go
-from solie.utility import outsource, user_settings
+from solie.utility import outsource
 from solie.widget.horizontal_divider import HorizontalDivider
 
 from .base_overlay import BaseOverlay
@@ -101,6 +101,8 @@ class DatapathInput(BaseOverlay):
 
         # ■■■■■ a card ■■■■■
 
+        self.result: Path
+
         async def job_ac():
             if datapath is None:
                 await solie.window.ask(
@@ -109,8 +111,7 @@ class DatapathInput(BaseOverlay):
                     ["Okay"],
                 )
             else:
-                await user_settings.apply_app_settings({"datapath": str(datapath)})
-                await user_settings.load()
+                self.result = datapath
                 self.done_event.set()
 
         # card structure

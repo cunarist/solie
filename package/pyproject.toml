@@ -24,6 +24,7 @@ getmac = "^0.8.3"
 pandas-ta = { version = "^0.3.14b", allow-prereleases = true }
 time-machine = "^2.13.0"
 xdialog = "^1.1.1"
+dataclasses-json = "^0.6.4"
 
 [build-system]
 requires = ["poetry-core"]

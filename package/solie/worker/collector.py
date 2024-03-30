@@ -28,7 +28,6 @@ from solie.utility import (
     sort_pandas,
     standardize,
     stop_flag,
-    user_settings,
 )
 
 
@@ -36,7 +35,7 @@ class Collector:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        datapath = Path(user_settings.get_app_settings()["datapath"])
+        datapath = Path(solie.window.app_settings.datapath)
         self.workerpath = datapath / "collector"
         os.makedirs(self.workerpath, exist_ok=True)
 
@@ -52,7 +51,7 @@ class Collector:
         self.api_requester = ApiRequester()
 
         self.aggtrade_candle_sizes = {}
-        for symbol in user_settings.get_data_settings()["target_symbols"]:
+        for symbol in solie.window.data_settings.target_symbols:
             self.aggtrade_candle_sizes[symbol] = 0
 
         # Candle data.
@@ -62,7 +61,7 @@ class Collector:
 
         # Realtime data chunks
         field_names = itertools.product(
-            user_settings.get_data_settings()["target_symbols"],
+            solie.window.data_settings.target_symbols,
             ("Best Bid Price", "Best Ask Price", "Mark Price"),
         )
         field_names = [str(field_name) for field_name in field_names]
@@ -74,7 +73,7 @@ class Collector:
 
         # Aggregate trades
         field_names = itertools.product(
-            user_settings.get_data_settings()["target_symbols"],
+            solie.window.data_settings.target_symbols,
             ("Price", "Volume"),
         )
         field_names = [str(field_name) for field_name in field_names]
@@ -123,7 +122,7 @@ class Collector:
                 self.add_mark_price,
             ),
         }
-        for symbol in user_settings.get_data_settings()["target_symbols"]:
+        for symbol in solie.window.data_settings.target_symbols:
             api_streamer = ApiStreamer(
                 f"wss://fstream.binance.com/ws/{symbol.lower()}@bookTicker",
                 self.add_book_tickers,
@@ -261,7 +260,7 @@ class Collector:
 
         did_fill = False
 
-        target_symbols = user_settings.get_data_settings()["target_symbols"]
+        target_symbols = solie.window.data_settings.target_symbols
         while len(full_symbols) < len(target_symbols) and request_count < 10:
             for symbol in target_symbols:
                 if symbol in full_symbols:
@@ -364,7 +363,7 @@ class Collector:
             ar = cell.data.copy()
         price_precisions = self.secret_memory["price_precisions"]
 
-        for symbol in user_settings.get_data_settings()["target_symbols"]:
+        for symbol in solie.window.data_settings.target_symbols:
             temp_ar = ar[str((symbol, "Price"))]
             temp_ar = temp_ar[temp_ar != 0]
             if len(temp_ar) > 0:
@@ -448,7 +447,7 @@ class Collector:
         task_id = stop_flag.make("download_fill_candle_data")
 
         download_presets: list[DownloadPreset] = []
-        target_symbols = user_settings.get_data_settings()["target_symbols"]
+        target_symbols = solie.window.data_settings.target_symbols
         if filling_type == 0:
             current_year = datetime.now(timezone.utc).year
             for year in range(2020, current_year):
@@ -634,7 +633,7 @@ class Collector:
     async def add_mark_price(self, *args, **kwargs):
         received: dict = kwargs.get("received")  # type:ignore
         start_time = datetime.now(timezone.utc)
-        target_symbols = user_settings.get_data_settings()["target_symbols"]
+        target_symbols = solie.window.data_settings.target_symbols
         event_time = np.datetime64(received[0]["E"] * 10**6, "ns")
         filtered_data = {}
         for about_mark_price in received:
@@ -698,7 +697,7 @@ class Collector:
 
         new_datas = {}
 
-        for symbol in user_settings.get_data_settings()["target_symbols"]:
+        for symbol in solie.window.data_settings.target_symbols:
             block_start_timestamp = before_moment.timestamp()
             block_end_timestamp = current_moment.timestamp()
 

@@ -29,7 +29,6 @@ from solie.utility import (
     sort_pandas,
     standardize,
     stop_flag,
-    user_settings,
 )
 
 
@@ -37,7 +36,7 @@ class Transactor:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        datapath = Path(user_settings.get_app_settings()["datapath"])
+        datapath = Path(solie.window.app_settings.datapath)
         self.workerpath = datapath / "transactor"
         os.makedirs(self.workerpath, exist_ok=True)
 
@@ -57,7 +56,7 @@ class Transactor:
 
         self.api_requester = ApiRequester()
 
-        self.viewing_symbol = user_settings.get_data_settings()["target_symbols"][0]
+        self.viewing_symbol = solie.window.data_settings.target_symbols[0]
         self.should_draw_frequently = True
 
         self.account_state = standardize.account_state()
@@ -329,7 +328,7 @@ class Transactor:
             about_assets = about_update["B"]
             about_positions = about_update["P"]
 
-            asset_token = user_settings.get_data_settings()["asset_token"]
+            asset_token = solie.window.data_settings.asset_token
 
             about_assets_keyed = convert.list_to_dict(about_assets, "a")
             if asset_token in about_assets_keyed:
@@ -341,7 +340,7 @@ class Transactor:
             if "BOTH" in about_positions_keyed:
                 about_position = about_positions_keyed["BOTH"]
 
-                target_symbols = user_settings.get_data_settings()["target_symbols"]
+                target_symbols = solie.window.data_settings.target_symbols
                 if about_position["s"] not in target_symbols:
                     return
 
@@ -366,7 +365,7 @@ class Transactor:
         if event_type == "ORDER_TRADE_UPDATE":
             about_update = received["o"]
 
-            target_symbols = user_settings.get_data_settings()["target_symbols"]
+            target_symbols = solie.window.data_settings.target_symbols
             if about_update["s"] not in target_symbols:
                 return
 
@@ -1357,7 +1356,7 @@ class Transactor:
 
         # ■■■■■ Make decision ■■■■■
 
-        target_symbols = user_settings.get_data_settings()["target_symbols"]
+        target_symbols = solie.window.data_settings.target_symbols
 
         strategy_index = self.automation_settings["strategy_index"]
         strategy = solie.window.strategist.strategies[strategy_index]
@@ -1424,7 +1423,7 @@ class Transactor:
 
         # ■■■■■ tell if some symbol's leverage cannot be set as desired ■■■■■
 
-        target_symbols = user_settings.get_data_settings()["target_symbols"]
+        target_symbols = solie.window.data_settings.target_symbols
         target_max_leverages = {}
         for symbol in target_symbols:
             max_leverage = self.secret_memory["maximum_leverages"].get(symbol, 125)
@@ -1462,8 +1461,8 @@ class Transactor:
     async def watch_binance(self, *args, **kwargs):
         # ■■■■■ Basic data ■■■■■
 
-        target_symbols = user_settings.get_data_settings()["target_symbols"]
-        asset_token = user_settings.get_data_settings()["asset_token"]
+        target_symbols = solie.window.data_settings.target_symbols
+        asset_token = solie.window.data_settings.asset_token
 
         # ■■■■■ Check internet connection ■■■■■
 
@@ -1867,7 +1866,7 @@ class Transactor:
 
     async def place_orders(self, *args, **kwargs):
         decision = args[0]
-        target_symbols = user_settings.get_data_settings()["target_symbols"]
+        target_symbols = solie.window.data_settings.target_symbols
 
         current_prices: dict[str, float] = {}
         for symbol in target_symbols:
@@ -2192,7 +2191,7 @@ class Transactor:
 
     async def clear_positions_and_open_orders(self, *args, **kwargs):
         decision = {}
-        for symbol in user_settings.get_data_settings()["target_symbols"]:
+        for symbol in solie.window.data_settings.target_symbols:
             decision[symbol] = {
                 "cancel_all": {},
                 "now_close": {},
@@ -2204,7 +2203,7 @@ class Transactor:
             return
 
         conflicting_order_tuples = []
-        for symbol in user_settings.get_data_settings()["target_symbols"]:
+        for symbol in solie.window.data_settings.target_symbols:
             symbol_open_orders = self.account_state["open_orders"][symbol]
             groups_by_command = {}
             for order_id, open_order_state in symbol_open_orders.items():

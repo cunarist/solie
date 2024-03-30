@@ -4,16 +4,18 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 import solie
 from solie.definition.api_requester import ApiRequester
-from solie.utility import outsource, user_settings
+from solie.utility import outsource
 from solie.widget.horizontal_divider import HorizontalDivider
 
 from .base_overlay import BaseOverlay
 
 
 class CoinSelection(BaseOverlay):
-    def __init__(self):
+    def __init__(self, asset_token: str):
         super().__init__()
         self.is_closed = False
+
+        self.asset_token = asset_token
 
         asyncio.create_task(self.fill())
 
@@ -21,11 +23,11 @@ class CoinSelection(BaseOverlay):
         # ■■■■■ for remembering ■■■■■
 
         api_requester = ApiRequester()
-        symbol_checkboxes = {}
+        symbol_checkboxes: dict[str, QtWidgets.QCheckBox] = {}
 
         # ■■■■■ get previous things ■■■■■
 
-        asset_token = user_settings.get_data_settings()["asset_token"]
+        asset_token = self.asset_token
 
         # ■■■■■ get available symbols ■■■■■
 
@@ -132,7 +134,9 @@ class CoinSelection(BaseOverlay):
         symbol_icon_labels = {}
         input_layout = QtWidgets.QGridLayout()
         blank_coin_pixmap = QtGui.QPixmap()
-        blank_coin_pixmap.load(str(solie.PATH / "static" / "icon" / "blank_coin.png"))
+        blank_coin_pixmap.load(
+            str(solie.info.PATH / "static" / "icon" / "blank_coin.png")
+        )
         for turn, symbol in enumerate(available_symbols):
             coin_symbol = symbol.removesuffix(asset_token)
             coin_name = coin_names.get(coin_symbol, "")
@@ -168,25 +172,22 @@ class CoinSelection(BaseOverlay):
 
         # ■■■■■ a card ■■■■■
 
+        self.result: list[str]
+
         # confirm function
         async def job_cf(*args):
-            data_settings = {}
-            selected_symbols = []
+            selected_symbols: list[str] = []
             for symbol, checkbox in symbol_checkboxes.items():
                 is_checked = checkbox.isChecked()
                 if is_checked:
                     selected_symbols.append(symbol)
-            if 1 <= len(selected_symbols) <= 12:
-                is_symbol_count_ok = True
-                data_settings["target_symbols"] = selected_symbols
-            else:
-                is_symbol_count_ok = False
+            if not 1 <= len(selected_symbols) <= 12:
                 await solie.window.ask(
                     "Select a proper number of coins",
                     "You can select a minimum of 1 and a maximum of 12.",
                     ["Okay"],
                 )
-            if is_symbol_count_ok:
+            else:
                 answer = await solie.window.ask(
                     "Okay to proceed?",
                     "You cannot change your selections unless you make a new data"
@@ -195,9 +196,8 @@ class CoinSelection(BaseOverlay):
                 )
                 if answer in (0, 1):
                     return
-                await user_settings.apply_data_settings(data_settings)
-                await user_settings.load()
                 self.is_closed = True
+                self.result = selected_symbols
                 self.done_event.set()
 
         # card structure

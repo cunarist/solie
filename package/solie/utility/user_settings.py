@@ -1,67 +1,50 @@
-import copy
-import json
-import os
+from dataclasses import dataclass
 from pathlib import Path
 
 import aiofiles
+from dataclasses_json import DataClassJsonMixin
 
 import solie
 
-_app_settings = {
-    "datapath": None,
-}
-_data_settings = {
-    "asset_token": None,
-    "target_symbols": None,
-}
+APP_SETTINGS_PATH = solie.info.PATH / "note" / "app_settings.json"
 
 
-async def load():
-    global _app_settings
-    global _data_settings
+@dataclass
+class AppSettings(DataClassJsonMixin):
+    datapath: str
 
-    filepath = solie.PATH / "note" / "app_settings.json"
-    if os.path.isfile(filepath):
-        async with aiofiles.open(filepath, "r", encoding="utf8") as file:
-            content = await file.read()
-            _app_settings = json.loads(content)
 
-    datapath = Path(_app_settings["datapath"] or "")
+async def read_app_settings() -> AppSettings | None:
+    if APP_SETTINGS_PATH.is_file():
+        async with aiofiles.open(APP_SETTINGS_PATH, "r", encoding="utf8") as file:
+            app_settings = AppSettings.from_json(await file.read())
+        return app_settings
+    else:
+        return None
+
+
+async def save_app_settings(app_settings: AppSettings):
+    async with aiofiles.open(APP_SETTINGS_PATH, "w", encoding="utf8") as file:
+        await file.write(app_settings.to_json(indent=2))
+
+
+@dataclass
+class DataSettings(DataClassJsonMixin):
+    asset_token: str
+    target_symbols: list[str]
+
+
+async def read_data_settings(datapath: Path) -> DataSettings | None:
     filepath = datapath / "data_settings.json"
-    if os.path.isfile(filepath):
+    if filepath.is_file():
         async with aiofiles.open(filepath, "r", encoding="utf8") as file:
-            content = await file.read()
-            _data_settings = json.loads(content)
+            data_settings = DataSettings.from_json(await file.read())
+        return data_settings
+    else:
+        return None
 
 
-def get_app_settings() -> dict:
-    return copy.deepcopy(_app_settings)
-
-
-async def apply_app_settings(payload):
-    global _app_settings
-    payload = copy.deepcopy(payload)
-    _app_settings = {**_app_settings, **payload}
-    filepath = solie.PATH / "note" / "app_settings.json"
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+async def save_data_settings(data_settings: DataSettings, datapath: Path):
+    filepath = datapath / "data_settings.json"
     async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-        content = json.dumps(_app_settings, indent=4)
-        await file.write(content)
-
-
-def get_data_settings() -> dict:
-    return copy.deepcopy(_data_settings)
-
-
-async def apply_data_settings(payload):
-    global _data_settings
-    payload = copy.deepcopy(payload)
-    _data_settings = {**_data_settings, **payload}
-    datapath_str = _app_settings["datapath"]
-    if datapath_str is not None:
-        datapath = Path(datapath_str)
-        filepath = datapath / "data_settings.json"
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-            content = json.dumps(_data_settings, indent=4)
-            await file.write(content)
+        await file.write(data_settings.to_json(indent=2))

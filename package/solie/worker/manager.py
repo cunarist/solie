@@ -34,7 +34,7 @@ class Manager:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        datapath = Path(user_settings.get_app_settings()["datapath"])
+        datapath = Path(solie.window.app_settings.datapath)
         self.workerpath = datapath / "manager"
         os.makedirs(self.workerpath, exist_ok=True)
 
@@ -126,7 +126,7 @@ class Manager:
             await file.write(content)
 
     async def open_datapath(self, *args, **kwargs):
-        await go(os.startfile, user_settings.get_app_settings()["datapath"])
+        await go(os.startfile, solie.window.app_settings.datapath)
 
     async def deselect_log_output(self, *args, **kwargs):
         solie.window.listWidget.clearSelection()
