@@ -567,7 +567,7 @@ class Collector:
             async with self.candle_data.read_lock as cell:
                 combined_df = RWLock(cell.data.iloc[0:0].copy())
 
-            async def download_fill(download_preset):
+            async def download_fill(download_preset) -> None:
                 nonlocal done_steps
                 nonlocal combined_df
 

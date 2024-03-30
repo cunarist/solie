@@ -910,10 +910,14 @@ class Simulator:
         else:
             # when calculating properly
             try:
-                filepath = asset_record_path
-                previous_asset_record = await go(pd.read_pickle, filepath)
-                filepath = unrealized_changes_path
-                previous_unrealized_changes = await go(pd.read_pickle, filepath)
+                previous_asset_record: pd.DataFrame = await go(
+                    pd.read_pickle,
+                    asset_record_path,
+                )
+                previous_unrealized_changes: pd.Series = await go(
+                    pd.read_pickle,
+                    unrealized_changes_path,
+                )
                 async with aiofiles.open(scribbles_path, "rb") as file:
                     content = await file.read()
                     previous_scribbles = pickle.loads(content)
@@ -1068,7 +1072,7 @@ class Simulator:
             for chunk_ouput_data in calculation_output_data:
                 chunk_asset_record = chunk_ouput_data["chunk_asset_record"]
                 concat_data = [asset_record, chunk_asset_record]
-                asset_record = pd.concat(concat_data)
+                asset_record: pd.DataFrame = pd.concat(concat_data)  # type:ignore
             mask = ~asset_record.index.duplicated()
             asset_record = asset_record[mask]
             if not asset_record.index.is_monotonic_increasing:
@@ -1078,7 +1082,7 @@ class Simulator:
             for chunk_ouput_data in calculation_output_data:
                 chunk_unrealized_changes = chunk_ouput_data["chunk_unrealized_changes"]
                 concat_data = [unrealized_changes, chunk_unrealized_changes]
-                unrealized_changes: pd.Series = pd.concat(concat_data)
+                unrealized_changes: pd.Series = pd.concat(concat_data)  # type:ignore
             mask = ~unrealized_changes.index.duplicated()
             unrealized_changes = unrealized_changes[mask]
             if not unrealized_changes.index.is_monotonic_increasing:
@@ -1161,7 +1165,7 @@ class Simulator:
             chunk_asset_record_list = [asset_record]
             chunk_count = 1
 
-        chunk_asset_changes_list = []
+        chunk_asset_changes_list: list[pd.Series] = []
         for turn in range(chunk_count):
             chunk_asset_record = chunk_asset_record_list[turn]
             # leverage
