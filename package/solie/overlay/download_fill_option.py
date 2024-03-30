@@ -1,19 +1,18 @@
-import asyncio
-
 from PySide6 import QtWidgets
 
 from solie.utility import outsource
 
+from .base_overlay import BaseOverlay
 
-class DownloadFillOption(QtWidgets.QWidget):
-    def __init__(self, done_event: asyncio.Event, payload):
+
+class DownloadFillOption(BaseOverlay):
+    def __init__(self, answer_container):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
 
         # ■■■■■ prepare variables ■■■■■
 
-        answer_container = payload[0]
         fill_options = (
             "From 2020 to last year",
             "From first month of this year to last month",
@@ -69,7 +68,7 @@ class DownloadFillOption(QtWidgets.QWidget):
 
             async def job(turn=turn, *args, **kwargs):
                 answer_container["filling_type"] = turn
-                done_event.set()
+                self.done_event.set()
 
             option_button = QtWidgets.QPushButton(text, card)
             outsource.do(option_button.clicked, job)

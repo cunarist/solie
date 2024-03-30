@@ -1,15 +1,13 @@
-import asyncio
-
 from PySide6 import QtCore, QtGui, QtWidgets
 
+from .base_overlay import BaseOverlay
 
-class LongTextView(QtWidgets.QWidget):
-    def __init__(self, done_event: asyncio.Event, payload):
+
+class LongTextView(BaseOverlay):
+    def __init__(self, long_text: str):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
-
-        long_text = payload[0]
 
         # ■■■■■ full layout ■■■■■
 

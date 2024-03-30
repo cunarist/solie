@@ -434,16 +434,12 @@ class Collector:
 
         answer_container = {"filling_type": None}
 
-        formation = [
+        await solie.window.overlay(
             "Choose the range to fill",
-            DownloadFillOption,
-            True,
-            [answer_container],
-        ]
+            DownloadFillOption(answer_container),
+        )
 
-        await solie.window.overlay(formation)
-
-        filling_type = answer_container["filling_type"]
+        filling_type: int | None = answer_container["filling_type"]
         if filling_type is None:
             return
 
@@ -751,10 +747,7 @@ class Collector:
         stop_flag.make("download_fill_candle_data")
 
     async def guide_donation(self, *args, **kwargs):
-        formation = [
+        await solie.window.overlay(
             "Support Solie",
-            DonationGuide,
-            True,
-            None,
-        ]
-        await solie.window.overlay(formation)
+            DonationGuide(),
+        )

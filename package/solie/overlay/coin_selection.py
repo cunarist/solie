@@ -8,15 +8,17 @@ from solie.utility import outsource, user_settings
 from solie.widget.ask_popup import Question
 from solie.widget.horizontal_divider import HorizontalDivider
 
+from .base_overlay import BaseOverlay
 
-class CoinSelection(QtWidgets.QWidget):
-    def __init__(self, done_event: asyncio.Event, payload):
+
+class CoinSelection(BaseOverlay):
+    def __init__(self):
         super().__init__()
         self.is_closed = False
 
-        asyncio.create_task(self.fill(done_event))
+        asyncio.create_task(self.fill())
 
-    async def fill(self, done_event):
+    async def fill(self):
         # ■■■■■ for remembering ■■■■■
 
         api_requester = ApiRequester()
@@ -199,7 +201,7 @@ class CoinSelection(QtWidgets.QWidget):
                 await user_settings.apply_data_settings(data_settings)
                 await user_settings.load()
                 self.is_closed = True
-                done_event.set()
+                self.done_event.set()
 
         # card structure
         card = QtWidgets.QGroupBox()

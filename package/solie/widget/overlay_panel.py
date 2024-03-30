@@ -1,7 +1,6 @@
-import asyncio
-
 from PySide6 import QtCore, QtGui, QtWidgets
 
+from solie.overlay.base_overlay import BaseOverlay
 from solie.utility import outsource
 from solie.widget.popup_box import PopupBox
 from solie.widget.transparent_scroll_area import TransparentScrollArea
@@ -10,8 +9,6 @@ from solie.widget.transparent_scroll_area import TransparentScrollArea
 
 
 class OverlayPanel(QtWidgets.QWidget):
-    done_event = asyncio.Event()
-
     def showEvent(self, event):  # noqa:N802
         # needed for filling the window when resized
         parent: QtWidgets.QMainWindow = self.parent()  # type:ignore
@@ -23,7 +20,13 @@ class OverlayPanel(QtWidgets.QWidget):
             self.setGeometry(source.rect())
         return super().eventFilter(source, event)
 
-    def __init__(self, parent, formation):
+    def __init__(
+        self,
+        parent: QtWidgets.QMainWindow,
+        title: str,
+        widget: BaseOverlay,
+        close_button: bool,
+    ):
         # ■■■■■ the basic ■■■■■
 
         super().__init__(parent)
@@ -33,10 +36,10 @@ class OverlayPanel(QtWidgets.QWidget):
         # needed for filling the window when resized
         parent.installEventFilter(self)
 
-        # ■■■■■ in case other ask popup exists ■■■■■
+        # ■■■■■ in case other overlay popup exists ■■■■■
 
-        self.done_event.set()
-        self.done_event.clear()
+        widget.done_event.set()
+        widget.done_event.clear()
 
         # ■■■■■ prepare answer ■■■■■
 
@@ -63,37 +66,36 @@ class OverlayPanel(QtWidgets.QWidget):
 
         # line containing the title and close button
         this_layout = QtWidgets.QHBoxLayout()
-        title_label = QtWidgets.QLabel(formation[0])
+        title_label = QtWidgets.QLabel(title)
         title_label_font = QtGui.QFont()
         title_label_font.setPointSize(12)
         title_label.setFont(title_label_font)
         title_label.setWordWrap(False)
         this_layout.addWidget(title_label)
-        widget = QtWidgets.QSpacerItem(
+        top_widget = QtWidgets.QSpacerItem(
             0,
             0,
             QtWidgets.QSizePolicy.Policy.Expanding,
             QtWidgets.QSizePolicy.Policy.Minimum,
         )
-        this_layout.addItem(widget)
-        if formation[2]:
-            close_button = QtWidgets.QPushButton("✕", content_box)
+        this_layout.addItem(top_widget)
+        if close_button:
+            close_button_widget = QtWidgets.QPushButton("✕", content_box)
             close_button_font = QtGui.QFont()
             close_button_font.setPointSize(11)
-            close_button.setFont(close_button_font)
+            close_button_widget.setFont(close_button_font)
 
             async def job():
-                self.done_event.set()
+                widget.done_event.set()
 
-            outsource.do(close_button.clicked, job)
-            this_layout.addWidget(close_button)
+            outsource.do(close_button_widget.clicked, job)
+            this_layout.addWidget(close_button_widget)
         content_box_layout.addLayout(this_layout)
 
         # scroll area
         scroll_area = TransparentScrollArea()
-        scroll_widget = formation[1](self.done_event, formation[3])
 
-        scroll_area.setWidget(scroll_widget)
+        scroll_area.setWidget(widget)
         scroll_area.setWidgetResizable(True)
 
         content_box_layout.addWidget(scroll_area)

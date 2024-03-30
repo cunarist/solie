@@ -20,6 +20,7 @@ from solie.definition.api_requester import ApiRequester
 from solie.definition.log_handler import LogHandler
 from solie.definition.percent_axis_item import PercentAxisItem
 from solie.definition.time_axis_item import TimeAxisItem
+from solie.overlay.base_overlay import BaseOverlay
 from solie.overlay.coin_selection import CoinSelection
 from solie.overlay.datapath_input import DatapathInput
 from solie.overlay.token_selection import TokenSelection
@@ -99,7 +100,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                     return
 
             AskPopup.done_event.set()
-            OverlayPanel.done_event.set()
+            BaseOverlay.done_event.set()
 
             self.gauge.hide()
             self.board.hide()
@@ -208,33 +209,27 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ Check app settings ■■■■■
 
         if user_settings.get_app_settings()["datapath"] is None:
-            formation = [
+            await self.overlay(
                 "Choose your data folder",
-                DatapathInput,
+                DatapathInput(),
                 False,
-                None,
-            ]
-            await self.overlay(formation)
+            )
 
         # ■■■■■ Check data settings ■■■■■
 
         if user_settings.get_data_settings()["asset_token"] is None:
-            formation = [
+            await self.overlay(
                 "Choose a token to treat as your asset",
-                TokenSelection,
+                TokenSelection(),
                 False,
-                None,
-            ]
-            await self.overlay(formation)
+            )
 
         if user_settings.get_data_settings()["target_symbols"] is None:
-            formation = [
-                "Choose coins",
-                CoinSelection,
+            await self.overlay(
+                "Choose coins to observe and trade",
+                CoinSelection(),
                 False,
-                None,
-            ]
-            await self.overlay(formation)
+            )
 
         # ■■■■■ Get information about target symbols ■■■■■
 
@@ -1121,22 +1116,21 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             await asyncio.sleep(interval)
 
     # show an ask popup and blocks the stack
-    async def ask(self, question: Question):
+    async def ask(self, question: Question) -> int:
         ask_popup = AskPopup(self, question)
         ask_popup.show()
 
         await ask_popup.done_event.wait()
-
         ask_popup.setParent(None)
+
         return ask_popup.answer
 
     # show an mainpulatable overlap popup
-    async def overlay(self, formation):
-        overlay_panel = OverlayPanel(self, formation)
+    async def overlay(self, title: str, widget: BaseOverlay, close_button=True):
+        overlay_panel = OverlayPanel(self, title, widget, close_button)
         overlay_panel.show()
 
-        await overlay_panel.done_event.wait()
-
+        await widget.done_event.wait()
         overlay_panel.setParent(None)
 
 

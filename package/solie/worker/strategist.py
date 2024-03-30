@@ -128,13 +128,10 @@ class Strategiest:
 
             async def job_bs(strategy=strategy):
                 await self.remember_strategy_selections()
-                formation = [
+                await solie.window.overlay(
                     "Develop your strategy",
-                    StrategyDevelopInput,
-                    True,
-                    strategy,
-                ]
-                await solie.window.overlay(formation)
+                    StrategyDevelopInput(strategy),
+                )
                 asyncio.create_task(self.display_strategies())
                 asyncio.create_task(self.save_strategies())
                 asyncio.create_task(self.restore_strategy_selections())
@@ -145,13 +142,10 @@ class Strategiest:
 
             async def job_eb(strategy=strategy):
                 await self.remember_strategy_selections()
-                formation = [
+                await solie.window.overlay(
                     "Edit your strategy's basic information",
-                    StrategyBasicInput,
-                    True,
-                    strategy,
-                ]
-                await solie.window.overlay(formation)
+                    StrategyBasicInput(strategy),
+                )
                 asyncio.create_task(self.display_strategies())
                 asyncio.create_task(self.save_strategies())
                 asyncio.create_task(self.restore_strategy_selections())

@@ -34,5 +34,7 @@ class LogList(QtWidgets.QListWidget):
         selected_item = self.item(selected_index)
         text = selected_item.data(QtCore.Qt.ItemDataRole.UserRole)
 
-        formation = ["This is the full log", LongTextView, True, [text]]
-        await solie.window.overlay(formation)
+        await solie.window.overlay(
+            "This is the full log",
+            LongTextView(text),
+        )

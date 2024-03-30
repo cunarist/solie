@@ -1,10 +1,10 @@
-import asyncio
-
 from PySide6 import QtCore, QtWidgets
 
+from .base_overlay import BaseOverlay
 
-class DonationGuide(QtWidgets.QWidget):
-    def __init__(self, done_event: asyncio.Event, payload):
+
+class DonationGuide(BaseOverlay):
+    def __init__(self):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()

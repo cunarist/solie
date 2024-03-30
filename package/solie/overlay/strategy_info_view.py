@@ -1,12 +1,13 @@
-import asyncio
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from solie.widget.horizontal_divider import HorizontalDivider
 
+from .base_overlay import BaseOverlay
 
-class StrategyInfoView(QtWidgets.QWidget):
-    def __init__(self, done_event: asyncio.Event, payload):
+
+class StrategyInfoView(BaseOverlay):
+    def __init__(self, payload):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()

@@ -8,13 +8,15 @@ from solie.utility import outsource, user_settings
 from solie.widget.ask_popup import Question
 from solie.widget.horizontal_divider import HorizontalDivider
 
+from .base_overlay import BaseOverlay
 
-class TokenSelection(QtWidgets.QWidget):
-    def __init__(self, done_event: asyncio.Event, payload):
+
+class TokenSelection(BaseOverlay):
+    def __init__(self):
         super().__init__()
         self.is_closed = False
 
-        asyncio.create_task(self.fill(done_event))
+        asyncio.create_task(self.fill(self.done_event))
 
     async def fill(self, done_event):
         # ■■■■■ for remembering ■■■■■

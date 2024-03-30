@@ -1,4 +1,3 @@
-import asyncio
 import re
 
 from PySide6 import QtCore, QtGui, QtWidgets
@@ -8,9 +7,11 @@ from solie.utility import compare_versions, outsource
 from solie.widget.ask_popup import Question
 from solie.widget.horizontal_divider import HorizontalDivider
 
+from .base_overlay import BaseOverlay
 
-class StrategyBasicInput(QtWidgets.QWidget):
-    def __init__(self, done_event: asyncio.Event, payload):
+
+class StrategyBasicInput(BaseOverlay):
+    def __init__(self, payload):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
@@ -198,7 +199,7 @@ class StrategyBasicInput(QtWidgets.QWidget):
             strategy["risk_level"] = risk_level_input.currentIndex()
             strategy["parallelized_simulation"] = parallelized_input.isChecked()
             strategy["chunk_division"] = chunk_division_input.value()
-            done_event.set()
+            self.done_event.set()
 
         # confirm button
         confirm_button = QtWidgets.QPushButton("Save and close", card)

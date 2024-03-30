@@ -2269,10 +2269,7 @@ class Transactor:
         text += "\n\n"
         text += json.dumps(self.account_state, indent=4, default=str)
 
-        formation = [
+        await solie.window.overlay(
             "This is the raw account state object",
-            LongTextView,
-            True,
-            [text],
-        ]
-        await solie.window.overlay(formation)
+            LongTextView(text),
+        )

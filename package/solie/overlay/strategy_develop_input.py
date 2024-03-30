@@ -1,4 +1,3 @@
-import asyncio
 import webbrowser
 
 import aiofiles
@@ -11,9 +10,11 @@ from solie.widget.ask_popup import Question
 from solie.widget.script_editor import ScriptEditor
 from solie.widget.vertical_divider import VerticalDivider
 
+from .base_overlay import BaseOverlay
 
-class StrategyDevelopInput(QtWidgets.QWidget):
-    def __init__(self, done_event: asyncio.Event, payload):
+
+class StrategyDevelopInput(BaseOverlay):
+    def __init__(self, payload):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
@@ -112,7 +113,7 @@ class StrategyDevelopInput(QtWidgets.QWidget):
         async def job_ss(*args):
             strategy["indicators_script"] = indicators_script_input.toPlainText()
             strategy["decision_script"] = decision_script_input.toPlainText()
-            done_event.set()
+            self.done_event.set()
 
         button = QtWidgets.QPushButton("Save and close", card)
         outsource.do(button.clicked, job_ss)

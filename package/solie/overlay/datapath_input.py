@@ -1,4 +1,3 @@
-import asyncio
 from pathlib import Path
 
 import xdialog
@@ -10,9 +9,11 @@ from solie.utility import outsource, user_settings
 from solie.widget.ask_popup import Question
 from solie.widget.horizontal_divider import HorizontalDivider
 
+from .base_overlay import BaseOverlay
 
-class DatapathInput(QtWidgets.QWidget):
-    def __init__(self, done_event: asyncio.Event, payload):
+
+class DatapathInput(BaseOverlay):
+    def __init__(self):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
@@ -112,7 +113,7 @@ class DatapathInput(QtWidgets.QWidget):
             else:
                 await user_settings.apply_app_settings({"datapath": str(datapath)})
                 await user_settings.load()
-                done_event.set()
+                self.done_event.set()
 
         # card structure
         card = QtWidgets.QGroupBox()
