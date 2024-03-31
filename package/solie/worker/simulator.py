@@ -29,9 +29,7 @@ class Simulator:
 
         self.workerpath = solie.window.datapath / "simulator"
 
-        # ■■■■■ worker secret memory ■■■■■
-
-        self.secret_memory = {}
+        # ■■■■■ internal memory ■■■■■
 
         # ■■■■■ remember and display ■■■■■
 

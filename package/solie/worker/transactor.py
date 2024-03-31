@@ -37,17 +37,15 @@ class Transactor:
 
         self.workerpath = solie.window.datapath / "transactor"
 
-        # ■■■■■ worker secret memory ■■■■■
+        # ■■■■■ internal memory ■■■■■
 
-        self.secret_memory = {
-            "maximum_quantities": {},
-            "minimum_notionals": {},
-            "price_precisions": {},
-            "quantity_precisions": {},
-            "maximum_leverages": {},
-            "leverages": {},
-            "is_key_restrictions_satisfied": True,
-        }
+        self.maximum_quantities: dict[str, float] = {}  # Symbol and value
+        self.minimum_notionals: dict[str, float] = {}  # Symbol and value
+        self.price_precisions: dict[str, int] = {}  # Symbol and decimal places
+        self.quantity_precisions: dict[str, int] = {}  # Symbol and decimal places
+        self.maximum_leverages: dict[str, int] = {}  # Symbol and value
+        self.leverages: dict[str, int] = {}  # Symbol and value
+        self.is_key_restrictions_satisfied = True
 
         # ■■■■■ remember and display ■■■■■
 
@@ -347,7 +345,7 @@ class Transactor:
                 amount = float(about_position["pa"])
                 entry_price = float(about_position["ep"])
 
-                leverage = self.secret_memory["leverages"][symbol]
+                leverage = self.leverages[symbol]
                 margin = abs(amount) * entry_price / leverage
                 if amount < 0:
                     direction = "short"
@@ -389,7 +387,7 @@ class Transactor:
             realized_profit = float(about_update.get("rp", 0))
 
             # from remembered
-            leverage = self.secret_memory["leverages"][symbol]
+            leverage = self.leverages[symbol]
             wallet_balance = self.account_state["wallet_balance"]
 
             # when the order is removed
@@ -1231,7 +1229,7 @@ class Transactor:
             solie.window.label_16.setText(text)
             return
 
-        if not self.secret_memory["is_key_restrictions_satisfied"]:
+        if not self.is_key_restrictions_satisfied:
             text = (
                 "API key's restrictions are not satisfied. Auto transaction is"
                 " disabled. Go to your Binance API managements webpage to change"
@@ -1299,7 +1297,7 @@ class Transactor:
         if not self.automation_settings["should_transact"]:
             return
 
-        if not self.secret_memory["is_key_restrictions_satisfied"]:
+        if not self.is_key_restrictions_satisfied:
             return
 
         cumulation_rate = await solie.window.collector.get_candle_data_cumulation_rate()
@@ -1425,7 +1423,7 @@ class Transactor:
         target_symbols = solie.window.data_settings.target_symbols
         target_max_leverages = {}
         for symbol in target_symbols:
-            max_leverage = self.secret_memory["maximum_leverages"].get(symbol, 125)
+            max_leverage = self.maximum_leverages.get(symbol, 125)
             target_max_leverages[symbol] = max_leverage
         lowest_max_leverage = min(target_max_leverages.values())
 
@@ -1491,21 +1489,21 @@ class Transactor:
             about_filters_keyed = convert.list_to_dict(about_filters, "filterType")
 
             minimum_notional = float(about_filters_keyed["MIN_NOTIONAL"]["notional"])
-            self.secret_memory["minimum_notionals"][symbol] = minimum_notional
+            self.minimum_notionals[symbol] = minimum_notional
 
             maximum_quantity = min(
                 float(about_filters_keyed["LOT_SIZE"]["maxQty"]),
                 float(about_filters_keyed["MARKET_LOT_SIZE"]["maxQty"]),
             )
-            self.secret_memory["maximum_quantities"][symbol] = maximum_quantity
+            self.maximum_quantities[symbol] = maximum_quantity
 
             ticksize = float(about_filters_keyed["PRICE_FILTER"]["tickSize"])
             price_precision = int(math.log10(1 / ticksize))
-            self.secret_memory["price_precisions"][symbol] = price_precision
+            self.price_precisions[symbol] = price_precision
 
             stepsize = float(about_filters_keyed["LOT_SIZE"]["stepSize"])
             quantity_precision = int(math.log10(1 / stepsize))
-            self.secret_memory["quantity_precisions"][symbol] = quantity_precision
+            self.quantity_precisions[symbol] = quantity_precision
 
         # ■■■■■ Request leverage bracket information ■■■■■
 
@@ -1523,7 +1521,7 @@ class Transactor:
             for about_bracket in about_brackets:
                 symbol = about_bracket["symbol"]
                 max_leverage = about_bracket["brackets"][0]["initialLeverage"]
-                self.secret_memory["maximum_leverages"][symbol] = max_leverage
+                self.maximum_leverages[symbol] = max_leverage
         except ApiRequestError:
             # when the key is not ready
             return
@@ -1700,7 +1698,7 @@ class Transactor:
         for symbol in target_symbols:
             about_position = about_positions_keyed[symbol]
             leverage = int(about_position["leverage"])
-            self.secret_memory["leverages"][symbol] = leverage
+            self.leverages[symbol] = leverage
 
         # ■■■■■ Record unrealized change ■■■■■
 
@@ -1760,7 +1758,7 @@ class Transactor:
                 current_leverage = int(about_position["leverage"])
 
                 desired_leverage = self.mode_settings["desired_leverage"]
-                maximum_leverages = self.secret_memory["maximum_leverages"]
+                maximum_leverages = self.maximum_leverages
                 max_leverage = maximum_leverages.get(symbol, 125)
                 goal_leverage = min(desired_leverage, max_leverage)
 
@@ -1861,7 +1859,7 @@ class Transactor:
             is_enabled = api_restrictions[restriction_name]
             if not is_enabled:
                 is_satisfied = False
-        self.secret_memory["is_key_restrictions_satisfied"] = is_satisfied
+        self.is_key_restrictions_satisfied = is_satisfied
 
     async def place_orders(self, *args, **kwargs):
         decision = args[0]
@@ -1945,11 +1943,11 @@ class Transactor:
                 continue
 
             current_price = current_prices[symbol]
-            leverage = self.secret_memory["leverages"][symbol]
-            maximum_quantity = self.secret_memory["maximum_quantities"][symbol]
-            minimum_notional = self.secret_memory["minimum_notionals"][symbol]
-            price_precision = self.secret_memory["price_precisions"][symbol]
-            quantity_precision = self.secret_memory["quantity_precisions"][symbol]
+            leverage = self.leverages[symbol]
+            maximum_quantity = self.maximum_quantities[symbol]
+            minimum_notional = self.minimum_notionals[symbol]
+            price_precision = self.price_precisions[symbol]
+            quantity_precision = self.quantity_precisions[symbol]
 
             if "now_close" in decision[symbol]:
                 is_possible = True
@@ -2019,11 +2017,11 @@ class Transactor:
                 continue
 
             current_price = current_prices[symbol]
-            leverage = self.secret_memory["leverages"][symbol]
-            maximum_quantity = self.secret_memory["maximum_quantities"][symbol]
-            minimum_notional = self.secret_memory["minimum_notionals"][symbol]
-            price_precision = self.secret_memory["price_precisions"][symbol]
-            quantity_precision = self.secret_memory["quantity_precisions"][symbol]
+            leverage = self.leverages[symbol]
+            maximum_quantity = self.maximum_quantities[symbol]
+            minimum_notional = self.minimum_notionals[symbol]
+            price_precision = self.price_precisions[symbol]
+            quantity_precision = self.quantity_precisions[symbol]
 
             if "book_buy" in decision[symbol]:
                 command = decision[symbol]["book_buy"]
@@ -2070,11 +2068,11 @@ class Transactor:
                 continue
 
             current_price = current_prices[symbol]
-            leverage = self.secret_memory["leverages"][symbol]
-            maximum_quantity = self.secret_memory["maximum_quantities"][symbol]
-            minimum_notional = self.secret_memory["minimum_notionals"][symbol]
-            price_precision = self.secret_memory["price_precisions"][symbol]
-            quantity_precision = self.secret_memory["quantity_precisions"][symbol]
+            leverage = self.leverages[symbol]
+            maximum_quantity = self.maximum_quantities[symbol]
+            minimum_notional = self.minimum_notionals[symbol]
+            price_precision = self.price_precisions[symbol]
+            quantity_precision = self.quantity_precisions[symbol]
 
             if "later_up_close" in decision[symbol]:
                 is_possible = True

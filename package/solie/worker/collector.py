@@ -36,12 +36,10 @@ class Collector:
 
         self.workerpath = solie.window.datapath / "collector"
 
-        # ■■■■■ worker secret memory ■■■■■
+        # ■■■■■ internal memory ■■■■■
 
-        self.secret_memory = {
-            "price_precisions": {},
-            "markets_gone": [],
-        }
+        self.price_precisions: dict[str, int] = {}  # Symbol and decimal places
+        self.markets_gone: list[str] = []  # Symbols
 
         # ■■■■■ remember and display ■■■■■
 
@@ -233,7 +231,7 @@ class Collector:
 
             ticksize = float(about_filter["tickSize"])
             price_precision = int(math.log10(1 / ticksize))
-            self.secret_memory["price_precisions"][symbol] = price_precision
+            self.price_precisions[symbol] = price_precision
 
     async def fill_candle_data_holes(self, *args, **kwargs):
         # ■■■■■ check internet connection ■■■■■
@@ -327,7 +325,7 @@ class Collector:
                 )
                 did_fill = True
 
-        self.secret_memory["markets_gone"] = markets_gone
+        self.markets_gone = markets_gone
 
         if not did_fill:
             return
@@ -353,14 +351,14 @@ class Collector:
                 # when the app is executed for the first time
                 return
 
-        if len(self.secret_memory["price_precisions"]) == 0:
+        if len(self.price_precisions) == 0:
             # right after the app execution
             return
 
         # price
         async with self.aggregate_trades.read_lock as cell:
             ar = cell.data.copy()
-        price_precisions = self.secret_memory["price_precisions"]
+        price_precisions = self.price_precisions
 
         for symbol in solie.window.data_settings.target_symbols:
             temp_ar = ar[str((symbol, "Price"))]
@@ -374,7 +372,7 @@ class Collector:
             solie.window.price_labels[symbol].setText(text)
 
         # bottom information
-        if len(self.secret_memory["markets_gone"]) == 0:
+        if len(self.markets_gone) == 0:
             cumulation_rate = await self.get_candle_data_cumulation_rate()
             async with self.realtime_data_chunks.read_lock as cell:
                 chunk_count = len(cell.data)
@@ -406,11 +404,17 @@ class Collector:
             text += "  ⦁  "
             text += f"Realtime data length {written_length_text}"
         else:
-            markets_gone = self.secret_memory["markets_gone"]
+            markets_gone = self.markets_gone
             if len(markets_gone) == 1:
-                text = f"It seems that {markets_gone[0]} market is removed by Binance. You should make a new data folder."
+                text = (
+                    f"It seems that {markets_gone[0]} market is removed by Binance."
+                    + " You should make a new data folder."
+                )
             else:
-                text = f"It seems that {', '.join(markets_gone)} markets are removed by Binance. You should make a new data folder."
+                text = (
+                    f"It seems that {', '.join(markets_gone)} markets are removed by Binance."
+                    + " You should make a new data folder."
+                )
 
         solie.window.label_6.setText(text)
 

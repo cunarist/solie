@@ -36,9 +36,7 @@ class Manager:
 
         self.workerpath = solie.window.datapath / "manager"
 
-        # ■■■■■ worker secret memory ■■■■■
-
-        self.secret_memory = {}
+        # ■■■■■ internal memory ■■■■■
 
         # ■■■■■ remember and display ■■■■■
 

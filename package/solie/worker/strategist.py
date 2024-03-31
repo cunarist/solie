@@ -18,9 +18,7 @@ class Strategiest:
 
         self.workerpath = solie.window.datapath / "strategist"
 
-        # ■■■■■ worker secret memory ■■■■■
-
-        self.secret_memory = {}
+        # ■■■■■ internal memory ■■■■■
 
         # ■■■■■ remember and display ■■■■■
 
