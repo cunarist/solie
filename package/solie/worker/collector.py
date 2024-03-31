@@ -271,7 +271,7 @@ class Collector:
 
                 inspect_df: pd.DataFrame = recent_candle_data[symbol][
                     from_moment:until_moment
-                ]
+                ]  # type:ignore
                 base_index = inspect_df.dropna().index
                 temp_sr = pd.Series(0, index=base_index)
                 written_moments = len(temp_sr)
