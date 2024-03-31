@@ -5,7 +5,6 @@ import statistics
 import webbrowser
 from collections import deque
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
 import aiofiles
 import time_machine
@@ -34,8 +33,7 @@ class Manager:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        datapath = Path(solie.window.app_settings.datapath)
-        self.workerpath = datapath / "manager"
+        self.workerpath = solie.window.datapath / "manager"
         os.makedirs(self.workerpath, exist_ok=True)
 
         # ■■■■■ worker secret memory ■■■■■
@@ -126,7 +124,7 @@ class Manager:
             await file.write(content)
 
     async def open_datapath(self, *args, **kwargs):
-        await go(os.startfile, solie.window.app_settings.datapath)
+        await go(os.startfile, solie.window.datapath)
 
     async def deselect_log_output(self, *args, **kwargs):
         solie.window.listWidget.clearSelection()
@@ -295,7 +293,7 @@ class Manager:
         if answer in (0, 1):
             return
 
-        await user_settings.apply_app_settings({"datapath": None})
+        await user_settings.save_datapth(None)
 
         solie.window.should_confirm_closing = False
         solie.window.close()

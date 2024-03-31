@@ -2,30 +2,32 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import aiofiles
+import aiofiles.os
 from dataclasses_json import DataClassJsonMixin
 
 import solie
 
-APP_SETTINGS_PATH = solie.info.PATH / "note" / "app_settings.json"
+DATAPATH_FILE = solie.info.PATH / "datapath.txt"
 
 
-@dataclass
-class AppSettings(DataClassJsonMixin):
-    datapath: str
-
-
-async def read_app_settings() -> AppSettings | None:
-    if APP_SETTINGS_PATH.is_file():
-        async with aiofiles.open(APP_SETTINGS_PATH, "r", encoding="utf8") as file:
-            app_settings = AppSettings.from_json(await file.read())
-        return app_settings
+async def read_datapath() -> str | None:
+    if DATAPATH_FILE.is_file():
+        async with aiofiles.open(DATAPATH_FILE, "r", encoding="utf8") as file:
+            datapath = await file.read()
+        if await aiofiles.os.path.isfile(datapath):
+            return datapath
+        else:
+            return None
     else:
         return None
 
 
-async def save_app_settings(app_settings: AppSettings):
-    async with aiofiles.open(APP_SETTINGS_PATH, "w", encoding="utf8") as file:
-        await file.write(app_settings.to_json(indent=2))
+async def save_datapth(datapath: str | None):
+    if datapath:
+        async with aiofiles.open(DATAPATH_FILE, "w", encoding="utf8") as file:
+            await file.write(datapath)
+    else:
+        await aiofiles.os.remove(DATAPATH_FILE)
 
 
 @dataclass

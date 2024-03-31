@@ -6,7 +6,6 @@ import pickle
 import re
 import webbrowser
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
 import aiofiles
 import numpy as np
@@ -36,8 +35,7 @@ class Transactor:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        datapath = Path(solie.window.app_settings.datapath)
-        self.workerpath = datapath / "transactor"
+        self.workerpath = solie.window.datapath / "transactor"
         os.makedirs(self.workerpath, exist_ok=True)
 
         # ■■■■■ worker secret memory ■■■■■

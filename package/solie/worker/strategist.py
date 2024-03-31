@@ -1,7 +1,6 @@
 import asyncio
 import json
 import os
-from pathlib import Path
 
 import aiofiles
 from PySide6 import QtGui, QtWidgets
@@ -16,8 +15,7 @@ class Strategiest:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        datapath = Path(solie.window.app_settings.datapath)
-        self.workerpath = datapath / "strategist"
+        self.workerpath = solie.window.datapath / "strategist"
         os.makedirs(self.workerpath, exist_ok=True)
 
         # ■■■■■ worker secret memory ■■■■■

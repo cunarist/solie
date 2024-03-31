@@ -10,7 +10,7 @@ from solie.parallel import go
 
 
 async def do():
-    datapath_str = solie.window.app_settings.datapath
+    datapath_str = solie.window.datapath
     if datapath_str is None:
         return
     datapath = Path(datapath_str)

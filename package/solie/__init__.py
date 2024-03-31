@@ -46,7 +46,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.app_close_event = asyncio.Event()
 
-        self.app_settings: user_settings.AppSettings
+        self.datapath: Path
         self.data_settings: user_settings.DataSettings
 
         self.price_labels: dict[str, QtWidgets.QLabel] = {}
@@ -197,33 +197,28 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             )
             await asyncio.sleep(1)
 
-        # ■■■■■ Check app settings ■■■■■
+        # ■■■■■ Get datapath ■■■■■
 
-        app_settings = await user_settings.read_app_settings()
+        datapath_str = await user_settings.read_datapath()
 
-        if not app_settings:
+        if datapath_str:
+            datapath = Path(datapath_str)
+        else:
             overlay_widget = await self.overlay(
                 "Choose your data folder",
                 DatapathInput(),
                 False,
             )
             datapath = overlay_widget.result
-            app_settings = user_settings.AppSettings(
-                datapath=str(datapath),
-            )
-            await user_settings.save_app_settings(app_settings)
+            await user_settings.save_datapth(str(datapath))
 
-        self.app_settings = app_settings
+        self.datapath = datapath
 
-        # ■■■■■ Get app settings ■■■■■
-
-        datapath = Path(app_settings.datapath)
-
-        # ■■■■■ Check data settings ■■■■■
+        # ■■■■■ Get data settings ■■■■■
 
         data_settings = await user_settings.read_data_settings(datapath)
 
-        if data_settings is None:
+        if not data_settings:
             overlay_widget = await self.overlay(
                 "Choose a token to treat as your asset",
                 TokenSelection(),

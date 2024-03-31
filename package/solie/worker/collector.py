@@ -6,7 +6,6 @@ import random
 import webbrowser
 from collections import deque
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -35,8 +34,7 @@ class Collector:
     def __init__(self):
         # ■■■■■ for data management ■■■■■
 
-        datapath = Path(solie.window.app_settings.datapath)
-        self.workerpath = datapath / "collector"
+        self.workerpath = solie.window.datapath / "collector"
         os.makedirs(self.workerpath, exist_ok=True)
 
         # ■■■■■ worker secret memory ■■■■■
