@@ -3,6 +3,7 @@ import re
 from PySide6 import QtCore, QtGui, QtWidgets
 
 import solie
+from solie.definition.structs import Strategy
 from solie.utility import compare_versions, outsource
 from solie.widget.horizontal_divider import HorizontalDivider
 
@@ -10,14 +11,10 @@ from .base_overlay import BaseOverlay
 
 
 class StrategyBasicInput(BaseOverlay):
-    def __init__(self, payload):
+    def __init__(self, strategy: Strategy):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
-
-        # ■■■■■ prepare things ■■■■■
-
-        strategy = payload
 
         # ■■■■■ full layout ■■■■■
 
@@ -74,16 +71,16 @@ class StrategyBasicInput(BaseOverlay):
         this_layout = QtWidgets.QFormLayout()
         card_layout.addLayout(this_layout)
         code_name_input = QtWidgets.QLineEdit()
-        code_name_input.setText(strategy["code_name"])
+        code_name_input.setText(strategy.code_name)
         this_layout.addRow("Code name", code_name_input)
         readable_name_input = QtWidgets.QLineEdit()
-        readable_name_input.setText(strategy["readable_name"])
+        readable_name_input.setText(strategy.readable_name)
         this_layout.addRow("Readable name", readable_name_input)
         version_input = QtWidgets.QLineEdit()
-        version_input.setText(strategy["version"])
+        version_input.setText(strategy.version)
         this_layout.addRow("Version", version_input)
         description_input = QtWidgets.QTextEdit()
-        description_input.setPlainText(strategy["description"])
+        description_input.setPlainText(strategy.description)
         this_layout.addRow("Description", description_input)
         risk_level_input = QtWidgets.QComboBox()
         iconpath = solie.info.PATH / "static" / "icon"
@@ -93,10 +90,10 @@ class StrategyBasicInput(BaseOverlay):
         yellow_pixmap.load(str(iconpath / "traffic_light_yellow.png"))
         green_pixmap = QtGui.QPixmap()
         green_pixmap.load(str(iconpath / "traffic_light_green.png"))
-        risk_level_input.addItem(red_pixmap, "High")
-        risk_level_input.addItem(yellow_pixmap, "Middle")
         risk_level_input.addItem(green_pixmap, "Low")
-        risk_level_input.setCurrentIndex(strategy["risk_level"])
+        risk_level_input.addItem(yellow_pixmap, "Middle")
+        risk_level_input.addItem(red_pixmap, "High")
+        risk_level_input.setCurrentIndex(strategy.risk_level)
         this_layout.addRow("Risk level", risk_level_input)
 
         # ■■■■■ a card ■■■■■
@@ -137,7 +134,7 @@ class StrategyBasicInput(BaseOverlay):
         this_layout = QtWidgets.QFormLayout()
         card_layout.addLayout(this_layout)
         parallelized_input = QtWidgets.QCheckBox()
-        parallelized_input.setChecked(strategy["parallelized_simulation"])
+        parallelized_input.setChecked(strategy.parallelized_simulation)
         this_layout.addRow("Parallelized", parallelized_input)
         chunk_division_input = QtWidgets.QSpinBox()
         chunk_division_input.setSuffix(" days")
@@ -146,7 +143,7 @@ class StrategyBasicInput(BaseOverlay):
         chunk_division_input.setButtonSymbols(
             QtWidgets.QSpinBox.ButtonSymbols.NoButtons
         )
-        chunk_division_input.setValue(strategy["chunk_division"])
+        chunk_division_input.setValue(strategy.chunk_division)
         this_layout.addRow("Chunk division", chunk_division_input)
 
         # ■■■■■ a card ■■■■■
@@ -162,7 +159,7 @@ class StrategyBasicInput(BaseOverlay):
         async def job(*args):
             code_name = code_name_input.text()
             if re.fullmatch(r"[A-Z]{6}", code_name):
-                strategy["code_name"] = code_name
+                strategy.code_name = code_name
             else:
                 await solie.window.ask(
                     "Code name format is wrong.",
@@ -170,11 +167,11 @@ class StrategyBasicInput(BaseOverlay):
                     ["Okay"],
                 )
                 return
-            strategy["readable_name"] = readable_name_input.text()
+            strategy.readable_name = readable_name_input.text()
             version = version_input.text()
             if re.fullmatch(r"[0-9]+\.[0-9]+", version):
-                if not compare_versions.is_left_higher(strategy["version"], version):
-                    strategy["version"] = version
+                if not compare_versions.is_left_higher(strategy.version, version):
+                    strategy.version = version
                 else:
                     await solie.window.ask(
                         "Version is lower.",
@@ -191,10 +188,10 @@ class StrategyBasicInput(BaseOverlay):
                     ["Okay"],
                 )
                 return
-            strategy["description"] = description_input.toPlainText()
-            strategy["risk_level"] = risk_level_input.currentIndex()
-            strategy["parallelized_simulation"] = parallelized_input.isChecked()
-            strategy["chunk_division"] = chunk_division_input.value()
+            strategy.description = description_input.toPlainText()
+            strategy.risk_level = risk_level_input.currentIndex()
+            strategy.parallelized_simulation = parallelized_input.isChecked()
+            strategy.chunk_division = chunk_division_input.value()
             self.done_event.set()
 
         # confirm button

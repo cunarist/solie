@@ -168,7 +168,7 @@ class Simulator:
 
         symbol = self.viewing_symbol
         strategy_index = self.calculation_settings["strategy_index"]
-        strategy = solie.window.strategist.strategies[strategy_index]
+        strategy = solie.window.strategist.strategies.all[strategy_index]
 
         # ■■■■■ get light data ■■■■■
 
@@ -550,7 +550,7 @@ class Simulator:
 
         # ■■■■■ make indicators ■■■■■
 
-        indicators_script = strategy["indicators_script"]
+        indicators_script = strategy.indicators_script
 
         indicators = await go(
             make_indicators.do,
@@ -828,11 +828,11 @@ class Simulator:
         year = self.calculation_settings["year"]
         strategy_index = self.calculation_settings["strategy_index"]
 
-        strategy = solie.window.strategist.strategies[strategy_index]
-        strategy_code_name = strategy["code_name"]
-        strategy_version = strategy["version"]
-        should_parallelize = strategy["parallelized_simulation"]
-        chunk_length = strategy["chunk_division"]
+        strategy = solie.window.strategist.strategies.all[strategy_index]
+        strategy_code_name = strategy.code_name
+        strategy_version = strategy.version
+        should_parallelize = strategy.parallelized_simulation
+        chunk_length = strategy.chunk_division
 
         workerpath = self.workerpath
         prefix = f"{strategy_code_name}_{strategy_version}_{year}"
@@ -953,8 +953,8 @@ class Simulator:
         progress_list = solie.parallel.communicator.list([0])
 
         if should_calculate:
-            decision_script = strategy["decision_script"]
-            indicators_script = strategy["indicators_script"]
+            decision_script = strategy.decision_script
+            indicators_script = strategy.indicators_script
 
             # a little more data for generation
             provide_from = calculate_from - timedelta(days=7)
@@ -1147,9 +1147,9 @@ class Simulator:
             chunk_length = 0
         else:
             strategy_index = self.calculation_settings["strategy_index"]
-            strategy = solie.window.strategist.strategies[strategy_index]
-            should_parallelize = strategy["parallelized_simulation"]
-            chunk_length = strategy["chunk_division"]
+            strategy = solie.window.strategist.strategies.all[strategy_index]
+            should_parallelize = strategy.parallelized_simulation
+            chunk_length = strategy.chunk_division
 
         # ■■■■■ apply other factors to the asset trace ■■■■
 
@@ -1262,9 +1262,9 @@ class Simulator:
         year = self.calculation_settings["year"]
         strategy_index = self.calculation_settings["strategy_index"]
 
-        strategy = solie.window.strategist.strategies[strategy_index]
-        strategy_code_name = strategy["code_name"]
-        strategy_version = strategy["version"]
+        strategy = solie.window.strategist.strategies.all[strategy_index]
+        strategy_code_name = strategy.code_name
+        strategy_version = strategy.version
 
         workerpath = self.workerpath
         prefix = f"{strategy_code_name}_{strategy_version}_{year}"
@@ -1276,15 +1276,15 @@ class Simulator:
 
         does_file_exist = False
 
-        if await aiofiles.os.path.exists(asset_record_path):
+        if await aiofiles.os.path.isfile(asset_record_path):
             does_file_exist = True
-        if await aiofiles.os.path.exists(unrealized_changes_path):
+        if await aiofiles.os.path.isfile(unrealized_changes_path):
             does_file_exist = True
-        if await aiofiles.os.path.exists(scribbles_path):
+        if await aiofiles.os.path.isfile(scribbles_path):
             does_file_exist = True
-        if await aiofiles.os.path.exists(account_state_path):
+        if await aiofiles.os.path.isfile(account_state_path):
             does_file_exist = True
-        if await aiofiles.os.path.exists(virtual_state_path):
+        if await aiofiles.os.path.isfile(virtual_state_path):
             does_file_exist = True
 
         if not does_file_exist:
@@ -1334,9 +1334,9 @@ class Simulator:
         year = self.calculation_settings["year"]
         strategy_index = self.calculation_settings["strategy_index"]
 
-        strategy = solie.window.strategist.strategies[strategy_index]
-        strategy_code_name = strategy["code_name"]
-        strategy_version = strategy["version"]
+        strategy = solie.window.strategist.strategies.all[strategy_index]
+        strategy_code_name = strategy.code_name
+        strategy_version = strategy.version
 
         workerpath = self.workerpath
         prefix = f"{strategy_code_name}_{strategy_version}_{year}"

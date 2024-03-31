@@ -562,7 +562,7 @@ class Transactor:
 
         filepath = self.workerpath / "keys.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-            content = json.dumps(new_keys, indent=4)
+            content = json.dumps(new_keys, indent=2)
             await file.write(content)
 
         new_keys = {}
@@ -594,7 +594,7 @@ class Transactor:
 
         filepath = self.workerpath / "automation_settings.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-            content = json.dumps(self.automation_settings, indent=4)
+            content = json.dumps(self.automation_settings, indent=2)
             await file.write(content)
 
     async def display_range_information(self, *args, **kwargs):
@@ -753,8 +753,8 @@ class Transactor:
         # ■■■■■ check things ■■■■■
 
         symbol = self.viewing_symbol
-        strategy_index = self.automation_settings["strategy_index"]
-        strategy = solie.window.strategist.strategies[strategy_index]
+        strategy_index: int = self.automation_settings["strategy_index"]
+        strategy = solie.window.strategist.strategies.all[strategy_index]
 
         # ■■■■■ get light data ■■■■■
 
@@ -1110,7 +1110,7 @@ class Transactor:
 
         # ■■■■■ make indicators ■■■■■
 
-        indicators_script = strategy["indicators_script"]
+        indicators_script = strategy.indicators_script
 
         indicators = await go(
             make_indicators.do,
@@ -1357,10 +1357,10 @@ class Transactor:
 
         target_symbols = solie.window.data_settings.target_symbols
 
-        strategy_index = self.automation_settings["strategy_index"]
-        strategy = solie.window.strategist.strategies[strategy_index]
+        strategy_index: int = self.automation_settings["strategy_index"]
+        strategy = solie.window.strategist.strategies.all[strategy_index]
 
-        indicators_script = strategy["indicators_script"]
+        indicators_script = strategy.indicators_script
 
         # Split the candle data by symbol before calculation to reduct UI lags
         coroutines = []
@@ -1380,7 +1380,7 @@ class Transactor:
 
         current_candle_data: np.record = candle_data.tail(1).to_records()[-1]
         current_indicators: np.record = indicators.to_records()[-1]
-        decision_script = strategy["decision_script"]
+        decision_script = strategy.decision_script
 
         decision, scribbles = await go(
             decide.choose,
@@ -1454,7 +1454,7 @@ class Transactor:
 
         filepath = self.workerpath / "mode_settings.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-            content = json.dumps(self.mode_settings, indent=4)
+            content = json.dumps(self.mode_settings, indent=2)
             await file.write(content)
 
     async def watch_binance(self, *args, **kwargs):
@@ -2262,7 +2262,7 @@ class Transactor:
         text += f"At UTC {time_text}"
 
         text += "\n\n"
-        text += json.dumps(self.account_state, indent=4, default=str)
+        text += json.dumps(self.account_state, indent=2, default=str)
 
         await solie.window.overlay(
             "This is the raw account state object",

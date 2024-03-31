@@ -66,7 +66,7 @@ If the format of the variable you want to output is `list` or `dict`, you can al
 
 ```python
 import json
-log_data = json.dumps(window.transactor.account_state, indent=4, default=str)
+log_data = json.dumps(window.transactor.account_state, indent=2, default=str)
 logger.debug(log_data)
 ```
 

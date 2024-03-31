@@ -1,20 +1,16 @@
-
 from PySide6 import QtCore, QtGui, QtWidgets
 
+from solie.definition.structs import Strategy
 from solie.widget.horizontal_divider import HorizontalDivider
 
 from .base_overlay import BaseOverlay
 
 
 class StrategyInfoView(BaseOverlay):
-    def __init__(self, payload):
+    def __init__(self, strategy: Strategy):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
-
-        # ■■■■■ prepare things ■■■■■
-
-        strategy = payload
 
         # ■■■■■ full layout ■■■■■
 
@@ -68,7 +64,7 @@ class StrategyInfoView(BaseOverlay):
         card_layout.addWidget(spacing_text)
 
         # explanation
-        detail_text = QtWidgets.QLabel(strategy["description"])
+        detail_text = QtWidgets.QLabel(strategy.description)
         detail_text.setWordWrap(True)
         card_layout.addWidget(detail_text)
 

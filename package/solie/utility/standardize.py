@@ -63,18 +63,3 @@ def create_strategy_code_name() -> str:
     ingredients = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     code_name = "".join(random.choice(ingredients) for _ in range(6))
     return code_name
-
-
-def strategy():
-    code_name = create_strategy_code_name()
-    return {
-        "code_name": code_name,
-        "readable_name": "A New Blank Strategy",
-        "version": "1.0",
-        "description": "A blank strategy template before being written",
-        "risk_level": 0,
-        "parallelized_simulation": True,
-        "chunk_division": 30,
-        "indicators_script": "pass",
-        "decision_script": "pass",
-    }

@@ -122,7 +122,7 @@ class Manager:
 
         filepath = self.workerpath / "settings.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-            content = json.dumps(self.settings, indent=4)
+            content = json.dumps(self.settings, indent=2)
             await file.write(content)
 
     async def open_datapath(self, *args, **kwargs):

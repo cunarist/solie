@@ -1,11 +1,12 @@
 import asyncio
-import json
+from dataclasses import replace
 
 import aiofiles
 import aiofiles.os
 from PySide6 import QtGui, QtWidgets
 
 import solie
+from solie.definition.structs import Strategies, Strategy
 from solie.overlay.strategy_basic_input import StrategyBasicInput
 from solie.overlay.strategy_develop_input import StrategyDevelopInput
 from solie.utility import outsource, standardize
@@ -23,7 +24,7 @@ class Strategiest:
 
         # ■■■■■ remember and display ■■■■■
 
-        self.strategies = []
+        self.strategies: Strategies
         self.strategy_cards: list[QtWidgets.QGroupBox] = []
 
         self.before_selections = {}
@@ -47,36 +48,31 @@ class Strategiest:
     async def load(self, *args, **kwargs):
         await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
 
-        # custom strategies
-        try:
-            filepath = self.workerpath / "strategies.json"
+        filepath = self.workerpath / "strategies.json"
+        if await aiofiles.os.path.isfile(filepath):
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
-                content = await file.read()
-                self.strategies = json.loads(content)
-        except FileNotFoundError:
-            first_strategy = standardize.strategy()
-            first_strategy["code_name"] = "SLIESS"
-            first_strategy["readable_name"] = "Sample Strategy"
-            first_strategy["description"] = (
-                "Not for real investment."
-                + " This strategy is only for demonstration purposes."
+                self.strategies = Strategies.from_json(await file.read())
+        else:
+            first_strategy = Strategy(
+                code_name="SLIESS",
+                readable_name="Sample Strategy",
+                description="Not for real investment."
+                + " This strategy is only for demonstration purposes.",
             )
-            first_strategy["risk_level"] = 2
             filepath = solie.info.PATH / "static" / "sample_indicators_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 read_data = await file.read()
-                first_strategy["indicators_script"] = read_data
+                first_strategy.indicators_script = read_data
             filepath = solie.info.PATH / "static" / "sample_decision_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 read_data = await file.read()
-                first_strategy["decision_script"] = read_data
-            self.strategies = [first_strategy]
+                first_strategy.decision_script = read_data
+            self.strategies = Strategies(all=[first_strategy])
 
     async def save_strategies(self, *args, **kwargs):
         filepath = self.workerpath / "strategies.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-            content = json.dumps(self.strategies, indent=4)
-            await file.write(content)
+            await file.write(self.strategies.to_json(indent=2))
 
     async def display_strategies(self, *args, **kwargs):
         solie.window.comboBox_2.clear()
@@ -85,17 +81,16 @@ class Strategiest:
             strategy_card.setParent(None)
         self.strategy_cards = []
 
-        for strategy in self.strategies:
-            if strategy["risk_level"] == 0:
+        for strategy in self.strategies.all:
+            if strategy.risk_level == 2:
                 icon_pixmap = self.red_pixmap
-            elif strategy["risk_level"] == 1:
+            elif strategy.risk_level == 1:
                 icon_pixmap = self.yellow_pixmap
-            elif strategy["risk_level"] == 2:
+            elif strategy.risk_level == 0:
                 icon_pixmap = self.green_pixmap
             else:
                 raise ValueError("Invalid risk level for drawing an icon")
-            text = f"{strategy['code_name']} {strategy['version']}"
-            text += f" - {strategy['readable_name']}"
+            text = f"{strategy.code_name} {strategy.version} - {strategy.readable_name}"
             traffic_light_icon = QtGui.QIcon()
             traffic_light_icon.addPixmap(icon_pixmap)
 
@@ -167,7 +162,7 @@ class Strategiest:
                 if answer == 0:
                     return
                 await self.remember_strategy_selections()
-                self.strategies.remove(strategy)
+                self.strategies.all.remove(strategy)
                 asyncio.create_task(self.display_strategies())
                 asyncio.create_task(self.save_strategies())
                 asyncio.create_task(self.restore_strategy_selections())
@@ -177,9 +172,11 @@ class Strategiest:
 
             async def job_dp(strategy=strategy):
                 await self.remember_strategy_selections()
-                duplicated = strategy.copy()
-                duplicated["code_name"] = standardize.create_strategy_code_name()
-                self.strategies.append(duplicated)
+                duplicated = replace(
+                    strategy,
+                    code_name=standardize.create_strategy_code_name(),
+                )
+                self.strategies.all.append(duplicated)
                 asyncio.create_task(self.display_strategies())
                 asyncio.create_task(self.save_strategies())
                 asyncio.create_task(self.restore_strategy_selections())
@@ -189,10 +186,10 @@ class Strategiest:
 
             async def job_ss(strategy=strategy):
                 await self.remember_strategy_selections()
-                original_index = self.strategies.index(strategy)
+                original_index = self.strategies.all.index(strategy)
                 after_index = original_index + 1
-                self.strategies.pop(original_index)
-                self.strategies.insert(after_index, strategy)
+                self.strategies.all.pop(original_index)
+                self.strategies.all.insert(after_index, strategy)
                 asyncio.create_task(self.display_strategies())
                 asyncio.create_task(self.save_strategies())
                 asyncio.create_task(self.restore_strategy_selections())
@@ -203,10 +200,10 @@ class Strategiest:
 
             async def job_us(strategy=strategy):
                 await self.remember_strategy_selections()
-                original_index = self.strategies.index(strategy)
+                original_index = self.strategies.all.index(strategy)
                 after_index = original_index - 1
-                self.strategies.pop(original_index)
-                self.strategies.insert(after_index, strategy)
+                self.strategies.all.pop(original_index)
+                self.strategies.all.insert(after_index, strategy)
                 asyncio.create_task(self.display_strategies())
                 asyncio.create_task(self.save_strategies())
                 asyncio.create_task(self.restore_strategy_selections())
@@ -217,21 +214,21 @@ class Strategiest:
 
     async def add_blank_strategy(self, *args, **kwargs):
         await self.remember_strategy_selections()
-        new_strategy = standardize.strategy()
-        self.strategies.append(new_strategy)
+        new_strategy = Strategy(code_name=standardize.create_strategy_code_name())
+        self.strategies.all.append(new_strategy)
         await self.display_strategies()
         await self.restore_strategy_selections()
 
     async def remember_strategy_selections(self, *args, **kwargs):
         before_index = solie.window.comboBox_2.currentIndex()
-        self.before_selections["transactor"] = self.strategies[before_index]
+        self.before_selections["transactor"] = self.strategies.all[before_index]
         before_index = solie.window.comboBox.currentIndex()
-        self.before_selections["simulator"] = self.strategies[before_index]
+        self.before_selections["simulator"] = self.strategies.all[before_index]
 
     async def restore_strategy_selections(self, *args, **kwargs):
-        if self.before_selections["transactor"] in self.strategies:
-            new_index = self.strategies.index(self.before_selections["transactor"])
+        if self.before_selections["transactor"] in self.strategies.all:
+            new_index = self.strategies.all.index(self.before_selections["transactor"])
             solie.window.comboBox_2.setCurrentIndex(new_index)
-        if self.before_selections["simulator"] in self.strategies:
-            new_index = self.strategies.index(self.before_selections["simulator"])
+        if self.before_selections["simulator"] in self.strategies.all:
+            new_index = self.strategies.all.index(self.before_selections["simulator"])
             solie.window.comboBox.setCurrentIndex(new_index)
