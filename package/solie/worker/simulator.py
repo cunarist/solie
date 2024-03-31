@@ -1,11 +1,11 @@
 import asyncio
 import math
-import os
 import pickle
 import re
 from datetime import datetime, timedelta, timezone
 
 import aiofiles
+import aiofiles.os
 import numpy as np
 import pandas as pd
 from scipy.signal import find_peaks
@@ -28,7 +28,6 @@ class Simulator:
         # ■■■■■ for data management ■■■■■
 
         self.workerpath = solie.window.datapath / "simulator"
-        os.makedirs(self.workerpath, exist_ok=True)
 
         # ■■■■■ worker secret memory ■■■■■
 
@@ -82,6 +81,8 @@ class Simulator:
         # ■■■■■ invoked by the internet connection status change  ■■■■■
 
     async def load(self, *args, **kwargs):
+        await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
+
         text = "Nothing drawn"
         solie.window.label_19.setText(text)
 
@@ -275,9 +276,10 @@ class Simulator:
         # ■■■■■ set range of heavy data ■■■■■
 
         if should_draw_all_years:
+            collector_path = solie.window.collector.workerpath
             years = [
                 int(simply_format.numeric(filename))
-                for filename in os.listdir(solie.window.collector.workerpath)
+                for filename in await aiofiles.os.listdir(collector_path)
                 if filename.startswith("candle_data_") and filename.endswith(".pickle")
             ]
             slice_from = datetime.fromtimestamp(0, tz=timezone.utc)
@@ -650,9 +652,10 @@ class Simulator:
         await self.present()
 
     async def display_available_years(self, *args, **kwargs):
+        collector_path = solie.window.collector.workerpath
         years = [
             int(simply_format.numeric(filename))
-            for filename in os.listdir(solie.window.collector.workerpath)
+            for filename in await aiofiles.os.listdir(collector_path)
             if filename.startswith("candle_data_") and filename.endswith(".pickle")
         ]
         years.sort(reverse=True)
@@ -1273,15 +1276,15 @@ class Simulator:
 
         does_file_exist = False
 
-        if os.path.exists(asset_record_path):
+        if await aiofiles.os.path.exists(asset_record_path):
             does_file_exist = True
-        if os.path.exists(unrealized_changes_path):
+        if await aiofiles.os.path.exists(unrealized_changes_path):
             does_file_exist = True
-        if os.path.exists(scribbles_path):
+        if await aiofiles.os.path.exists(scribbles_path):
             does_file_exist = True
-        if os.path.exists(account_state_path):
+        if await aiofiles.os.path.exists(account_state_path):
             does_file_exist = True
-        if os.path.exists(virtual_state_path):
+        if await aiofiles.os.path.exists(virtual_state_path):
             does_file_exist = True
 
         if not does_file_exist:
@@ -1305,23 +1308,23 @@ class Simulator:
                 return
 
         try:
-            os.remove(asset_record_path)
+            await aiofiles.os.remove(asset_record_path)
         except FileNotFoundError:
             pass
         try:
-            os.remove(unrealized_changes_path)
+            await aiofiles.os.remove(unrealized_changes_path)
         except FileNotFoundError:
             pass
         try:
-            os.remove(scribbles_path)
+            await aiofiles.os.remove(scribbles_path)
         except FileNotFoundError:
             pass
         try:
-            os.remove(account_state_path)
+            await aiofiles.os.remove(account_state_path)
         except FileNotFoundError:
             pass
         try:
-            os.remove(virtual_state_path)
+            await aiofiles.os.remove(virtual_state_path)
         except FileNotFoundError:
             pass
 

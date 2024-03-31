@@ -1,12 +1,12 @@
 import asyncio
 import itertools
 import math
-import os
 import random
 import webbrowser
 from collections import deque
 from datetime import datetime, timedelta, timezone
 
+import aiofiles.os
 import numpy as np
 import pandas as pd
 
@@ -35,7 +35,6 @@ class Collector:
         # ■■■■■ for data management ■■■■■
 
         self.workerpath = solie.window.datapath / "collector"
-        os.makedirs(self.workerpath, exist_ok=True)
 
         # ■■■■■ worker secret memory ■■■■■
 
@@ -137,11 +136,13 @@ class Collector:
         check_internet.add_disconnected_functions(self.clear_aggregate_trades)
 
     async def load(self, *args, **kwargs):
+        await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
+
         # candle data
         current_year = datetime.now(timezone.utc).year
         async with self.candle_data.write_lock as cell:
             filepath = self.workerpath / f"candle_data_{current_year}.pickle"
-            if os.path.isfile(filepath):
+            if await aiofiles.os.path.isfile(filepath):
                 df: pd.DataFrame = await go(pd.read_pickle, filepath)
                 if not df.index.is_monotonic_increasing:
                     df = await go(sort_pandas.data_frame, df)
@@ -195,17 +196,17 @@ class Collector:
         # ■■■■■ safely replace the existing file ■■■■■
 
         try:
-            os.remove(filepath_backup)
+            await aiofiles.os.remove(filepath_backup)
         except FileNotFoundError:
             pass
 
         try:
-            os.rename(filepath, filepath_backup)
+            await aiofiles.os.rename(filepath, filepath_backup)
         except FileNotFoundError:
             pass
 
         try:
-            os.rename(filepath_new, filepath)
+            await aiofiles.os.rename(filepath_new, filepath)
         except FileNotFoundError:
             pass
 

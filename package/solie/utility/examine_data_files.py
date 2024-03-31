@@ -1,8 +1,8 @@
 import json
-import os
 from pathlib import Path
 
 import aiofiles
+import aiofiles.os
 import pandas as pd
 
 import solie
@@ -21,7 +21,7 @@ async def do():
         async with aiofiles.open(filepath, "r", encoding="utf8") as file:
             content = await file.read()
             data_settings = json.loads(content)
-        os.remove(filepath)
+        await aiofiles.os.remove(filepath)
         filepath = datapath / "data_settings.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             content = json.dumps(data_settings, indent=4)

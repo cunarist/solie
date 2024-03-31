@@ -1,11 +1,11 @@
 import asyncio
 import logging
-import os
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 import aiofiles
+import aiofiles.os
 
 import solie
 
@@ -14,7 +14,6 @@ class LogHandler(logging.Handler):
     def __init__(self, log_path: Path):
         super().__init__()
 
-        os.makedirs(log_path, exist_ok=True)
         self.log_path = log_path
 
         log_format = "%(asctime)s.%(msecs)03d %(levelname)s"

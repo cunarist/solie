@@ -7,6 +7,7 @@ from collections import deque
 from datetime import datetime, timedelta, timezone
 
 import aiofiles
+import aiofiles.os
 import time_machine
 
 import solie
@@ -34,7 +35,6 @@ class Manager:
         # ■■■■■ for data management ■■■■■
 
         self.workerpath = solie.window.datapath / "manager"
-        os.makedirs(self.workerpath, exist_ok=True)
 
         # ■■■■■ worker secret memory ■■■■■
 
@@ -93,9 +93,11 @@ class Manager:
         # ■■■■■ invoked by the internet connection status change  ■■■■■
 
     async def load(self, *args, **kwargs):
+        await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
+
         # settings
         filepath = self.workerpath / "settings.json"
-        if os.path.isfile(filepath):
+        if await aiofiles.os.path.isfile(filepath):
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 content = await file.read()
                 self.settings = json.loads(content)
@@ -107,7 +109,7 @@ class Manager:
 
         # python script
         filepath = self.workerpath / "python_script.txt"
-        if os.path.isfile(filepath):
+        if await aiofiles.os.path.isfile(filepath):
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 script = await file.read()
         else:

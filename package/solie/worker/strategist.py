@@ -1,8 +1,8 @@
 import asyncio
 import json
-import os
 
 import aiofiles
+import aiofiles.os
 from PySide6 import QtGui, QtWidgets
 
 import solie
@@ -16,7 +16,6 @@ class Strategiest:
         # ■■■■■ for data management ■■■■■
 
         self.workerpath = solie.window.datapath / "strategist"
-        os.makedirs(self.workerpath, exist_ok=True)
 
         # ■■■■■ worker secret memory ■■■■■
 
@@ -46,6 +45,8 @@ class Strategiest:
         # ■■■■■ invoked by the internet connection status change  ■■■■■
 
     async def load(self, *args, **kwargs):
+        await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
+
         # custom strategies
         try:
             filepath = self.workerpath / "strategies.json"

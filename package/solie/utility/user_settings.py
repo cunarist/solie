@@ -11,10 +11,10 @@ DATAPATH_FILE = solie.info.PATH / "datapath.txt"
 
 
 async def read_datapath() -> str | None:
-    if DATAPATH_FILE.is_file():
+    if await aiofiles.os.path.isfile(DATAPATH_FILE):
         async with aiofiles.open(DATAPATH_FILE, "r", encoding="utf8") as file:
             datapath = await file.read()
-        if await aiofiles.os.path.isfile(datapath):
+        if await aiofiles.os.path.isdir(datapath):
             return datapath
         else:
             return None
@@ -38,7 +38,7 @@ class DataSettings(DataClassJsonMixin):
 
 async def read_data_settings(datapath: Path) -> DataSettings | None:
     filepath = datapath / "data_settings.json"
-    if filepath.is_file():
+    if await aiofiles.os.path.isfile(filepath):
         async with aiofiles.open(filepath, "r", encoding="utf8") as file:
             data_settings = DataSettings.from_json(await file.read())
         return data_settings

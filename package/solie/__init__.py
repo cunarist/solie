@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Callable, Coroutine, TypeVar
 
 import aiofiles
+import aiofiles.os
 import pandas as pd
 import pyqtgraph
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -1073,6 +1074,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         # ■■■■■ Prepare logging ■■■■■
 
         log_path = datapath / "+logs"
+        await aiofiles.os.makedirs(log_path, exist_ok=True)
         log_handler = LogHandler(log_path)
         logging.getLogger().addHandler(log_handler)
         logger.info("Started up")

@@ -1,13 +1,13 @@
 import asyncio
 import json
 import math
-import os
 import pickle
 import re
 import webbrowser
 from datetime import datetime, timedelta, timezone
 
 import aiofiles
+import aiofiles.os
 import numpy as np
 import pandas as pd
 
@@ -36,7 +36,6 @@ class Transactor:
         # ■■■■■ for data management ■■■■■
 
         self.workerpath = solie.window.datapath / "transactor"
-        os.makedirs(self.workerpath, exist_ok=True)
 
         # ■■■■■ worker secret memory ■■■■■
 
@@ -151,6 +150,8 @@ class Transactor:
         check_internet.add_connected_functions(self.watch_binance)
 
     async def load(self, *args, **kwargs):
+        await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
+
         # scribbles
         try:
             filepath = self.workerpath / "scribbles.pickle"
