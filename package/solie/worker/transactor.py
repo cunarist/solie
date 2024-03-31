@@ -2202,7 +2202,7 @@ class Transactor:
         conflicting_order_tuples = []
         for symbol in solie.window.data_settings.target_symbols:
             symbol_open_orders = self.account_state["open_orders"][symbol]
-            groups_by_command = {}
+            groups_by_command: dict[str, list[int]] = {}
             for order_id, open_order_state in symbol_open_orders.items():
                 command_name = open_order_state["command_name"]
                 if command_name not in groups_by_command.keys():
