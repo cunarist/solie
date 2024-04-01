@@ -1,19 +1,20 @@
 import math
 from datetime import datetime, timedelta, timezone
 from types import CodeType
+from typing import Tuple
+
+import numpy as np
 
 
-def decide(**kwargs):
-    # ■■■■■ get data ■■■■■
-
-    target_symbols = kwargs["target_symbols"]
-    current_moment = kwargs["current_moment"]
-    current_candle_data = kwargs["current_candle_data"]
-    current_indicators = kwargs["current_indicators"]
-    account_state = kwargs["account_state"]
-    scribbles = kwargs["scribbles"]
-    decision_script: str | CodeType = kwargs["decision_script"]
-
+def decide(
+    target_symbols: list[str],
+    current_moment: datetime,
+    current_candle_data: np.record,
+    current_indicators: np.record,
+    account_state: dict,
+    scribbles: dict,
+    decision_script: str | CodeType,
+) -> Tuple[dict, dict]:
     # ■■■■■ decision template ■■■■■
 
     decision = {}
