@@ -11,6 +11,8 @@ import solie
 
 
 class LogHandler(logging.Handler):
+    file_lock = asyncio.Lock()
+
     def __init__(self, log_path: Path):
         super().__init__()
 
@@ -59,5 +61,6 @@ class LogHandler(logging.Handler):
 
         # save to file
         filepath = self.log_path / self.filename
-        async with aiofiles.open(filepath, "a", encoding="utf8") as file:
-            await file.write(f"{log_content}\n\n")
+        async with self.file_lock:
+            async with aiofiles.open(filepath, "a", encoding="utf8") as file:
+                await file.write(f"{log_content}\n\n")
