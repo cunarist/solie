@@ -16,6 +16,7 @@ from solie.definition.api_requester import ApiRequester
 from solie.definition.api_streamer import ApiStreamer
 from solie.definition.errors import ApiRequestError
 from solie.definition.rw_lock import RWLock
+from solie.definition.structs import TransactionSettings
 from solie.overlay.long_text_view import LongTextView
 from solie.parallel import go
 from solie.utility import (
@@ -57,17 +58,7 @@ class Transactor:
         self.account_state = standardize.account_state()
 
         self.scribbles = {}
-        self.automation_settings = {
-            "strategy_index": 0,
-            "should_transact": False,
-        }
-        self.mode_settings = {
-            "desired_leverage": 1,
-        }
-        self.keys = {
-            "binance_api": "",
-            "binance_secret": "",
-        }
+        self.transaction_settings: TransactionSettings
         self.unrealized_changes = RWLock(standardize.unrealized_changes())
         self.asset_record = RWLock(standardize.asset_record())
         self.auto_order_record = RWLock(
@@ -160,48 +151,30 @@ class Transactor:
             pass
         await asyncio.sleep(0)
 
-        # automation settings
+        # transaction settings
         try:
-            filepath = self.workerpath / "automation_settings.json"
+            filepath = self.workerpath / "transaction_settings.json"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
-                content = await file.read()
-                read_data = json.loads(content)
-            self.automation_settings = read_data
-            state = read_data["should_transact"]
+                read_data = TransactionSettings.from_json(await file.read())
+            self.transaction_settings = read_data
+            state = read_data.should_transact
             solie.window.checkBox.setChecked(state)
-            strategy_index = read_data["strategy_index"]
+            strategy_index = read_data.strategy_index
             solie.window.comboBox_2.setCurrentIndex(strategy_index)
-        except FileNotFoundError:
-            pass
-        await asyncio.sleep(0)
-
-        # mode settings
-        try:
-            filepath = self.workerpath / "mode_settings.json"
-            async with aiofiles.open(filepath, "r", encoding="utf8") as file:
-                content = await file.read()
-                read_data = json.loads(content)
-            self.mode_settings = read_data
-            new_value = read_data["desired_leverage"]
+            new_value = read_data.desired_leverage
             solie.window.spinBox.setValue(new_value)
-        except FileNotFoundError:
-            pass
-        await asyncio.sleep(0)
-
-        # keys
-        try:
-            filepath = self.workerpath / "keys.json"
-            async with aiofiles.open(filepath, "r", encoding="utf8") as file:
-                content = await file.read()
-                keys = json.loads(content)
-            text = keys["binance_api"]
+            text = read_data.binance_api
             solie.window.lineEdit_4.setText(text)
-            text = keys["binance_secret"]
+            text = read_data.binance_secret
             solie.window.lineEdit_6.setText(text)
-            self.keys = keys
-            self.api_requester.update_keys(keys)
+            self.api_requester.update_keys(
+                {
+                    "binance_api": read_data.binance_api,
+                    "binance_secret": read_data.binance_secret,
+                }
+            )
         except FileNotFoundError:
-            pass
+            self.transaction_settings = TransactionSettings()
         await asyncio.sleep(0)
 
         # unrealized changes
@@ -546,22 +519,25 @@ class Transactor:
             "https://www.binance.com/en/my/settings/api-management",
         )
 
+    async def save_transaction_settings(self, *args, **kwargs):
+        filepath = self.workerpath / "transaction_settings.json"
+        async with aiofiles.open(filepath, "w", encoding="utf8") as file:
+            await file.write(self.transaction_settings.to_json(indent=2))
+
     async def update_keys(self, *args, **kwargs):
         server = kwargs.get("server", "real")
 
         binance_api = solie.window.lineEdit_4.text()
         binance_secret = solie.window.lineEdit_6.text()
 
+        self.transaction_settings.binance_api = binance_api
+        self.transaction_settings.binance_secret = binance_secret
+
         new_keys = {}
         new_keys["binance_api"] = binance_api
         new_keys["binance_secret"] = binance_secret
 
-        self.keys = new_keys
-
-        filepath = self.workerpath / "keys.json"
-        async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-            content = json.dumps(new_keys, indent=2)
-            await file.write(content)
+        await self.save_transaction_settings()
 
         new_keys = {}
         new_keys["server"] = server
@@ -575,7 +551,7 @@ class Transactor:
         # ■■■■■ get information about strategy ■■■■■
 
         strategy_index = solie.window.comboBox_2.currentIndex()
-        self.automation_settings["strategy_index"] = strategy_index
+        self.transaction_settings.strategy_index = strategy_index
 
         asyncio.create_task(self.display_lines())
 
@@ -584,16 +560,13 @@ class Transactor:
         is_checked = solie.window.checkBox.isChecked()
 
         if is_checked:
-            self.automation_settings["should_transact"] = True
+            self.transaction_settings.should_transact = True
         else:
-            self.automation_settings["should_transact"] = False
+            self.transaction_settings.should_transact = False
 
         # ■■■■■ save ■■■■■
 
-        filepath = self.workerpath / "automation_settings.json"
-        async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-            content = json.dumps(self.automation_settings, indent=2)
-            await file.write(content)
+        await self.save_transaction_settings()
 
     async def display_range_information(self, *args, **kwargs):
         task_id = stop_flag.make("display_transaction_range_information")
@@ -701,7 +674,7 @@ class Transactor:
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
 
     async def display_strategy_index(self, *args, **kwargs):
-        strategy_index = self.automation_settings["strategy_index"]
+        strategy_index = self.transaction_settings.strategy_index
         solie.window.comboBox_2.setCurrentIndex(strategy_index)
 
     async def display_lines(self, *args, **kwargs):
@@ -751,7 +724,7 @@ class Transactor:
         # ■■■■■ check things ■■■■■
 
         symbol = self.viewing_symbol
-        strategy_index: int = self.automation_settings["strategy_index"]
+        strategy_index = self.transaction_settings.strategy_index
         strategy = solie.window.strategist.strategies.all[strategy_index]
 
         # ■■■■■ get light data ■■■■■
@@ -1294,7 +1267,7 @@ class Transactor:
         if not check_internet.connected():
             return
 
-        if not self.automation_settings["should_transact"]:
+        if not self.transaction_settings.should_transact:
             return
 
         if not self.is_key_restrictions_satisfied:
@@ -1355,7 +1328,7 @@ class Transactor:
 
         target_symbols = solie.window.data_settings.target_symbols
 
-        strategy_index: int = self.automation_settings["strategy_index"]
+        strategy_index = self.transaction_settings.strategy_index
         strategy = solie.window.strategist.strategies.all[strategy_index]
 
         indicators_script = strategy.indicators_script
@@ -1416,7 +1389,7 @@ class Transactor:
 
     async def update_mode_settings(self, *args, **kwargs):
         desired_leverage = solie.window.spinBox.value()
-        self.mode_settings["desired_leverage"] = desired_leverage
+        self.transaction_settings.desired_leverage = desired_leverage
 
         # ■■■■■ tell if some symbol's leverage cannot be set as desired ■■■■■
 
@@ -1450,10 +1423,7 @@ class Transactor:
 
         # ■■■■■ save ■■■■■
 
-        filepath = self.workerpath / "mode_settings.json"
-        async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-            content = json.dumps(self.mode_settings, indent=2)
-            await file.write(content)
+        await self.save_transaction_settings()
 
     async def watch_binance(self, *args, **kwargs):
         # ■■■■■ Basic data ■■■■■
@@ -1751,13 +1721,13 @@ class Transactor:
 
         # ■■■■■ Correct mode of the account market if automation is turned on ■■■■■
 
-        if self.automation_settings["should_transact"]:
+        if self.transaction_settings.should_transact:
 
             async def job_1(symbol):
                 about_position = about_positions_keyed[symbol]
                 current_leverage = int(about_position["leverage"])
 
-                desired_leverage = self.mode_settings["desired_leverage"]
+                desired_leverage = self.transaction_settings.desired_leverage
                 maximum_leverages = self.maximum_leverages
                 max_leverage = maximum_leverages.get(symbol, 125)
                 goal_leverage = min(desired_leverage, max_leverage)
@@ -2196,7 +2166,7 @@ class Transactor:
         await self.place_orders(decision)
 
     async def cancel_conflicting_orders(self, *args, **kwargs):
-        if not self.automation_settings["should_transact"]:
+        if not self.transaction_settings.should_transact:
             return
 
         conflicting_order_tuples = []
