@@ -10,10 +10,10 @@ from solie.info import PACKAGE_PATH
 DATAPATH_FILE = PACKAGE_PATH / "datapath.txt"
 
 
-async def read_datapath() -> str | None:
+async def read_datapath() -> Path | None:
     if await aiofiles.os.path.isfile(DATAPATH_FILE):
         async with aiofiles.open(DATAPATH_FILE, "r", encoding="utf8") as file:
-            datapath = await file.read()
+            datapath = Path(await file.read())
         if await aiofiles.os.path.isdir(datapath):
             return datapath
         else:
@@ -22,10 +22,10 @@ async def read_datapath() -> str | None:
         return None
 
 
-async def save_datapath(datapath: str | None):
+async def save_datapath(datapath: Path | None):
     if datapath:
         async with aiofiles.open(DATAPATH_FILE, "w", encoding="utf8") as file:
-            await file.write(datapath)
+            await file.write(str(datapath))
     else:
         await aiofiles.os.remove(DATAPATH_FILE)
 

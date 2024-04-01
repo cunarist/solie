@@ -213,18 +213,16 @@ class Window(QtWidgets.QMainWindow, MainWindow):
 
         # ■■■■■ Get datapath ■■■■■
 
-        datapath_str = await read_datapath()
+        datapath = await read_datapath()
 
-        if datapath_str:
-            datapath = Path(datapath_str)
-        else:
+        if not datapath:
             overlay_widget = await self.overlay(
                 "Choose your data folder",
                 DatapathInput(),
                 False,
             )
             datapath = overlay_widget.result
-            await save_datapath(str(datapath))
+            await save_datapath(datapath)
 
         self.datapath = datapath
 
