@@ -35,8 +35,8 @@ class TransactionSettings(DataClassJsonMixin):
     strategy_index: int = 0
     should_transact: bool = False
     desired_leverage: int = 1
-    binance_api: str = ""
-    binance_secret: str = ""
+    binance_api_key: str = ""
+    binance_api_secret: str = ""
 
 
 @dataclass

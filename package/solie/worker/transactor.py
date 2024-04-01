@@ -163,15 +163,12 @@ class Transactor:
             solie.window.comboBox_2.setCurrentIndex(strategy_index)
             new_value = read_data.desired_leverage
             solie.window.spinBox.setValue(new_value)
-            text = read_data.binance_api
+            text = read_data.binance_api_key
             solie.window.lineEdit_4.setText(text)
-            text = read_data.binance_secret
+            text = read_data.binance_api_secret
             solie.window.lineEdit_6.setText(text)
             self.api_requester.update_keys(
-                {
-                    "binance_api": read_data.binance_api,
-                    "binance_secret": read_data.binance_secret,
-                }
+                read_data.binance_api_key, read_data.binance_api_secret
             )
         except FileNotFoundError:
             self.transaction_settings = TransactionSettings()
@@ -525,26 +522,14 @@ class Transactor:
             await file.write(self.transaction_settings.to_json(indent=2))
 
     async def update_keys(self, *args, **kwargs):
-        server = kwargs.get("server", "real")
+        binance_api_key = solie.window.lineEdit_4.text()
+        binance_api_secret = solie.window.lineEdit_6.text()
 
-        binance_api = solie.window.lineEdit_4.text()
-        binance_secret = solie.window.lineEdit_6.text()
-
-        self.transaction_settings.binance_api = binance_api
-        self.transaction_settings.binance_secret = binance_secret
-
-        new_keys = {}
-        new_keys["binance_api"] = binance_api
-        new_keys["binance_secret"] = binance_secret
+        self.transaction_settings.binance_api_key = binance_api_key
+        self.transaction_settings.binance_api_secret = binance_api_secret
 
         await self.save_transaction_settings()
-
-        new_keys = {}
-        new_keys["server"] = server
-        new_keys["binance_api"] = binance_api
-        new_keys["binance_secret"] = binance_secret
-
-        self.api_requester.update_keys(new_keys)
+        self.api_requester.update_keys(binance_api_key, binance_api_secret)
         await self.update_user_data_stream()
 
     async def update_automation_settings(self, *args, **kwargs):

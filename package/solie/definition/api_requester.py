@@ -12,13 +12,12 @@ class ApiRequester:
     used_rates = {}
 
     def __init__(self):
-        self.keys = {
-            "binance_api": "",
-            "binance_secret": "",
-        }
+        self.binance_api_key = ""
+        self.binance_api_secret = ""
 
-    def update_keys(self, keys):
-        self.keys.update(keys)
+    def update_keys(self, binance_api_key: str, binance_api_secret: str):
+        self.binance_api_key = binance_api_key
+        self.binance_api_secret = binance_api_secret
 
     async def binance(
         self, http_method: str, path: str, payload: dict = {}, server="futures"
@@ -28,11 +27,11 @@ class ApiRequester:
         query_string = query_string.replace("%27", "%22")
 
         signature = hmac.new(
-            self.keys["binance_secret"].encode("utf-8"),
+            self.binance_api_secret.encode("utf-8"),
             query_string.encode("utf-8"),
             hashlib.sha256,
         ).hexdigest()
-        headers = {"X-MBX-APIKEY": self.keys["binance_api"]}
+        headers = {"X-MBX-APIKEY": self.binance_api_key}
 
         if server == "spot":
             url = "https://api.binance.com"
