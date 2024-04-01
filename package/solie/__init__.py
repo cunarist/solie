@@ -40,7 +40,7 @@ def bring_to_life():
     app.setStyle("Fusion")
     app.setPalette(dark_palette)
 
-    # Make the logger
+    # Make the logger.
     root_logger = logging.getLogger(__name__)
     root_logger.setLevel("DEBUG")
 
