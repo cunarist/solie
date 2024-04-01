@@ -12,6 +12,7 @@ from scipy.signal import find_peaks
 
 import solie
 from solie.definition.rw_lock import RWLock
+from solie.definition.structs import SimulationSettings, SimulationSummary
 from solie.parallel import go
 from solie.utility import (
     make_indicators,
@@ -36,17 +37,10 @@ class Simulator:
         self.viewing_symbol = solie.window.data_settings.target_symbols[0]
         self.should_draw_all_years = False
 
-        self.about_viewing = None
-
-        self.calculation_settings = {
-            "year": datetime.now(timezone.utc).year,
-            "strategy_index": 0,
-        }
-        self.presentation_settings = {
-            "maker_fee": 0.02,
-            "taker_fee": 0.04,
-            "leverage": 1,
-        }
+        self.simulation_settings = SimulationSettings(
+            year=datetime.now(timezone.utc).year,
+        )
+        self.simulation_summary: SimulationSummary | None = None
 
         self.raw_account_state = standardize.account_state()
         self.raw_scribbles = {}
@@ -95,24 +89,24 @@ class Simulator:
         text = solie.window.comboBox_5.currentText()
         if text == "":
             return
-        from_year = self.calculation_settings["year"]
+        from_year = self.simulation_settings.year
         to_year = int(text)
-        self.calculation_settings["year"] = to_year
+        self.simulation_settings.year = to_year
         if from_year != to_year:
             asyncio.create_task(self.display_year_range())
 
         index = solie.window.comboBox.currentIndex()
-        self.calculation_settings["strategy_index"] = index
+        self.simulation_settings.strategy_index = index
 
         await self.display_lines()
 
     async def update_presentation_settings(self, *args, **kwargs):
         input_value = solie.window.spinBox_2.value()
-        self.presentation_settings["leverage"] = input_value
+        self.simulation_settings.leverage = input_value
         input_value = solie.window.doubleSpinBox.value()
-        self.presentation_settings["taker_fee"] = input_value
+        self.simulation_settings.taker_fee = input_value
         input_value = solie.window.doubleSpinBox_2.value()
-        self.presentation_settings["maker_fee"] = input_value
+        self.simulation_settings.maker_fee = input_value
         await self.present()
 
     async def display_lines(self, *args, **kwargs):
@@ -165,7 +159,7 @@ class Simulator:
         # ■■■■■ check things ■■■■■
 
         symbol = self.viewing_symbol
-        strategy_index = self.calculation_settings["strategy_index"]
+        strategy_index = self.simulation_settings.strategy_index
         strategy = solie.window.strategist.strategies.all[strategy_index]
 
         # ■■■■■ get light data ■■■■■
@@ -284,7 +278,7 @@ class Simulator:
             slice_until = datetime.now(timezone.utc)
             slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
         else:
-            year = self.calculation_settings["year"]
+            year = self.simulation_settings.year
             years = [year]
             slice_from = datetime(year, 1, 1, tzinfo=timezone.utc)
             if year == datetime.now(timezone.utc).year:
@@ -645,7 +639,7 @@ class Simulator:
         self.raw_scribbles = {}
         self.raw_asset_record = RWLock(standardize.asset_record())
         self.raw_unrealized_changes = RWLock(standardize.unrealized_changes())
-        self.about_viewing = None
+        self.simulation_summary = None
 
         await self.present()
 
@@ -823,8 +817,8 @@ class Simulator:
 
         # ■■■■■ default values and the strategy ■■■■■
 
-        year = self.calculation_settings["year"]
-        strategy_index = self.calculation_settings["strategy_index"]
+        year = self.simulation_settings.year
+        strategy_index = self.simulation_settings.strategy_index
 
         strategy = solie.window.strategist.strategies.all[strategy_index]
         strategy_code_name = strategy.code_name
@@ -1102,11 +1096,11 @@ class Simulator:
         self.raw_unrealized_changes = RWLock(unrealized_changes)
         self.raw_scribbles = scribbles
         self.raw_account_state = account_state
-        self.about_viewing = {
-            "year": year,
-            "strategy_code_name": strategy_code_name,
-            "strategy_version": strategy_version,
-        }
+        self.simulation_summary = SimulationSummary(
+            year=year,
+            strategy_code_name=strategy_code_name,
+            strategy_version=strategy_version,
+        )
         await self.present()
 
         # ■■■■■ save if properly calculated ■■■■■
@@ -1125,9 +1119,9 @@ class Simulator:
                 await file.write(content)
 
     async def present(self, *args, **kwargs):
-        maker_fee = self.presentation_settings["maker_fee"]
-        taker_fee = self.presentation_settings["taker_fee"]
-        leverage = self.presentation_settings["leverage"]
+        maker_fee = self.simulation_settings.maker_fee
+        taker_fee = self.simulation_settings.taker_fee
+        leverage = self.simulation_settings.leverage
 
         async with self.raw_asset_record.read_lock as cell:
             asset_record = cell.data.copy()
@@ -1140,11 +1134,11 @@ class Simulator:
 
         # ■■■■■ get strategy details ■■■■
 
-        if self.about_viewing is None:
+        if self.simulation_summary is None:
             should_parallelize = False
             chunk_length = 0
         else:
-            strategy_index = self.calculation_settings["strategy_index"]
+            strategy_index = self.simulation_settings.strategy_index
             strategy = solie.window.strategist.strategies.all[strategy_index]
             should_parallelize = strategy.parallelized_simulation
             chunk_length = strategy.chunk_division
@@ -1223,13 +1217,13 @@ class Simulator:
         asyncio.create_task(self.display_lines())
         asyncio.create_task(self.display_range_information())
 
-        if self.about_viewing is None:
+        if self.simulation_summary is None:
             text = "Nothing drawn"
             solie.window.label_19.setText(text)
         else:
-            year = self.about_viewing["year"]
-            strategy_code_name = self.about_viewing["strategy_code_name"]
-            strategy_version = self.about_viewing["strategy_version"]
+            year = self.simulation_summary.year
+            strategy_code_name = self.simulation_summary.strategy_code_name
+            strategy_version = self.simulation_summary.strategy_version
             text = ""
             text += f"Target year {year}"
             text += "  ⦁  "
@@ -1240,14 +1234,14 @@ class Simulator:
 
     async def display_year_range(self, *args, **kwargs):
         range_start = datetime(
-            year=self.calculation_settings["year"],
+            year=self.simulation_settings.year,
             month=1,
             day=1,
             tzinfo=timezone.utc,
         )
         range_start = range_start.timestamp()
         range_end = datetime(
-            year=self.calculation_settings["year"] + 1,
+            year=self.simulation_settings.year + 1,
             month=1,
             day=1,
             tzinfo=timezone.utc,
@@ -1257,8 +1251,8 @@ class Simulator:
         widget.setXRange(range_start, range_end)
 
     async def delete_calculation_data(self, *args, **kwargs):
-        year = self.calculation_settings["year"]
-        strategy_index = self.calculation_settings["strategy_index"]
+        year = self.simulation_settings.year
+        strategy_index = self.simulation_settings.strategy_index
 
         strategy = solie.window.strategist.strategies.all[strategy_index]
         strategy_code_name = strategy.code_name
@@ -1329,8 +1323,8 @@ class Simulator:
         await self.erase()
 
     async def draw(self, *args, **kwargs):
-        year = self.calculation_settings["year"]
-        strategy_index = self.calculation_settings["strategy_index"]
+        year = self.simulation_settings.year
+        strategy_index = self.simulation_settings.strategy_index
 
         strategy = solie.window.strategist.strategies.all[strategy_index]
         strategy_code_name = strategy.code_name
@@ -1356,11 +1350,11 @@ class Simulator:
             async with aiofiles.open(account_state_path, "rb") as file:
                 content = await file.read()
                 self.raw_account_state = pickle.loads(content)
-            self.about_viewing = {
-                "year": year,
-                "strategy_code_name": strategy_code_name,
-                "strategy_version": strategy_version,
-            }
+            self.simulation_summary = SimulationSummary(
+                year=year,
+                strategy_code_name=strategy_code_name,
+                strategy_version=strategy_version,
+            )
             await self.present()
         except FileNotFoundError:
             await solie.window.ask(

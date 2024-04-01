@@ -37,3 +37,19 @@ class TransactionSettings(DataClassJsonMixin):
     desired_leverage: int = 1
     binance_api: str = ""
     binance_secret: str = ""
+
+
+@dataclass
+class SimulationSettings:
+    year: int
+    strategy_index: int = 0
+    maker_fee: float = 0.02
+    taker_fee: float = 0.04
+    leverage: int = 1
+
+
+@dataclass
+class SimulationSummary:
+    year: int
+    strategy_code_name: str
+    strategy_version: str
