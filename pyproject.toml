@@ -12,4 +12,4 @@ pygount = "*"
 
 [tool.pyright]
 typeCheckingMode = "basic"
-ignore = ["package/solie/user_interface.py"]
+ignore = ["package/solie/window_compiled.py"]
