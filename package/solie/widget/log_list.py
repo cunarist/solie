@@ -12,7 +12,7 @@ class LogList(QtWidgets.QListWidget):
         self.setFont(self.fixed_width_font)
         outsource(self.itemClicked, self.show_fulltext)
 
-    def addItem(self, summarization: str, log_content: str):  # noqa:N802
+    def add_item(self, summarization: str, log_content: str):
         maximum_item_limit = 1024
 
         new_item = QtWidgets.QListWidgetItem(self)
