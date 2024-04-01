@@ -7,7 +7,7 @@ import pandas as pd
 from solie.definition.structs import DownloadPreset
 
 
-def do(download_target: DownloadPreset) -> pd.DataFrame | None:
+def download_aggtrade_data(download_target: DownloadPreset) -> pd.DataFrame | None:
     symbol = download_target.symbol
     unit_size = download_target.unit_size
 

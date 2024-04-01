@@ -83,7 +83,7 @@ class AskPopup(QtWidgets.QWidget):
         async def job_de():
             self.done_event.set()
 
-        outsource.do(close_button.clicked, job_de)
+        outsource.outsource(close_button.clicked, job_de)
         this_layout.addWidget(close_button)
         content_box_layout.addLayout(this_layout)
 
@@ -138,7 +138,7 @@ class AskPopup(QtWidgets.QWidget):
                 self.answer = answer
                 self.done_event.set()
 
-            outsource.do(option_button.clicked, job)
+            outsource.outsource(option_button.clicked, job)
             option_button.setMaximumWidth(240)
             this_layout.addWidget(option_button)
 

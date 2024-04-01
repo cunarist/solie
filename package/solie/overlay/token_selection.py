@@ -190,7 +190,7 @@ class TokenSelection(BaseOverlay):
 
         # confirm button
         confirm_button = QtWidgets.QPushButton("Okay", card)
-        outsource.do(confirm_button.clicked, job_cf)
+        outsource.outsource(confirm_button.clicked, job_cf)
         confirm_button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,

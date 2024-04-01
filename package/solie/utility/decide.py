@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from types import CodeType
 
 
-def choose(**kwargs):
+def decide(**kwargs):
     # ■■■■■ get data ■■■■■
 
     target_symbols = kwargs["target_symbols"]

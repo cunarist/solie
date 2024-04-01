@@ -88,7 +88,7 @@ class OverlayPanel(QtWidgets.QWidget):
             async def job():
                 widget.done_event.set()
 
-            outsource.do(close_button_widget.clicked, job)
+            outsource.outsource(close_button_widget.clicked, job)
             this_layout.addWidget(close_button_widget)
         content_box_layout.addLayout(this_layout)
 

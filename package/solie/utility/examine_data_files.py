@@ -9,7 +9,7 @@ import solie
 from solie.parallel import go
 
 
-async def do():
+async def examine_data_files():
     datapath_str = solie.window.datapath
     if datapath_str is None:
         return

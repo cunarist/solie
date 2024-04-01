@@ -7,7 +7,7 @@ import pandas as pd
 import pandas_ta as ta
 
 
-def do(
+def make_indicators(
     target_symbols: list[str],
     candle_data: pd.DataFrame,
     indicators_script: str | CodeType,

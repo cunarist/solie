@@ -1,7 +1,7 @@
 import re
 
 
-def numeric(string: str) -> str:
+def format_numeric(string: str) -> str:
     string = re.sub(r"[^0123456789\.]", "", string)
     if string.startswith("."):
         string = "0" + string
@@ -10,7 +10,7 @@ def numeric(string: str) -> str:
     return string
 
 
-def fixed_float(number: int | float, width=4, positive_sign=False) -> str:
+def format_fixed_float(number: int | float, width=4, positive_sign=False) -> str:
     if width < 4:
         width = 4
 

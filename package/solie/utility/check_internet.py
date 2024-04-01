@@ -11,14 +11,14 @@ _connected_functions: list[Callable[..., Coroutine]] = []
 _disconnected_functions: list[Callable[..., Coroutine]] = []
 
 
-def connected():
+def internet_connected():
     if is_checked.is_set():
         return _was_connected
     else:
         raise RuntimeError("Internet connection is not being monitored")
 
 
-async def monitor():
+async def monitor_internet():
     global _was_connected
     while True:
         # try to connect to DNS servers

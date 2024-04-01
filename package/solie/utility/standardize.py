@@ -7,7 +7,7 @@ import pandas as pd
 import solie
 
 
-def candle_data():
+def standardize_candle_data():
     target_symbols = solie.window.data_settings.target_symbols
     return pd.DataFrame(
         columns=pd.MultiIndex.from_product(
@@ -21,7 +21,7 @@ def candle_data():
     )
 
 
-def account_state():
+def standardize_account_state():
     target_symbols = solie.window.data_settings.target_symbols
     return {
         "observed_until": datetime.fromtimestamp(0, tz=timezone.utc),
@@ -39,7 +39,7 @@ def account_state():
     }
 
 
-def asset_record():
+def standardize_asset_record():
     return pd.DataFrame(
         columns=[
             "Cause",
@@ -55,7 +55,7 @@ def asset_record():
     )
 
 
-def unrealized_changes():
+def standardize_unrealized_changes():
     return pd.Series(index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32)
 
 

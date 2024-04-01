@@ -188,9 +188,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ Request internet connection ■■■■■
 
-        asyncio.create_task(check_internet.monitor())
+        asyncio.create_task(check_internet.monitor_internet())
         await check_internet.is_checked.wait()
-        while not check_internet.connected():
+        while not check_internet.internet_connected():
             await self.ask(
                 "No internet connection",
                 "Internet connection is necessary for Solie to start up.",
@@ -944,73 +944,73 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Special widgets
         job = self.transactor.display_range_information
-        outsource.do(self.plot_widget.sigRangeChanged, job)
+        outsource.outsource(self.plot_widget.sigRangeChanged, job)
         job = self.transactor.set_minimum_view_range
-        outsource.do(self.plot_widget.sigRangeChanged, job)
+        outsource.outsource(self.plot_widget.sigRangeChanged, job)
         job = self.simulator.display_range_information
-        outsource.do(self.plot_widget_2.sigRangeChanged, job)
+        outsource.outsource(self.plot_widget_2.sigRangeChanged, job)
         job = self.simulator.set_minimum_view_range
-        outsource.do(self.plot_widget_2.sigRangeChanged, job)
+        outsource.outsource(self.plot_widget_2.sigRangeChanged, job)
 
         # Normal widgets
         job = self.simulator.update_calculation_settings
-        outsource.do(self.comboBox.currentIndexChanged, job)
+        outsource.outsource(self.comboBox.currentIndexChanged, job)
         job = self.transactor.update_automation_settings
-        outsource.do(self.comboBox_2.currentIndexChanged, job)
+        outsource.outsource(self.comboBox_2.currentIndexChanged, job)
         job = self.transactor.update_automation_settings
-        outsource.do(self.checkBox.toggled, job)
+        outsource.outsource(self.checkBox.toggled, job)
         job = self.simulator.calculate
-        outsource.do(self.pushButton_3.clicked, job)
+        outsource.outsource(self.pushButton_3.clicked, job)
         job = self.manager.open_datapath
-        outsource.do(self.pushButton_8.clicked, job)
+        outsource.outsource(self.pushButton_8.clicked, job)
         job = self.simulator.update_presentation_settings
-        outsource.do(self.spinBox_2.editingFinished, job)
+        outsource.outsource(self.spinBox_2.editingFinished, job)
         job = self.simulator.update_presentation_settings
-        outsource.do(self.doubleSpinBox.editingFinished, job)
+        outsource.outsource(self.doubleSpinBox.editingFinished, job)
         job = self.simulator.update_presentation_settings
-        outsource.do(self.doubleSpinBox_2.editingFinished, job)
+        outsource.outsource(self.doubleSpinBox_2.editingFinished, job)
         job = self.simulator.erase
-        outsource.do(self.pushButton_4.clicked, job)
+        outsource.outsource(self.pushButton_4.clicked, job)
         job = self.simulator.update_calculation_settings
-        outsource.do(self.comboBox_5.currentIndexChanged, job)
+        outsource.outsource(self.comboBox_5.currentIndexChanged, job)
         job = self.transactor.update_keys
-        outsource.do(self.lineEdit_4.editingFinished, job)
+        outsource.outsource(self.lineEdit_4.editingFinished, job)
         job = self.transactor.update_keys
-        outsource.do(self.lineEdit_6.editingFinished, job)
+        outsource.outsource(self.lineEdit_6.editingFinished, job)
         job = self.manager.run_script
-        outsource.do(self.pushButton.clicked, job)
+        outsource.outsource(self.pushButton.clicked, job)
         job = self.transactor.toggle_frequent_draw
-        outsource.do(self.checkBox_2.toggled, job)
+        outsource.outsource(self.checkBox_2.toggled, job)
         job = self.simulator.toggle_combined_draw
-        outsource.do(self.checkBox_3.toggled, job)
+        outsource.outsource(self.checkBox_3.toggled, job)
         job = self.transactor.display_day_range
-        outsource.do(self.pushButton_14.clicked, job)
+        outsource.outsource(self.pushButton_14.clicked, job)
         job = self.simulator.display_year_range
-        outsource.do(self.pushButton_15.clicked, job)
+        outsource.outsource(self.pushButton_15.clicked, job)
         job = self.simulator.delete_calculation_data
-        outsource.do(self.pushButton_16.clicked, job)
+        outsource.outsource(self.pushButton_16.clicked, job)
         job = self.simulator.draw
-        outsource.do(self.pushButton_17.clicked, job)
+        outsource.outsource(self.pushButton_17.clicked, job)
         job = self.collector.download_fill_candle_data
-        outsource.do(self.pushButton_2.clicked, job)
+        outsource.outsource(self.pushButton_2.clicked, job)
         job = self.transactor.update_mode_settings
-        outsource.do(self.spinBox.editingFinished, job)
+        outsource.outsource(self.spinBox.editingFinished, job)
         job = self.manager.deselect_log_output
-        outsource.do(self.pushButton_6.clicked, job)
+        outsource.outsource(self.pushButton_6.clicked, job)
         job = self.manager.reset_datapath
-        outsource.do(self.pushButton_22.clicked, job)
+        outsource.outsource(self.pushButton_22.clicked, job)
         job = self.transactor.update_viewing_symbol
-        outsource.do(self.comboBox_4.currentIndexChanged, job)
+        outsource.outsource(self.comboBox_4.currentIndexChanged, job)
         job = self.simulator.update_viewing_symbol
-        outsource.do(self.comboBox_6.currentIndexChanged, job)
+        outsource.outsource(self.comboBox_6.currentIndexChanged, job)
         job = self.manager.open_documentation
-        outsource.do(self.pushButton_7.clicked, job)
+        outsource.outsource(self.pushButton_7.clicked, job)
         job = self.strategist.add_blank_strategy
-        outsource.do(self.pushButton_5.clicked, job)
+        outsource.outsource(self.pushButton_5.clicked, job)
         job = self.manager.change_settings
-        outsource.do(self.comboBox_3.currentIndexChanged, job)
+        outsource.outsource(self.comboBox_3.currentIndexChanged, job)
         job = self.collector.guide_donation
-        outsource.do(self.pushButton_9.clicked, job)
+        outsource.outsource(self.pushButton_9.clicked, job)
 
         # ■■■■■ Submenu actions ■■■■■
 
@@ -1019,57 +1019,57 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         text = "Open historical data webpage of Binance"
         job = self.collector.open_binance_data_page
         new_action = action_menu.addAction(text)
-        outsource.do(new_action.triggered, job)
+        outsource.outsource(new_action.triggered, job)
         text = "Stop filling candle data"
         job = self.collector.stop_filling_candle_data
         new_action = action_menu.addAction(text)
-        outsource.do(new_action.triggered, job)
+        outsource.outsource(new_action.triggered, job)
 
         action_menu = QtWidgets.QMenu(self)
         self.pushButton_12.setMenu(action_menu)
         text = "Open Binance exchange"
         job = self.transactor.open_exchange
         new_action = action_menu.addAction(text)
-        outsource.do(new_action.triggered, job)
+        outsource.outsource(new_action.triggered, job)
         text = "Open Binance futures wallet"
         job = self.transactor.open_futures_wallet_page
         new_action = action_menu.addAction(text)
-        outsource.do(new_action.triggered, job)
+        outsource.outsource(new_action.triggered, job)
         text = "Open Binance API management webpage"
         job = self.transactor.open_api_management_page
         new_action = action_menu.addAction(text)
-        outsource.do(new_action.triggered, job)
+        outsource.outsource(new_action.triggered, job)
         text = "Clear all positions and open orders"
         job = self.transactor.clear_positions_and_open_orders
         new_action = action_menu.addAction(text)
-        outsource.do(new_action.triggered, job)
+        outsource.outsource(new_action.triggered, job)
         text = "Display same range as simulation graph"
         job = self.transactor.match_graph_range
         new_action = action_menu.addAction(text)
-        outsource.do(new_action.triggered, job)
+        outsource.outsource(new_action.triggered, job)
         text = "Show Raw Account State Object"
         job = self.transactor.show_raw_account_state_object
         new_action = action_menu.addAction(text)
-        outsource.do(new_action.triggered, job)
+        outsource.outsource(new_action.triggered, job)
 
         action_menu = QtWidgets.QMenu(self)
         self.pushButton_11.setMenu(action_menu)
         text = "Calculate temporarily only on visible range"
         job = self.simulator.simulate_only_visible
         new_action = action_menu.addAction(text)
-        outsource.do(new_action.triggered, job)
+        outsource.outsource(new_action.triggered, job)
         text = "Stop calculation"
         job = self.simulator.stop_calculation
         new_action = action_menu.addAction(text)
-        outsource.do(new_action.triggered, job)
+        outsource.outsource(new_action.triggered, job)
         text = "Find spots with lowest unrealized profit"
         job = self.simulator.analyze_unrealized_peaks
         new_action = action_menu.addAction(text)
-        outsource.do(new_action.triggered, job)
+        outsource.outsource(new_action.triggered, job)
         text = "Display same range as transaction graph"
         job = self.simulator.match_graph_range
         new_action = action_menu.addAction(text)
-        outsource.do(new_action.triggered, job)
+        outsource.outsource(new_action.triggered, job)
 
         # ■■■■■ Prepare logging ■■■■■
 

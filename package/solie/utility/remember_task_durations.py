@@ -12,9 +12,9 @@ task_durations = {
 }
 
 
-def add(task_name, duration):
+def add_task_duration(task_name, duration):
     task_durations[task_name].append(duration)
 
 
-def get():
+def get_task_duration():
     return task_durations

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 import pandas as pd
 
 
-def do(
+def fill_holes_with_aggtrades(
     symbol: str,
     recent_candle_data: pd.DataFrame,
     aggtrades: pd.DataFrame,

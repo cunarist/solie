@@ -36,7 +36,7 @@ class CalculationOutput:
     chunk_virtual_state: dict
 
 
-def do(calculation_input: CalculationInput) -> CalculationOutput:
+def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
     # leverage is treated as 1
     # because those are going to be applied at the presentation phase
 
@@ -512,7 +512,7 @@ def do(calculation_input: CalculationInput) -> CalculationOutput:
 
         current_candle_data: np.record = candle_data_ar[cycle]
         current_indicators: np.record = indicators_ar[cycle]
-        decision, chunk_scribbles = decide.choose(
+        decision, chunk_scribbles = decide.decide(
             target_symbols=target_symbols,
             current_moment=current_moment,
             current_candle_data=current_candle_data,

@@ -72,7 +72,7 @@ class DownloadFillOption(BaseOverlay):
                 self.done_event.set()
 
             option_button = QtWidgets.QPushButton(text, card)
-            outsource.do(option_button.clicked, job)
+            outsource.outsource(option_button.clicked, job)
             card_layout.addWidget(option_button)
 
         # ■■■■■ spacing ■■■■■

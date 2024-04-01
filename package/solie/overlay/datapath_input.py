@@ -92,7 +92,7 @@ class DatapathInput(BaseOverlay):
         this_layout = QtWidgets.QHBoxLayout()
         card_layout.addLayout(this_layout)
         choose_button = QtWidgets.QPushButton("Choose folder", card)
-        outsource.do(choose_button.clicked, job_dp)
+        outsource.outsource(choose_button.clicked, job_dp)
         choose_button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,
@@ -123,7 +123,7 @@ class DatapathInput(BaseOverlay):
 
         # confirm button
         confirm_button = QtWidgets.QPushButton("Okay", card)
-        outsource.do(confirm_button.clicked, job_ac)
+        outsource.outsource(confirm_button.clicked, job_ac)
         confirm_button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,

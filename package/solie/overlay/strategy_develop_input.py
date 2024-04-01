@@ -97,7 +97,7 @@ class StrategyDevelopInput(BaseOverlay):
             )
 
         button = QtWidgets.QPushButton("Fill with sample", card)
-        outsource.do(button.clicked, job_as)
+        outsource.outsource(button.clicked, job_as)
         button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,
@@ -111,7 +111,7 @@ class StrategyDevelopInput(BaseOverlay):
             self.done_event.set()
 
         button = QtWidgets.QPushButton("Save and close", card)
-        outsource.do(button.clicked, job_ss)
+        outsource.outsource(button.clicked, job_ss)
         button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,
@@ -135,7 +135,7 @@ class StrategyDevelopInput(BaseOverlay):
             await go(webbrowser.open, url)
 
         new_action = action_menu.addAction("Show Solie API docs")
-        outsource.do(new_action.triggered, job_ad)
+        outsource.outsource(new_action.triggered, job_ad)
 
         # Pandas docs button
         async def job_pd(*args):
@@ -143,7 +143,7 @@ class StrategyDevelopInput(BaseOverlay):
             await go(webbrowser.open, url)
 
         new_action = action_menu.addAction("Show Pandas API docs")
-        outsource.do(new_action.triggered, job_pd)
+        outsource.outsource(new_action.triggered, job_pd)
 
         # TA docs button
         async def job_td(*args):
@@ -151,7 +151,7 @@ class StrategyDevelopInput(BaseOverlay):
             await go(webbrowser.open, url)
 
         new_action = action_menu.addAction("Show TA API docs")
-        outsource.do(new_action.triggered, job_td)
+        outsource.outsource(new_action.triggered, job_td)
 
         # spacing
         spacer = QtWidgets.QSpacerItem(

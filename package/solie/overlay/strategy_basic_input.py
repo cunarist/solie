@@ -170,7 +170,9 @@ class StrategyBasicInput(BaseOverlay):
             strategy.readable_name = readable_name_input.text()
             version = version_input.text()
             if re.fullmatch(r"[0-9]+\.[0-9]+", version):
-                if not compare_versions.is_left_higher(strategy.version, version):
+                if not compare_versions.is_left_version_higher(
+                    strategy.version, version
+                ):
                     strategy.version = version
                 else:
                     await solie.window.ask(
@@ -196,7 +198,7 @@ class StrategyBasicInput(BaseOverlay):
 
         # confirm button
         confirm_button = QtWidgets.QPushButton("Save and close", card)
-        outsource.do(confirm_button.clicked, job)
+        outsource.outsource(confirm_button.clicked, job)
         confirm_button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,
