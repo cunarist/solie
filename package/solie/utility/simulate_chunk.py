@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from solie.definition.errors import SimulationError
-from solie.utility import decide
+from solie.utility.decide import decide
 
 
 @dataclass
@@ -512,7 +512,7 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
 
         current_candle_data: np.record = candle_data_ar[cycle]
         current_indicators: np.record = indicators_ar[cycle]
-        decision, chunk_scribbles = decide.decide(
+        decision, chunk_scribbles = decide(
             target_symbols=target_symbols,
             current_moment=current_moment,
             current_candle_data=current_candle_data,

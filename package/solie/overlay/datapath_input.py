@@ -5,7 +5,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 import solie
 from solie.parallel import go
-from solie.utility import outsource
+from solie.utility.outsource import outsource
 from solie.widget.horizontal_divider import HorizontalDivider
 
 from .base_overlay import BaseOverlay
@@ -92,7 +92,7 @@ class DatapathInput(BaseOverlay):
         this_layout = QtWidgets.QHBoxLayout()
         card_layout.addLayout(this_layout)
         choose_button = QtWidgets.QPushButton("Choose folder", card)
-        outsource.outsource(choose_button.clicked, job_dp)
+        outsource(choose_button.clicked, job_dp)
         choose_button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,
@@ -123,7 +123,7 @@ class DatapathInput(BaseOverlay):
 
         # confirm button
         confirm_button = QtWidgets.QPushButton("Okay", card)
-        outsource.outsource(confirm_button.clicked, job_ac)
+        outsource(confirm_button.clicked, job_ac)
         confirm_button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,

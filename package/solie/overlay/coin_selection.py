@@ -4,10 +4,10 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 import solie
 from solie.definition.api_requester import ApiRequester
-from solie.utility import outsource
+from solie.info import PACKAGE_PATH
+from solie.overlay.base_overlay import BaseOverlay
+from solie.utility.outsource import outsource
 from solie.widget.horizontal_divider import HorizontalDivider
-
-from .base_overlay import BaseOverlay
 
 
 class CoinSelection(BaseOverlay):
@@ -134,9 +134,7 @@ class CoinSelection(BaseOverlay):
         symbol_icon_labels = {}
         input_layout = QtWidgets.QGridLayout()
         blank_coin_pixmap = QtGui.QPixmap()
-        blank_coin_pixmap.load(
-            str(solie.info.PATH / "static" / "icon" / "blank_coin.png")
-        )
+        blank_coin_pixmap.load(str(PACKAGE_PATH / "static" / "icon" / "blank_coin.png"))
         for turn, symbol in enumerate(available_symbols):
             coin_symbol = symbol.removesuffix(asset_token)
             coin_name = coin_names.get(coin_symbol, "")
@@ -209,7 +207,7 @@ class CoinSelection(BaseOverlay):
 
         # confirm button
         confirm_button = QtWidgets.QPushButton("Okay", card)
-        outsource.outsource(confirm_button.clicked, job_cf)
+        outsource(confirm_button.clicked, job_cf)
         confirm_button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,

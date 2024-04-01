@@ -2,7 +2,7 @@ import math
 
 from pyqtgraph import AxisItem
 
-from solie.utility import simply_format
+from solie.utility.simply_format import format_fixed_float
 
 
 class PercentAxisItem(AxisItem):
@@ -41,7 +41,7 @@ class PercentAxisItem(AxisItem):
             for tick_value in tick_values:
                 if tick_value >= next_condition:
                     next_condition = tick_value + distance
-                    string = simply_format.format_fixed_float(tick_value, 6)
+                    string = format_fixed_float(tick_value, 6)
                     strings.append(string)
                 else:
                     strings.append("")

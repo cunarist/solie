@@ -6,17 +6,17 @@ from typing import Callable, TypeVar
 
 T = TypeVar("T")
 
+PROCESS_COUNT = multiprocessing.cpu_count()
 
-def prepare():
-    global process_count
+communicator = multiprocessing.Manager()
+
+
+def prepare_process_pool():
     global process_pool
-    global communicator
 
     # Use only half of the cores
     # as stuffing all the cores with tasks leads to a system slowdown.
-    process_count = multiprocessing.cpu_count()
-    process_pool = ProcessPoolExecutor(process_count)
-    communicator = multiprocessing.Manager()
+    process_pool = ProcessPoolExecutor(PROCESS_COUNT)
 
 
 async def go(callable: Callable[..., T], *args, **kwargs) -> T:

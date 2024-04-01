@@ -4,7 +4,9 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 import solie
 from solie.definition.structs import Strategy
-from solie.utility import compare_versions, outsource
+from solie.info import PACKAGE_PATH
+from solie.utility.compare_versions import is_left_version_higher
+from solie.utility.outsource import outsource
 from solie.widget.horizontal_divider import HorizontalDivider
 
 from .base_overlay import BaseOverlay
@@ -83,7 +85,7 @@ class StrategyBasicInput(BaseOverlay):
         description_input.setPlainText(strategy.description)
         this_layout.addRow("Description", description_input)
         risk_level_input = QtWidgets.QComboBox()
-        iconpath = solie.info.PATH / "static" / "icon"
+        iconpath = PACKAGE_PATH / "static" / "icon"
         red_pixmap = QtGui.QPixmap()
         red_pixmap.load(str(iconpath / "traffic_light_red.png"))
         yellow_pixmap = QtGui.QPixmap()
@@ -170,9 +172,7 @@ class StrategyBasicInput(BaseOverlay):
             strategy.readable_name = readable_name_input.text()
             version = version_input.text()
             if re.fullmatch(r"[0-9]+\.[0-9]+", version):
-                if not compare_versions.is_left_version_higher(
-                    strategy.version, version
-                ):
+                if not is_left_version_higher(strategy.version, version):
                     strategy.version = version
                 else:
                     await solie.window.ask(
@@ -198,7 +198,7 @@ class StrategyBasicInput(BaseOverlay):
 
         # confirm button
         confirm_button = QtWidgets.QPushButton("Save and close", card)
-        outsource.outsource(confirm_button.clicked, job)
+        outsource(confirm_button.clicked, job)
         confirm_button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,

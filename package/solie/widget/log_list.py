@@ -2,7 +2,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 import solie
 from solie.overlay.long_text_view import LongTextView
-from solie.utility import outsource
+from solie.utility.outsource import outsource
 
 
 class LogList(QtWidgets.QListWidget):
@@ -10,7 +10,7 @@ class LogList(QtWidgets.QListWidget):
         super().__init__(parent)
         self.fixed_width_font = QtGui.QFont("Source Code Pro", 9)
         self.setFont(self.fixed_width_font)
-        outsource.outsource(self.itemClicked, self.show_fulltext)
+        outsource(self.itemClicked, self.show_fulltext)
 
     def addItem(self, summarization: str, log_content: str):  # noqa:N802
         maximum_item_limit = 1024

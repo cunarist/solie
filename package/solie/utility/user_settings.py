@@ -5,9 +5,9 @@ import aiofiles
 import aiofiles.os
 from dataclasses_json import DataClassJsonMixin
 
-import solie
+from solie.info import PACKAGE_PATH
 
-DATAPATH_FILE = solie.info.PATH / "datapath.txt"
+DATAPATH_FILE = PACKAGE_PATH / "datapath.txt"
 
 
 async def read_datapath() -> str | None:
@@ -22,7 +22,7 @@ async def read_datapath() -> str | None:
         return None
 
 
-async def save_datapth(datapath: str | None):
+async def save_datapath(datapath: str | None):
     if datapath:
         async with aiofiles.open(DATAPATH_FILE, "w", encoding="utf8") as file:
             await file.write(datapath)

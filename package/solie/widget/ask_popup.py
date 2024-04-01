@@ -2,7 +2,7 @@ import asyncio
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from solie.utility import outsource
+from solie.utility.outsource import outsource
 from solie.widget.popup_box import PopupBox
 
 # https://stackoverflow.com/questions/67029993/pyqt-creating-a-popup-in-the-window
@@ -83,7 +83,7 @@ class AskPopup(QtWidgets.QWidget):
         async def job_de():
             self.done_event.set()
 
-        outsource.outsource(close_button.clicked, job_de)
+        outsource(close_button.clicked, job_de)
         this_layout.addWidget(close_button)
         content_box_layout.addLayout(this_layout)
 
@@ -138,7 +138,7 @@ class AskPopup(QtWidgets.QWidget):
                 self.answer = answer
                 self.done_event.set()
 
-            outsource.outsource(option_button.clicked, job)
+            outsource(option_button.clicked, job)
             option_button.setMaximumWidth(240)
             this_layout.addWidget(option_button)
 

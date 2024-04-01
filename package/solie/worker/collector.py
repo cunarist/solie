@@ -18,16 +18,14 @@ from solie.definition.structs import DownloadPreset
 from solie.overlay.donation_guide import DonationGuide
 from solie.overlay.download_fill_option import DownloadFillOption
 from solie.parallel import go
-from solie.utility import (
-    check_internet,
-    combine_candle_datas,
-    download_aggtrade_data,
-    fill_holes_with_aggtrades,
-    remember_task_durations,
-    sort_pandas,
-    standardize,
-    stop_flag,
-)
+from solie.utility.check_internet import add_disconnected_functions, internet_connected
+from solie.utility.combine_candle_datas import combine_candle_data
+from solie.utility.download_aggtrade_data import download_aggtrade_data
+from solie.utility.fill_holes_with_aggtrades import fill_holes_with_aggtrades
+from solie.utility.remember_task_durations import add_task_duration
+from solie.utility.sort_pandas import sort_data_frame
+from solie.utility.standardize import standardize_candle_data
+from solie.utility.stop_flag import find_stop_flag, make_stop_flag
 
 
 class Collector:
@@ -52,7 +50,7 @@ class Collector:
         # Candle data.
         # It's expected to have only the data of current year,
         # while data of previous years are stored in the disk.
-        self.candle_data = RWLock(standardize.standardize_candle_data())
+        self.candle_data = RWLock(standardize_candle_data())
 
         # Realtime data chunks
         field_names = itertools.product(
@@ -131,7 +129,7 @@ class Collector:
 
         # ■■■■■ invoked by the internet connection status change  ■■■■■
 
-        check_internet.add_disconnected_functions(self.clear_aggregate_trades)
+        add_disconnected_functions(self.clear_aggregate_trades)
 
     async def load(self, *args, **kwargs):
         await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
@@ -143,7 +141,7 @@ class Collector:
             if await aiofiles.os.path.isfile(filepath):
                 df: pd.DataFrame = await go(pd.read_pickle, filepath)
                 if not df.index.is_monotonic_increasing:
-                    df = await go(sort_pandas.sort_data_frame, df)
+                    df = await go(sort_data_frame, df)
                 cell.data = df
 
     async def organize_data(self, *args, **kwargs):
@@ -155,7 +153,7 @@ class Collector:
                 unique_index = original_index.drop_duplicates()
                 cell.data = cell.data.reindex(unique_index)
             if not cell.data.index.is_monotonic_increasing:
-                cell.data = await go(sort_pandas.sort_data_frame, cell.data)
+                cell.data = await go(sort_data_frame, cell.data)
 
         async with self.realtime_data_chunks.write_lock as cell:
             cell.data[-1].sort(order="index")
@@ -172,7 +170,7 @@ class Collector:
             cell.data = cell.data[mask].copy()
 
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
-        remember_task_durations.add_task_duration("collector_organize_data", duration)
+        add_task_duration("collector_organize_data", duration)
 
     async def save_candle_data(self, *args, **kwargs):
         # ■■■■■ default values ■■■■■
@@ -200,7 +198,7 @@ class Collector:
             await aiofiles.os.rename(filepath_new, filepath)
 
     async def get_exchange_information(self, *args, **kwargs):
-        if not check_internet.internet_connected():
+        if not internet_connected():
             return
 
         payload = {}
@@ -227,7 +225,7 @@ class Collector:
     async def fill_candle_data_holes(self, *args, **kwargs):
         # ■■■■■ check internet connection ■■■■■
 
-        if not check_internet.internet_connected():
+        if not internet_connected():
             return
 
         # ■■■■■ moments ■■■■■
@@ -307,7 +305,7 @@ class Collector:
                     )
 
                 recent_candle_data = await go(
-                    fill_holes_with_aggtrades.fill_holes_with_aggtrades,
+                    fill_holes_with_aggtrades,
                     symbol,
                     recent_candle_data,
                     aggtrades,
@@ -330,7 +328,7 @@ class Collector:
             recent_candle_data = recent_candle_data.combine_first(temp_df)
             if not recent_candle_data.index.is_monotonic_increasing:
                 recent_candle_data = await go(
-                    sort_pandas.sort_data_frame,
+                    sort_data_frame,
                     recent_candle_data,
                 )
             candle_data = pd.concat([original_candle_data, recent_candle_data])
@@ -436,7 +434,7 @@ class Collector:
 
         # ■■■■■ prepare target tuples for downloading ■■■■■
 
-        task_id = stop_flag.make_stop_flag("download_fill_candle_data")
+        task_id = make_stop_flag("download_fill_candle_data")
 
         download_presets: list[DownloadPreset] = []
         target_symbols = solie.window.data_settings.target_symbols
@@ -514,7 +512,7 @@ class Collector:
 
         async def play_progress_bar():
             while True:
-                if stop_flag.find_stop_flag("download_fill_candle_data", task_id):
+                if find_stop_flag("download_fill_candle_data", task_id):
                     solie.window.progressBar_3.setValue(0)
                     return
                 else:
@@ -558,18 +556,14 @@ class Collector:
                 nonlocal done_steps
                 nonlocal combined_df
 
-                if stop_flag.find_stop_flag("download_fill_candle_data", task_id):
+                if find_stop_flag("download_fill_candle_data", task_id):
                     return
 
-                returned = await go(
-                    download_aggtrade_data.download_aggtrade_data, download_preset
-                )
+                returned = await go(download_aggtrade_data, download_preset)
                 if returned is not None:
                     new_df = returned
                     async with combined_df.write_lock as cell:
-                        new = await go(
-                            combine_candle_datas.combine_candle_data, new_df, cell.data
-                        )
+                        new = await go(combine_candle_data, new_df, cell.data)
                         cell.data = new
 
                 done_steps += 1
@@ -591,7 +585,7 @@ class Collector:
                 async with combined_df.read_lock as cell:
                     async with self.candle_data.write_lock as cell_worker:
                         cell_worker.data = await go(
-                            combine_candle_datas.combine_candle_data,
+                            combine_candle_data,
                             cell.data,
                             cell_worker.data,
                         )
@@ -624,7 +618,7 @@ class Collector:
             find_key = str((symbol, "Best Ask Price"))
             cell.data[-1][-1][find_key] = best_ask
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
-        remember_task_durations.add_task_duration("add_book_tickers", duration)
+        add_task_duration("add_book_tickers", duration)
 
     async def add_mark_price(self, *args, **kwargs):
         received: dict = kwargs.get("received")  # type:ignore
@@ -645,7 +639,7 @@ class Collector:
                 find_key = str((symbol, "Mark Price"))
                 cell.data[-1][-1][find_key] = mark_price
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
-        remember_task_durations.add_task_duration("add_mark_price", duration)
+        add_task_duration("add_mark_price", duration)
 
     async def add_aggregate_trades(self, *args, **kwargs):
         received: dict = kwargs.get("received")  # type:ignore
@@ -661,7 +655,7 @@ class Collector:
             cell.data[-1][str((symbol, "Price"))] = price
             cell.data[-1][str((symbol, "Volume"))] = volume
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
-        remember_task_durations.add_task_duration("add_aggregate_trades", duration)
+        add_task_duration("add_aggregate_trades", duration)
 
     async def clear_aggregate_trades(self, *args, **kwargs):
         async with self.aggregate_trades.write_lock as cell:
@@ -733,13 +727,13 @@ class Collector:
             for column_name, new_data_value in new_datas.items():
                 cell.data.loc[before_moment, column_name] = new_data_value
             if not cell.data.index.is_monotonic_increasing:
-                cell.data = await go(sort_pandas.sort_data_frame, cell.data)
+                cell.data = await go(sort_data_frame, cell.data)
 
         duration = (datetime.now(timezone.utc) - current_moment).total_seconds()
-        remember_task_durations.add_task_duration("add_candle_data", duration)
+        add_task_duration("add_candle_data", duration)
 
     async def stop_filling_candle_data(self, *args, **kwargs):
-        stop_flag.make_stop_flag("download_fill_candle_data")
+        make_stop_flag("download_fill_candle_data")
 
     async def guide_donation(self, *args, **kwargs):
         await solie.window.overlay(

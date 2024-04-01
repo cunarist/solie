@@ -7,9 +7,11 @@ from PySide6 import QtGui, QtWidgets
 
 import solie
 from solie.definition.structs import Strategies, Strategy
+from solie.info import PACKAGE_PATH
 from solie.overlay.strategy_basic_input import StrategyBasicInput
 from solie.overlay.strategy_develop_input import StrategyDevelopInput
-from solie.utility import outsource, standardize
+from solie.utility.outsource import outsource
+from solie.utility.standardize import create_strategy_code_name
 
 
 class Strategiest:
@@ -27,7 +29,7 @@ class Strategiest:
 
         self.before_selections = {}
 
-        iconpath = solie.info.PATH / "static" / "icon"
+        iconpath = PACKAGE_PATH / "static" / "icon"
         self.red_pixmap = QtGui.QPixmap()
         self.red_pixmap.load(str(iconpath / "traffic_light_red.png"))
         self.yellow_pixmap = QtGui.QPixmap()
@@ -57,11 +59,11 @@ class Strategiest:
                 description="Not for real investment."
                 + " This strategy is only for demonstration purposes.",
             )
-            filepath = solie.info.PATH / "static" / "sample_indicators_script.txt"
+            filepath = PACKAGE_PATH / "static" / "sample_indicators_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 read_data = await file.read()
                 first_strategy.indicators_script = read_data
-            filepath = solie.info.PATH / "static" / "sample_decision_script.txt"
+            filepath = PACKAGE_PATH / "static" / "sample_decision_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 read_data = await file.read()
                 first_strategy.decision_script = read_data
@@ -129,7 +131,7 @@ class Strategiest:
 
             edit_button = QtWidgets.QPushButton("Develop")
             card_layout.addWidget(edit_button)
-            outsource.outsource(edit_button.clicked, job_bs)
+            outsource(edit_button.clicked, job_bs)
 
             async def job_eb(strategy=strategy):
                 await self.remember_strategy_selections()
@@ -143,7 +145,7 @@ class Strategiest:
 
             edit_button = QtWidgets.QPushButton("Edit basic info")
             card_layout.addWidget(edit_button)
-            outsource.outsource(edit_button.clicked, job_eb)
+            outsource(edit_button.clicked, job_eb)
 
             action_menu = QtWidgets.QMenu(solie.window)
             action_button = QtWidgets.QPushButton()
@@ -166,13 +168,13 @@ class Strategiest:
                 asyncio.create_task(self.restore_strategy_selections())
 
             new_action = action_menu.addAction("Remove")
-            outsource.outsource(new_action.triggered, job_rs)
+            outsource(new_action.triggered, job_rs)
 
             async def job_dp(strategy=strategy):
                 await self.remember_strategy_selections()
                 duplicated = replace(
                     strategy,
-                    code_name=standardize.create_strategy_code_name(),
+                    code_name=create_strategy_code_name(),
                 )
                 self.strategies.all.append(duplicated)
                 asyncio.create_task(self.display_strategies())
@@ -180,7 +182,7 @@ class Strategiest:
                 asyncio.create_task(self.restore_strategy_selections())
 
             new_action = action_menu.addAction("Duplicate")
-            outsource.outsource(new_action.triggered, job_dp)
+            outsource(new_action.triggered, job_dp)
 
             async def job_ss(strategy=strategy):
                 await self.remember_strategy_selections()
@@ -194,7 +196,7 @@ class Strategiest:
 
             edit_button = QtWidgets.QPushButton("▼")
             card_layout.addWidget(edit_button)
-            outsource.outsource(edit_button.clicked, job_ss)
+            outsource(edit_button.clicked, job_ss)
 
             async def job_us(strategy=strategy):
                 await self.remember_strategy_selections()
@@ -208,11 +210,11 @@ class Strategiest:
 
             edit_button = QtWidgets.QPushButton("▲")
             card_layout.addWidget(edit_button)
-            outsource.outsource(edit_button.clicked, job_us)
+            outsource(edit_button.clicked, job_us)
 
     async def add_blank_strategy(self, *args, **kwargs):
         await self.remember_strategy_selections()
-        new_strategy = Strategy(code_name=standardize.create_strategy_code_name())
+        new_strategy = Strategy(code_name=create_strategy_code_name())
         self.strategies.all.append(new_strategy)
         await self.display_strategies()
         await self.restore_strategy_selections()

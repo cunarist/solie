@@ -5,14 +5,14 @@ import aiohttp
 
 import solie
 
-is_checked = asyncio.Event()
+is_internet_checked = asyncio.Event()
 _was_connected = False
 _connected_functions: list[Callable[..., Coroutine]] = []
 _disconnected_functions: list[Callable[..., Coroutine]] = []
 
 
 def internet_connected():
-    if is_checked.is_set():
+    if is_internet_checked.is_set():
         return _was_connected
     else:
         raise RuntimeError("Internet connection is not being monitored")
@@ -55,7 +55,7 @@ async def monitor_internet():
 
         # remember connection state
         _was_connected = is_connected
-        is_checked.set()
+        is_internet_checked.set()
 
         # wait for a while
         await asyncio.sleep(1)

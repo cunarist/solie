@@ -5,8 +5,9 @@ from PySide6 import QtCore, QtWidgets
 
 import solie
 from solie.definition.structs import Strategy
+from solie.info import PACKAGE_PATH
 from solie.parallel import go
-from solie.utility import outsource
+from solie.utility.outsource import outsource
 from solie.widget.script_editor import ScriptEditor
 from solie.widget.vertical_divider import VerticalDivider
 
@@ -77,14 +78,14 @@ class StrategyDevelopInput(BaseOverlay):
         # sample script button
         async def job_as(*args):
             # indicators script
-            filepath = solie.info.PATH / "static" / "sample_indicators_script.txt"
+            filepath = PACKAGE_PATH / "static" / "sample_indicators_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 script = await file.read()
 
             indicators_script_input.setPlainText(script)
 
             # decision script
-            filepath = solie.info.PATH / "static" / "sample_decision_script.txt"
+            filepath = PACKAGE_PATH / "static" / "sample_decision_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 script = await file.read()
 
@@ -97,7 +98,7 @@ class StrategyDevelopInput(BaseOverlay):
             )
 
         button = QtWidgets.QPushButton("Fill with sample", card)
-        outsource.outsource(button.clicked, job_as)
+        outsource(button.clicked, job_as)
         button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,
@@ -111,7 +112,7 @@ class StrategyDevelopInput(BaseOverlay):
             self.done_event.set()
 
         button = QtWidgets.QPushButton("Save and close", card)
-        outsource.outsource(button.clicked, job_ss)
+        outsource(button.clicked, job_ss)
         button.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed,
@@ -135,7 +136,7 @@ class StrategyDevelopInput(BaseOverlay):
             await go(webbrowser.open, url)
 
         new_action = action_menu.addAction("Show Solie API docs")
-        outsource.outsource(new_action.triggered, job_ad)
+        outsource(new_action.triggered, job_ad)
 
         # Pandas docs button
         async def job_pd(*args):
@@ -143,7 +144,7 @@ class StrategyDevelopInput(BaseOverlay):
             await go(webbrowser.open, url)
 
         new_action = action_menu.addAction("Show Pandas API docs")
-        outsource.outsource(new_action.triggered, job_pd)
+        outsource(new_action.triggered, job_pd)
 
         # TA docs button
         async def job_td(*args):
@@ -151,7 +152,7 @@ class StrategyDevelopInput(BaseOverlay):
             await go(webbrowser.open, url)
 
         new_action = action_menu.addAction("Show TA API docs")
-        outsource.outsource(new_action.triggered, job_td)
+        outsource(new_action.triggered, job_td)
 
         # spacing
         spacer = QtWidgets.QSpacerItem(

@@ -1,6 +1,6 @@
 from PySide6 import QtWidgets
 
-from solie.utility import outsource
+from solie.utility.outsource import outsource
 
 from .base_overlay import BaseOverlay
 
@@ -72,7 +72,7 @@ class DownloadFillOption(BaseOverlay):
                 self.done_event.set()
 
             option_button = QtWidgets.QPushButton(text, card)
-            outsource.outsource(option_button.clicked, job)
+            outsource(option_button.clicked, job)
             card_layout.addWidget(option_button)
 
         # ■■■■■ spacing ■■■■■

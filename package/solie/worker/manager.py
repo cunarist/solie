@@ -12,14 +12,12 @@ import time_machine
 
 import solie
 from solie.definition.api_requester import ApiRequester
-from solie.parallel import go
-from solie.utility import (
-    check_internet,
-    convert,
-    remember_task_durations,
-    simply_format,
-    user_settings,
-)
+from solie.parallel import PROCESS_COUNT, go
+from solie.utility.check_internet import internet_connected
+from solie.utility.convert import value_to_indexes
+from solie.utility.remember_task_durations import get_task_duration
+from solie.utility.simply_format import format_fixed_float
+from solie.utility.user_settings import save_datapath
 
 WINDOW_LOCK_OPTIONS = (
     "NEVER",
@@ -100,9 +98,7 @@ class Manager:
                 content = await file.read()
                 self.settings = json.loads(content)
         solie.window.comboBox_3.setCurrentIndex(
-            convert.value_to_indexes(WINDOW_LOCK_OPTIONS, self.settings["lock_board"])[
-                0
-            ]
+            value_to_indexes(WINDOW_LOCK_OPTIONS, self.settings["lock_board"])[0]
         )
 
         # python script
@@ -146,9 +142,7 @@ class Manager:
                 list_text = "\n".join(texts[:max_tasks_shown]) + "\n..."
             solie.window.label_12.setText(f"{tasks_not_done} total\n\n{list_text}")
 
-            solie.window.label_32.setText(
-                f"Process count: {solie.parallel.process_count}"
-            )
+            solie.window.label_32.setText(f"Process count: {PROCESS_COUNT}")
 
             texts = []
             texts.append("Limits")
@@ -167,24 +161,20 @@ class Manager:
             solie.window.label_35.setText(text)
 
             texts = []
-            task_durations = remember_task_durations.get_task_duration()
+            task_durations = get_task_duration()
             for data_name, deque_data in task_durations.items():
                 if len(deque_data) > 0:
                     text = data_name
                     text += "\n"
                     data_value = sum(deque_data) / len(deque_data)
-                    text += f"Mean {simply_format.format_fixed_float(data_value,6)}s "
+                    text += f"Mean {format_fixed_float(data_value,6)}s "
                     data_value = statistics.median(deque_data)
-                    text += f"Median {simply_format.format_fixed_float(data_value,6)}s "
+                    text += f"Median {format_fixed_float(data_value,6)}s "
                     text += "\n"
                     data_value = min(deque_data)
-                    text += (
-                        f"Minimum {simply_format.format_fixed_float(data_value,6)}s "
-                    )
+                    text += f"Minimum {format_fixed_float(data_value,6)}s "
                     data_value = max(deque_data)
-                    text += (
-                        f"Maximum {simply_format.format_fixed_float(data_value,6)}s "
-                    )
+                    text += f"Maximum {format_fixed_float(data_value,6)}s "
                     texts.append(text)
             text = "\n\n".join(texts)
             solie.window.label_33.setText(text)
@@ -205,7 +195,7 @@ class Manager:
         exec(script_text, namespace)
 
     async def check_online_status(self, *args, **kwargs):
-        if not check_internet.internet_connected():
+        if not internet_connected():
             return
 
         async def job():
@@ -231,7 +221,7 @@ class Manager:
     async def display_system_status(self, *args, **kwargs):
         time = datetime.now(timezone.utc)
         time_text = time.strftime("%Y-%m-%d %H:%M:%S")
-        internet_connected = check_internet.internet_connected()
+        is_internet_connected = internet_connected()
         ping = self.online_status["ping"]
         board_enabled = solie.window.board.isEnabled()
 
@@ -244,7 +234,7 @@ class Manager:
         text = ""
         text += f"Current time UTC {time_text}"
         text += "  ⦁  "
-        if internet_connected:
+        if is_internet_connected:
             text += "Connected to the internet"
         else:
             text += "Not connected to the internet"
@@ -269,7 +259,7 @@ class Manager:
         self.time_traveller = time_traveller
 
     async def check_binance_limits(self, *args, **kwargs):
-        if not check_internet.internet_connected():
+        if not internet_connected():
             return
 
         payload = {}
@@ -297,7 +287,7 @@ class Manager:
         if answer in (0, 1):
             return
 
-        await user_settings.save_datapth(None)
+        await save_datapath(None)
 
         solie.window.should_confirm_closing = False
         solie.window.close()

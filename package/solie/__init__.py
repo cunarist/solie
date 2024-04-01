@@ -14,21 +14,30 @@ import pyqtgraph
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from solie import info, parallel
 from solie.definition.api_requester import ApiRequester
 from solie.definition.log_handler import LogHandler
 from solie.definition.percent_axis_item import PercentAxisItem
 from solie.definition.time_axis_item import TimeAxisItem
+from solie.info import PACKAGE_PATH, PACKAGE_VERSION
 from solie.overlay.base_overlay import BaseOverlay
 from solie.overlay.coin_selection import CoinSelection
 from solie.overlay.datapath_input import DatapathInput
 from solie.overlay.token_selection import TokenSelection
+from solie.parallel import prepare_process_pool
 from solie.user_interface import Ui_MainWindow
-from solie.utility import (
-    check_internet,
-    examine_data_files,
-    outsource,
-    user_settings,
+from solie.utility.check_internet import (
+    internet_connected,
+    is_internet_checked,
+    monitor_internet,
+)
+from solie.utility.examine_data_files import examine_data_files
+from solie.utility.outsource import outsource
+from solie.utility.user_settings import (
+    DataSettings,
+    read_data_settings,
+    read_datapath,
+    save_data_settings,
+    save_datapath,
 )
 from solie.widget.ask_popup import AskPopup
 from solie.widget.brand_label import BrandLabel
@@ -36,7 +45,11 @@ from solie.widget.horizontal_divider import HorizontalDivider
 from solie.widget.overlay_panel import OverlayPanel
 from solie.widget.splash_screen import SplashScreen
 from solie.widget.symbol_box import SymbolBox
-from solie.worker import collector, manager, simulator, strategist, transactor
+from solie.worker.collector import Collector
+from solie.worker.manager import Manager
+from solie.worker.simulator import Simulator
+from solie.worker.strategist import Strategiest
+from solie.worker.transactor import Transactor
 
 W = TypeVar("W", bound=BaseOverlay)
 
@@ -48,7 +61,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.app_close_event = asyncio.Event()
 
         self.datapath: Path
-        self.data_settings: user_settings.DataSettings
+        self.data_settings: DataSettings
 
         self.price_labels: dict[str, QtWidgets.QLabel] = {}
         self.last_interaction = datetime.now(timezone.utc)
@@ -66,11 +79,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.transaction_lines: dict[str, list[pyqtgraph.PlotDataItem]] = {}
         self.simulation_lines: dict[str, list[pyqtgraph.PlotDataItem]] = {}
 
-        self.collector: collector.Collector
-        self.transactor: transactor.Transactor
-        self.simulator: simulator.Simulator
-        self.strategist: strategist.Strategiest
-        self.manager: manager.Manager
+        self.collector: Collector
+        self.transactor: Transactor
+        self.simulator: Simulator
+        self.strategist: Strategiest
+        self.manager: Manager
 
         self.initialize_functions: list[Callable[..., Coroutine]] = []
         self.finalize_functions: list[Callable[..., Coroutine]] = []
@@ -174,7 +187,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ Window icon ■■■■■
 
-        filepath = info.PATH / "static" / "product_icon.png"
+        filepath = PACKAGE_PATH / "static" / "product_icon.png"
         async with aiofiles.open(filepath, mode="rb") as file:
             product_icon_data = await file.read()
         product_icon_pixmap = QtGui.QPixmap()
@@ -188,9 +201,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ Request internet connection ■■■■■
 
-        asyncio.create_task(check_internet.monitor_internet())
-        await check_internet.is_checked.wait()
-        while not check_internet.internet_connected():
+        asyncio.create_task(monitor_internet())
+        await is_internet_checked.wait()
+        while not internet_connected():
             await self.ask(
                 "No internet connection",
                 "Internet connection is necessary for Solie to start up.",
@@ -200,7 +213,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ Get datapath ■■■■■
 
-        datapath_str = await user_settings.read_datapath()
+        datapath_str = await read_datapath()
 
         if datapath_str:
             datapath = Path(datapath_str)
@@ -211,13 +224,13 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 False,
             )
             datapath = overlay_widget.result
-            await user_settings.save_datapth(str(datapath))
+            await save_datapath(str(datapath))
 
         self.datapath = datapath
 
         # ■■■■■ Get data settings ■■■■■
 
-        data_settings = await user_settings.read_data_settings(datapath)
+        data_settings = await read_data_settings(datapath)
 
         if not data_settings:
             overlay_widget = await self.overlay(
@@ -232,11 +245,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 False,
             )
             target_symbols = overlay_widget.result
-            data_settings = user_settings.DataSettings(
+            data_settings = DataSettings(
                 asset_token=asset_token,
                 target_symbols=target_symbols,
             )
-            await user_settings.save_data_settings(data_settings, datapath)
+            await save_data_settings(data_settings, datapath)
 
         self.data_settings = data_settings
 
@@ -247,7 +260,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ Check the status of data files ■■■■■
 
-        await examine_data_files.do()
+        await examine_data_files()
 
         # ■■■■■ Get information about target symbols ■■■■■
 
@@ -301,7 +314,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 image_data = await api_requester.bytes(coin_icon_url)
                 pixmap.loadFromData(image_data)
             else:
-                pixmap.load(str(info.PATH / "static" / "icon" / "blank_coin.png"))
+                pixmap.load(str(PACKAGE_PATH / "static" / "icon" / "blank_coin.png"))
             symbol_pixmaps[symbol] = pixmap
 
         token_icon_url = coin_icon_urls.get(asset_token, "")
@@ -445,7 +458,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         this_layout = self.horizontalLayout_13
         product_icon_pixmap = QtGui.QPixmap()
-        filepath = info.PATH / "static" / "product_icon.png"
+        filepath = PACKAGE_PATH / "static" / "product_icon.png"
         async with aiofiles.open(filepath, mode="rb") as file:
             product_icon_data = await file.read()
         product_icon_pixmap.loadFromData(product_icon_data)
@@ -461,7 +474,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         this_layout.addWidget(spacing_text)
         title_label = BrandLabel(self, "SOLIE", 48)
         this_layout.addWidget(title_label)
-        text = info.VERSION
+        text = PACKAGE_VERSION
         label = BrandLabel(self, text, 24)
         this_layout.addWidget(label)
 
@@ -919,11 +932,11 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ Workers ■■■■■
 
-        self.collector = collector.Collector()
-        self.transactor = transactor.Transactor()
-        self.simulator = simulator.Simulator()
-        self.strategist = strategist.Strategiest()
-        self.manager = manager.Manager()
+        self.collector = Collector()
+        self.transactor = Transactor()
+        self.simulator = Simulator()
+        self.strategist = Strategiest()
+        self.manager = Manager()
 
         # ■■■■■ Initialize functions ■■■■■
 
@@ -944,73 +957,73 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Special widgets
         job = self.transactor.display_range_information
-        outsource.outsource(self.plot_widget.sigRangeChanged, job)
+        outsource(self.plot_widget.sigRangeChanged, job)
         job = self.transactor.set_minimum_view_range
-        outsource.outsource(self.plot_widget.sigRangeChanged, job)
+        outsource(self.plot_widget.sigRangeChanged, job)
         job = self.simulator.display_range_information
-        outsource.outsource(self.plot_widget_2.sigRangeChanged, job)
+        outsource(self.plot_widget_2.sigRangeChanged, job)
         job = self.simulator.set_minimum_view_range
-        outsource.outsource(self.plot_widget_2.sigRangeChanged, job)
+        outsource(self.plot_widget_2.sigRangeChanged, job)
 
         # Normal widgets
         job = self.simulator.update_calculation_settings
-        outsource.outsource(self.comboBox.currentIndexChanged, job)
+        outsource(self.comboBox.currentIndexChanged, job)
         job = self.transactor.update_automation_settings
-        outsource.outsource(self.comboBox_2.currentIndexChanged, job)
+        outsource(self.comboBox_2.currentIndexChanged, job)
         job = self.transactor.update_automation_settings
-        outsource.outsource(self.checkBox.toggled, job)
+        outsource(self.checkBox.toggled, job)
         job = self.simulator.calculate
-        outsource.outsource(self.pushButton_3.clicked, job)
+        outsource(self.pushButton_3.clicked, job)
         job = self.manager.open_datapath
-        outsource.outsource(self.pushButton_8.clicked, job)
+        outsource(self.pushButton_8.clicked, job)
         job = self.simulator.update_presentation_settings
-        outsource.outsource(self.spinBox_2.editingFinished, job)
+        outsource(self.spinBox_2.editingFinished, job)
         job = self.simulator.update_presentation_settings
-        outsource.outsource(self.doubleSpinBox.editingFinished, job)
+        outsource(self.doubleSpinBox.editingFinished, job)
         job = self.simulator.update_presentation_settings
-        outsource.outsource(self.doubleSpinBox_2.editingFinished, job)
+        outsource(self.doubleSpinBox_2.editingFinished, job)
         job = self.simulator.erase
-        outsource.outsource(self.pushButton_4.clicked, job)
+        outsource(self.pushButton_4.clicked, job)
         job = self.simulator.update_calculation_settings
-        outsource.outsource(self.comboBox_5.currentIndexChanged, job)
+        outsource(self.comboBox_5.currentIndexChanged, job)
         job = self.transactor.update_keys
-        outsource.outsource(self.lineEdit_4.editingFinished, job)
+        outsource(self.lineEdit_4.editingFinished, job)
         job = self.transactor.update_keys
-        outsource.outsource(self.lineEdit_6.editingFinished, job)
+        outsource(self.lineEdit_6.editingFinished, job)
         job = self.manager.run_script
-        outsource.outsource(self.pushButton.clicked, job)
+        outsource(self.pushButton.clicked, job)
         job = self.transactor.toggle_frequent_draw
-        outsource.outsource(self.checkBox_2.toggled, job)
+        outsource(self.checkBox_2.toggled, job)
         job = self.simulator.toggle_combined_draw
-        outsource.outsource(self.checkBox_3.toggled, job)
+        outsource(self.checkBox_3.toggled, job)
         job = self.transactor.display_day_range
-        outsource.outsource(self.pushButton_14.clicked, job)
+        outsource(self.pushButton_14.clicked, job)
         job = self.simulator.display_year_range
-        outsource.outsource(self.pushButton_15.clicked, job)
+        outsource(self.pushButton_15.clicked, job)
         job = self.simulator.delete_calculation_data
-        outsource.outsource(self.pushButton_16.clicked, job)
+        outsource(self.pushButton_16.clicked, job)
         job = self.simulator.draw
-        outsource.outsource(self.pushButton_17.clicked, job)
+        outsource(self.pushButton_17.clicked, job)
         job = self.collector.download_fill_candle_data
-        outsource.outsource(self.pushButton_2.clicked, job)
+        outsource(self.pushButton_2.clicked, job)
         job = self.transactor.update_mode_settings
-        outsource.outsource(self.spinBox.editingFinished, job)
+        outsource(self.spinBox.editingFinished, job)
         job = self.manager.deselect_log_output
-        outsource.outsource(self.pushButton_6.clicked, job)
+        outsource(self.pushButton_6.clicked, job)
         job = self.manager.reset_datapath
-        outsource.outsource(self.pushButton_22.clicked, job)
+        outsource(self.pushButton_22.clicked, job)
         job = self.transactor.update_viewing_symbol
-        outsource.outsource(self.comboBox_4.currentIndexChanged, job)
+        outsource(self.comboBox_4.currentIndexChanged, job)
         job = self.simulator.update_viewing_symbol
-        outsource.outsource(self.comboBox_6.currentIndexChanged, job)
+        outsource(self.comboBox_6.currentIndexChanged, job)
         job = self.manager.open_documentation
-        outsource.outsource(self.pushButton_7.clicked, job)
+        outsource(self.pushButton_7.clicked, job)
         job = self.strategist.add_blank_strategy
-        outsource.outsource(self.pushButton_5.clicked, job)
+        outsource(self.pushButton_5.clicked, job)
         job = self.manager.change_settings
-        outsource.outsource(self.comboBox_3.currentIndexChanged, job)
+        outsource(self.comboBox_3.currentIndexChanged, job)
         job = self.collector.guide_donation
-        outsource.outsource(self.pushButton_9.clicked, job)
+        outsource(self.pushButton_9.clicked, job)
 
         # ■■■■■ Submenu actions ■■■■■
 
@@ -1019,57 +1032,57 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         text = "Open historical data webpage of Binance"
         job = self.collector.open_binance_data_page
         new_action = action_menu.addAction(text)
-        outsource.outsource(new_action.triggered, job)
+        outsource(new_action.triggered, job)
         text = "Stop filling candle data"
         job = self.collector.stop_filling_candle_data
         new_action = action_menu.addAction(text)
-        outsource.outsource(new_action.triggered, job)
+        outsource(new_action.triggered, job)
 
         action_menu = QtWidgets.QMenu(self)
         self.pushButton_12.setMenu(action_menu)
         text = "Open Binance exchange"
         job = self.transactor.open_exchange
         new_action = action_menu.addAction(text)
-        outsource.outsource(new_action.triggered, job)
+        outsource(new_action.triggered, job)
         text = "Open Binance futures wallet"
         job = self.transactor.open_futures_wallet_page
         new_action = action_menu.addAction(text)
-        outsource.outsource(new_action.triggered, job)
+        outsource(new_action.triggered, job)
         text = "Open Binance API management webpage"
         job = self.transactor.open_api_management_page
         new_action = action_menu.addAction(text)
-        outsource.outsource(new_action.triggered, job)
+        outsource(new_action.triggered, job)
         text = "Clear all positions and open orders"
         job = self.transactor.clear_positions_and_open_orders
         new_action = action_menu.addAction(text)
-        outsource.outsource(new_action.triggered, job)
+        outsource(new_action.triggered, job)
         text = "Display same range as simulation graph"
         job = self.transactor.match_graph_range
         new_action = action_menu.addAction(text)
-        outsource.outsource(new_action.triggered, job)
+        outsource(new_action.triggered, job)
         text = "Show Raw Account State Object"
         job = self.transactor.show_raw_account_state_object
         new_action = action_menu.addAction(text)
-        outsource.outsource(new_action.triggered, job)
+        outsource(new_action.triggered, job)
 
         action_menu = QtWidgets.QMenu(self)
         self.pushButton_11.setMenu(action_menu)
         text = "Calculate temporarily only on visible range"
         job = self.simulator.simulate_only_visible
         new_action = action_menu.addAction(text)
-        outsource.outsource(new_action.triggered, job)
+        outsource(new_action.triggered, job)
         text = "Stop calculation"
         job = self.simulator.stop_calculation
         new_action = action_menu.addAction(text)
-        outsource.outsource(new_action.triggered, job)
+        outsource(new_action.triggered, job)
         text = "Find spots with lowest unrealized profit"
         job = self.simulator.analyze_unrealized_peaks
         new_action = action_menu.addAction(text)
-        outsource.outsource(new_action.triggered, job)
+        outsource(new_action.triggered, job)
         text = "Display same range as transaction graph"
         job = self.simulator.match_graph_range
         new_action = action_menu.addAction(text)
-        outsource.outsource(new_action.triggered, job)
+        outsource(new_action.triggered, job)
 
         # ■■■■■ Prepare logging ■■■■■
 
@@ -1164,7 +1177,7 @@ def bring_to_life():
     # ■■■■■ Theme ■■■■■
 
     # This part should be done after creating the app and before creating the window.
-    staticpath = info.PATH / "static"
+    staticpath = PACKAGE_PATH / "static"
     QtGui.QFontDatabase.addApplicationFont(str(staticpath / "source_code_pro.ttf"))
     QtGui.QFontDatabase.addApplicationFont(str(staticpath / "notosans_regular.ttf"))
     QtGui.QFontDatabase.addApplicationFont(str(staticpath / "lexend_bold.ttf"))
@@ -1199,7 +1212,7 @@ def bring_to_life():
     window = Window()
     window.setPalette(dark_palette)
 
-    parallel.prepare()
+    prepare_process_pool()
     asyncio.run(window.live())
 
     # ■■■■■ Make sure nothing happens after Solie ■■■■■
