@@ -142,18 +142,15 @@ class Transactor:
         await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
 
         # scribbles
-        try:
-            filepath = self.workerpath / "scribbles.pickle"
+        filepath = self.workerpath / "scribbles.pickle"
+        if await aiofiles.os.path.isfile(filepath):
             async with aiofiles.open(filepath, "rb") as file:
                 content = await file.read()
                 self.scribbles = pickle.loads(content)
-        except FileNotFoundError:
-            pass
-        await asyncio.sleep(0)
 
         # transaction settings
-        try:
-            filepath = self.workerpath / "transaction_settings.json"
+        filepath = self.workerpath / "transaction_settings.json"
+        if await aiofiles.os.path.isfile(filepath):
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 read_data = TransactionSettings.from_json(await file.read())
             self.transaction_settings = read_data
@@ -170,33 +167,21 @@ class Transactor:
             self.api_requester.update_keys(
                 read_data.binance_api_key, read_data.binance_api_secret
             )
-        except FileNotFoundError:
-            self.transaction_settings = TransactionSettings()
-        await asyncio.sleep(0)
 
         # unrealized changes
-        try:
-            filepath = self.workerpath / "unrealized_changes.pickle"
+        filepath = self.workerpath / "unrealized_changes.pickle"
+        if await aiofiles.os.path.isfile(filepath):
             self.unrealized_changes = RWLock(await go(pd.read_pickle, filepath))
-        except FileNotFoundError:
-            pass
-        await asyncio.sleep(0)
 
         # asset record
-        try:
-            filepath = self.workerpath / "asset_record.pickle"
+        filepath = self.workerpath / "asset_record.pickle"
+        if await aiofiles.os.path.isfile(filepath):
             self.asset_record = RWLock(await go(pd.read_pickle, filepath))
-        except FileNotFoundError:
-            pass
-        await asyncio.sleep(0)
 
         # auto order record
-        try:
-            filepath = self.workerpath / "auto_order_record.pickle"
+        filepath = self.workerpath / "auto_order_record.pickle"
+        if await aiofiles.os.path.isfile(filepath):
             self.auto_order_record = RWLock(await go(pd.read_pickle, filepath))
-        except FileNotFoundError:
-            pass
-        await asyncio.sleep(0)
 
     async def organize_data(self, *args, **kwargs):
         async with self.unrealized_changes.write_lock as cell:

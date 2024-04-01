@@ -1299,26 +1299,16 @@ class Simulator:
             if answer in (0, 1):
                 return
 
-        try:
+        if await aiofiles.os.path.isfile(asset_record_path):
             await aiofiles.os.remove(asset_record_path)
-        except FileNotFoundError:
-            pass
-        try:
+        if await aiofiles.os.path.isfile(unrealized_changes_path):
             await aiofiles.os.remove(unrealized_changes_path)
-        except FileNotFoundError:
-            pass
-        try:
+        if await aiofiles.os.path.isfile(scribbles_path):
             await aiofiles.os.remove(scribbles_path)
-        except FileNotFoundError:
-            pass
-        try:
+        if await aiofiles.os.path.isfile(account_state_path):
             await aiofiles.os.remove(account_state_path)
-        except FileNotFoundError:
-            pass
-        try:
+        if await aiofiles.os.path.isfile(virtual_state_path):
             await aiofiles.os.remove(virtual_state_path)
-        except FileNotFoundError:
-            pass
 
         await self.erase()
 

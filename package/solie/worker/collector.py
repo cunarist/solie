@@ -145,7 +145,6 @@ class Collector:
                 if not df.index.is_monotonic_increasing:
                     df = await go(sort_pandas.data_frame, df)
                 cell.data = df
-        await asyncio.sleep(0)
 
     async def organize_data(self, *args, **kwargs):
         start_time = datetime.now(timezone.utc)
@@ -193,20 +192,12 @@ class Collector:
 
         # ■■■■■ safely replace the existing file ■■■■■
 
-        try:
+        if await aiofiles.os.path.isfile(filepath_backup):
             await aiofiles.os.remove(filepath_backup)
-        except FileNotFoundError:
-            pass
-
-        try:
+        if await aiofiles.os.path.isfile(filepath):
             await aiofiles.os.rename(filepath, filepath_backup)
-        except FileNotFoundError:
-            pass
-
-        try:
+        if await aiofiles.os.path.isfile(filepath_new):
             await aiofiles.os.rename(filepath_new, filepath)
-        except FileNotFoundError:
-            pass
 
     async def get_exchange_information(self, *args, **kwargs):
         if not check_internet.connected():
