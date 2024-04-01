@@ -1,5 +1,6 @@
 import asyncio
 import itertools
+import logging
 import math
 import random
 import webbrowser
@@ -26,6 +27,8 @@ from solie.utility.remember_task_durations import add_task_duration
 from solie.utility.sort_pandas import sort_data_frame
 from solie.utility.standardize import standardize_candle_data
 from solie.utility.stop_flag import find_stop_flag, make_stop_flag
+
+logger = logging.getLogger(__name__)
 
 
 class Collector:
@@ -594,7 +597,7 @@ class Collector:
         # ■■■■■ add to log ■■■■■
 
         text = "Filled the candle data with the history data downloaded from Binance"
-        solie.logger.info(text)
+        logger.info(text)
 
         # ■■■■■ display to graphs ■■■■■
 

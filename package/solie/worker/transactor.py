@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import math
 import pickle
 import re
@@ -32,6 +33,8 @@ from solie.utility.standardize import (
     standardize_unrealized_changes,
 )
 from solie.utility.stop_flag import find_stop_flag, make_stop_flag
+
+logger = logging.getLogger(__name__)
 
 
 class Transactor:
@@ -274,7 +277,7 @@ class Transactor:
 
         if event_type == "listenKeyExpired":
             text = "Binance user data stream listen key got expired"
-            solie.logger.warning(text)
+            logger.warning(text)
             await self.update_user_data_stream()
 
         if event_type == "ACCOUNT_UPDATE":

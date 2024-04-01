@@ -1089,7 +1089,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         log_path = datapath / "+logs"
         await aiofiles.os.makedirs(log_path, exist_ok=True)
         log_handler = LogHandler(log_path)
-        logging.getLogger().addHandler(log_handler)
+        logger = logging.getLogger(__name__)
+        logger.setLevel("DEBUG")
+        logger.addHandler(log_handler)
         logger.info("Started up")
 
         # ■■■■■ Initialize functions ■■■■■
@@ -1168,7 +1170,6 @@ def bring_to_life():
     # ■■■■■ Global variables ■■■■■
 
     global window
-    global logger
 
     # ■■■■■ App ■■■■■
 
@@ -1201,11 +1202,6 @@ def bring_to_life():
     dark_palette.setColor(color_role.HighlightedText, QtGui.QColor(0, 0, 0))
     app.setStyle("Fusion")
     app.setPalette(dark_palette)
-
-    # ■■■■■ Create logger ■■■■■
-
-    logger = logging.getLogger("solie")
-    logger.setLevel("DEBUG")
 
     # ■■■■■ Show and run ■■■■■
 
