@@ -7,7 +7,7 @@ import solie
 from solie.common import go, outsource
 from solie.widget.horizontal_divider import HorizontalDivider
 
-from .base_overlay import BaseOverlay
+from .base import BaseOverlay
 
 
 class DatapathInput(BaseOverlay):

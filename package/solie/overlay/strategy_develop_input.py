@@ -9,7 +9,7 @@ from solie.utility.structs import Strategy
 from solie.widget.script_editor import ScriptEditor
 from solie.widget.vertical_divider import VerticalDivider
 
-from .base_overlay import BaseOverlay
+from .base import BaseOverlay
 
 
 class StrategyDevelopInput(BaseOverlay):

@@ -13,8 +13,6 @@ import pyqtgraph
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from solie.common import PACKAGE_PATH, PACKAGE_VERSION, outsource
-from solie.overlay.base_overlay import BaseOverlay
 from solie.overlay.coin_selection import CoinSelection
 from solie.overlay.datapath_input import DatapathInput
 from solie.overlay.token_selection import TokenSelection
@@ -47,6 +45,9 @@ from solie.worker.manager import Manager
 from solie.worker.simulator import Simulator
 from solie.worker.strategist import Strategiest
 from solie.worker.transactor import Transactor
+
+from .common import PACKAGE_PATH, PACKAGE_VERSION, outsource
+from .overlay import BaseOverlay
 
 W = TypeVar("W", bound=BaseOverlay)
 

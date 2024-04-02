@@ -1,9 +1,10 @@
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from solie.common import outsource
-from solie.overlay.base_overlay import BaseOverlay
 from solie.widget.popup_box import PopupBox
 from solie.widget.transparent_scroll_area import TransparentScrollArea
+
+from . import overlay
 
 # https://stackoverflow.com/questions/67029993/pyqt-creating-a-popup-in-the-window
 
@@ -24,7 +25,7 @@ class OverlayPanel(QtWidgets.QWidget):
         self,
         parent: QtWidgets.QMainWindow,
         title: str,
-        widget: BaseOverlay,
+        widget: overlay.BaseOverlay,
         close_button: bool,
     ):
         # ■■■■■ the basic ■■■■■

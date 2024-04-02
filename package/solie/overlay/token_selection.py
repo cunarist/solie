@@ -7,7 +7,7 @@ from solie.common import PACKAGE_PATH, outsource
 from solie.utility.api_requester import ApiRequester
 from solie.widget.horizontal_divider import HorizontalDivider
 
-from .base_overlay import BaseOverlay
+from .base import BaseOverlay
 
 
 class TokenSelection(BaseOverlay):

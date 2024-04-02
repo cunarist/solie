@@ -2,7 +2,7 @@ from PySide6 import QtWidgets
 
 from solie.common import outsource
 
-from .base_overlay import BaseOverlay
+from .base import BaseOverlay
 
 
 class DownloadFillOption(BaseOverlay):
