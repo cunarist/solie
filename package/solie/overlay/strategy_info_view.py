@@ -1,6 +1,6 @@
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from solie.definition.structs import Strategy
+from solie.utility.structs import Strategy
 from solie.widget.horizontal_divider import HorizontalDivider
 
 from .base_overlay import BaseOverlay

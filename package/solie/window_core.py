@@ -13,22 +13,22 @@ import pyqtgraph
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from solie.definition.api_requester import ApiRequester
-from solie.definition.log_handler import LogHandler
-from solie.definition.percent_axis_item import PercentAxisItem
-from solie.definition.time_axis_item import TimeAxisItem
 from solie.info import PACKAGE_PATH, PACKAGE_VERSION
 from solie.overlay.base_overlay import BaseOverlay
 from solie.overlay.coin_selection import CoinSelection
 from solie.overlay.datapath_input import DatapathInput
 from solie.overlay.token_selection import TokenSelection
+from solie.utility.api_requester import ApiRequester
 from solie.utility.check_internet import (
     internet_connected,
     is_internet_checked,
     monitor_internet,
 )
 from solie.utility.examine_data_files import examine_data_files
+from solie.utility.log_handler import LogHandler
 from solie.utility.outsource import outsource
+from solie.utility.percent_axis_item import PercentAxisItem
+from solie.utility.time_axis_item import TimeAxisItem
 from solie.utility.user_settings import (
     DataSettings,
     read_data_settings,

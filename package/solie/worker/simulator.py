@@ -11,14 +11,13 @@ import pandas as pd
 from scipy.signal import find_peaks
 
 import solie
-from solie.definition.rw_lock import RWLock
-from solie.definition.structs import SimulationSettings, SimulationSummary
 from solie.parallel import communicator, go
 from solie.utility.decide import (
     CalculationInput,
     simulate_chunk,
 )
 from solie.utility.make_indicators import make_indicators
+from solie.utility.rw_lock import RWLock
 from solie.utility.simply_format import format_numeric
 from solie.utility.sort_pandas import sort_data_frame, sort_series
 from solie.utility.standardize import (
@@ -27,6 +26,7 @@ from solie.utility.standardize import (
     standardize_unrealized_changes,
 )
 from solie.utility.stop_flag import find_stop_flag, make_stop_flag
+from solie.utility.structs import SimulationSettings, SimulationSummary
 
 
 class Simulator:

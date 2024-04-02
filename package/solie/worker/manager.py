@@ -12,8 +12,8 @@ import aiofiles.os
 import time_machine
 
 import solie
-from solie.definition.api_requester import ApiRequester
 from solie.parallel import PROCESS_COUNT, go
+from solie.utility.api_requester import ApiRequester
 from solie.utility.check_internet import internet_connected
 from solie.utility.convert import value_to_indexes
 from solie.utility.remember_task_durations import get_task_duration

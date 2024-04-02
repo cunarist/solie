@@ -13,18 +13,17 @@ import numpy as np
 import pandas as pd
 
 import solie
-from solie.definition.api_requester import ApiRequester, ApiRequestError
-from solie.definition.api_streamer import ApiStreamer
-from solie.definition.rw_lock import RWLock
-from solie.definition.structs import TransactionSettings
 from solie.overlay.long_text_view import LongTextView
 from solie.parallel import go
+from solie.utility.api_requester import ApiRequester, ApiRequestError
+from solie.utility.api_streamer import ApiStreamer
 from solie.utility.ball import ball_ceil
 from solie.utility.check_internet import add_connected_functions, internet_connected
 from solie.utility.convert import list_to_dict
 from solie.utility.decide import decide
 from solie.utility.make_indicators import make_indicators
 from solie.utility.remember_task_durations import add_task_duration
+from solie.utility.rw_lock import RWLock
 from solie.utility.sort_pandas import sort_data_frame, sort_series
 from solie.utility.standardize import (
     standardize_account_state,
@@ -32,6 +31,7 @@ from solie.utility.standardize import (
     standardize_unrealized_changes,
 )
 from solie.utility.stop_flag import find_stop_flag, make_stop_flag
+from solie.utility.structs import TransactionSettings
 
 logger = logging.getLogger(__name__)
 
