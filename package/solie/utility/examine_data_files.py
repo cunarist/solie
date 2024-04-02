@@ -5,16 +5,10 @@ import aiofiles
 import aiofiles.os
 import pandas as pd
 
-import solie
 from solie.parallel import go
 
 
-async def examine_data_files():
-    datapath_str = solie.window.datapath
-    if datapath_str is None:
-        return
-    datapath = Path(datapath_str)
-
+async def examine_data_files(datapath: Path):
     # 5.0: Data settings
     try:
         filepath = datapath / "basics.json"

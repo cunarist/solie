@@ -258,7 +258,7 @@ class Window(QtWidgets.QMainWindow, MainWindow):
 
         # ■■■■■ Check the status of data files ■■■■■
 
-        await examine_data_files()
+        await examine_data_files(datapath)
 
         # ■■■■■ Get information about target symbols ■■■■■
 

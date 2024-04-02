@@ -60,7 +60,9 @@ class Transactor:
         self.viewing_symbol = solie.window.data_settings.target_symbols[0]
         self.should_draw_frequently = True
 
-        self.account_state = standardize_account_state()
+        self.account_state = standardize_account_state(
+            solie.window.data_settings.target_symbols
+        )
 
         self.scribbles = {}
         self.transaction_settings: TransactionSettings

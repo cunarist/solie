@@ -8,7 +8,3 @@ class ApiRequestError(Exception):
             error_message += "\n"
             error_message += json.dumps(payload, indent=2)
         super().__init__(error_message)
-
-
-class SimulationError(Exception):
-    pass

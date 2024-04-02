@@ -4,11 +4,8 @@ from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
 
-import solie
 
-
-def standardize_candle_data():
-    target_symbols = solie.window.data_settings.target_symbols
+def standardize_candle_data(target_symbols: list[str]):
     return pd.DataFrame(
         columns=pd.MultiIndex.from_product(
             [
@@ -21,8 +18,7 @@ def standardize_candle_data():
     )
 
 
-def standardize_account_state():
-    target_symbols = solie.window.data_settings.target_symbols
+def standardize_account_state(target_symbols: list[str]):
     return {
         "observed_until": datetime.fromtimestamp(0, tz=timezone.utc),
         "wallet_balance": 1,

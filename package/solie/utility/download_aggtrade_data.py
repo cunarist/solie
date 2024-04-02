@@ -1,10 +1,18 @@
 import io
+from dataclasses import dataclass
 from urllib.request import urlopen
 
 import numpy as np
 import pandas as pd
 
-from solie.definition.structs import DownloadPreset
+
+@dataclass
+class DownloadPreset:
+    symbol: str
+    unit_size: str  # "daily" or "monthly"
+    year: int
+    month: int
+    day: int = 0  # Valid only when `unit_size` is "daily"
 
 
 def download_aggtrade_data(download_target: DownloadPreset) -> pd.DataFrame | None:

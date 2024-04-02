@@ -14,12 +14,12 @@ import solie
 from solie.definition.rw_lock import RWLock
 from solie.definition.structs import SimulationSettings, SimulationSummary
 from solie.parallel import communicator, go
-from solie.utility.make_indicators import make_indicators
-from solie.utility.simply_format import format_numeric
-from solie.utility.simulate_chunk import (
+from solie.utility.decide import (
     CalculationInput,
     simulate_chunk,
 )
+from solie.utility.make_indicators import make_indicators
+from solie.utility.simply_format import format_numeric
 from solie.utility.sort_pandas import sort_data_frame, sort_series
 from solie.utility.standardize import (
     standardize_account_state,
@@ -47,12 +47,16 @@ class Simulator:
         )
         self.simulation_summary: SimulationSummary | None = None
 
-        self.raw_account_state = standardize_account_state()
+        self.raw_account_state = standardize_account_state(
+            solie.window.data_settings.target_symbols
+        )
         self.raw_scribbles = {}
         self.raw_asset_record = RWLock(standardize_asset_record())
         self.raw_unrealized_changes = RWLock(standardize_unrealized_changes())
 
-        self.account_state = standardize_account_state()
+        self.account_state = standardize_account_state(
+            solie.window.data_settings.target_symbols
+        )
         self.scribbles = {}
         self.asset_record = RWLock(standardize_asset_record())
         self.unrealized_changes = RWLock(standardize_unrealized_changes())
@@ -638,7 +642,9 @@ class Simulator:
         await self.set_minimum_view_range()
 
     async def erase(self, *args, **kwargs):
-        self.raw_account_state = standardize_account_state()
+        self.raw_account_state = standardize_account_state(
+            solie.window.data_settings.target_symbols
+        )
         self.raw_scribbles = {}
         self.raw_asset_record = RWLock(standardize_asset_record())
         self.raw_unrealized_changes = RWLock(standardize_unrealized_changes())
@@ -867,7 +873,9 @@ class Simulator:
         blank_asset_record = standardize_asset_record()
         blank_unrealized_changes = standardize_unrealized_changes()
         blank_scribbles = {}
-        blank_account_state = standardize_account_state()
+        blank_account_state = standardize_account_state(
+            solie.window.data_settings.target_symbols
+        )
         blank_virtual_state = {
             "available_balance": 1,
             "locations": {},

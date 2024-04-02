@@ -15,13 +15,12 @@ import solie
 from solie.definition.api_requester import ApiRequester
 from solie.definition.api_streamer import ApiStreamer
 from solie.definition.rw_lock import RWLock
-from solie.definition.structs import DownloadPreset
 from solie.overlay.donation_guide import DonationGuide
 from solie.overlay.download_fill_option import DownloadFillOption
 from solie.parallel import go
 from solie.utility.check_internet import add_disconnected_functions, internet_connected
 from solie.utility.combine_candle_datas import combine_candle_data
-from solie.utility.download_aggtrade_data import download_aggtrade_data
+from solie.utility.download_aggtrade_data import DownloadPreset, download_aggtrade_data
 from solie.utility.fill_holes_with_aggtrades import fill_holes_with_aggtrades
 from solie.utility.remember_task_durations import add_task_duration
 from solie.utility.sort_pandas import sort_data_frame
@@ -53,7 +52,9 @@ class Collector:
         # Candle data.
         # It's expected to have only the data of current year,
         # while data of previous years are stored in the disk.
-        self.candle_data = RWLock(standardize_candle_data())
+        self.candle_data = RWLock(
+            standardize_candle_data(solie.window.data_settings.target_symbols)
+        )
 
         # Realtime data chunks
         field_names = itertools.product(
