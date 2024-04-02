@@ -51,6 +51,8 @@ from solie.worker.transactor import Transactor
 
 W = TypeVar("W", bound=BaseOverlay)
 
+logger = logging.getLogger(__name__)
+
 
 class Window(QtWidgets.QMainWindow, MainWindow):
     def __init__(self):
@@ -1090,7 +1092,8 @@ class Window(QtWidgets.QMainWindow, MainWindow):
         log_handler = LogHandler(log_path, log_callback)
         root_logger = logging.getLogger()
         root_logger.addHandler(log_handler)
-        root_logger.info("Started up")
+
+        logger.info("Started up")
 
         # ■■■■■ Initialize functions ■■■■■
 
