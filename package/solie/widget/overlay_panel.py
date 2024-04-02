@@ -1,7 +1,7 @@
 from PySide6 import QtCore, QtGui, QtWidgets
 
+from solie.common import outsource
 from solie.overlay.base_overlay import BaseOverlay
-from solie.utility.outsource import outsource
 from solie.widget.popup_box import PopupBox
 from solie.widget.transparent_scroll_area import TransparentScrollArea
 

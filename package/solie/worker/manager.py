@@ -12,7 +12,7 @@ import aiofiles.os
 import time_machine
 
 import solie
-from solie.parallel import PROCESS_COUNT, go
+from solie.common import PROCESS_COUNT, go
 from solie.utility.api_requester import ApiRequester
 from solie.utility.check_internet import internet_connected
 from solie.utility.convert import value_to_indexes

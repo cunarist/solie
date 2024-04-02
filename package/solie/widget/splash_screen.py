@@ -3,7 +3,7 @@ import asyncio
 import aiofiles
 from PySide6 import QtGui, QtWidgets
 
-from solie.info import PACKAGE_PATH, PACKAGE_VERSION
+from solie.common import PACKAGE_PATH, PACKAGE_VERSION
 from solie.widget.brand_label import BrandLabel
 
 

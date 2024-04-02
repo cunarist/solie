@@ -4,9 +4,7 @@ import aiofiles
 from PySide6 import QtCore, QtWidgets
 
 import solie
-from solie.info import PACKAGE_PATH
-from solie.parallel import go
-from solie.utility.outsource import outsource
+from solie.common import PACKAGE_PATH, go, outsource
 from solie.utility.structs import Strategy
 from solie.widget.script_editor import ScriptEditor
 from solie.widget.vertical_divider import VerticalDivider

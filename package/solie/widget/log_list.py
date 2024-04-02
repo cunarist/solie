@@ -1,8 +1,8 @@
 from PySide6 import QtCore, QtGui, QtWidgets
 
 import solie
+from solie.common import outsource
 from solie.overlay.long_text_view import LongTextView
-from solie.utility.outsource import outsource
 
 
 class LogList(QtWidgets.QListWidget):

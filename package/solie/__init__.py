@@ -4,8 +4,7 @@ import sys
 
 from PySide6 import QtGui, QtWidgets
 
-from solie.info import PACKAGE_PATH
-from solie.parallel import prepare_process_pool
+from solie.common import PACKAGE_PATH, prepare_process_pool
 from solie.window_core import Window
 
 logger = logging.getLogger(__name__)

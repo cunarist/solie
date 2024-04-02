@@ -4,8 +4,7 @@ import xdialog
 from PySide6 import QtCore, QtGui, QtWidgets
 
 import solie
-from solie.parallel import go
-from solie.utility.outsource import outsource
+from solie.common import go, outsource
 from solie.widget.horizontal_divider import HorizontalDivider
 
 from .base_overlay import BaseOverlay

@@ -12,9 +12,9 @@ import numpy as np
 import pandas as pd
 
 import solie
+from solie.common import go
 from solie.overlay.donation_guide import DonationGuide
 from solie.overlay.download_fill_option import DownloadFillOption
-from solie.parallel import go
 from solie.utility.api_requester import ApiRequester
 from solie.utility.api_streamer import ApiStreamer
 from solie.utility.check_internet import add_disconnected_functions, internet_connected

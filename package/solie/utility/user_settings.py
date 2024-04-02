@@ -5,7 +5,7 @@ import aiofiles
 import aiofiles.os
 from dataclasses_json import DataClassJsonMixin
 
-from solie.info import PACKAGE_PATH
+from solie.common import PACKAGE_PATH
 
 DATAPATH_FILE = PACKAGE_PATH / "datapath.txt"
 

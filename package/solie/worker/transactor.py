@@ -13,8 +13,8 @@ import numpy as np
 import pandas as pd
 
 import solie
+from solie.common import go
 from solie.overlay.long_text_view import LongTextView
-from solie.parallel import go
 from solie.utility.api_requester import ApiRequester, ApiRequestError
 from solie.utility.api_streamer import ApiStreamer
 from solie.utility.ball import ball_ceil

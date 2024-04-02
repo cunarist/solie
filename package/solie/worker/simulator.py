@@ -11,7 +11,7 @@ import pandas as pd
 from scipy.signal import find_peaks
 
 import solie
-from solie.parallel import communicator, go
+from solie.common import communicator, go
 from solie.utility.decide import (
     CalculationInput,
     simulate_chunk,

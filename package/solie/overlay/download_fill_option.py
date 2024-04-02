@@ -1,6 +1,6 @@
 from PySide6 import QtWidgets
 
-from solie.utility.outsource import outsource
+from solie.common import outsource
 
 from .base_overlay import BaseOverlay
 

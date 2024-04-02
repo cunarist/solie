@@ -5,7 +5,7 @@ import aiofiles
 import aiofiles.os
 import pandas as pd
 
-from solie.parallel import go
+from solie.common import go
 
 
 async def examine_data_files(datapath: Path):

@@ -3,9 +3,8 @@ import re
 from PySide6 import QtCore, QtGui, QtWidgets
 
 import solie
-from solie.info import PACKAGE_PATH
+from solie.common import PACKAGE_PATH, outsource
 from solie.utility.compare_versions import is_left_version_higher
-from solie.utility.outsource import outsource
 from solie.utility.structs import Strategy
 from solie.widget.horizontal_divider import HorizontalDivider
 
