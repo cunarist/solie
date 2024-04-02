@@ -8,6 +8,8 @@ from solie.info import PACKAGE_PATH
 from solie.parallel import prepare_process_pool
 from solie.window_core import Window
 
+logger = logging.getLogger(__name__)
+
 
 def bring_to_life():
     # Make the app.
@@ -40,13 +42,12 @@ def bring_to_life():
     app.setStyle("Fusion")
     app.setPalette(dark_palette)
 
-    # Make the logger.
-    root_logger = logging.getLogger(__name__)
-    root_logger.setLevel("DEBUG")
+    # Make the logger work.
+    logger.setLevel("DEBUG")
 
     # Show the window.
     global window
-    window = Window(root_logger)
+    window = Window()
     window.setPalette(dark_palette)
 
     # Prepare tasks.

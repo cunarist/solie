@@ -53,12 +53,10 @@ W = TypeVar("W", bound=BaseOverlay)
 
 
 class Window(QtWidgets.QMainWindow, MainWindow):
-    def __init__(self, root_logger: logging.Logger):
+    def __init__(self):
         super().__init__()
 
         self.app_close_event = asyncio.Event()
-
-        self.root_logger = root_logger
 
         self.datapath: Path
         self.data_settings: DataSettings
@@ -1090,8 +1088,9 @@ class Window(QtWidgets.QMainWindow, MainWindow):
         log_path = datapath / "+logs"
         await aiofiles.os.makedirs(log_path, exist_ok=True)
         log_handler = LogHandler(log_path, log_callback)
-        self.root_logger.addHandler(log_handler)
-        self.root_logger.info("Started up")
+        root_logger = logging.getLogger()
+        root_logger.addHandler(log_handler)
+        root_logger.info("Started up")
 
         # ■■■■■ Initialize functions ■■■■■
 
