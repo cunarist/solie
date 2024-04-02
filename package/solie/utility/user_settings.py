@@ -5,9 +5,9 @@ import aiofiles
 import aiofiles.os
 from dataclasses_json import DataClassJsonMixin
 
-from solie.common import PACKAGE_PATH
+from . import common
 
-DATAPATH_FILE = PACKAGE_PATH / "datapath.txt"
+DATAPATH_FILE = common.PACKAGE_PATH / "datapath.txt"
 
 
 async def read_datapath() -> Path | None:

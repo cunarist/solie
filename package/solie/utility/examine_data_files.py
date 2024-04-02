@@ -5,7 +5,7 @@ import aiofiles
 import aiofiles.os
 import pandas as pd
 
-from solie.common import go
+from . import common
 
 
 async def examine_data_files(datapath: Path):
@@ -26,10 +26,10 @@ async def examine_data_files(datapath: Path):
     # 5.0: Symbol column was added to auto order record
     try:
         filepath = datapath / "transactor" / "auto_order_record.pickle"
-        auto_order_record: pd.DataFrame = await go(pd.read_pickle, filepath)
+        auto_order_record: pd.DataFrame = await common.go(pd.read_pickle, filepath)
         if "Symbol" not in auto_order_record.columns:
             auto_order_record["Symbol"] = ""
-            await go(auto_order_record.to_pickle, filepath)
+            await common.go(auto_order_record.to_pickle, filepath)
     except Exception:
         pass
 
@@ -67,9 +67,9 @@ async def examine_data_files(datapath: Path):
     # 6.3: Auto_trade and manual_trade
     try:
         filepath = datapath / "transactor" / "asset_record.pickle"
-        asset_record: pd.DataFrame = await go(pd.read_pickle, filepath)
+        asset_record: pd.DataFrame = await common.go(pd.read_pickle, filepath)
         asset_record["Cause"] = asset_record["Cause"].replace("trade", "auto_trade")
-        await go(asset_record.to_pickle, filepath)
+        await common.go(asset_record.to_pickle, filepath)
     except Exception:
         pass
 
