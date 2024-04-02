@@ -1,13 +1,7 @@
 import asyncio
+from asyncio import AbstractEventLoop, Future, Task
 from collections import deque
 from typing import Any, Generic, TypeVar
-
-Loop = asyncio.AbstractEventLoop
-OptLoop = Loop | None
-
-# silence LGTM service alerts
-Future = asyncio.Future
-Task = asyncio.Task
 
 
 # The internal lock object managing the RWLock state.
@@ -15,9 +9,9 @@ class _RWLockCore:
     _RL = 1
     _WL = 2
 
-    def __init__(self, fast: bool, loop: Loop):
+    def __init__(self, fast: bool, loop: AbstractEventLoop):
         self._do_yield = not fast
-        self._loop: Loop = loop
+        self._loop = loop
         self._read_waiters: deque[Future[None]] = deque()
         self._write_waiters: deque[Future[None]] = deque()
         self._r_state: int = 0
@@ -240,7 +234,7 @@ class RWLock(Generic[T]):
     def __init__(self, cell_data: T, fast: bool = True):
         loop = asyncio.get_running_loop()
         self._wrapper = Cell(cell_data)
-        self._loop: Loop = loop
+        self._loop = loop
         core = self.core(fast, self._loop)
         self.read_lock = ReadLock(core, self._wrapper)
         self.write_lock = WriteLock(core, self._wrapper)
