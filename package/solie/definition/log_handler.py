@@ -3,20 +3,20 @@ import logging
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Callable
 
 import aiofiles
 import aiofiles.os
-
-import solie
 
 
 class LogHandler(logging.Handler):
     file_lock = asyncio.Lock()
 
-    def __init__(self, log_path: Path):
+    def __init__(self, log_path: Path, callback: Callable[[str, str], None]):
         super().__init__()
 
         self.log_path = log_path
+        self.callback = callback
 
         log_format = "%(asctime)s.%(msecs)03d %(levelname)s"
         date_format = "%Y-%m-%d %H:%M:%S"
@@ -57,7 +57,7 @@ class LogHandler(logging.Handler):
 
     async def add_log_output(self, summarization: str, log_content: str):
         # add to log list
-        solie.window.listWidget.add_item(summarization, log_content)
+        self.callback(summarization, log_content)
 
         # save to file
         filepath = self.log_path / self.filename

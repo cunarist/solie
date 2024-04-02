@@ -2,8 +2,6 @@ import math
 
 from pyqtgraph import AxisItem
 
-from solie.utility.simply_format import format_fixed_float
-
 
 class PercentAxisItem(AxisItem):
     def __init__(self, *args, **kwargs):
@@ -41,9 +39,33 @@ class PercentAxisItem(AxisItem):
             for tick_value in tick_values:
                 if tick_value >= next_condition:
                     next_condition = tick_value + distance
-                    string = format_fixed_float(tick_value, 6)
+                    string = self.format_fixed_float(tick_value, 6)
                     strings.append(string)
                 else:
                     strings.append("")
 
         return strings
+
+    def format_fixed_float(
+        self, number: int | float, width=4, positive_sign=False
+    ) -> str:
+        if width < 4:
+            width = 4
+
+        if number < 0 or (positive_sign and number >= 0):
+            # when sign should be included
+            absolute_limit = 10 ** (width - 1)
+        else:
+            absolute_limit = 10**width
+
+        if abs(number) >= absolute_limit:
+            number = absolute_limit - 1 if number > 0 else -absolute_limit + 1
+
+        string = f"{number:12.12f}"
+
+        if positive_sign and number >= 0:
+            string = "+" + string
+
+        string = string[:width]
+
+        return string

@@ -1,11 +1,19 @@
 import hashlib
 import hmac
+import json
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 
 import aiohttp
 
-from solie.definition.errors import ApiRequestError
+
+class ApiRequestError(Exception):
+    def __init__(self, info_text: str, payload: dict | None):
+        error_message = info_text
+        if payload:
+            error_message += "\n"
+            error_message += json.dumps(payload, indent=2)
+        super().__init__(error_message)
 
 
 class ApiRequester:

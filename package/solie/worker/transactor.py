@@ -13,9 +13,8 @@ import numpy as np
 import pandas as pd
 
 import solie
-from solie.definition.api_requester import ApiRequester
+from solie.definition.api_requester import ApiRequester, ApiRequestError
 from solie.definition.api_streamer import ApiStreamer
-from solie.definition.errors import ApiRequestError
 from solie.definition.rw_lock import RWLock
 from solie.definition.structs import TransactionSettings
 from solie.overlay.long_text_view import LongTextView

@@ -17,7 +17,6 @@ from solie.parallel import PROCESS_COUNT, go
 from solie.utility.check_internet import internet_connected
 from solie.utility.convert import value_to_indexes
 from solie.utility.remember_task_durations import get_task_duration
-from solie.utility.simply_format import format_fixed_float
 from solie.utility.user_settings import save_datapath
 
 WINDOW_LOCK_OPTIONS = (
@@ -168,14 +167,14 @@ class Manager:
                     text = data_name
                     text += "\n"
                     data_value = sum(deque_data) / len(deque_data)
-                    text += f"Mean {format_fixed_float(data_value,6)}s "
+                    text += f"Mean {data_value:.6f}s "
                     data_value = statistics.median(deque_data)
-                    text += f"Median {format_fixed_float(data_value,6)}s "
+                    text += f"Median {data_value:.6f}s "
                     text += "\n"
                     data_value = min(deque_data)
-                    text += f"Minimum {format_fixed_float(data_value,6)}s "
+                    text += f"Minimum {data_value:.6f}s "
                     data_value = max(deque_data)
-                    text += f"Maximum {format_fixed_float(data_value,6)}s "
+                    text += f"Maximum {data_value:.6f}s "
                     texts.append(text)
             text = "\n\n".join(texts)
             solie.window.label_33.setText(text)

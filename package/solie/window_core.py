@@ -1084,9 +1084,12 @@ class Window(QtWidgets.QMainWindow, MainWindow):
 
         # ■■■■■ Prepare logging ■■■■■
 
+        def log_callback(summarization: str, log_content: str):
+            self.listWidget.add_item(summarization, log_content)
+
         log_path = datapath / "+logs"
         await aiofiles.os.makedirs(log_path, exist_ok=True)
-        log_handler = LogHandler(log_path)
+        log_handler = LogHandler(log_path, log_callback)
         self.root_logger.addHandler(log_handler)
         self.root_logger.info("Started up")
 
