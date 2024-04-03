@@ -909,21 +909,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.plot_widget_5.setXLink(self.plot_widget_3)
         self.plot_widget_7.setXLink(self.plot_widget_5)
 
-        # ■■■■■ Initialize functions ■■■■■
-
-        self.initialize_functions.append(self.collector.load)
-        self.initialize_functions.append(self.transactor.load)
-        self.initialize_functions.append(self.simulator.load)
-        self.initialize_functions.append(self.strategist.load)
-        self.initialize_functions.append(self.manager.load)
-
-        # ■■■■■ Finalize functions
-
-        self.finalize_functions.append(self.transactor.save_large_data)
-        self.finalize_functions.append(self.transactor.save_scribbles)
-        self.finalize_functions.append(self.strategist.save_strategies)
-        self.finalize_functions.append(self.collector.save_candle_data)
-
         # ■■■■■ Connect events to functions ■■■■■
 
         # Special widgets
@@ -1078,19 +1063,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.scheduler.start()
 
         # ■■■■■ Start basic functions ■■■■■
-
-        asyncio.create_task(self.collector.get_exchange_information())
-        asyncio.create_task(self.strategist.display_strategies())
-        asyncio.create_task(self.transactor.display_strategy_index())
-        asyncio.create_task(self.transactor.watch_binance())
-        asyncio.create_task(self.transactor.update_user_data_stream())
-        asyncio.create_task(self.transactor.display_lines())
-        asyncio.create_task(self.transactor.display_day_range())
-        asyncio.create_task(self.simulator.display_lines())
-        asyncio.create_task(self.simulator.display_year_range())
-        asyncio.create_task(self.simulator.display_available_years())
-        asyncio.create_task(self.manager.check_binance_limits())
-        asyncio.create_task(self.manager.display_internal_status())
 
         # ■■■■■ Wait until the contents are filled ■■■■■
 

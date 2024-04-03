@@ -43,16 +43,16 @@ def bring_to_life():
     app.setPalette(dark_palette)
 
     # Prepare the window.
-    app_window = Window(app_close_event)
-    app_window.setPalette(dark_palette)
-    AskPopup.install_window(app_window)
-    OverlayPanel.install_window(app_window)
+    window = Window(app_close_event)
+    window.setPalette(dark_palette)
+    AskPopup.install_window(window)
+    OverlayPanel.install_window(window)
 
     # Prepare the process pool
     prepare_process_pool()
 
-    # Make the window do the job
-    asyncio.run(live(app_window))
+    # Run the async event loop
+    asyncio.run(live(window))
 
     # Make sure nothing happens after Solie.
     sys.exit()
@@ -74,5 +74,23 @@ async def live(window: Window):
     await simulator.load()
     await strategist.load()
     await manager.load()
+
+    window.finalize_functions.append(transactor.save_large_data)
+    window.finalize_functions.append(transactor.save_scribbles)
+    window.finalize_functions.append(strategist.save_strategies)
+    window.finalize_functions.append(collector.save_candle_data)
+
+    asyncio.create_task(collector.get_exchange_information())
+    asyncio.create_task(strategist.display_strategies())
+    asyncio.create_task(transactor.display_strategy_index())
+    asyncio.create_task(transactor.watch_binance())
+    asyncio.create_task(transactor.update_user_data_stream())
+    asyncio.create_task(transactor.display_lines())
+    asyncio.create_task(transactor.display_day_range())
+    asyncio.create_task(simulator.display_lines())
+    asyncio.create_task(simulator.display_year_range())
+    asyncio.create_task(simulator.display_available_years())
+    asyncio.create_task(manager.check_binance_limits())
+    asyncio.create_task(manager.display_internal_status())
 
     await app_close_event.wait()
