@@ -35,6 +35,7 @@ from solie.utility import (
     standardize_asset_record,
     standardize_unrealized_changes,
 )
+from solie.widget import ask, overlay
 from solie.window import Window
 
 logger = logging.getLogger(__name__)
@@ -1382,7 +1383,7 @@ class Transactor:
         lowest_max_leverage = min(target_max_leverages.values())
 
         if lowest_max_leverage < desired_leverage:
-            answer = await self.window.ask(
+            answer = await ask(
                 "Leverage on some symbols cannot be set as desired",
                 "Binance has its own leverage limit per market. For some symbols,"
                 " leverage will be set as high as it can be, but not as same as the"
@@ -1396,7 +1397,7 @@ class Transactor:
                 for symbol, max_leverage in target_max_leverages.items():
                     texts.append(f"{symbol} {max_leverage}")
                 text = "\n".join(texts)
-                await self.window.ask(
+                await ask(
                     "These are highest available leverages",
                     text,
                     ["Okay"],
@@ -2213,7 +2214,7 @@ class Transactor:
         text += "\n\n"
         text += json.dumps(self.account_state, indent=2, default=str)
 
-        await self.window.overlay(
+        await overlay(
             "This is the raw account state object",
             LongTextView(text),
         )

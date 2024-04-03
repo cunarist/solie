@@ -8,6 +8,7 @@ from PySide6 import QtGui, QtWidgets
 from solie.common import PACKAGE_PATH, outsource
 from solie.overlay import StrategyBasicInput, StrategyDevelopInput
 from solie.utility import Strategies, Strategy, create_strategy_code_name
+from solie.widget import ask, overlay
 from solie.window import Window
 
 
@@ -119,7 +120,7 @@ class Strategiest:
 
             async def job_bs(strategy=strategy):
                 await self.remember_strategy_selections()
-                await self.window.overlay(
+                await overlay(
                     "Develop your strategy",
                     StrategyDevelopInput(strategy),
                 )
@@ -133,7 +134,7 @@ class Strategiest:
 
             async def job_eb(strategy=strategy):
                 await self.remember_strategy_selections()
-                await self.window.overlay(
+                await overlay(
                     "Edit your strategy's basic information",
                     StrategyBasicInput(strategy),
                 )
@@ -145,14 +146,14 @@ class Strategiest:
             card_layout.addWidget(edit_button)
             outsource(edit_button.clicked, job_eb)
 
-            action_menu = QtWidgets.QMenu(solie.window)
+            action_menu = QtWidgets.QMenu(self.window)
             action_button = QtWidgets.QPushButton()
             action_button.setText("☰")
             action_button.setMenu(action_menu)
             card_layout.addWidget(action_button)
 
             async def job_rs(strategy=strategy):
-                answer = await self.window.ask(
+                answer = await ask(
                     "Remove this strategy?",
                     "Once you remove this, it cannot be recovered.",
                     ["Remove"],

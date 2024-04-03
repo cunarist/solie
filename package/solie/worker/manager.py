@@ -19,6 +19,7 @@ from solie.utility import (
     save_datapath,
     value_to_indexes,
 )
+from solie.widget import ask
 from solie.window import Window
 
 WINDOW_LOCK_OPTIONS = (
@@ -280,7 +281,7 @@ class Manager:
             self.binance_limits[limit_name] = limit_value
 
     async def reset_datapath(self, *args, **kwargs):
-        answer = await self.window.ask(
+        answer = await ask(
             "Are you sure you want to change the data folder?",
             "Solie will shut down shortly. You will get to choose the new data folder"
             " when you start Solie again. Previous data folder does not get deleted.",

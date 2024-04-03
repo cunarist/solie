@@ -27,6 +27,7 @@ from solie.utility import (
     standardize_asset_record,
     standardize_unrealized_changes,
 )
+from solie.widget import ask
 from solie.window import Window
 
 
@@ -1293,7 +1294,7 @@ class Simulator:
             does_file_exist = True
 
         if not does_file_exist:
-            await self.window.ask(
+            await ask(
                 "No calculation data on this combination",
                 f"You should calculate first on year {year} with strategy code name"
                 f" {strategy_code_name} version {strategy_version}.",
@@ -1301,7 +1302,7 @@ class Simulator:
             )
             return
         else:
-            answer = await self.window.ask(
+            answer = await ask(
                 "Are you sure you want to delete calculation data on this combination?",
                 "If you do, you should perform the calculation again to see the"
                 f" prediction on year {year} with strategy code name"
@@ -1360,7 +1361,7 @@ class Simulator:
             )
             await self.present()
         except FileNotFoundError:
-            await self.window.ask(
+            await ask(
                 "No calculation data on this combination",
                 f"You should calculate first on year {year} with strategy code name"
                 f" {strategy_code_name} version {strategy_version}.",
@@ -1383,7 +1384,7 @@ class Simulator:
             peak_sr = cell.data.iloc[peak_indexes]
         peak_sr = peak_sr.sort_values().iloc[:12]
         if len(peak_sr) < 12:
-            await self.window.ask(
+            await ask(
                 "Calculation data is either missing or too short",
                 "Cannot get the list of meaningful spots with lowest unrealized"
                 " profit.",
@@ -1394,7 +1395,7 @@ class Simulator:
                 f"{index} {peak_value:+.2f}%"
                 for index, peak_value in peak_sr.iteritems()
             ]
-            await self.window.ask(
+            await ask(
                 "Spots with lowest unrealized profit",
                 "\n".join(text_lines),
                 ["Okay"],

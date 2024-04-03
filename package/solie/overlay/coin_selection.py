@@ -4,7 +4,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 from solie.common import PACKAGE_PATH, outsource
 from solie.utility import ApiRequester
-from solie.widget import BaseOverlay, HorizontalDivider
+from solie.widget import BaseOverlay, HorizontalDivider, ask
 
 
 class CoinSelection(BaseOverlay):
@@ -177,13 +177,13 @@ class CoinSelection(BaseOverlay):
                 if is_checked:
                     selected_symbols.append(symbol)
             if not 1 <= len(selected_symbols) <= 12:
-                await window.ask(
+                await ask(
                     "Select a proper number of coins",
                     "You can select a minimum of 1 and a maximum of 12.",
                     ["Okay"],
                 )
             else:
-                answer = await window.ask(
+                answer = await ask(
                     "Okay to proceed?",
                     "You cannot change your selections unless you make a new data"
                     " folder.",

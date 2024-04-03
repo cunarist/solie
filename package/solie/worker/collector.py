@@ -29,6 +29,7 @@ from solie.utility import (
     sort_data_frame,
     standardize_candle_data,
 )
+from solie.widget import overlay
 from solie.window import Window
 
 logger = logging.getLogger(__name__)
@@ -432,7 +433,7 @@ class Collector:
     async def download_fill_candle_data(self, *args, **kwargs):
         # ■■■■■ ask filling type ■■■■■
 
-        overlay_widget = await self.window.overlay(
+        overlay_widget = await overlay(
             "Choose the range to fill",
             DownloadFillOption(),
         )
@@ -745,7 +746,7 @@ class Collector:
         make_stop_flag("download_fill_candle_data")
 
     async def guide_donation(self, *args, **kwargs):
-        await self.window.overlay(
+        await overlay(
             "Support Solie",
             DonationGuide(),
         )
