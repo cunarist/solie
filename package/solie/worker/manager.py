@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 import aiofiles
 import aiofiles.os
 import time_machine
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from solie.common import PROCESS_COUNT, go, outsource
 from solie.utility import (
@@ -32,10 +33,11 @@ WINDOW_LOCK_OPTIONS = (
 
 
 class Manager:
-    def __init__(self, window: Window):
+    def __init__(self, window: Window, scheduler: AsyncIOScheduler):
         # ■■■■■ for data management ■■■■■
 
         self.window = window
+        self.scheduler = scheduler
         self.workerpath = self.window.datapath / "manager"
 
         # ■■■■■ internal memory ■■■■■
@@ -60,27 +62,27 @@ class Manager:
 
         # ■■■■■ repetitive schedules ■■■■■
 
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.lock_board,
             trigger="cron",
             second="*",
         )
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.display_system_status,
             trigger="cron",
             second="*",
         )
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.check_online_status,
             trigger="cron",
             second="*",
         )
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.correct_time,
             trigger="cron",
             minute="*",
         )
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.check_binance_limits,
             trigger="cron",
             hour="*",

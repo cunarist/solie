@@ -11,6 +11,7 @@ import aiofiles
 import aiofiles.os
 import numpy as np
 import pandas as pd
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtWidgets
 
 from solie.common import go, outsource
@@ -43,10 +44,11 @@ logger = logging.getLogger(__name__)
 
 
 class Transactor:
-    def __init__(self, window: Window):
+    def __init__(self, window: Window, scheduler: AsyncIOScheduler):
         # ■■■■■ for data management ■■■■■
 
         self.window = window
+        self.scheduler = scheduler
         self.workerpath = self.window.datapath / "transactor"
 
         # ■■■■■ internal memory ■■■■■
@@ -86,53 +88,53 @@ class Transactor:
 
         # ■■■■■ repetitive schedules ■■■■■
 
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.display_status_information,
             trigger="cron",
             second="*",
         )
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.display_range_information,
             trigger="cron",
             second="*",
         )
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.cancel_conflicting_orders,
             trigger="cron",
             second="*",
         )
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.display_lines,
             trigger="cron",
             second="*/10",
             kwargs={"periodic": True, "frequent": True},
         )
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.pan_view_range,
             trigger="cron",
             second="*/10",
         )
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.perform_transaction,
             trigger="cron",
             second="*/10",
         )
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.save_scribbles,
             trigger="cron",
             second="*/10",
         )
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.watch_binance,
             trigger="cron",
             second="*/10",
         )
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.organize_data,
             trigger="cron",
             minute="*",
         )
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.save_large_data,
             trigger="cron",
             hour="*",

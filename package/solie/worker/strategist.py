@@ -3,6 +3,7 @@ from dataclasses import replace
 
 import aiofiles
 import aiofiles.os
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtGui, QtWidgets
 
 from solie.common import PACKAGE_PATH, outsource
@@ -13,10 +14,11 @@ from solie.window import Window
 
 
 class Strategiest:
-    def __init__(self, window: Window):
+    def __init__(self, window: Window, scheduler: AsyncIOScheduler):
         # ■■■■■ for data management ■■■■■
 
         self.window = window
+        self.scheduler = scheduler
         self.workerpath = self.window.datapath / "strategist"
 
         # ■■■■■ internal memory ■■■■■

@@ -10,7 +10,6 @@ import aiofiles
 import aiofiles.os
 import pandas as pd
 import pyqtgraph
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from solie.common import PACKAGE_PATH, PACKAGE_VERSION
@@ -73,7 +72,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.initialize_functions: list[Callable[..., Coroutine]] = []
         self.finalize_functions: list[Callable[..., Coroutine]] = []
-        self.scheduler = AsyncIOScheduler(timezone="UTC")
 
         self.should_finalize = False
         self.should_confirm_closing = False

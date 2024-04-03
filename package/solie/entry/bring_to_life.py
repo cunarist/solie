@@ -2,6 +2,7 @@ import asyncio
 import logging
 import sys
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtGui, QtWidgets
 
 from solie.common import PACKAGE_PATH, prepare_process_pool
@@ -64,12 +65,13 @@ async def live(window: Window):
     asyncio.create_task(window.process_ui_events())
     await window.boot()
 
-    # Prepare workers
-    collector = Collector(window)
-    transactor = Transactor(window)
-    simulator = Simulator(window)
-    strategist = Strategiest(window)
-    manager = Manager(window)
+    scheduler = AsyncIOScheduler(timezone="UTC")
+
+    collector = Collector(window, scheduler)
+    transactor = Transactor(window, scheduler)
+    simulator = Simulator(window, scheduler)
+    strategist = Strategiest(window, scheduler)
+    manager = Manager(window, scheduler)
 
     await collector.load()
     await transactor.load()

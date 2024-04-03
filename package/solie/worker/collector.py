@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 import aiofiles.os
 import numpy as np
 import pandas as pd
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtWidgets
 
 from solie.common import go, outsource
@@ -37,10 +38,11 @@ logger = logging.getLogger(__name__)
 
 
 class Collector:
-    def __init__(self, window: Window):
+    def __init__(self, window: Window, scheduler: AsyncIOScheduler):
         # ■■■■■ for data management ■■■■■
 
         self.window = window
+        self.scheduler = scheduler
         self.workerpath = self.window.datapath / "collector"
 
         # ■■■■■ internal memory ■■■■■
@@ -87,32 +89,32 @@ class Collector:
 
         # ■■■■■ repetitive schedules ■■■■■
 
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.display_status_information,
             trigger="cron",
             second="*",
         )
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.fill_candle_data_holes,
             trigger="cron",
             second="*/10",
         )
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.add_candle_data,
             trigger="cron",
             second="*/10",
         )
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.organize_data,
             trigger="cron",
             minute="*",
         )
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.get_exchange_information,
             trigger="cron",
             minute="*",
         )
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.save_candle_data,
             trigger="cron",
             hour="*",

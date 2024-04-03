@@ -8,6 +8,7 @@ import aiofiles
 import aiofiles.os
 import numpy as np
 import pandas as pd
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtWidgets
 from scipy.signal import find_peaks
 
@@ -33,10 +34,11 @@ from solie.window import Window
 
 
 class Simulator:
-    def __init__(self, window: Window):
+    def __init__(self, window: Window, scheduler: AsyncIOScheduler):
         # ■■■■■ for data management ■■■■■
 
         self.window = window
+        self.scheduler = scheduler
         self.workerpath = self.window.datapath / "simulator"
 
         # ■■■■■ internal memory ■■■■■
@@ -67,12 +69,12 @@ class Simulator:
 
         # ■■■■■ repetitive schedules ■■■■■
 
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.display_available_years,
             trigger="cron",
             hour="*",
         )
-        self.window.scheduler.add_job(
+        self.scheduler.add_job(
             self.display_lines,
             trigger="cron",
             hour="*",
