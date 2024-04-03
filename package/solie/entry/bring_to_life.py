@@ -1,13 +1,10 @@
 import asyncio
-import logging
 import sys
 
 from PySide6 import QtGui, QtWidgets
 
 from solie.common import PACKAGE_PATH, prepare_process_pool
 from solie.window import Window
-
-logger = logging.getLogger(__name__)
 
 
 def bring_to_life():
@@ -40,9 +37,6 @@ def bring_to_life():
     dark_palette.setColor(color_role.HighlightedText, QtGui.QColor(0, 0, 0))
     app.setStyle("Fusion")
     app.setPalette(dark_palette)
-
-    # Make the logger work.
-    logger.setLevel("DEBUG")
 
     # Show the window.
     app_window = Window()

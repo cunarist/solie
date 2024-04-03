@@ -4,7 +4,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 from solie.common import PACKAGE_PATH, outsource
 from solie.utility import Strategy, is_left_version_higher
-from solie.widget import BaseOverlay, HorizontalDivider
+from solie.widget import BaseOverlay, HorizontalDivider, ask
 
 
 class StrategyBasicInput(BaseOverlay):
@@ -158,7 +158,7 @@ class StrategyBasicInput(BaseOverlay):
             if re.fullmatch(r"[A-Z]{6}", code_name):
                 strategy.code_name = code_name
             else:
-                await solie.window.ask(
+                await ask(
                     "Code name format is wrong.",
                     "You should make the code name with 6 capital letters.",
                     ["Okay"],
@@ -170,7 +170,7 @@ class StrategyBasicInput(BaseOverlay):
                 if not is_left_version_higher(strategy.version, version):
                     strategy.version = version
                 else:
-                    await solie.window.ask(
+                    await ask(
                         "Version is lower.",
                         "You can't lower the version of your strategy. It should only"
                         " go up higher.",
@@ -178,7 +178,7 @@ class StrategyBasicInput(BaseOverlay):
                     )
                     return
             else:
-                await solie.window.ask(
+                await ask(
                     "Version format is wrong.",
                     "You should write the version in two numeric fields, divided by a"
                     " single dot.",

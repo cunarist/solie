@@ -5,7 +5,7 @@ from PySide6 import QtCore, QtWidgets
 
 from solie.common import PACKAGE_PATH, go, outsource
 from solie.utility import Strategy
-from solie.widget import BaseOverlay, ScriptEditor, VerticalDivider
+from solie.widget import BaseOverlay, ScriptEditor, VerticalDivider, ask
 
 
 class StrategyDevelopInput(BaseOverlay):
@@ -85,7 +85,7 @@ class StrategyDevelopInput(BaseOverlay):
 
             decision_script_input.setPlainText(script)
 
-            await solie.window.ask(
+            await ask(
                 "Sample scripts applied",
                 "It is not yet saved. Modify the code as you want.",
                 ["Okay"],

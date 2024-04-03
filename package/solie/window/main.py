@@ -4,7 +4,7 @@ import math
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, Coroutine, TypeVar
+from typing import Callable, Coroutine
 
 import aiofiles
 import aiofiles.os
@@ -35,14 +35,13 @@ from solie.widget import (
     BaseOverlay,
     BrandLabel,
     HorizontalDivider,
-    OverlayPanel,
     SplashScreen,
     SymbolBox,
+    ask,
+    overlay,
 )
 
 from .compiled import Ui_MainWindow
-
-W = TypeVar("W", bound=BaseOverlay)
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +87,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.app_close_event.set()
 
             if self.should_confirm_closing:
-                answer = await self.ask(
+                answer = await ask(
                     "Really quit?",
                     "If Solie is not turned on, data collection gets stopped as well."
                     " Solie will proceed to finalizations such as closing network"
@@ -127,7 +126,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             return
 
         async def job_ask():
-            answer = await self.ask(
+            answer = await ask(
                 "Board is locked. Do you want to unlock it?",
                 "You will be able to manipulate the board again.",
                 ["No", "Yes"],
@@ -191,7 +190,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         asyncio.create_task(monitor_internet())
         await is_internet_checked.wait()
         while not internet_connected():
-            await self.ask(
+            await ask(
                 "No internet connection",
                 "Internet connection is necessary for Solie to start up.",
                 ["Okay"],
@@ -203,7 +202,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         datapath = await read_datapath()
 
         if not datapath:
-            overlay_widget = await self.overlay(
+            overlay_widget = await overlay(
                 "Choose your data folder",
                 DatapathInput(),
                 False,
@@ -218,13 +217,13 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         data_settings = await read_data_settings(datapath)
 
         if not data_settings:
-            overlay_widget = await self.overlay(
+            overlay_widget = await overlay(
                 "Choose a token to treat as your asset",
                 TokenSelection(),
                 False,
             )
             asset_token = overlay_widget.result
-            overlay_widget = await self.overlay(
+            overlay_widget = await overlay(
                 "Choose coins to observe and trade",
                 CoinSelection(asset_token),
                 False,
@@ -1123,23 +1122,3 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         while True:
             app_instance.processEvents()
             await asyncio.sleep(interval)
-
-    # show an ask popup and blocks the stack
-    async def ask(self, main_text: str, detail_text: str, options: list[str]) -> int:
-        ask_popup = AskPopup(self, main_text, detail_text, options)
-        ask_popup.show()
-
-        await ask_popup.done_event.wait()
-        ask_popup.setParent(None)
-
-        return ask_popup.answer
-
-    # show an mainpulatable overlap popup
-    async def overlay(self, title: str, widget: W, close_button=True) -> W:
-        overlay_panel = OverlayPanel(self, title, widget, close_button)
-        overlay_panel.show()
-
-        await widget.done_event.wait()
-        overlay_panel.setParent(None)
-
-        return widget

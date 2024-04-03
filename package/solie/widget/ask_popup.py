@@ -9,8 +9,20 @@ from .popup_box import PopupBox
 # https://stackoverflow.com/questions/67029993/pyqt-creating-a-popup-in-the-window
 
 
+# show an ask popup and blocks the stack
+async def ask(main_text: str, detail_text: str, options: list[str]) -> int:
+    ask_popup = AskPopup(main_text, detail_text, options)
+    ask_popup.show()
+
+    await ask_popup.done_event.wait()
+    ask_popup.setParent(None)
+
+    return ask_popup.answer
+
+
 class AskPopup(QtWidgets.QWidget):
     done_event = asyncio.Event()
+    installed_window: QtWidgets.QMainWindow
 
     def showEvent(self, event):  # noqa:N802
         # needed for filling the window when resized
@@ -23,21 +35,24 @@ class AskPopup(QtWidgets.QWidget):
             self.setGeometry(source.rect())
         return super().eventFilter(source, event)
 
+    @classmethod
+    def install_window(cls, window: QtWidgets.QMainWindow):
+        cls.installed_window = window
+
     def __init__(
         self,
-        parent: QtWidgets.QMainWindow,
         main_text: str,
         detail_text: str,
         options: list[str],
     ):
         # ■■■■■ the basic ■■■■■
 
-        super().__init__(parent)
+        super().__init__(self.installed_window)
 
         # ■■■■■ set properties ■■■■■
 
         # needed for filling the window when resized
-        parent.installEventFilter(self)
+        self.installed_window.installEventFilter(self)
 
         # ■■■■■ in case other ask popup exists ■■■■■
 

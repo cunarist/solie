@@ -1,5 +1,6 @@
 # https://stackoverflow.com/questions/67029993/pyqt-creating-a-popup-in-the-window
 import asyncio
+from typing import TypeVar
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
@@ -11,7 +12,23 @@ class BaseOverlay(QtWidgets.QWidget):
     done_event = asyncio.Event()
 
 
+W = TypeVar("W", bound=BaseOverlay)
+
+
+# show an mainpulatable overlap popup
+async def overlay(title: str, widget: W, close_button=True) -> W:
+    overlay_panel = OverlayPanel(title, widget, close_button)
+    overlay_panel.show()
+
+    await widget.done_event.wait()
+    overlay_panel.setParent(None)
+
+    return widget
+
+
 class OverlayPanel(QtWidgets.QWidget):
+    installed_window: QtWidgets.QMainWindow
+
     def showEvent(self, event):  # noqa:N802
         # needed for filling the window when resized
         parent: QtWidgets.QMainWindow = self.parent()  # type:ignore
@@ -23,21 +40,24 @@ class OverlayPanel(QtWidgets.QWidget):
             self.setGeometry(source.rect())
         return super().eventFilter(source, event)
 
+    @classmethod
+    def install_window(cls, window: QtWidgets.QMainWindow):
+        cls.installed_window = window
+
     def __init__(
         self,
-        parent: QtWidgets.QMainWindow,
         title: str,
         widget: BaseOverlay,
         close_button: bool,
     ):
         # ■■■■■ the basic ■■■■■
 
-        super().__init__(parent)
+        super().__init__(self.installed_window)
 
         # ■■■■■ set properties ■■■■■
 
         # needed for filling the window when resized
-        parent.installEventFilter(self)
+        self.installed_window.installEventFilter(self)
 
         # ■■■■■ in case other overlay popup exists ■■■■■
 

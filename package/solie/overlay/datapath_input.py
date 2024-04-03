@@ -4,7 +4,7 @@ import xdialog
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from solie.common import go, outsource
-from solie.widget import BaseOverlay, HorizontalDivider
+from solie.widget import BaseOverlay, HorizontalDivider, ask
 
 
 class DatapathInput(BaseOverlay):
@@ -101,7 +101,7 @@ class DatapathInput(BaseOverlay):
 
         async def job_ac():
             if datapath is None:
-                await window.ask(
+                await ask(
                     "Data folder is not chosen",
                     "Choose your data folder first.",
                     ["Okay"],

@@ -3,6 +3,8 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from solie.common import outsource
 from solie.overlay import LongTextView
 
+from .overlay_panel import overlay
+
 
 class LogList(QtWidgets.QListWidget):
     def __init__(self, parent):
@@ -33,7 +35,7 @@ class LogList(QtWidgets.QListWidget):
         selected_item = self.item(selected_index)
         text = selected_item.data(QtCore.Qt.ItemDataRole.UserRole)
 
-        await solie.window.overlay(
+        await overlay(
             "This is the full log",
             LongTextView(text),
         )
