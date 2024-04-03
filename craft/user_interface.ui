@@ -1124,8 +1124,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>1216</width>
-                <height>611</height>
+                <width>280</width>
+                <height>65</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_19">
@@ -2122,23 +2122,23 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
   <customwidget>
    <class>ScriptEditor</class>
    <extends>QPlainTextEdit</extends>
-   <header>solie/internal/widget/script_editor</header>
+   <header>solie/widget/script_editor</header>
   </customwidget>
   <customwidget>
    <class>LogList</class>
    <extends>QListWidget</extends>
-   <header>solie/internal/widget/log_list</header>
+   <header>solie/widget/log_list</header>
   </customwidget>
   <customwidget>
    <class>HorizontalDivider</class>
    <extends>QFrame</extends>
-   <header>solie/internal/widget/horizontal_divider</header>
+   <header>solie/widget/horizontal_divider</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>VerticalDivider</class>
    <extends>QFrame</extends>
-   <header>solie/internal/widget/vertical_divider</header>
+   <header>solie/widget/vertical_divider</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

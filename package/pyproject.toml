@@ -32,5 +32,5 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.ruff.lint]
 extend-select = ["N", "I", "T20"]
-exclude = ["solie/internal/window_compiled.py"]
+exclude = ["solie/window/compiled.py"]
 ignore = ["F403"]

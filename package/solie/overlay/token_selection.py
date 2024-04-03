@@ -2,8 +2,7 @@ import asyncio
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from solie.common import outsource
-from solie.info import PACKAGE_PATH
+from solie.common import PACKAGE_PATH, outsource
 from solie.utility import ApiRequester
 from solie.widget import BaseOverlay, HorizontalDivider
 

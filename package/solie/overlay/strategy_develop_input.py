@@ -3,8 +3,7 @@ import webbrowser
 import aiofiles
 from PySide6 import QtCore, QtWidgets
 
-from solie.common import go, outsource
-from solie.info import PACKAGE_PATH
+from solie.common import PACKAGE_PATH, go, outsource
 from solie.utility import Strategy
 from solie.widget import BaseOverlay, ScriptEditor, VerticalDivider
 

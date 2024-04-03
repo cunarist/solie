@@ -8,39 +8,25 @@
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide6.QtCore import QCoreApplication, QMetaObject, QRect, QSize, Qt
-from PySide6.QtGui import QFont
-from PySide6.QtWidgets import (
-    QAbstractItemView,
-    QAbstractSpinBox,
-    QCheckBox,
-    QComboBox,
-    QDoubleSpinBox,
-    QFormLayout,
-    QFrame,
-    QGridLayout,
-    QGroupBox,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QPlainTextEdit,
-    QProgressBar,
-    QPushButton,
-    QScrollArea,
-    QSizePolicy,
-    QSpacerItem,
-    QSpinBox,
-    QSplitter,
-    QTabWidget,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication, QCheckBox,
+    QComboBox, QDoubleSpinBox, QFormLayout, QFrame,
+    QGridLayout, QGroupBox, QHBoxLayout, QLabel,
+    QLineEdit, QListWidgetItem, QMainWindow, QPlainTextEdit,
+    QProgressBar, QPushButton, QScrollArea, QSizePolicy,
+    QSpacerItem, QSpinBox, QSplitter, QTabWidget,
+    QVBoxLayout, QWidget)
 
-from solie.internal.widget.horizontal_divider import HorizontalDivider
-from solie.internal.widget.log_list import LogList
-from solie.internal.widget.script_editor import ScriptEditor
-from solie.internal.widget.vertical_divider import VerticalDivider
-
+from solie.widget.horizontal_divider import HorizontalDivider
+from solie.widget.log_list import LogList
+from solie.widget.script_editor import ScriptEditor
+from solie.widget.vertical_divider import VerticalDivider
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -752,7 +738,7 @@ class Ui_MainWindow(object):
         self.scrollArea_8.setWidgetResizable(True)
         self.scrollAreaWidgetContents_8 = QWidget()
         self.scrollAreaWidgetContents_8.setObjectName(u"scrollAreaWidgetContents_8")
-        self.scrollAreaWidgetContents_8.setGeometry(QRect(0, 0, 1216, 611))
+        self.scrollAreaWidgetContents_8.setGeometry(QRect(0, 0, 280, 65))
         self.verticalLayout_19 = QVBoxLayout(self.scrollAreaWidgetContents_8)
         self.verticalLayout_19.setObjectName(u"verticalLayout_19")
         self.verticalLayout_16 = QVBoxLayout()

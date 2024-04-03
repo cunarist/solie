@@ -5,6 +5,7 @@ from .check_internet import (
     add_connected_functions,
     add_disconnected_functions,
     internet_connected,
+    is_internet_checked,
     monitor_internet,
 )
 from .combine_candle_data import combine_candle_data
@@ -103,4 +104,6 @@ __all__ = [
     "CalculationOutput",
     "simulate_chunk",
     "SimulationError",
+    "is_internet_checked",
+    "monitor_internet",
 ]

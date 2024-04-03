@@ -1,4 +1,3 @@
-from .base_overlay import BaseOverlay
 from .coin_selection import CoinSelection
 from .datapath_input import DatapathInput
 from .donation_guide import DonationGuide
@@ -10,7 +9,6 @@ from .strategy_info_view import StrategyInfoView
 from .token_selection import TokenSelection
 
 __all__ = [
-    "BaseOverlay",
     "CoinSelection",
     "DatapathInput",
     "DonationGuide",
