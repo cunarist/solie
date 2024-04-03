@@ -137,11 +137,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         asyncio.create_task(job_ask())
 
-    async def live(self):
-        asyncio.create_task(self.boot())
-        asyncio.create_task(self.process_app_events())
-        await self.app_close_event.wait()
-
     async def boot(self):
         # ■■■■■ Do basic Qt things ■■■■■
 
@@ -1114,7 +1109,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         await self.app_close_event.wait()
 
-    async def process_app_events(self):
+    async def process_ui_events(self):
         interval = 1 / 240
         app_instance = QtCore.QCoreApplication.instance()
         if app_instance is None:
@@ -1122,3 +1117,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         while True:
             app_instance.processEvents()
             await asyncio.sleep(interval)
+
+    async def live(self):
+        asyncio.create_task(self.boot())
+        asyncio.create_task(self.process_ui_events())
+        await self.app_close_event.wait()
