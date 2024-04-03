@@ -11,21 +11,24 @@ import aiofiles.os
 import numpy as np
 import pandas as pd
 
-import solie
 from solie.common import go
-from solie.overlay.donation_guide import DonationGuide
-from solie.overlay.download_fill_option import DownloadFillOption
-from solie.utility.api_requester import ApiRequester
-from solie.utility.api_streamer import ApiStreamer
-from solie.utility.check_internet import add_disconnected_functions, internet_connected
-from solie.utility.combine_candle_datas import combine_candle_data
-from solie.utility.download_aggtrade_data import DownloadPreset, download_aggtrade_data
-from solie.utility.fill_holes_with_aggtrades import fill_holes_with_aggtrades
-from solie.utility.remember_task_durations import add_task_duration
-from solie.utility.rw_lock import RWLock
-from solie.utility.sort_pandas import sort_data_frame
-from solie.utility.standardize import standardize_candle_data
-from solie.utility.stop_flag import find_stop_flag, make_stop_flag
+from solie.overlay import DonationGuide, DownloadFillOption
+from solie.utility import (
+    ApiRequester,
+    ApiStreamer,
+    DownloadPreset,
+    RWLock,
+    add_disconnected_functions,
+    add_task_duration,
+    combine_candle_data,
+    download_aggtrade_data,
+    fill_holes_with_aggtrades,
+    find_stop_flag,
+    internet_connected,
+    make_stop_flag,
+    sort_data_frame,
+    standardize_candle_data,
+)
 
 logger = logging.getLogger(__name__)
 

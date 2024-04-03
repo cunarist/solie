@@ -1,3 +1,4 @@
-from .info import *
-from .outsource import *
-from .parallel import *
+from .outsource import outsource
+from .parallel import PROCESS_COUNT, communicator, go
+
+__all__ = ["outsource", "go", "PROCESS_COUNT", "communicator"]

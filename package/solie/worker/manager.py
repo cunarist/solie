@@ -11,13 +11,14 @@ import aiofiles
 import aiofiles.os
 import time_machine
 
-import solie
 from solie.common import PROCESS_COUNT, go
-from solie.utility.api_requester import ApiRequester
-from solie.utility.check_internet import internet_connected
-from solie.utility.convert import value_to_indexes
-from solie.utility.remember_task_durations import get_task_duration
-from solie.utility.user_settings import save_datapath
+from solie.utility import (
+    ApiRequester,
+    get_task_duration,
+    internet_connected,
+    save_datapath,
+    value_to_indexes,
+)
 
 WINDOW_LOCK_OPTIONS = (
     "NEVER",

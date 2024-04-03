@@ -5,12 +5,10 @@ import aiofiles
 import aiofiles.os
 from PySide6 import QtGui, QtWidgets
 
-import solie
-from solie.common import PACKAGE_PATH, outsource
-from solie.overlay.strategy_basic_input import StrategyBasicInput
-from solie.overlay.strategy_develop_input import StrategyDevelopInput
-from solie.utility.standardize import create_strategy_code_name
-from solie.utility.structs import Strategies, Strategy
+from solie.common import outsource
+from solie.info import PACKAGE_PATH
+from solie.overlay import StrategyBasicInput, StrategyDevelopInput
+from solie.utility import Strategies, Strategy, create_strategy_code_name
 
 
 class Strategiest:

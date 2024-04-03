@@ -1,9 +1,7 @@
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from solie.utility.structs import Strategy
-from solie.widget.horizontal_divider import HorizontalDivider
-
-from .base import BaseOverlay
+from solie.utility import Strategy
+from solie.widget import BaseOverlay, HorizontalDivider
 
 
 class StrategyInfoView(BaseOverlay):

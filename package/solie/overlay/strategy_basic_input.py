@@ -2,13 +2,10 @@ import re
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
-import solie
-from solie.common import PACKAGE_PATH, outsource
-from solie.utility.compare_versions import is_left_version_higher
-from solie.utility.structs import Strategy
-from solie.widget.horizontal_divider import HorizontalDivider
-
-from .base import BaseOverlay
+from solie.common import outsource
+from solie.info import PACKAGE_PATH
+from solie.utility import Strategy, is_left_version_higher
+from solie.widget import BaseOverlay, HorizontalDivider
 
 
 class StrategyBasicInput(BaseOverlay):

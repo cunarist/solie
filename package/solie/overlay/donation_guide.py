@@ -1,6 +1,6 @@
 from PySide6 import QtCore, QtWidgets
 
-from .base import BaseOverlay
+from solie.widget import BaseOverlay
 
 
 class DonationGuide(BaseOverlay):

@@ -3,7 +3,8 @@ import asyncio
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from solie.common import outsource
-from solie.widget.popup_box import PopupBox
+
+from .popup_box import PopupBox
 
 # https://stackoverflow.com/questions/67029993/pyqt-creating-a-popup-in-the-window
 

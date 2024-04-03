@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import functools
 import multiprocessing
@@ -7,7 +9,6 @@ from typing import Callable, TypeVar
 T = TypeVar("T")
 
 PROCESS_COUNT = multiprocessing.cpu_count()
-
 communicator = multiprocessing.Manager()
 
 

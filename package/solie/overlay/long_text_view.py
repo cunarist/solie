@@ -1,6 +1,6 @@
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from .base import BaseOverlay
+from solie.widget import BaseOverlay
 
 
 class LongTextView(BaseOverlay):

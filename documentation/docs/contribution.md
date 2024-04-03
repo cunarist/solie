@@ -85,7 +85,7 @@ pyside6-designer
 After editing the UI file, you have to compile it as a Python module.
 
 ```bash
-pyside6-uic craft/user_interface.ui -o solie/solie/window_compiled.py
+pyside6-uic craft/user_interface.ui -o package/solie/internal/window_compiled.py
 ```
 
 ## 🚦 Rules

@@ -104,7 +104,7 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
        <enum>QTabWidget::North</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab_5">
        <attribute name="title">
@@ -1314,8 +1314,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>1212</width>
-                 <height>584</height>
+                 <width>752</width>
+                 <height>466</height>
                 </rect>
                </property>
                <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -1871,8 +1871,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>265</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_6">
@@ -1900,8 +1900,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>265</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_7">
@@ -1929,8 +1929,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>265</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_4">
@@ -1958,8 +1958,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>265</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_8">
@@ -1987,8 +1987,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>265</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_5">
@@ -2016,8 +2016,8 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>398</width>
-                   <height>265</height>
+                   <width>81</width>
+                   <height>34</height>
                   </rect>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_9">
@@ -2122,23 +2122,23 @@ TransparentScrollArea, TransparentScrollArea &gt; QWidget &gt; QWidget {
   <customwidget>
    <class>ScriptEditor</class>
    <extends>QPlainTextEdit</extends>
-   <header>solie/widget/script_editor</header>
+   <header>solie/internal/widget/script_editor</header>
   </customwidget>
   <customwidget>
    <class>LogList</class>
    <extends>QListWidget</extends>
-   <header>solie/widget/log_list</header>
+   <header>solie/internal/widget/log_list</header>
   </customwidget>
   <customwidget>
    <class>HorizontalDivider</class>
    <extends>QFrame</extends>
-   <header>solie/widget/horizontal_divider</header>
+   <header>solie/internal/widget/horizontal_divider</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>VerticalDivider</class>
    <extends>QFrame</extends>
-   <header>solie/widget/vertical_divider</header>
+   <header>solie/internal/widget/vertical_divider</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
