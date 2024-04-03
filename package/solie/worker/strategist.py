@@ -8,13 +8,15 @@ from PySide6 import QtGui, QtWidgets
 from solie.common import PACKAGE_PATH, outsource
 from solie.overlay import StrategyBasicInput, StrategyDevelopInput
 from solie.utility import Strategies, Strategy, create_strategy_code_name
+from solie.window import Window
 
 
 class Strategiest:
-    def __init__(self):
+    def __init__(self, window: Window):
         # ■■■■■ for data management ■■■■■
 
-        self.workerpath = solie.window.datapath / "strategist"
+        self.window = window
+        self.workerpath = self.window.datapath / "strategist"
 
         # ■■■■■ internal memory ■■■■■
 
@@ -71,8 +73,8 @@ class Strategiest:
             await file.write(self.strategies.to_json(indent=2))
 
     async def display_strategies(self, *args, **kwargs):
-        solie.window.comboBox_2.clear()
-        solie.window.comboBox.clear()
+        self.window.comboBox_2.clear()
+        self.window.comboBox.clear()
         for strategy_card in self.strategy_cards:
             strategy_card.setParent(None)
         self.strategy_cards = []
@@ -90,11 +92,11 @@ class Strategiest:
             traffic_light_icon = QtGui.QIcon()
             traffic_light_icon.addPixmap(icon_pixmap)
 
-            solie.window.comboBox_2.addItem(traffic_light_icon, text)
-            solie.window.comboBox.addItem(traffic_light_icon, text)
+            self.window.comboBox_2.addItem(traffic_light_icon, text)
+            self.window.comboBox.addItem(traffic_light_icon, text)
 
             strategy_card = QtWidgets.QGroupBox()
-            solie.window.verticalLayout_16.addWidget(strategy_card)
+            self.window.verticalLayout_16.addWidget(strategy_card)
             self.strategy_cards.append(strategy_card)
             card_layout = QtWidgets.QHBoxLayout(strategy_card)
 
@@ -117,7 +119,7 @@ class Strategiest:
 
             async def job_bs(strategy=strategy):
                 await self.remember_strategy_selections()
-                await solie.window.overlay(
+                await self.window.overlay(
                     "Develop your strategy",
                     StrategyDevelopInput(strategy),
                 )
@@ -131,7 +133,7 @@ class Strategiest:
 
             async def job_eb(strategy=strategy):
                 await self.remember_strategy_selections()
-                await solie.window.overlay(
+                await self.window.overlay(
                     "Edit your strategy's basic information",
                     StrategyBasicInput(strategy),
                 )
@@ -150,7 +152,7 @@ class Strategiest:
             card_layout.addWidget(action_button)
 
             async def job_rs(strategy=strategy):
-                answer = await solie.window.ask(
+                answer = await self.window.ask(
                     "Remove this strategy?",
                     "Once you remove this, it cannot be recovered.",
                     ["Remove"],
@@ -216,15 +218,15 @@ class Strategiest:
         await self.restore_strategy_selections()
 
     async def remember_strategy_selections(self, *args, **kwargs):
-        before_index = solie.window.comboBox_2.currentIndex()
+        before_index = self.window.comboBox_2.currentIndex()
         self.before_selections["transactor"] = self.strategies.all[before_index]
-        before_index = solie.window.comboBox.currentIndex()
+        before_index = self.window.comboBox.currentIndex()
         self.before_selections["simulator"] = self.strategies.all[before_index]
 
     async def restore_strategy_selections(self, *args, **kwargs):
         if self.before_selections["transactor"] in self.strategies.all:
             new_index = self.strategies.all.index(self.before_selections["transactor"])
-            solie.window.comboBox_2.setCurrentIndex(new_index)
+            self.window.comboBox_2.setCurrentIndex(new_index)
         if self.before_selections["simulator"] in self.strategies.all:
             new_index = self.strategies.all.index(self.before_selections["simulator"])
-            solie.window.comboBox.setCurrentIndex(new_index)
+            self.window.comboBox.setCurrentIndex(new_index)

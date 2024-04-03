@@ -27,19 +27,21 @@ from solie.utility import (
     standardize_asset_record,
     standardize_unrealized_changes,
 )
+from solie.window import Window
 
 
 class Simulator:
-    def __init__(self):
+    def __init__(self, window: Window):
         # ■■■■■ for data management ■■■■■
 
-        self.workerpath = solie.window.datapath / "simulator"
+        self.window = window
+        self.workerpath = self.window.datapath / "simulator"
 
         # ■■■■■ internal memory ■■■■■
 
         # ■■■■■ remember and display ■■■■■
 
-        self.viewing_symbol = solie.window.data_settings.target_symbols[0]
+        self.viewing_symbol = self.window.data_settings.target_symbols[0]
         self.should_draw_all_years = False
 
         self.simulation_settings = SimulationSettings(
@@ -48,14 +50,14 @@ class Simulator:
         self.simulation_summary: SimulationSummary | None = None
 
         self.raw_account_state = standardize_account_state(
-            solie.window.data_settings.target_symbols
+            self.window.data_settings.target_symbols
         )
         self.raw_scribbles = {}
         self.raw_asset_record = RWLock(standardize_asset_record())
         self.raw_unrealized_changes = RWLock(standardize_unrealized_changes())
 
         self.account_state = standardize_account_state(
-            solie.window.data_settings.target_symbols
+            self.window.data_settings.target_symbols
         )
         self.scribbles = {}
         self.asset_record = RWLock(standardize_asset_record())
@@ -63,12 +65,12 @@ class Simulator:
 
         # ■■■■■ repetitive schedules ■■■■■
 
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.display_available_years,
             trigger="cron",
             hour="*",
         )
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.display_lines,
             trigger="cron",
             hour="*",
@@ -85,17 +87,17 @@ class Simulator:
         await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
 
         text = "Nothing drawn"
-        solie.window.label_19.setText(text)
+        self.window.label_19.setText(text)
 
     async def update_viewing_symbol(self, *args, **kwargs):
-        alias = solie.window.comboBox_6.currentText()
-        symbol = solie.window.alias_to_symbol[alias]
+        alias = self.window.comboBox_6.currentText()
+        symbol = self.window.alias_to_symbol[alias]
         self.viewing_symbol = symbol
 
         await self.display_lines()
 
     async def update_calculation_settings(self, *args, **kwargs):
-        text = solie.window.comboBox_5.currentText()
+        text = self.window.comboBox_5.currentText()
         if text == "":
             return
         from_year = self.simulation_settings.year
@@ -104,17 +106,17 @@ class Simulator:
         if from_year != to_year:
             asyncio.create_task(self.display_year_range())
 
-        index = solie.window.comboBox.currentIndex()
+        index = self.window.comboBox.currentIndex()
         self.simulation_settings.strategy_index = index
 
         await self.display_lines()
 
     async def update_presentation_settings(self, *args, **kwargs):
-        input_value = solie.window.spinBox_2.value()
+        input_value = self.window.spinBox_2.value()
         self.simulation_settings.leverage = input_value
-        input_value = solie.window.doubleSpinBox.value()
+        input_value = self.window.doubleSpinBox.value()
         self.simulation_settings.taker_fee = input_value
-        input_value = solie.window.doubleSpinBox_2.value()
+        input_value = self.window.doubleSpinBox_2.value()
         self.simulation_settings.maker_fee = input_value
         await self.present()
 
@@ -141,7 +143,7 @@ class Simulator:
 
         # ■■■■■ check if the data exists ■■■■■
 
-        async with solie.window.collector.candle_data.read_lock as cell:
+        async with self.window.collector.candle_data.read_lock as cell:
             if len(cell.data) == 0:
                 return
 
@@ -155,7 +157,7 @@ class Simulator:
             for _ in range(50):
                 if find_stop_flag(task_name, task_id):
                     return
-                async with solie.window.collector.candle_data.read_lock as cell:
+                async with self.window.collector.candle_data.read_lock as cell:
                     last_index = cell.data.index[-1]
                     if last_index == before_moment:
                         break
@@ -169,15 +171,15 @@ class Simulator:
 
         symbol = self.viewing_symbol
         strategy_index = self.simulation_settings.strategy_index
-        strategy = solie.window.strategist.strategies.all[strategy_index]
+        strategy = self.window.strategist.strategies.all[strategy_index]
 
         # ■■■■■ get light data ■■■■■
 
-        async with solie.window.collector.realtime_data_chunks.read_lock as cell:
+        async with self.window.collector.realtime_data_chunks.read_lock as cell:
             before_chunk = cell.data[-2].copy()
             current_chunk = cell.data[-1].copy()
         realtime_data = np.concatenate((before_chunk, current_chunk))
-        async with solie.window.collector.aggregate_trades.read_lock as cell:
+        async with self.window.collector.aggregate_trades.read_lock as cell:
             aggregate_trades = cell.data.copy()
 
         # ■■■■■ draw light lines ■■■■■
@@ -188,7 +190,7 @@ class Simulator:
         mask = data_y != 0
         data_y = data_y[mask]
         data_x = data_x[mask]
-        widget = solie.window.simulation_lines["mark_price"][0]
+        widget = self.window.simulation_lines["mark_price"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -200,7 +202,7 @@ class Simulator:
         mask = data_y != 0
         data_y = data_y[mask]
         data_x = data_x[mask]
-        widget = solie.window.simulation_lines["last_price"][0]
+        widget = self.window.simulation_lines["last_price"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -218,7 +220,7 @@ class Simulator:
         nan_ar[:] = np.nan
         data_x = np.repeat(index_ar, 3)
         data_y = np.stack([nan_ar, zero_ar, value_ar], axis=1).reshape(-1)
-        widget = solie.window.simulation_lines["last_volume"][0]
+        widget = self.window.simulation_lines["last_volume"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -230,7 +232,7 @@ class Simulator:
         mask = data_y != 0
         data_y = data_y[mask]
         data_x = data_x[mask]
-        widget = solie.window.simulation_lines["book_tickers"][0]
+        widget = self.window.simulation_lines["book_tickers"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -241,7 +243,7 @@ class Simulator:
         mask = data_y != 0
         data_y = data_y[mask]
         data_x = data_x[mask]
-        widget = solie.window.simulation_lines["book_tickers"][1]
+        widget = self.window.simulation_lines["book_tickers"][1]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -259,7 +261,7 @@ class Simulator:
         else:
             data_x = []
             data_y = []
-        widget = solie.window.simulation_lines["entry_price"][0]
+        widget = self.window.simulation_lines["entry_price"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -277,7 +279,7 @@ class Simulator:
         # ■■■■■ set range of heavy data ■■■■■
 
         if should_draw_all_years:
-            collector_path = solie.window.collector.workerpath
+            collector_path = self.window.collector.workerpath
             years = [
                 int(format_numeric(filename))
                 for filename in await aiofiles.os.listdir(collector_path)
@@ -301,7 +303,7 @@ class Simulator:
 
         divided_datas: list[pd.DataFrame] = []
         for year in years:
-            filepath = solie.window.collector.workerpath / f"candle_data_{year}.pickle"
+            filepath = self.window.collector.workerpath / f"candle_data_{year}.pickle"
             more_df = await go(pd.read_pickle, filepath)
             divided_datas.append(more_df)
         candle_data_original: pd.DataFrame = await go(pd.concat, divided_datas)
@@ -393,7 +395,7 @@ class Simulator:
             ],
             axis=1,
         ).reshape(-1)
-        widget = solie.window.simulation_lines["price_rise"][0]
+        widget = self.window.simulation_lines["price_rise"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -427,7 +429,7 @@ class Simulator:
             ],
             axis=1,
         ).reshape(-1)
-        widget = solie.window.simulation_lines["price_fall"][0]
+        widget = self.window.simulation_lines["price_fall"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -461,7 +463,7 @@ class Simulator:
             ],
             axis=1,
         ).reshape(-1)
-        widget = solie.window.simulation_lines["price_stay"][0]
+        widget = self.window.simulation_lines["price_stay"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -471,7 +473,7 @@ class Simulator:
         sr = candle_data[(symbol, "High")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = solie.window.simulation_lines["wobbles"][0]
+        widget = self.window.simulation_lines["wobbles"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -480,7 +482,7 @@ class Simulator:
         sr = candle_data[(symbol, "Low")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = solie.window.simulation_lines["wobbles"][1]
+        widget = self.window.simulation_lines["wobbles"][1]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -491,7 +493,7 @@ class Simulator:
         sr = sr.fillna(value=0)
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = solie.window.simulation_lines["volume"][0]
+        widget = self.window.simulation_lines["volume"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -500,7 +502,7 @@ class Simulator:
         # asset
         data_x = asset_record["Result Asset"].index.to_numpy(dtype=np.int64) / 10**9
         data_y = asset_record["Result Asset"].to_numpy(dtype=np.float32)
-        widget = solie.window.simulation_lines["asset"][0]
+        widget = self.window.simulation_lines["asset"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -514,7 +516,7 @@ class Simulator:
         sr = sr * (1 + unrealized_changes_sr)
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9 + 5
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = solie.window.simulation_lines["asset_with_unrealized_profit"][0]
+        widget = self.window.simulation_lines["asset_with_unrealized_profit"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -526,7 +528,7 @@ class Simulator:
         sr = df["Fill Price"]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = solie.window.simulation_lines["sell"][0]
+        widget = self.window.simulation_lines["sell"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -537,7 +539,7 @@ class Simulator:
         sr = df["Fill Price"]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = solie.window.simulation_lines["buy"][0]
+        widget = self.window.simulation_lines["buy"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -566,7 +568,7 @@ class Simulator:
         df = indicators[symbol]["Price"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         data_x += 5
-        line_list = solie.window.simulation_lines["price_indicators"]
+        line_list = self.window.simulation_lines["price_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
                 column_name = df.columns[turn]
@@ -591,7 +593,7 @@ class Simulator:
         df = indicators[symbol]["Volume"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         data_x += 5
-        line_list = solie.window.simulation_lines["volume_indicators"]
+        line_list = self.window.simulation_lines["volume_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
                 column_name = df.columns[turn]
@@ -616,7 +618,7 @@ class Simulator:
         df = indicators[symbol]["Abstract"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         data_x += 5
-        line_list = solie.window.simulation_lines["abstract_indicators"]
+        line_list = self.window.simulation_lines["abstract_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
                 column_name = df.columns[turn]
@@ -643,7 +645,7 @@ class Simulator:
 
     async def erase(self, *args, **kwargs):
         self.raw_account_state = standardize_account_state(
-            solie.window.data_settings.target_symbols
+            self.window.data_settings.target_symbols
         )
         self.raw_scribbles = {}
         self.raw_asset_record = RWLock(standardize_asset_record())
@@ -653,7 +655,7 @@ class Simulator:
         await self.present()
 
     async def display_available_years(self, *args, **kwargs):
-        collector_path = solie.window.collector.workerpath
+        collector_path = self.window.collector.workerpath
         years = [
             int(format_numeric(filename))
             for filename in await aiofiles.os.listdir(collector_path)
@@ -661,14 +663,14 @@ class Simulator:
         ]
         years.sort(reverse=True)
 
-        widget = solie.window.comboBox_5
+        widget = self.window.comboBox_5
         choices = [int(widget.itemText(i)) for i in range(widget.count())]
         choices.sort(reverse=True)
 
         if years != choices:
             # if it's changed
-            solie.window.comboBox_5.clear()
-            solie.window.comboBox_5.addItems([str(y) for y in years])
+            self.window.comboBox_5.clear()
+            self.window.comboBox_5.addItems([str(y) for y in years])
 
     async def simulate_only_visible(self, *args, **kwargs):
         await self.calculate(only_visible=True)
@@ -678,14 +680,14 @@ class Simulator:
 
         symbol = self.viewing_symbol
 
-        range_start_timestamp = solie.window.plot_widget_2.getAxis("bottom").range[0]
+        range_start_timestamp = self.window.plot_widget_2.getAxis("bottom").range[0]
         range_start_timestamp = max(range_start_timestamp, 0.0)
         range_start = datetime.fromtimestamp(range_start_timestamp, tz=timezone.utc)
 
         if find_stop_flag("display_simulation_range_information", task_id):
             return
 
-        range_end_timestamp = solie.window.plot_widget_2.getAxis("bottom").range[1]
+        range_end_timestamp = self.window.plot_widget_2.getAxis("bottom").range[1]
         if range_end_timestamp < 0:
             # case when pyqtgraph passed negative value because it's too big
             range_end_timestamp = 9223339636
@@ -748,7 +750,7 @@ class Simulator:
         if find_stop_flag("display_simulation_range_information", task_id):
             return
 
-        view_range = solie.window.plot_widget_2.getAxis("left").range
+        view_range = self.window.plot_widget_2.getAxis("left").range
         range_down = view_range[0]
         range_up = view_range[1]
         price_range_height = (1 - range_down / range_up) * 100
@@ -768,13 +770,13 @@ class Simulator:
         text += "  ⦁  "
         text += "Lowest unrealized profit"
         text += f" {min_unrealized_change*100:+.4f}%"
-        solie.window.label_13.setText(text)
+        self.window.label_13.setText(text)
 
     async def set_minimum_view_range(self, *args, **kwargs):
-        widget = solie.window.plot_widget_2
+        widget = self.window.plot_widget_2
         range_down = widget.getAxis("left").range[0]
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
-        widget = solie.window.plot_widget_3
+        widget = self.window.plot_widget_3
         range_down = widget.getAxis("left").range[0]
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
 
@@ -789,30 +791,30 @@ class Simulator:
         async def play_progress_bar():
             while True:
                 if find_stop_flag("calculate_simulation", task_id):
-                    solie.window.progressBar_4.setValue(0)
-                    solie.window.progressBar.setValue(0)
+                    self.window.progressBar_4.setValue(0)
+                    self.window.progressBar.setValue(0)
                     return
                 else:
                     if prepare_step == 6 and calculate_step == 1000:
                         is_progressbar_filled = True
-                        progressbar_value = solie.window.progressBar_4.value()
+                        progressbar_value = self.window.progressBar_4.value()
                         if progressbar_value < 1000:
                             is_progressbar_filled = False
-                        progressbar_value = solie.window.progressBar.value()
+                        progressbar_value = self.window.progressBar.value()
                         if progressbar_value < 1000:
                             is_progressbar_filled = False
                         if is_progressbar_filled:
                             await asyncio.sleep(0.1)
-                            solie.window.progressBar_4.setValue(0)
-                            solie.window.progressBar.setValue(0)
+                            self.window.progressBar_4.setValue(0)
+                            self.window.progressBar.setValue(0)
                             return
-                    widget = solie.window.progressBar_4
+                    widget = self.window.progressBar_4
                     before_value = widget.value()
                     if before_value < 1000:
                         remaining = math.ceil(1000 / 6 * prepare_step) - before_value
                         new_value = before_value + math.ceil(remaining * 0.2)
                         widget.setValue(new_value)
-                    widget = solie.window.progressBar
+                    widget = self.window.progressBar
                     before_value = widget.value()
                     if before_value < 1000:
                         remaining = calculate_step - before_value
@@ -829,7 +831,7 @@ class Simulator:
         year = self.simulation_settings.year
         strategy_index = self.simulation_settings.strategy_index
 
-        strategy = solie.window.strategist.strategies.all[strategy_index]
+        strategy = self.window.strategist.strategies.all[strategy_index]
         strategy_code_name = strategy.code_name
         strategy_version = strategy.version
         should_parallelize = strategy.parallelized_simulation
@@ -843,7 +845,7 @@ class Simulator:
         account_state_path = workerpath / f"{prefix}_account_state.pickle"
         virtual_state_path = workerpath / f"{prefix}_virtual_state.pickle"
 
-        target_symbols = solie.window.data_settings.target_symbols
+        target_symbols = self.window.data_settings.target_symbols
 
         prepare_step = 2
 
@@ -860,7 +862,7 @@ class Simulator:
         slice_until -= timedelta(seconds=1)
 
         # Get the candle data of this year.
-        filepath = solie.window.collector.workerpath / f"candle_data_{year}.pickle"
+        filepath = self.window.collector.workerpath / f"candle_data_{year}.pickle"
         year_candle_data: pd.DataFrame = await go(pd.read_pickle, filepath)
 
         # Interpolate so that there's no inappropriate holes.
@@ -874,7 +876,7 @@ class Simulator:
         blank_unrealized_changes = standardize_unrealized_changes()
         blank_scribbles = {}
         blank_account_state = standardize_account_state(
-            solie.window.data_settings.target_symbols
+            self.window.data_settings.target_symbols
         )
         blank_virtual_state = {
             "available_balance": 1,
@@ -899,7 +901,7 @@ class Simulator:
             previous_account_state = blank_account_state.copy()
             previous_virtual_state = blank_virtual_state.copy()
 
-            view_range = solie.window.plot_widget_2.getAxis("bottom").range
+            view_range = self.window.plot_widget_2.getAxis("bottom").range
             view_start = datetime.fromtimestamp(view_range[0], tz=timezone.utc)
             view_end = datetime.fromtimestamp(view_range[1], tz=timezone.utc)
 
@@ -1150,7 +1152,7 @@ class Simulator:
             chunk_length = 0
         else:
             strategy_index = self.simulation_settings.strategy_index
-            strategy = solie.window.strategist.strategies.all[strategy_index]
+            strategy = self.window.strategist.strategies.all[strategy_index]
             should_parallelize = strategy.parallelized_simulation
             chunk_length = strategy.chunk_division
 
@@ -1230,7 +1232,7 @@ class Simulator:
 
         if self.simulation_summary is None:
             text = "Nothing drawn"
-            solie.window.label_19.setText(text)
+            self.window.label_19.setText(text)
         else:
             year = self.simulation_summary.year
             strategy_code_name = self.simulation_summary.strategy_code_name
@@ -1241,7 +1243,7 @@ class Simulator:
             text += f"Strategy code name {strategy_code_name}"
             text += "  ⦁  "
             text += f"Strategy version {strategy_version}"
-            solie.window.label_19.setText(text)
+            self.window.label_19.setText(text)
 
     async def display_year_range(self, *args, **kwargs):
         range_start = datetime(
@@ -1258,14 +1260,14 @@ class Simulator:
             tzinfo=timezone.utc,
         )
         range_end = range_end.timestamp()
-        widget = solie.window.plot_widget_2
+        widget = self.window.plot_widget_2
         widget.setXRange(range_start, range_end)
 
     async def delete_calculation_data(self, *args, **kwargs):
         year = self.simulation_settings.year
         strategy_index = self.simulation_settings.strategy_index
 
-        strategy = solie.window.strategist.strategies.all[strategy_index]
+        strategy = self.window.strategist.strategies.all[strategy_index]
         strategy_code_name = strategy.code_name
         strategy_version = strategy.version
 
@@ -1291,7 +1293,7 @@ class Simulator:
             does_file_exist = True
 
         if not does_file_exist:
-            await solie.window.ask(
+            await self.window.ask(
                 "No calculation data on this combination",
                 f"You should calculate first on year {year} with strategy code name"
                 f" {strategy_code_name} version {strategy_version}.",
@@ -1299,7 +1301,7 @@ class Simulator:
             )
             return
         else:
-            answer = await solie.window.ask(
+            answer = await self.window.ask(
                 "Are you sure you want to delete calculation data on this combination?",
                 "If you do, you should perform the calculation again to see the"
                 f" prediction on year {year} with strategy code name"
@@ -1327,7 +1329,7 @@ class Simulator:
         year = self.simulation_settings.year
         strategy_index = self.simulation_settings.strategy_index
 
-        strategy = solie.window.strategist.strategies.all[strategy_index]
+        strategy = self.window.strategist.strategies.all[strategy_index]
         strategy_code_name = strategy.code_name
         strategy_version = strategy.version
 
@@ -1358,7 +1360,7 @@ class Simulator:
             )
             await self.present()
         except FileNotFoundError:
-            await solie.window.ask(
+            await self.window.ask(
                 "No calculation data on this combination",
                 f"You should calculate first on year {year} with strategy code name"
                 f" {strategy_code_name} version {strategy_version}.",
@@ -1367,9 +1369,9 @@ class Simulator:
             return
 
     async def match_graph_range(self, *args, **kwargs):
-        range_start = solie.window.plot_widget.getAxis("bottom").range[0]
-        range_end = solie.window.plot_widget.getAxis("bottom").range[1]
-        widget = solie.window.plot_widget_2
+        range_start = self.window.plot_widget.getAxis("bottom").range[0]
+        range_end = self.window.plot_widget.getAxis("bottom").range[1]
+        widget = self.window.plot_widget_2
         widget.setXRange(range_start, range_end, padding=0)  # type:ignore
 
     async def stop_calculation(self, *args, **kwargs):
@@ -1381,7 +1383,7 @@ class Simulator:
             peak_sr = cell.data.iloc[peak_indexes]
         peak_sr = peak_sr.sort_values().iloc[:12]
         if len(peak_sr) < 12:
-            await solie.window.ask(
+            await self.window.ask(
                 "Calculation data is either missing or too short",
                 "Cannot get the list of meaningful spots with lowest unrealized"
                 " profit.",
@@ -1392,7 +1394,7 @@ class Simulator:
                 f"{index} {peak_value:+.2f}%"
                 for index, peak_value in peak_sr.iteritems()
             ]
-            await solie.window.ask(
+            await self.window.ask(
                 "Spots with lowest unrealized profit",
                 "\n".join(text_lines),
                 ["Okay"],

@@ -19,6 +19,7 @@ from solie.utility import (
     save_datapath,
     value_to_indexes,
 )
+from solie.window import Window
 
 WINDOW_LOCK_OPTIONS = (
     "NEVER",
@@ -30,10 +31,11 @@ WINDOW_LOCK_OPTIONS = (
 
 
 class Manager:
-    def __init__(self):
+    def __init__(self, window: Window):
         # ■■■■■ for data management ■■■■■
 
-        self.workerpath = solie.window.datapath / "manager"
+        self.window = window
+        self.workerpath = self.window.datapath / "manager"
 
         # ■■■■■ internal memory ■■■■■
 
@@ -57,27 +59,27 @@ class Manager:
 
         # ■■■■■ repetitive schedules ■■■■■
 
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.lock_board,
             trigger="cron",
             second="*",
         )
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.display_system_status,
             trigger="cron",
             second="*",
         )
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.check_online_status,
             trigger="cron",
             second="*",
         )
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.correct_time,
             trigger="cron",
             minute="*",
         )
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.check_binance_limits,
             trigger="cron",
             hour="*",
@@ -98,7 +100,7 @@ class Manager:
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 content = await file.read()
                 self.settings = json.loads(content)
-        solie.window.comboBox_3.setCurrentIndex(
+        self.window.comboBox_3.setCurrentIndex(
             value_to_indexes(WINDOW_LOCK_OPTIONS, self.settings["lock_board"])[0]
         )
 
@@ -109,10 +111,10 @@ class Manager:
                 script = await file.read()
         else:
             script = "logger.info(window)"
-        solie.window.plainTextEdit.setPlainText(script)
+        self.window.plainTextEdit.setPlainText(script)
 
     async def change_settings(self, *args, **kwargs):
-        current_index = solie.window.comboBox_3.currentIndex()
+        current_index = self.window.comboBox_3.currentIndex()
         self.settings["lock_board"] = WINDOW_LOCK_OPTIONS[current_index]
 
         filepath = self.workerpath / "settings.json"
@@ -121,10 +123,10 @@ class Manager:
             await file.write(content)
 
     async def open_datapath(self, *args, **kwargs):
-        await go(os.startfile, solie.window.datapath)
+        await go(os.startfile, self.window.datapath)
 
     async def deselect_log_output(self, *args, **kwargs):
-        solie.window.listWidget.clearSelection()
+        self.window.listWidget.clearSelection()
 
     async def display_internal_status(self, *args, **kwargs):
         while True:
@@ -141,9 +143,9 @@ class Manager:
                 list_text = "\n".join(texts)
             else:
                 list_text = "\n".join(texts[:max_tasks_shown]) + "\n..."
-            solie.window.label_12.setText(f"{tasks_not_done} total\n\n{list_text}")
+            self.window.label_12.setText(f"{tasks_not_done} total\n\n{list_text}")
 
-            solie.window.label_32.setText(f"Process count: {PROCESS_COUNT}")
+            self.window.label_32.setText(f"Process count: {PROCESS_COUNT}")
 
             texts = []
             texts.append("Limits")
@@ -159,7 +161,7 @@ class Manager:
                     text = f"{used_type}: {used_tuple[0]}({time_string})"
                     texts.append(text)
             text = "\n".join(texts)
-            solie.window.label_35.setText(text)
+            self.window.label_35.setText(text)
 
             texts = []
             task_durations = get_task_duration()
@@ -178,21 +180,21 @@ class Manager:
                     text += f"Maximum {data_value:.6f}s "
                     texts.append(text)
             text = "\n\n".join(texts)
-            solie.window.label_33.setText(text)
+            self.window.label_33.setText(text)
 
-            block_sizes = solie.window.collector.aggtrade_candle_sizes
+            block_sizes = self.window.collector.aggtrade_candle_sizes
             lines = (f"{symbol} {count}" for (symbol, count) in block_sizes.items())
             text = "\n".join(lines)
-            solie.window.label_36.setText(text)
+            self.window.label_36.setText(text)
 
             await asyncio.sleep(0.1)
 
     async def run_script(self, *args, **kwargs):
-        script_text = solie.window.plainTextEdit.toPlainText()
+        script_text = self.window.plainTextEdit.toPlainText()
         filepath = self.workerpath / "python_script.txt"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             await file.write(script_text)
-        namespace = {"window": solie.window, "logger": logging.getLogger(__name__)}
+        namespace = {"window": self.window, "logger": logging.getLogger(__name__)}
         exec(script_text, namespace)
 
     async def check_online_status(self, *args, **kwargs):
@@ -224,7 +226,7 @@ class Manager:
         time_text = time.strftime("%Y-%m-%d %H:%M:%S")
         is_internet_connected = internet_connected()
         ping = self.online_status["ping"]
-        board_enabled = solie.window.board.isEnabled()
+        board_enabled = self.window.board.isEnabled()
 
         deque_data = self.online_status["server_time_differences"]
         if len(deque_data) > 0:
@@ -245,7 +247,7 @@ class Manager:
         text += f"Server time difference {mean_difference:+.3f}s"
         text += "  ⦁  "
         text += f"Board {('unlocked' if board_enabled else 'locked')}"
-        solie.window.gauge.setText(text)
+        self.window.gauge.setText(text)
 
     async def correct_time(self, *args, **kwargs):
         server_time_differences = self.online_status["server_time_differences"]
@@ -278,7 +280,7 @@ class Manager:
             self.binance_limits[limit_name] = limit_value
 
     async def reset_datapath(self, *args, **kwargs):
-        answer = await solie.window.ask(
+        answer = await self.window.ask(
             "Are you sure you want to change the data folder?",
             "Solie will shut down shortly. You will get to choose the new data folder"
             " when you start Solie again. Previous data folder does not get deleted.",
@@ -290,8 +292,8 @@ class Manager:
 
         await save_datapath(None)
 
-        solie.window.should_confirm_closing = False
-        solie.window.close()
+        self.window.should_confirm_closing = False
+        self.window.close()
 
     async def open_documentation(self, *args, **kwargs):
         await go(webbrowser.open, "https://solie-docs.cunarist.com")
@@ -312,10 +314,10 @@ class Manager:
         else:
             raise ValueError("Invalid duration value for locking the window")
 
-        last_interaction_time = solie.window.last_interaction
+        last_interaction_time = self.window.last_interaction
         if datetime.now(timezone.utc) < last_interaction_time + wait_time:
             return
 
-        is_enabled = solie.window.board.isEnabled()
+        is_enabled = self.window.board.isEnabled()
         if is_enabled:
-            solie.window.board.setEnabled(False)
+            self.window.board.setEnabled(False)

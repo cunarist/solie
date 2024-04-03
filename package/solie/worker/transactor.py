@@ -35,15 +35,17 @@ from solie.utility import (
     standardize_asset_record,
     standardize_unrealized_changes,
 )
+from solie.window import Window
 
 logger = logging.getLogger(__name__)
 
 
 class Transactor:
-    def __init__(self):
+    def __init__(self, window: Window):
         # ■■■■■ for data management ■■■■■
 
-        self.workerpath = solie.window.datapath / "transactor"
+        self.window = window
+        self.workerpath = self.window.datapath / "transactor"
 
         # ■■■■■ internal memory ■■■■■
 
@@ -59,11 +61,11 @@ class Transactor:
 
         self.api_requester = ApiRequester()
 
-        self.viewing_symbol = solie.window.data_settings.target_symbols[0]
+        self.viewing_symbol = self.window.data_settings.target_symbols[0]
         self.should_draw_frequently = True
 
         self.account_state = standardize_account_state(
-            solie.window.data_settings.target_symbols
+            self.window.data_settings.target_symbols
         )
 
         self.scribbles = {}
@@ -82,53 +84,53 @@ class Transactor:
 
         # ■■■■■ repetitive schedules ■■■■■
 
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.display_status_information,
             trigger="cron",
             second="*",
         )
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.display_range_information,
             trigger="cron",
             second="*",
         )
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.cancel_conflicting_orders,
             trigger="cron",
             second="*",
         )
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.display_lines,
             trigger="cron",
             second="*/10",
             kwargs={"periodic": True, "frequent": True},
         )
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.pan_view_range,
             trigger="cron",
             second="*/10",
         )
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.perform_transaction,
             trigger="cron",
             second="*/10",
         )
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.save_scribbles,
             trigger="cron",
             second="*/10",
         )
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.watch_binance,
             trigger="cron",
             second="*/10",
         )
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.organize_data,
             trigger="cron",
             minute="*",
         )
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.save_large_data,
             trigger="cron",
             hour="*",
@@ -164,15 +166,15 @@ class Transactor:
                 read_data = TransactionSettings.from_json(await file.read())
             self.transaction_settings = read_data
             state = read_data.should_transact
-            solie.window.checkBox.setChecked(state)
+            self.window.checkBox.setChecked(state)
             strategy_index = read_data.strategy_index
-            solie.window.comboBox_2.setCurrentIndex(strategy_index)
+            self.window.comboBox_2.setCurrentIndex(strategy_index)
             new_value = read_data.desired_leverage
-            solie.window.spinBox.setValue(new_value)
+            self.window.spinBox.setValue(new_value)
             text = read_data.binance_api_key
-            solie.window.lineEdit_4.setText(text)
+            self.window.lineEdit_4.setText(text)
             text = read_data.binance_api_secret
-            solie.window.lineEdit_6.setText(text)
+            self.window.lineEdit_6.setText(text)
             self.api_requester.update_keys(
                 read_data.binance_api_key, read_data.binance_api_secret
             )
@@ -289,7 +291,7 @@ class Transactor:
             about_assets = about_update["B"]
             about_positions = about_update["P"]
 
-            asset_token = solie.window.data_settings.asset_token
+            asset_token = self.window.data_settings.asset_token
 
             about_assets_keyed = list_to_dict(about_assets, "a")
             if asset_token in about_assets_keyed:
@@ -301,7 +303,7 @@ class Transactor:
             if "BOTH" in about_positions_keyed:
                 about_position = about_positions_keyed["BOTH"]
 
-                target_symbols = solie.window.data_settings.target_symbols
+                target_symbols = self.window.data_settings.target_symbols
                 if about_position["s"] not in target_symbols:
                     return
 
@@ -326,7 +328,7 @@ class Transactor:
         if event_type == "ORDER_TRADE_UPDATE":
             about_update = received["o"]
 
-            target_symbols = solie.window.data_settings.target_symbols
+            target_symbols = self.window.data_settings.target_symbols
             if about_update["s"] not in target_symbols:
                 return
 
@@ -516,8 +518,8 @@ class Transactor:
             await file.write(self.transaction_settings.to_json(indent=2))
 
     async def update_keys(self, *args, **kwargs):
-        binance_api_key = solie.window.lineEdit_4.text()
-        binance_api_secret = solie.window.lineEdit_6.text()
+        binance_api_key = self.window.lineEdit_4.text()
+        binance_api_secret = self.window.lineEdit_6.text()
 
         self.transaction_settings.binance_api_key = binance_api_key
         self.transaction_settings.binance_api_secret = binance_api_secret
@@ -529,14 +531,14 @@ class Transactor:
     async def update_automation_settings(self, *args, **kwargs):
         # ■■■■■ get information about strategy ■■■■■
 
-        strategy_index = solie.window.comboBox_2.currentIndex()
+        strategy_index = self.window.comboBox_2.currentIndex()
         self.transaction_settings.strategy_index = strategy_index
 
         asyncio.create_task(self.display_lines())
 
         # ■■■■■ is automation turned on ■■■■■
 
-        is_checked = solie.window.checkBox.isChecked()
+        is_checked = self.window.checkBox.isChecked()
 
         if is_checked:
             self.transaction_settings.should_transact = True
@@ -552,14 +554,14 @@ class Transactor:
 
         symbol = self.viewing_symbol
 
-        range_start_timestamp = solie.window.plot_widget.getAxis("bottom").range[0]
+        range_start_timestamp = self.window.plot_widget.getAxis("bottom").range[0]
         range_start_timestamp = max(range_start_timestamp, 0.0)
         range_start = datetime.fromtimestamp(range_start_timestamp, tz=timezone.utc)
 
         if find_stop_flag("display_transaction_range_information", task_id):
             return
 
-        range_end_timestamp = solie.window.plot_widget.getAxis("bottom").range[1]
+        range_end_timestamp = self.window.plot_widget.getAxis("bottom").range[1]
         if range_end_timestamp < 0.0:
             # case when pyqtgraph passed negative value because it's too big
             range_end_timestamp = 9223339636.0
@@ -622,7 +624,7 @@ class Transactor:
         if find_stop_flag("display_transaction_range_information", task_id):
             return
 
-        view_range = solie.window.plot_widget.getAxis("left").range
+        view_range = self.window.plot_widget.getAxis("left").range
         range_down = view_range[0]
         range_up = view_range[1]
         price_range_height = (1 - range_down / range_up) * 100
@@ -642,19 +644,19 @@ class Transactor:
         text += "  ⦁  "
         text += "Lowest unrealized profit"
         text += f" {min_unrealized_change*100:+.4f}%"
-        solie.window.label_8.setText(text)
+        self.window.label_8.setText(text)
 
     async def set_minimum_view_range(self, *args, **kwargs):
-        widget = solie.window.plot_widget
+        widget = self.window.plot_widget
         range_down = widget.getAxis("left").range[0]
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
-        widget = solie.window.plot_widget_1
+        widget = self.window.plot_widget_1
         range_down = widget.getAxis("left").range[0]
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
 
     async def display_strategy_index(self, *args, **kwargs):
         strategy_index = self.transaction_settings.strategy_index
-        solie.window.comboBox_2.setCurrentIndex(strategy_index)
+        self.window.comboBox_2.setCurrentIndex(strategy_index)
 
     async def display_lines(self, *args, **kwargs):
         # ■■■■■ start the task ■■■■■
@@ -676,7 +678,7 @@ class Transactor:
 
         # ■■■■■ check if the data exists ■■■■■
 
-        async with solie.window.collector.candle_data.read_lock as cell:
+        async with self.window.collector.candle_data.read_lock as cell:
             if len(cell.data) == 0:
                 return
 
@@ -690,7 +692,7 @@ class Transactor:
             for _ in range(50):
                 if find_stop_flag(task_name, task_id):
                     return
-                async with solie.window.collector.candle_data.read_lock as cell:
+                async with self.window.collector.candle_data.read_lock as cell:
                     last_index = cell.data.index[-1]
                     if last_index == before_moment:
                         break
@@ -704,15 +706,15 @@ class Transactor:
 
         symbol = self.viewing_symbol
         strategy_index = self.transaction_settings.strategy_index
-        strategy = solie.window.strategist.strategies.all[strategy_index]
+        strategy = self.window.strategist.strategies.all[strategy_index]
 
         # ■■■■■ get light data ■■■■■
 
-        async with solie.window.collector.realtime_data_chunks.read_lock as cell:
+        async with self.window.collector.realtime_data_chunks.read_lock as cell:
             before_chunk = cell.data[-2].copy()
             current_chunk = cell.data[-1].copy()
         realtime_data = np.concatenate((before_chunk, current_chunk))
-        async with solie.window.collector.aggregate_trades.read_lock as cell:
+        async with self.window.collector.aggregate_trades.read_lock as cell:
             aggregate_trades = cell.data.copy()
 
         # ■■■■■ draw light lines ■■■■■
@@ -723,7 +725,7 @@ class Transactor:
         mask = data_y != 0
         data_y = data_y[mask]
         data_x = data_x[mask]
-        widget = solie.window.transaction_lines["mark_price"][0]
+        widget = self.window.transaction_lines["mark_price"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -735,7 +737,7 @@ class Transactor:
         mask = data_y != 0
         data_y = data_y[mask]
         data_x = data_x[mask]
-        widget = solie.window.transaction_lines["last_price"][0]
+        widget = self.window.transaction_lines["last_price"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -753,7 +755,7 @@ class Transactor:
         nan_ar[:] = np.nan
         data_x = np.repeat(index_ar, 3)
         data_y = np.stack([nan_ar, zero_ar, value_ar], axis=1).reshape(-1)
-        widget = solie.window.transaction_lines["last_volume"][0]
+        widget = self.window.transaction_lines["last_volume"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -765,7 +767,7 @@ class Transactor:
         mask = data_y != 0
         data_y = data_y[mask]
         data_x = data_x[mask]
-        widget = solie.window.transaction_lines["book_tickers"][0]
+        widget = self.window.transaction_lines["book_tickers"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -776,7 +778,7 @@ class Transactor:
         mask = data_y != 0
         data_y = data_y[mask]
         data_x = data_x[mask]
-        widget = solie.window.transaction_lines["book_tickers"][1]
+        widget = self.window.transaction_lines["book_tickers"][1]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -794,7 +796,7 @@ class Transactor:
         else:
             data_x = []
             data_y = []
-        widget = solie.window.transaction_lines["entry_price"][0]
+        widget = self.window.transaction_lines["entry_price"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -815,7 +817,7 @@ class Transactor:
 
         # ■■■■■ get heavy data ■■■■■
 
-        async with solie.window.collector.candle_data.read_lock as cell:
+        async with self.window.collector.candle_data.read_lock as cell:
             candle_data_original = cell.data[get_from:slice_until][[symbol]].copy()
         async with self.unrealized_changes.read_lock as cell:
             unrealized_changes = cell.data.copy()
@@ -903,7 +905,7 @@ class Transactor:
             ],
             axis=1,
         ).reshape(-1)
-        widget = solie.window.transaction_lines["price_rise"][0]
+        widget = self.window.transaction_lines["price_rise"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -937,7 +939,7 @@ class Transactor:
             ],
             axis=1,
         ).reshape(-1)
-        widget = solie.window.transaction_lines["price_fall"][0]
+        widget = self.window.transaction_lines["price_fall"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -971,7 +973,7 @@ class Transactor:
             ],
             axis=1,
         ).reshape(-1)
-        widget = solie.window.transaction_lines["price_stay"][0]
+        widget = self.window.transaction_lines["price_stay"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -981,7 +983,7 @@ class Transactor:
         sr = candle_data[(symbol, "High")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = solie.window.transaction_lines["wobbles"][0]
+        widget = self.window.transaction_lines["wobbles"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -990,7 +992,7 @@ class Transactor:
         sr = candle_data[(symbol, "Low")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = solie.window.transaction_lines["wobbles"][1]
+        widget = self.window.transaction_lines["wobbles"][1]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -1001,7 +1003,7 @@ class Transactor:
         sr = sr.fillna(value=0)
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = solie.window.transaction_lines["volume"][0]
+        widget = self.window.transaction_lines["volume"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -1010,7 +1012,7 @@ class Transactor:
         # asset
         data_x = asset_record["Result Asset"].index.to_numpy(dtype=np.int64) / 10**9
         data_y = asset_record["Result Asset"].to_numpy(dtype=np.float32)
-        widget = solie.window.transaction_lines["asset"][0]
+        widget = self.window.transaction_lines["asset"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -1024,7 +1026,7 @@ class Transactor:
         sr = sr * (1 + unrealized_changes_sr)
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9 + 5
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = solie.window.transaction_lines["asset_with_unrealized_profit"][0]
+        widget = self.window.transaction_lines["asset_with_unrealized_profit"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -1036,7 +1038,7 @@ class Transactor:
         sr = df["Fill Price"]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = solie.window.transaction_lines["sell"][0]
+        widget = self.window.transaction_lines["sell"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -1047,7 +1049,7 @@ class Transactor:
         sr = df["Fill Price"]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = solie.window.transaction_lines["buy"][0]
+        widget = self.window.transaction_lines["buy"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -1077,7 +1079,7 @@ class Transactor:
         df = indicators[symbol]["Price"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         data_x += 5
-        line_list = solie.window.transaction_lines["price_indicators"]
+        line_list = self.window.transaction_lines["price_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
                 column_name = df.columns[turn]
@@ -1102,7 +1104,7 @@ class Transactor:
         df = indicators[symbol]["Volume"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         data_x += 5
-        line_list = solie.window.transaction_lines["volume_indicators"]
+        line_list = self.window.transaction_lines["volume_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
                 column_name = df.columns[turn]
@@ -1127,7 +1129,7 @@ class Transactor:
         df = indicators[symbol]["Abstract"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         data_x += 5
-        line_list = solie.window.transaction_lines["abstract_indicators"]
+        line_list = self.window.transaction_lines["abstract_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
                 column_name = df.columns[turn]
@@ -1161,8 +1163,8 @@ class Transactor:
         await self.display_lines()
 
     async def update_viewing_symbol(self, *args, **kwargs):
-        alias = solie.window.comboBox_4.currentText()
-        symbol = solie.window.alias_to_symbol[alias]
+        alias = self.window.comboBox_4.currentText()
+        symbol = self.window.alias_to_symbol[alias]
         self.viewing_symbol = symbol
 
         asyncio.create_task(self.display_lines())
@@ -1178,7 +1180,7 @@ class Transactor:
                 "Couldn't get the latest info on your Binance account due to a problem"
                 " with your key or connection to the Binance server."
             )
-            solie.window.label_16.setText(text)
+            self.window.label_16.setText(text)
             return
 
         if not self.is_key_restrictions_satisfied:
@@ -1187,16 +1189,16 @@ class Transactor:
                 " disabled. Go to your Binance API managements webpage to change"
                 " the restrictions."
             )
-            solie.window.label_16.setText(text)
+            self.window.label_16.setText(text)
             return
 
-        cumulation_rate = await solie.window.collector.get_candle_data_cumulation_rate()
+        cumulation_rate = await self.window.collector.get_candle_data_cumulation_rate()
         if cumulation_rate < 1:
             text = (
                 "For auto transaction to work, the past 24 hour accumulation rate of"
                 " candle data must be 100%. Auto transaction is disabled."
             )
-            solie.window.label_16.setText(text)
+            self.window.label_16.setText(text)
             return
 
         # ■■■■■ display assets and positions information ■■■■■
@@ -1234,12 +1236,12 @@ class Transactor:
         text += f" {open_orders_count}"
         text += f"({all_open_orders_count})"
 
-        solie.window.label_16.setText(text)
+        self.window.label_16.setText(text)
 
     async def perform_transaction(self, *args, **kwargs):
         # ■■■■■ Clear the progress bar ■■■■
 
-        solie.window.progressBar_2.setValue(0)
+        self.window.progressBar_2.setValue(0)
 
         # ■■■■■ Stop if conditions are not met ■■■■
 
@@ -1252,7 +1254,7 @@ class Transactor:
         if not self.is_key_restrictions_satisfied:
             return
 
-        cumulation_rate = await solie.window.collector.get_candle_data_cumulation_rate()
+        cumulation_rate = await self.window.collector.get_candle_data_cumulation_rate()
         if cumulation_rate < 1:
             return
 
@@ -1273,17 +1275,17 @@ class Transactor:
                 if not is_cycle_done:
                     new_value = int(passed_time / timedelta(seconds=10) * 1000)
                 else:
-                    before_value = solie.window.progressBar_2.value()
+                    before_value = self.window.progressBar_2.value()
                     remaining = 1000 - before_value
                     new_value = before_value + math.ceil(remaining * 0.2)
-                solie.window.progressBar_2.setValue(new_value)
+                self.window.progressBar_2.setValue(new_value)
                 await asyncio.sleep(0.01)
 
         asyncio.create_task(play_progress_bar())
 
         # ■■■■■ Check if the data exists ■■■■■
 
-        async with solie.window.collector.candle_data.read_lock as cell:
+        async with self.window.collector.candle_data.read_lock as cell:
             if len(cell.data) == 0:
                 # case when the app is executed for the first time
                 return
@@ -1291,7 +1293,7 @@ class Transactor:
         # ■■■■■ Wait for the latest data to be added ■■■■■
 
         for _ in range(50):
-            async with solie.window.collector.candle_data.read_lock as cell:
+            async with self.window.collector.candle_data.read_lock as cell:
                 last_index = cell.data.index[-1]
                 if last_index == before_moment:
                     break
@@ -1300,15 +1302,15 @@ class Transactor:
         # ■■■■■ Get the candle data ■■■■■
 
         slice_from = datetime.now(timezone.utc) - timedelta(days=28)
-        async with solie.window.collector.candle_data.read_lock as cell:
+        async with self.window.collector.candle_data.read_lock as cell:
             candle_data = cell.data[slice_from:].copy()
 
         # ■■■■■ Make decision ■■■■■
 
-        target_symbols = solie.window.data_settings.target_symbols
+        target_symbols = self.window.data_settings.target_symbols
 
         strategy_index = self.transaction_settings.strategy_index
-        strategy = solie.window.strategist.strategies.all[strategy_index]
+        strategy = self.window.strategist.strategies.all[strategy_index]
 
         indicators_script = strategy.indicators_script
 
@@ -1357,22 +1359,22 @@ class Transactor:
     async def display_day_range(self, *args, **kwargs):
         range_start = (datetime.now(timezone.utc) - timedelta(hours=24)).timestamp()
         range_end = datetime.now(timezone.utc).timestamp()
-        widget = solie.window.plot_widget
+        widget = self.window.plot_widget
         widget.setXRange(range_start, range_end)
 
     async def match_graph_range(self, *args, **kwargs):
-        range_start = solie.window.plot_widget_2.getAxis("bottom").range[0]
-        range_end = solie.window.plot_widget_2.getAxis("bottom").range[1]
-        widget = solie.window.plot_widget
+        range_start = self.window.plot_widget_2.getAxis("bottom").range[0]
+        range_end = self.window.plot_widget_2.getAxis("bottom").range[1]
+        widget = self.window.plot_widget
         widget.setXRange(range_start, range_end, padding=0)  # type:ignore
 
     async def update_mode_settings(self, *args, **kwargs):
-        desired_leverage = solie.window.spinBox.value()
+        desired_leverage = self.window.spinBox.value()
         self.transaction_settings.desired_leverage = desired_leverage
 
         # ■■■■■ tell if some symbol's leverage cannot be set as desired ■■■■■
 
-        target_symbols = solie.window.data_settings.target_symbols
+        target_symbols = self.window.data_settings.target_symbols
         target_max_leverages = {}
         for symbol in target_symbols:
             max_leverage = self.maximum_leverages.get(symbol, 125)
@@ -1380,7 +1382,7 @@ class Transactor:
         lowest_max_leverage = min(target_max_leverages.values())
 
         if lowest_max_leverage < desired_leverage:
-            answer = await solie.window.ask(
+            answer = await self.window.ask(
                 "Leverage on some symbols cannot be set as desired",
                 "Binance has its own leverage limit per market. For some symbols,"
                 " leverage will be set as high as it can be, but not as same as the"
@@ -1394,7 +1396,7 @@ class Transactor:
                 for symbol, max_leverage in target_max_leverages.items():
                     texts.append(f"{symbol} {max_leverage}")
                 text = "\n".join(texts)
-                await solie.window.ask(
+                await self.window.ask(
                     "These are highest available leverages",
                     text,
                     ["Okay"],
@@ -1407,8 +1409,8 @@ class Transactor:
     async def watch_binance(self, *args, **kwargs):
         # ■■■■■ Basic data ■■■■■
 
-        target_symbols = solie.window.data_settings.target_symbols
-        asset_token = solie.window.data_settings.asset_token
+        target_symbols = self.window.data_settings.target_symbols
+        asset_token = self.window.data_settings.asset_token
 
         # ■■■■■ Check internet connection ■■■■■
 
@@ -1812,11 +1814,11 @@ class Transactor:
 
     async def place_orders(self, *args, **kwargs):
         decision = args[0]
-        target_symbols = solie.window.data_settings.target_symbols
+        target_symbols = self.window.data_settings.target_symbols
 
         current_prices: dict[str, float] = {}
         for symbol in target_symbols:
-            async with solie.window.collector.aggregate_trades.read_lock as cell:
+            async with self.window.collector.aggregate_trades.read_lock as cell:
                 ar = cell.data[-10000:].copy()
             temp_ar = ar[str((symbol, "Price"))]
             temp_ar = temp_ar[temp_ar != 0]
@@ -2137,7 +2139,7 @@ class Transactor:
 
     async def clear_positions_and_open_orders(self, *args, **kwargs):
         decision = {}
-        for symbol in solie.window.data_settings.target_symbols:
+        for symbol in self.window.data_settings.target_symbols:
             decision[symbol] = {
                 "cancel_all": {},
                 "now_close": {},
@@ -2149,7 +2151,7 @@ class Transactor:
             return
 
         conflicting_order_tuples = []
-        for symbol in solie.window.data_settings.target_symbols:
+        for symbol in self.window.data_settings.target_symbols:
             symbol_open_orders = self.account_state["open_orders"][symbol]
             groups_by_command: dict[str, list[int]] = {}
             for order_id, open_order_state in symbol_open_orders.items():
@@ -2191,7 +2193,7 @@ class Transactor:
         if not self.should_draw_frequently:
             return
 
-        widget = solie.window.plot_widget
+        widget = self.window.plot_widget
         before_range = widget.getAxis("bottom").range
         range_start = before_range[0]
         range_end = before_range[1]
@@ -2211,7 +2213,7 @@ class Transactor:
         text += "\n\n"
         text += json.dumps(self.account_state, indent=2, default=str)
 
-        await solie.window.overlay(
+        await self.window.overlay(
             "This is the raw account state object",
             LongTextView(text),
         )

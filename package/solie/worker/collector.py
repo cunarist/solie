@@ -29,15 +29,17 @@ from solie.utility import (
     sort_data_frame,
     standardize_candle_data,
 )
+from solie.window import Window
 
 logger = logging.getLogger(__name__)
 
 
 class Collector:
-    def __init__(self):
+    def __init__(self, window: Window):
         # ■■■■■ for data management ■■■■■
 
-        self.workerpath = solie.window.datapath / "collector"
+        self.window = window
+        self.workerpath = self.window.datapath / "collector"
 
         # ■■■■■ internal memory ■■■■■
 
@@ -49,19 +51,19 @@ class Collector:
         self.api_requester = ApiRequester()
 
         self.aggtrade_candle_sizes = {}
-        for symbol in solie.window.data_settings.target_symbols:
+        for symbol in self.window.data_settings.target_symbols:
             self.aggtrade_candle_sizes[symbol] = 0
 
         # Candle data.
         # It's expected to have only the data of current year,
         # while data of previous years are stored in the disk.
         self.candle_data = RWLock(
-            standardize_candle_data(solie.window.data_settings.target_symbols)
+            standardize_candle_data(self.window.data_settings.target_symbols)
         )
 
         # Realtime data chunks
         field_names = itertools.product(
-            solie.window.data_settings.target_symbols,
+            self.window.data_settings.target_symbols,
             ("Best Bid Price", "Best Ask Price", "Mark Price"),
         )
         field_names = [str(field_name) for field_name in field_names]
@@ -73,7 +75,7 @@ class Collector:
 
         # Aggregate trades
         field_names = itertools.product(
-            solie.window.data_settings.target_symbols,
+            self.window.data_settings.target_symbols,
             ("Price", "Volume"),
         )
         field_names = [str(field_name) for field_name in field_names]
@@ -83,32 +85,32 @@ class Collector:
 
         # ■■■■■ repetitive schedules ■■■■■
 
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.display_status_information,
             trigger="cron",
             second="*",
         )
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.fill_candle_data_holes,
             trigger="cron",
             second="*/10",
         )
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.add_candle_data,
             trigger="cron",
             second="*/10",
         )
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.organize_data,
             trigger="cron",
             minute="*",
         )
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.get_exchange_information,
             trigger="cron",
             minute="*",
         )
-        solie.window.scheduler.add_job(
+        self.window.scheduler.add_job(
             self.save_candle_data,
             trigger="cron",
             hour="*",
@@ -122,7 +124,7 @@ class Collector:
                 self.add_mark_price,
             ),
         }
-        for symbol in solie.window.data_settings.target_symbols:
+        for symbol in self.window.data_settings.target_symbols:
             api_streamer = ApiStreamer(
                 f"wss://fstream.binance.com/ws/{symbol.lower()}@bookTicker",
                 self.add_book_tickers,
@@ -253,7 +255,7 @@ class Collector:
 
         did_fill = False
 
-        target_symbols = solie.window.data_settings.target_symbols
+        target_symbols = self.window.data_settings.target_symbols
         while len(full_symbols) < len(target_symbols) and request_count < 10:
             for symbol in target_symbols:
                 if symbol in full_symbols:
@@ -356,7 +358,7 @@ class Collector:
             ar = cell.data.copy()
         price_precisions = self.price_precisions
 
-        for symbol in solie.window.data_settings.target_symbols:
+        for symbol in self.window.data_settings.target_symbols:
             temp_ar = ar[str((symbol, "Price"))]
             temp_ar = temp_ar[temp_ar != 0]
             if len(temp_ar) > 0:
@@ -365,7 +367,7 @@ class Collector:
                 text = f"＄{latest_price:.{price_precision}f}"
             else:
                 text = "Unavailable"
-            solie.window.price_labels[symbol].setText(text)
+            self.window.price_labels[symbol].setText(text)
 
         # bottom information
         if len(self.markets_gone) == 0:
@@ -412,7 +414,7 @@ class Collector:
                     + " You should make a new data folder."
                 )
 
-        solie.window.label_6.setText(text)
+        self.window.label_6.setText(text)
 
     async def get_candle_data_cumulation_rate(self, *args, **kwargs):
         current_moment = datetime.now(timezone.utc).replace(microsecond=0)
@@ -430,7 +432,7 @@ class Collector:
     async def download_fill_candle_data(self, *args, **kwargs):
         # ■■■■■ ask filling type ■■■■■
 
-        overlay_widget = await solie.window.overlay(
+        overlay_widget = await self.window.overlay(
             "Choose the range to fill",
             DownloadFillOption(),
         )
@@ -444,7 +446,7 @@ class Collector:
         task_id = make_stop_flag("download_fill_candle_data")
 
         download_presets: list[DownloadPreset] = []
-        target_symbols = solie.window.data_settings.target_symbols
+        target_symbols = self.window.data_settings.target_symbols
         if filling_type == 0:
             current_year = datetime.now(timezone.utc).year
             for year in range(2020, current_year):
@@ -520,22 +522,22 @@ class Collector:
         async def play_progress_bar():
             while True:
                 if find_stop_flag("download_fill_candle_data", task_id):
-                    solie.window.progressBar_3.setValue(0)
+                    self.window.progressBar_3.setValue(0)
                     return
                 else:
                     if done_steps == total_steps:
-                        progressbar_value = solie.window.progressBar_3.value()
+                        progressbar_value = self.window.progressBar_3.value()
                         if progressbar_value == 1000:
                             await asyncio.sleep(0.1)
-                            solie.window.progressBar_3.setValue(0)
+                            self.window.progressBar_3.setValue(0)
                             return
-                    before_value = solie.window.progressBar_3.value()
+                    before_value = self.window.progressBar_3.value()
                     if before_value < 1000:
                         remaining = (
                             math.ceil(1000 / total_steps * done_steps) - before_value
                         )
                         new_value = before_value + math.ceil(remaining * 0.2)
-                        solie.window.progressBar_3.setValue(new_value)
+                        self.window.progressBar_3.setValue(new_value)
                     await asyncio.sleep(0.01)
 
         asyncio.create_task(play_progress_bar())
@@ -605,9 +607,9 @@ class Collector:
 
         # ■■■■■ display to graphs ■■■■■
 
-        asyncio.create_task(solie.window.transactor.display_lines())
-        asyncio.create_task(solie.window.simulator.display_lines())
-        asyncio.create_task(solie.window.simulator.display_available_years())
+        asyncio.create_task(self.window.transactor.display_lines())
+        asyncio.create_task(self.window.simulator.display_lines())
+        asyncio.create_task(self.window.simulator.display_available_years())
 
     async def add_book_tickers(self, *args, **kwargs):
         received: dict = kwargs.get("received")  # type:ignore
@@ -630,7 +632,7 @@ class Collector:
     async def add_mark_price(self, *args, **kwargs):
         received: dict = kwargs.get("received")  # type:ignore
         start_time = datetime.now(timezone.utc)
-        target_symbols = solie.window.data_settings.target_symbols
+        target_symbols = self.window.data_settings.target_symbols
         event_time = np.datetime64(received[0]["E"] * 10**6, "ns")
         filtered_data = {}
         for about_mark_price in received:
@@ -694,7 +696,7 @@ class Collector:
 
         new_datas = {}
 
-        for symbol in solie.window.data_settings.target_symbols:
+        for symbol in self.window.data_settings.target_symbols:
             block_start_timestamp = before_moment.timestamp()
             block_end_timestamp = current_moment.timestamp()
 
@@ -743,7 +745,7 @@ class Collector:
         make_stop_flag("download_fill_candle_data")
 
     async def guide_donation(self, *args, **kwargs):
-        await solie.window.overlay(
+        await self.window.overlay(
             "Support Solie",
             DonationGuide(),
         )
