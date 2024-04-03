@@ -4,7 +4,11 @@ import sys
 from PySide6 import QtGui, QtWidgets
 
 from solie.common import PACKAGE_PATH, prepare_process_pool
+from solie.widget import AskPopup, OverlayPanel
 from solie.window import Window
+from solie.worker import Collector, Manager, Simulator, Strategiest, Transactor
+
+app_close_event = asyncio.Event()
 
 
 def bring_to_life():
@@ -38,13 +42,37 @@ def bring_to_life():
     app.setStyle("Fusion")
     app.setPalette(dark_palette)
 
-    # Show the window.
-    app_window = Window()
+    # Prepare the window.
+    app_window = Window(app_close_event)
     app_window.setPalette(dark_palette)
+    AskPopup.install_window(app_window)
+    OverlayPanel.install_window(app_window)
 
-    # Prepare tasks.
+    # Prepare the process pool
     prepare_process_pool()
-    asyncio.run(app_window.live())
+
+    # Make the window do the job
+    asyncio.run(live(app_window))
 
     # Make sure nothing happens after Solie.
     sys.exit()
+
+
+async def live(window: Window):
+    asyncio.create_task(window.boot())
+    asyncio.create_task(window.process_ui_events())
+
+    # Prepare workers
+    collector = Collector(window)
+    transactor = Transactor(window)
+    simulator = Simulator(window)
+    strategist = Strategiest(window)
+    manager = Manager(window)
+
+    await collector.load()
+    await transactor.load()
+    await simulator.load()
+    await strategist.load()
+    await manager.load()
+
+    await app_close_event.wait()

@@ -47,10 +47,10 @@ logger = logging.getLogger(__name__)
 
 
 class Window(QtWidgets.QMainWindow, Ui_MainWindow):
-    def __init__(self):
+    def __init__(self, app_close_event: asyncio.Event):
         super().__init__()
 
-        self.app_close_event = asyncio.Event()
+        self.app_close_event = app_close_event
 
         self.datapath: Path
         self.data_settings: DataSettings
@@ -1117,8 +1117,3 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         while True:
             app_instance.processEvents()
             await asyncio.sleep(interval)
-
-    async def live(self):
-        asyncio.create_task(self.boot())
-        asyncio.create_task(self.process_ui_events())
-        await self.app_close_event.wait()
