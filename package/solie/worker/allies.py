@@ -1,11 +1,16 @@
-from .collector import Collector
-from .manager import Manager
-from .simulator import Simulator
-from .strategist import Strategiest
-from .transactor import Transactor
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .collector import Collector
+    from .manager import Manager
+    from .simulator import Simulator
+    from .strategist import Strategiest
+    from .transactor import Transactor
 
 
-def remember_team(
+def remember_allies(
     collector_member: Collector,
     transactor_member: Transactor,
     simulator_member: Simulator,

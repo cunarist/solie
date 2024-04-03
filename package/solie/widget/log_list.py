@@ -6,7 +6,7 @@ from .overlay_panel import BaseOverlay, overlay
 
 
 class LogOverlay(BaseOverlay):
-    def __init__(self, long_text: str):
+    def __init__(self, log_content: str):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
@@ -17,7 +17,7 @@ class LogOverlay(BaseOverlay):
         cards_layout = QtWidgets.QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
-        label = QtWidgets.QLabel(long_text)
+        label = QtWidgets.QLabel(log_content)
         fixed_width_font = QtGui.QFont("Source Code Pro", 9)
         label.setFont(fixed_width_font)
         label.setTextInteractionFlags(

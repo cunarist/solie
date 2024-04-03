@@ -72,7 +72,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.transaction_lines: dict[str, list[pyqtgraph.PlotDataItem]] = {}
         self.simulation_lines: dict[str, list[pyqtgraph.PlotDataItem]] = {}
 
-        self.initialize_functions: list[Callable[..., Coroutine]] = []
         self.finalize_functions: list[Callable[..., Coroutine]] = []
 
         self.should_finalize = False
@@ -919,17 +918,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         log_handler = LogHandler(log_path, log_callback)
         logging.root.addHandler(log_handler)
 
-        # ■■■■■ Initialize functions ■■■■■
-
-        await asyncio.wait(
-            [asyncio.create_task(job()) for job in self.initialize_functions]
-        )
-
         # ■■■■■ Start repetitive timer ■■■■■
 
         self.scheduler.start()
-
-        # ■■■■■ Start basic functions ■■■■■
 
         # ■■■■■ Wait until the contents are filled ■■■■■
 
@@ -945,8 +936,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         splash_screen.setParent(None)
         self.board.show()
         self.gauge.show()
-
-        await self.app_close_event.wait()
 
     async def process_ui_events(self):
         interval = 1 / 240

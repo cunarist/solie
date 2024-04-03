@@ -14,7 +14,7 @@ from solie.worker import (
     Simulator,
     Strategiest,
     Transactor,
-    remember_team,
+    remember_allies,
 )
 
 logger = logging.getLogger(__name__)
@@ -74,6 +74,7 @@ def bring_to_life():
 async def live(window: Window, scheduler: AsyncIOScheduler):
     asyncio.create_task(window.process_ui_events())
     await window.boot()
+    logger.info("Started up")
 
     collector = Collector(window, scheduler)
     transactor = Transactor(window, scheduler)
@@ -81,7 +82,7 @@ async def live(window: Window, scheduler: AsyncIOScheduler):
     strategist = Strategiest(window, scheduler)
     manager = Manager(window, scheduler)
 
-    remember_team(collector, transactor, simulator, strategist, manager)
+    remember_allies(collector, transactor, simulator, strategist, manager)
 
     await collector.load()
     await transactor.load()
@@ -106,7 +107,5 @@ async def live(window: Window, scheduler: AsyncIOScheduler):
     asyncio.create_task(simulator.display_available_years())
     asyncio.create_task(manager.check_binance_limits())
     asyncio.create_task(manager.display_internal_status())
-
-    logger.info("Started up")
 
     await app_close_event.wait()
