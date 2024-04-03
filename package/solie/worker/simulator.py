@@ -32,6 +32,8 @@ from solie.utility import (
 from solie.widget import ask
 from solie.window import Window
 
+from . import team
+
 
 class Simulator:
     def __init__(self, window: Window, scheduler: AsyncIOScheduler):
@@ -198,7 +200,7 @@ class Simulator:
 
         # ■■■■■ check if the data exists ■■■■■
 
-        async with self.window.collector.candle_data.read_lock as cell:
+        async with team.collector.candle_data.read_lock as cell:
             if len(cell.data) == 0:
                 return
 
@@ -212,7 +214,7 @@ class Simulator:
             for _ in range(50):
                 if find_stop_flag(task_name, task_id):
                     return
-                async with self.window.collector.candle_data.read_lock as cell:
+                async with team.collector.candle_data.read_lock as cell:
                     last_index = cell.data.index[-1]
                     if last_index == before_moment:
                         break
@@ -226,15 +228,15 @@ class Simulator:
 
         symbol = self.viewing_symbol
         strategy_index = self.simulation_settings.strategy_index
-        strategy = self.window.strategist.strategies.all[strategy_index]
+        strategy = team.strategist.strategies.all[strategy_index]
 
         # ■■■■■ get light data ■■■■■
 
-        async with self.window.collector.realtime_data_chunks.read_lock as cell:
+        async with team.collector.realtime_data_chunks.read_lock as cell:
             before_chunk = cell.data[-2].copy()
             current_chunk = cell.data[-1].copy()
         realtime_data = np.concatenate((before_chunk, current_chunk))
-        async with self.window.collector.aggregate_trades.read_lock as cell:
+        async with team.collector.aggregate_trades.read_lock as cell:
             aggregate_trades = cell.data.copy()
 
         # ■■■■■ draw light lines ■■■■■
@@ -334,7 +336,7 @@ class Simulator:
         # ■■■■■ set range of heavy data ■■■■■
 
         if should_draw_all_years:
-            collector_path = self.window.collector.workerpath
+            collector_path = team.collector.workerpath
             years = [
                 int(format_numeric(filename))
                 for filename in await aiofiles.os.listdir(collector_path)
@@ -358,7 +360,7 @@ class Simulator:
 
         divided_datas: list[pd.DataFrame] = []
         for year in years:
-            filepath = self.window.collector.workerpath / f"candle_data_{year}.pickle"
+            filepath = team.collector.workerpath / f"candle_data_{year}.pickle"
             more_df = await go(pd.read_pickle, filepath)
             divided_datas.append(more_df)
         candle_data_original: pd.DataFrame = await go(pd.concat, divided_datas)
@@ -710,7 +712,7 @@ class Simulator:
         await self.present()
 
     async def display_available_years(self, *args, **kwargs):
-        collector_path = self.window.collector.workerpath
+        collector_path = team.collector.workerpath
         years = [
             int(format_numeric(filename))
             for filename in await aiofiles.os.listdir(collector_path)
@@ -886,7 +888,7 @@ class Simulator:
         year = self.simulation_settings.year
         strategy_index = self.simulation_settings.strategy_index
 
-        strategy = self.window.strategist.strategies.all[strategy_index]
+        strategy = team.strategist.strategies.all[strategy_index]
         strategy_code_name = strategy.code_name
         strategy_version = strategy.version
         should_parallelize = strategy.parallelized_simulation
@@ -917,7 +919,7 @@ class Simulator:
         slice_until -= timedelta(seconds=1)
 
         # Get the candle data of this year.
-        filepath = self.window.collector.workerpath / f"candle_data_{year}.pickle"
+        filepath = team.collector.workerpath / f"candle_data_{year}.pickle"
         year_candle_data: pd.DataFrame = await go(pd.read_pickle, filepath)
 
         # Interpolate so that there's no inappropriate holes.
@@ -1207,7 +1209,7 @@ class Simulator:
             chunk_length = 0
         else:
             strategy_index = self.simulation_settings.strategy_index
-            strategy = self.window.strategist.strategies.all[strategy_index]
+            strategy = team.strategist.strategies.all[strategy_index]
             should_parallelize = strategy.parallelized_simulation
             chunk_length = strategy.chunk_division
 
@@ -1322,7 +1324,7 @@ class Simulator:
         year = self.simulation_settings.year
         strategy_index = self.simulation_settings.strategy_index
 
-        strategy = self.window.strategist.strategies.all[strategy_index]
+        strategy = team.strategist.strategies.all[strategy_index]
         strategy_code_name = strategy.code_name
         strategy_version = strategy.version
 
@@ -1384,7 +1386,7 @@ class Simulator:
         year = self.simulation_settings.year
         strategy_index = self.simulation_settings.strategy_index
 
-        strategy = self.window.strategist.strategies.all[strategy_index]
+        strategy = team.strategist.strategies.all[strategy_index]
         strategy_code_name = strategy.code_name
         strategy_version = strategy.version
 

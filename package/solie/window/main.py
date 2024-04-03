@@ -10,6 +10,7 @@ import aiofiles
 import aiofiles.os
 import pandas as pd
 import pyqtgraph
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from solie.common import PACKAGE_PATH, PACKAGE_VERSION
@@ -46,10 +47,11 @@ logger = logging.getLogger(__name__)
 
 
 class Window(QtWidgets.QMainWindow, Ui_MainWindow):
-    def __init__(self, app_close_event: asyncio.Event):
+    def __init__(self, app_close_event: asyncio.Event, scheduler: AsyncIOScheduler):
         super().__init__()
 
         self.app_close_event = app_close_event
+        self.scheduler = scheduler
 
         self.datapath: Path
         self.data_settings: DataSettings

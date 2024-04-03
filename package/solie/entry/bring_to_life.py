@@ -8,7 +8,14 @@ from PySide6 import QtGui, QtWidgets
 from solie.common import PACKAGE_PATH, prepare_process_pool
 from solie.widget import AskPopup, OverlayPanel
 from solie.window import Window
-from solie.worker import Collector, Manager, Simulator, Strategiest, Transactor
+from solie.worker import (
+    Collector,
+    Manager,
+    Simulator,
+    Strategiest,
+    Transactor,
+    remember_team,
+)
 
 logger = logging.getLogger(__name__)
 app_close_event = asyncio.Event()
@@ -45,8 +52,11 @@ def bring_to_life():
     app.setStyle("Fusion")
     app.setPalette(dark_palette)
 
+    # Prepare the scheduler.
+    scheduler = AsyncIOScheduler(timezone="UTC")
+
     # Prepare the window.
-    window = Window(app_close_event)
+    window = Window(app_close_event, scheduler)
     window.setPalette(dark_palette)
     AskPopup.install_window(window)
     OverlayPanel.install_window(window)
@@ -55,23 +65,23 @@ def bring_to_life():
     prepare_process_pool()
 
     # Run the async event loop
-    asyncio.run(live(window))
+    asyncio.run(live(window, scheduler))
 
     # Make sure nothing happens after Solie.
     sys.exit()
 
 
-async def live(window: Window):
+async def live(window: Window, scheduler: AsyncIOScheduler):
     asyncio.create_task(window.process_ui_events())
     await window.boot()
-
-    scheduler = AsyncIOScheduler(timezone="UTC")
 
     collector = Collector(window, scheduler)
     transactor = Transactor(window, scheduler)
     simulator = Simulator(window, scheduler)
     strategist = Strategiest(window, scheduler)
     manager = Manager(window, scheduler)
+
+    remember_team(collector, transactor, simulator, strategist, manager)
 
     await collector.load()
     await transactor.load()

@@ -34,6 +34,8 @@ from solie.utility import (
 from solie.widget import overlay
 from solie.window import Window
 
+from . import team
+
 logger = logging.getLogger(__name__)
 
 
@@ -630,9 +632,9 @@ class Collector:
 
         # ■■■■■ display to graphs ■■■■■
 
-        asyncio.create_task(self.window.transactor.display_lines())
-        asyncio.create_task(self.window.simulator.display_lines())
-        asyncio.create_task(self.window.simulator.display_available_years())
+        asyncio.create_task(team.transactor.display_lines())
+        asyncio.create_task(team.simulator.display_lines())
+        asyncio.create_task(team.simulator.display_available_years())
 
     async def add_book_tickers(self, *args, **kwargs):
         received: dict = kwargs.get("received")  # type:ignore

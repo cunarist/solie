@@ -5,7 +5,9 @@ from typing import TypeVar
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from solie.common import outsource
-from solie.widget import PopupBox, TransparentScrollArea
+
+from .popup_box import PopupBox
+from .transparent_scroll_area import TransparentScrollArea
 
 
 class BaseOverlay(QtWidgets.QWidget):
