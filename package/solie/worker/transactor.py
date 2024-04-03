@@ -75,7 +75,7 @@ class Transactor:
         )
 
         self.scribbles = {}
-        self.transaction_settings: TransactionSettings
+        self.transaction_settings = TransactionSettings()
         self.unrealized_changes = RWLock(standardize_unrealized_changes())
         self.asset_record = RWLock(standardize_asset_record())
         self.auto_order_record = RWLock(
