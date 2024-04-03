@@ -20,6 +20,14 @@ class _RWLockCore:
         self._owning: list[tuple[Task[Any], int]] = []
 
     @property
+    def r_state(self) -> int:
+        return self._r_state
+
+    @property
+    def w_state(self) -> int:
+        return self._w_state
+
+    @property
     def read_locked(self) -> bool:
         return self._r_state > 0
 
@@ -197,7 +205,7 @@ class ReadLock(_ContextManagerMixin, Generic[T]):
         self._lock.release_read()
 
     def __repr__(self) -> str:
-        status = "locked" if self._lock._r_state > 0 else "unlocked"
+        status = "locked" if self._lock.r_state > 0 else "unlocked"
         return "<ReaderLock: [{}]>".format(status)
 
 
@@ -218,7 +226,7 @@ class WriteLock(_ContextManagerMixin, Generic[T]):
         self._lock.release_write()
 
     def __repr__(self) -> str:
-        status = "locked" if self._lock._w_state > 0 else "unlocked"
+        status = "locked" if self._lock.w_state > 0 else "unlocked"
         return "<WriterLock: [{}]>".format(status)
 
 
