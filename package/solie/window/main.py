@@ -4,7 +4,6 @@ import math
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, Coroutine
 
 import aiofiles
 import aiofiles.os
@@ -47,17 +46,18 @@ logger = logging.getLogger(__name__)
 
 
 class Window(QtWidgets.QMainWindow, Ui_MainWindow):
-    def __init__(self, app_close_event: asyncio.Event, scheduler: AsyncIOScheduler):
+    def __init__(self, close_event: asyncio.Event, scheduler: AsyncIOScheduler):
         super().__init__()
 
-        self.app_close_event = app_close_event
+        self.close_event = close_event
         self.scheduler = scheduler
+        self.last_interaction = datetime.now(timezone.utc)
 
         self.datapath: Path
         self.data_settings: DataSettings
 
+        self.splash_screen: SplashScreen
         self.price_labels: dict[str, QtWidgets.QLabel] = {}
-        self.last_interaction = datetime.now(timezone.utc)
 
         self.plot_widget = pyqtgraph.PlotWidget()
         self.plot_widget_1 = pyqtgraph.PlotWidget()
@@ -72,19 +72,12 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.transaction_lines: dict[str, list[pyqtgraph.PlotDataItem]] = {}
         self.simulation_lines: dict[str, list[pyqtgraph.PlotDataItem]] = {}
 
-        self.finalize_functions: list[Callable[..., Coroutine]] = []
-
-        self.should_finalize = False
         self.should_confirm_closing = False
-        self.last_interaction = datetime.now(timezone.utc)
 
     def closeEvent(self, event):  # noqa:N802
         event.ignore()
 
         async def job_close():
-            if not self.should_finalize:
-                self.app_close_event.set()
-
             if self.should_confirm_closing:
                 answer = await ask(
                     "Really quit?",
@@ -104,17 +97,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.board.hide()
             self.closeEvent = lambda event: event.ignore()
 
-            splash_screen = SplashScreen()
-            self.centralWidget().layout().addWidget(splash_screen)
-
-            self.scheduler.shutdown()
-            await asyncio.sleep(1)
-
-            await asyncio.wait(
-                [asyncio.create_task(job()) for job in self.finalize_functions]
-            )
-
-            self.app_close_event.set()
+            self.splash_screen.show()
+            self.close_event.set()
 
         asyncio.create_task(job_close())
 
@@ -148,13 +132,14 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.splitter.setSizes([3, 1, 1, 2])
         self.splitter_2.setSizes([3, 1, 1, 2])
 
-        # ■■■■■ Hide some of the main widgets ■■■■■
+        # ■■■■■ Show the splash screen ■■■■■
 
         self.gauge.hide()
         self.board.hide()
+        self.splash_screen = SplashScreen()
+        self.centralWidget().layout().addWidget(self.splash_screen)
 
         # ■■■■■ Show the window ■■■■■
-
         self.show()
 
         # ■■■■■ Global settings of packages ■■■■■
@@ -173,11 +158,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         product_icon_pixmap = QtGui.QPixmap()
         product_icon_pixmap.loadFromData(product_icon_data)
         self.setWindowIcon(product_icon_pixmap)
-
-        # ■■■■■ Guide frame ■■■■■
-
-        splash_screen = SplashScreen()
-        self.centralWidget().layout().addWidget(splash_screen)
 
         # ■■■■■ Request internet connection ■■■■■
 
@@ -918,26 +898,14 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         log_handler = LogHandler(log_path, log_callback)
         logging.root.addHandler(log_handler)
 
-        # ■■■■■ Start repetitive timer ■■■■■
-
-        self.scheduler.start()
-
-        # ■■■■■ Wait until the contents are filled ■■■■■
-
-        await asyncio.sleep(1)
-
-        # ■■■■■ Change closing behavior ■■■■■
-
-        self.should_finalize = True
+    def reveal(self):
         self.should_confirm_closing = True
 
-        # ■■■■■ Show main widgets ■■■■■
-
-        splash_screen.setParent(None)
+        self.splash_screen.hide()
         self.board.show()
         self.gauge.show()
 
-    async def process_ui_events(self):
+    async def process_events(self):
         interval = 1 / 240
         app_instance = QtCore.QCoreApplication.instance()
         if app_instance is None:

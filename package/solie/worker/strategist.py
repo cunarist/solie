@@ -19,7 +19,7 @@ class Strategiest:
 
         self.window = window
         self.scheduler = scheduler
-        self.workerpath = self.window.datapath / "strategist"
+        self.workerpath = window.datapath / "strategist"
 
         # ■■■■■ internal memory ■■■■■
 

@@ -51,7 +51,7 @@ class Transactor:
 
         self.window = window
         self.scheduler = scheduler
-        self.workerpath = self.window.datapath / "transactor"
+        self.workerpath = window.datapath / "transactor"
 
         # ■■■■■ internal memory ■■■■■
 
@@ -67,11 +67,11 @@ class Transactor:
 
         self.api_requester = ApiRequester()
 
-        self.viewing_symbol = self.window.data_settings.target_symbols[0]
+        self.viewing_symbol = window.data_settings.target_symbols[0]
         self.should_draw_frequently = True
 
         self.account_state = standardize_account_state(
-            self.window.data_settings.target_symbols
+            window.data_settings.target_symbols
         )
 
         self.scribbles = {}

@@ -40,7 +40,7 @@ class Manager:
 
         self.window = window
         self.scheduler = scheduler
-        self.workerpath = self.window.datapath / "manager"
+        self.workerpath = window.datapath / "manager"
 
         # ■■■■■ internal memory ■■■■■
 

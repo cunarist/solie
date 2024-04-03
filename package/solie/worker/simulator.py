@@ -41,13 +41,13 @@ class Simulator:
 
         self.window = window
         self.scheduler = scheduler
-        self.workerpath = self.window.datapath / "simulator"
+        self.workerpath = window.datapath / "simulator"
 
         # ■■■■■ internal memory ■■■■■
 
         # ■■■■■ remember and display ■■■■■
 
-        self.viewing_symbol = self.window.data_settings.target_symbols[0]
+        self.viewing_symbol = window.data_settings.target_symbols[0]
         self.should_draw_all_years = False
 
         self.simulation_settings = SimulationSettings(

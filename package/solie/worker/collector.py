@@ -45,7 +45,7 @@ class Collector:
 
         self.window = window
         self.scheduler = scheduler
-        self.workerpath = self.window.datapath / "collector"
+        self.workerpath = window.datapath / "collector"
 
         # ■■■■■ internal memory ■■■■■
 
@@ -57,19 +57,19 @@ class Collector:
         self.api_requester = ApiRequester()
 
         self.aggtrade_candle_sizes = {}
-        for symbol in self.window.data_settings.target_symbols:
+        for symbol in window.data_settings.target_symbols:
             self.aggtrade_candle_sizes[symbol] = 0
 
         # Candle data.
         # It's expected to have only the data of current year,
         # while data of previous years are stored in the disk.
         self.candle_data = RWLock(
-            standardize_candle_data(self.window.data_settings.target_symbols)
+            standardize_candle_data(window.data_settings.target_symbols)
         )
 
         # Realtime data chunks
         field_names = itertools.product(
-            self.window.data_settings.target_symbols,
+            window.data_settings.target_symbols,
             ("Best Bid Price", "Best Ask Price", "Mark Price"),
         )
         field_names = [str(field_name) for field_name in field_names]
@@ -81,7 +81,7 @@ class Collector:
 
         # Aggregate trades
         field_names = itertools.product(
-            self.window.data_settings.target_symbols,
+            window.data_settings.target_symbols,
             ("Price", "Volume"),
         )
         field_names = [str(field_name) for field_name in field_names]

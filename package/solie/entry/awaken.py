@@ -18,7 +18,7 @@ from solie.worker import (
 )
 
 logger = logging.getLogger(__name__)
-app_close_event = asyncio.Event()
+close_event = asyncio.Event()
 
 
 def bring_to_life():
@@ -56,7 +56,7 @@ def bring_to_life():
     scheduler = AsyncIOScheduler(timezone="UTC")
 
     # Prepare the window.
-    window = Window(app_close_event, scheduler)
+    window = Window(close_event, scheduler)
     window.setPalette(dark_palette)
     AskPopup.install_window(window)
     OverlayPanel.install_window(window)
@@ -72,7 +72,7 @@ def bring_to_life():
 
 
 async def live(window: Window, scheduler: AsyncIOScheduler):
-    asyncio.create_task(window.process_ui_events())
+    asyncio.create_task(window.process_events())
     await window.boot()
     logger.info("Started up")
 
@@ -84,16 +84,14 @@ async def live(window: Window, scheduler: AsyncIOScheduler):
 
     remember_allies(collector, transactor, simulator, strategist, manager)
 
-    await collector.load()
-    await transactor.load()
-    await simulator.load()
-    await strategist.load()
-    await manager.load()
-
-    window.finalize_functions.append(transactor.save_large_data)
-    window.finalize_functions.append(transactor.save_scribbles)
-    window.finalize_functions.append(strategist.save_strategies)
-    window.finalize_functions.append(collector.save_candle_data)
+    tasks = [
+        asyncio.create_task(collector.load()),
+        asyncio.create_task(transactor.load()),
+        asyncio.create_task(simulator.load()),
+        asyncio.create_task(strategist.load()),
+        asyncio.create_task(manager.load()),
+    ]
+    await asyncio.wait(tasks)
 
     asyncio.create_task(collector.get_exchange_information())
     asyncio.create_task(strategist.display_strategies())
@@ -108,4 +106,19 @@ async def live(window: Window, scheduler: AsyncIOScheduler):
     asyncio.create_task(manager.check_binance_limits())
     asyncio.create_task(manager.display_internal_status())
 
-    await app_close_event.wait()
+    scheduler.start()
+    await asyncio.sleep(1)
+
+    window.reveal()
+    await close_event.wait()
+
+    scheduler.shutdown()
+    await asyncio.sleep(1)
+
+    tasks = [
+        asyncio.create_task(transactor.save_large_data()),
+        asyncio.create_task(transactor.save_scribbles()),
+        asyncio.create_task(strategist.save_strategies()),
+        asyncio.create_task(collector.save_candle_data()),
+    ]
+    await asyncio.wait(tasks)
