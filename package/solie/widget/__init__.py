@@ -3,7 +3,7 @@ from .brand_label import BrandLabel
 from .gauge import Gauge
 from .horizontal_divider import HorizontalDivider
 from .log_list import LogList
-from .overlay_panel import BaseOverlay, OverlayPanel, overlay
+from .overlay_popup import BaseOverlay, OverlayPopup, overlay
 from .popup_box import PopupBox
 from .script_editor import ScriptEditor
 from .splash_screen import SplashScreen
@@ -17,7 +17,7 @@ __all__ = [
     "Gauge",
     "HorizontalDivider",
     "LogList",
-    "OverlayPanel",
+    "OverlayPopup",
     "PopupBox",
     "ScriptEditor",
     "SplashScreen",

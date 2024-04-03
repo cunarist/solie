@@ -6,7 +6,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtGui, QtWidgets
 
 from solie.common import PACKAGE_PATH, prepare_process_pool
-from solie.widget import AskPopup, OverlayPanel
+from solie.widget import AskPopup, OverlayPopup
 from solie.window import Window
 from solie.worker import (
     Collector,
@@ -59,7 +59,7 @@ def bring_to_life():
     window = Window(close_event, scheduler)
     window.setPalette(dark_palette)
     AskPopup.install_window(window)
-    OverlayPanel.install_window(window)
+    OverlayPopup.install_window(window)
 
     # Prepare the process pool
     prepare_process_pool()

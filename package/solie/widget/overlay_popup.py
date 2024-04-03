@@ -19,7 +19,7 @@ W = TypeVar("W", bound=BaseOverlay)
 
 # show an mainpulatable overlap popup
 async def overlay(title: str, widget: W, close_button=True) -> W:
-    overlay_panel = OverlayPanel(title, widget, close_button)
+    overlay_panel = OverlayPopup(title, widget, close_button)
     overlay_panel.show()
 
     await widget.done_event.wait()
@@ -28,7 +28,7 @@ async def overlay(title: str, widget: W, close_button=True) -> W:
     return widget
 
 
-class OverlayPanel(QtWidgets.QWidget):
+class OverlayPopup(QtWidgets.QWidget):
     installed_window: QtWidgets.QMainWindow
 
     def showEvent(self, event):  # noqa:N802

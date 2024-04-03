@@ -2,7 +2,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 from solie.common import outsource
 
-from .overlay_panel import BaseOverlay, overlay
+from .overlay_popup import BaseOverlay, overlay
 
 
 class LogOverlay(BaseOverlay):
