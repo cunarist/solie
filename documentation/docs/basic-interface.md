@@ -62,10 +62,9 @@ If you check `Auto-transact` in Solie, automatic order will be activate. Be sure
 ## 🧾 Extra Tips
 
 - Solie was developed for Binance-focused automatic ordering and simulation purposes. Other exchanges are not supported.
-- Even if candle data has not been accumulated by turning off Solie for a while, the holes within the last 24 hours are automatically filled slowly.
+- Even if candle data has not been accumulated by turning off Solie for a while, the holes within the last 24 hours are gradually filled automatically.
 - All times are in represented in UTC, Coordinated Universal Time.
-- Candle data is recorded every 10 seconds. That equates to 6 candlesticks every minute.
-- The reason it requires administrator privileges is because of the system time setting. If the time difference with the Binance server increases, the order itself will be rejected, so the system time is aligned with the Binance server.
+- Candle data is recorded every 10 seconds. That means there are 6 candlesticks every minute.
 - If auto transaction is on, positions will be set to cross-margin mode and futures accounts will be set to one-way mode, single asset mode. This is because the calculation methods and risk management used for automatic ordering and simulation are tailored to this.
 - The option `Draw frequently` updates the transaction graph every 10 seconds if enabled. For performance reasons, only the last 24 hours of data are drawn in the transaction graph with this option turned on. The complete data can be viewed in the simulation graph with the option `Draw all years`. If `Draw frequently` is disabled, the graph gets updated every hour with the advantage of displaying an entire year.
 - A red light icon in the strategy selection menu means that the strategy cannot be used.
