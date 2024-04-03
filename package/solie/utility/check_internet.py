@@ -7,20 +7,20 @@ import aiohttp
 logger = logging.getLogger(__name__)
 
 is_internet_checked = asyncio.Event()
-_was_connected = False
-_connected_functions: list[Callable[..., Coroutine]] = []
-_disconnected_functions: list[Callable[..., Coroutine]] = []
+was_connected = False
+connected_functions: list[Callable[..., Coroutine]] = []
+disconnected_functions: list[Callable[..., Coroutine]] = []
 
 
 def internet_connected():
     if is_internet_checked.is_set():
-        return _was_connected
+        return was_connected
     else:
         raise RuntimeError("Internet connection is not being monitored")
 
 
 async def monitor_internet():
-    global _was_connected
+    global was_connected
     while True:
         # try to connect to DNS servers
         attempt_ips = [
@@ -45,17 +45,17 @@ async def monitor_internet():
                     pass
 
         # detect changes
-        if _was_connected and not is_connected:
-            for job in _disconnected_functions:
+        if was_connected and not is_connected:
+            for job in disconnected_functions:
                 asyncio.create_task(job())
             logger.warning("Internet disconnected")
-        elif not _was_connected and is_connected:
-            for job in _connected_functions:
+        elif not was_connected and is_connected:
+            for job in connected_functions:
                 asyncio.create_task(job())
             logger.info("Internet connected")
 
         # remember connection state
-        _was_connected = is_connected
+        was_connected = is_connected
         is_internet_checked.set()
 
         # wait for a while
@@ -63,10 +63,10 @@ async def monitor_internet():
 
 
 def add_connected_functions(job: Callable[..., Coroutine]):
-    global _connected_functions
-    _connected_functions.append(job)
+    global connected_functions
+    connected_functions.append(job)
 
 
 def add_disconnected_functions(job: Callable[..., Coroutine]):
-    global _disconnected_functions
-    _disconnected_functions.append(job)
+    global disconnected_functions
+    disconnected_functions.append(job)
