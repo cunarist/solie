@@ -1,5 +1,14 @@
+from .analyze_market import (
+    CalculationInput,
+    CalculationOutput,
+    SimulationError,
+    decide,
+    make_indicators,
+    simulate_chunk,
+)
 from .api_requester import ApiRequester, ApiRequestError
 from .api_streamer import ApiStreamer
+from .backward_compatibility import examine_data_files
 from .ball import ball_ceil, ball_floor
 from .check_internet import (
     add_connected_functions,
@@ -8,21 +17,15 @@ from .check_internet import (
     is_internet_checked,
     monitor_internet,
 )
-from .combine_candle_data import combine_candle_data
 from .compare_versions import is_left_version_higher
 from .convert import list_to_dict, value_to_indexes
-from .decide import (
-    CalculationInput,
-    CalculationOutput,
-    SimulationError,
-    decide,
-    simulate_chunk,
+from .download_from_binance import (
+    DownloadPreset,
+    download_aggtrade_data,
+    fill_holes_with_aggtrades,
 )
-from .download_aggtrade_data import DownloadPreset, download_aggtrade_data
-from .examine_data_files import examine_data_files
-from .fill_holes_with_aggtrades import fill_holes_with_aggtrades
 from .log_handler import LogHandler
-from .make_indicators import make_indicators
+from .pandas_related import combine_candle_data
 from .percent_axis_item import PercentAxisItem
 from .remember_task_durations import add_task_duration, get_task_duration
 from .rw_lock import RWLock
