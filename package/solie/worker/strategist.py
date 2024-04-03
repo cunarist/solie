@@ -42,7 +42,12 @@ class Strategiest:
 
         self.api_streamers = {}
 
-        # ■■■■■ invoked by the internet connection status change  ■■■■■
+        # ■■■■■ invoked by the internet connection status change ■■■■■
+
+        # ■■■■■ connect UI events ■■■■■
+
+        job = self.add_blank_strategy
+        outsource(self.window.pushButton_5.clicked, job)
 
     async def load(self, *args, **kwargs):
         await aiofiles.os.makedirs(self.workerpath, exist_ok=True)

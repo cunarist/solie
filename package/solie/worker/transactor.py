@@ -11,8 +11,9 @@ import aiofiles
 import aiofiles.os
 import numpy as np
 import pandas as pd
+from PySide6 import QtWidgets
 
-from solie.common import go
+from solie.common import go, outsource
 from solie.overlay import LongTextView
 from solie.utility import (
     ApiRequester,
@@ -146,9 +147,61 @@ class Transactor:
             )
         }
 
-        # ■■■■■ invoked by the internet connection status change  ■■■■■
+        # ■■■■■ invoked by the internet connection status change ■■■■■
 
         add_connected_functions(self.watch_binance)
+
+        # ■■■■■ connect UI events ■■■■■
+
+        # Special widgets
+        job = self.display_range_information
+        outsource(self.window.plot_widget.sigRangeChanged, job)
+        job = self.set_minimum_view_range
+        outsource(self.window.plot_widget.sigRangeChanged, job)
+        job = self.update_automation_settings
+        outsource(self.window.comboBox_2.currentIndexChanged, job)
+        job = self.update_automation_settings
+        outsource(self.window.checkBox.toggled, job)
+        job = self.update_keys
+        outsource(self.window.lineEdit_4.editingFinished, job)
+        job = self.update_keys
+        outsource(self.window.lineEdit_6.editingFinished, job)
+        job = self.toggle_frequent_draw
+        outsource(self.window.checkBox_2.toggled, job)
+        job = self.display_day_range
+        outsource(self.window.pushButton_14.clicked, job)
+        job = self.update_mode_settings
+        outsource(self.window.spinBox.editingFinished, job)
+        job = self.update_viewing_symbol
+        outsource(self.window.comboBox_4.currentIndexChanged, job)
+
+        action_menu = QtWidgets.QMenu(self.window)
+        self.window.pushButton_12.setMenu(action_menu)
+
+        text = "Open Binance exchange"
+        job = self.open_exchange
+        new_action = action_menu.addAction(text)
+        outsource(new_action.triggered, job)
+        text = "Open Binance futures wallet"
+        job = self.open_futures_wallet_page
+        new_action = action_menu.addAction(text)
+        outsource(new_action.triggered, job)
+        text = "Open Binance API management webpage"
+        job = self.open_api_management_page
+        new_action = action_menu.addAction(text)
+        outsource(new_action.triggered, job)
+        text = "Clear all positions and open orders"
+        job = self.clear_positions_and_open_orders
+        new_action = action_menu.addAction(text)
+        outsource(new_action.triggered, job)
+        text = "Display same range as simulation graph"
+        job = self.match_graph_range
+        new_action = action_menu.addAction(text)
+        outsource(new_action.triggered, job)
+        text = "Show Raw Account State Object"
+        job = self.show_raw_account_state_object
+        new_action = action_menu.addAction(text)
+        outsource(new_action.triggered, job)
 
     async def load(self, *args, **kwargs):
         await aiofiles.os.makedirs(self.workerpath, exist_ok=True)

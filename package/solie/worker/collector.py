@@ -10,8 +10,9 @@ from datetime import datetime, timedelta, timezone
 import aiofiles.os
 import numpy as np
 import pandas as pd
+from PySide6 import QtWidgets
 
-from solie.common import go
+from solie.common import go, outsource
 from solie.overlay import DonationGuide, DownloadFillOption
 from solie.utility import (
     ApiRequester,
@@ -137,9 +138,28 @@ class Collector:
             )
             self.api_streamers[f"AGG_TRADE_{symbol}"] = api_streamer
 
-        # ■■■■■ invoked by the internet connection status change  ■■■■■
+        # ■■■■■ invoked by the internet connection status change ■■■■■
 
         add_disconnected_functions(self.clear_aggregate_trades)
+
+        # ■■■■■ connect UI events ■■■■■
+
+        job = self.guide_donation
+        outsource(self.window.pushButton_9.clicked, job)
+        job = self.download_fill_candle_data
+        outsource(self.window.pushButton_2.clicked, job)
+
+        action_menu = QtWidgets.QMenu(self.window)
+        self.window.pushButton_13.setMenu(action_menu)
+
+        text = "Open historical data webpage of Binance"
+        job = self.open_binance_data_page
+        new_action = action_menu.addAction(text)
+        outsource(new_action.triggered, job)
+        text = "Stop filling candle data"
+        job = self.stop_filling_candle_data
+        new_action = action_menu.addAction(text)
+        outsource(new_action.triggered, job)
 
     async def load(self, *args, **kwargs):
         await aiofiles.os.makedirs(self.workerpath, exist_ok=True)

@@ -11,7 +11,7 @@ import aiofiles
 import aiofiles.os
 import time_machine
 
-from solie.common import PROCESS_COUNT, go
+from solie.common import PROCESS_COUNT, go, outsource
 from solie.utility import (
     ApiRequester,
     get_task_duration,
@@ -90,7 +90,22 @@ class Manager:
 
         self.api_streamers = {}
 
-        # ■■■■■ invoked by the internet connection status change  ■■■■■
+        # ■■■■■ invoked by the internet connection status change ■■■■■
+
+        # ■■■■■ connect UI events ■■■■■
+
+        job = self.run_script
+        outsource(self.window.pushButton.clicked, job)
+        job = self.open_datapath
+        outsource(self.window.pushButton_8.clicked, job)
+        job = self.deselect_log_output
+        outsource(self.window.pushButton_6.clicked, job)
+        job = self.reset_datapath
+        outsource(self.window.pushButton_22.clicked, job)
+        job = self.open_documentation
+        outsource(self.window.pushButton_7.clicked, job)
+        job = self.change_settings
+        outsource(self.window.comboBox_3.currentIndexChanged, job)
 
     async def load(self, *args, **kwargs):
         await aiofiles.os.makedirs(self.workerpath, exist_ok=True)

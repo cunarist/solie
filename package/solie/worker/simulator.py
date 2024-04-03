@@ -8,9 +8,10 @@ import aiofiles
 import aiofiles.os
 import numpy as np
 import pandas as pd
+from PySide6 import QtWidgets
 from scipy.signal import find_peaks
 
-from solie.common import communicator, go
+from solie.common import communicator, go, outsource
 from solie.utility import (
     CalculationInput,
     RWLock,
@@ -82,7 +83,58 @@ class Simulator:
 
         self.api_streamers = {}
 
-        # ■■■■■ invoked by the internet connection status change  ■■■■■
+        # ■■■■■ invoked by the internet connection status change ■■■■■
+
+        # ■■■■■ connect UI events ■■■■■
+
+        job = self.display_range_information
+        outsource(self.window.plot_widget_2.sigRangeChanged, job)
+        job = self.set_minimum_view_range
+        outsource(self.window.plot_widget_2.sigRangeChanged, job)
+        job = self.update_calculation_settings
+        outsource(self.window.comboBox.currentIndexChanged, job)
+        job = self.calculate
+        outsource(self.window.pushButton_3.clicked, job)
+        job = self.update_presentation_settings
+        outsource(self.window.spinBox_2.editingFinished, job)
+        job = self.update_presentation_settings
+        outsource(self.window.doubleSpinBox.editingFinished, job)
+        job = self.update_presentation_settings
+        outsource(self.window.doubleSpinBox_2.editingFinished, job)
+        job = self.erase
+        outsource(self.window.pushButton_4.clicked, job)
+        job = self.update_calculation_settings
+        outsource(self.window.comboBox_5.currentIndexChanged, job)
+        job = self.toggle_combined_draw
+        outsource(self.window.checkBox_3.toggled, job)
+        job = self.display_year_range
+        outsource(self.window.pushButton_15.clicked, job)
+        job = self.delete_calculation_data
+        outsource(self.window.pushButton_16.clicked, job)
+        job = self.draw
+        outsource(self.window.pushButton_17.clicked, job)
+        job = self.update_viewing_symbol
+        outsource(self.window.comboBox_6.currentIndexChanged, job)
+
+        action_menu = QtWidgets.QMenu(self.window)
+        self.window.pushButton_11.setMenu(action_menu)
+
+        text = "Calculate temporarily only on visible range"
+        job = self.simulate_only_visible
+        new_action = action_menu.addAction(text)
+        outsource(new_action.triggered, job)
+        text = "Stop calculation"
+        job = self.stop_calculation
+        new_action = action_menu.addAction(text)
+        outsource(new_action.triggered, job)
+        text = "Find spots with lowest unrealized profit"
+        job = self.analyze_unrealized_peaks
+        new_action = action_menu.addAction(text)
+        outsource(new_action.triggered, job)
+        text = "Display same range as transaction graph"
+        job = self.match_graph_range
+        new_action = action_menu.addAction(text)
+        outsource(new_action.triggered, job)
 
     async def load(self, *args, **kwargs):
         await aiofiles.os.makedirs(self.workerpath, exist_ok=True)

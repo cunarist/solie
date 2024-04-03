@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import sys
 
 from PySide6 import QtGui, QtWidgets
@@ -8,6 +9,7 @@ from solie.widget import AskPopup, OverlayPanel
 from solie.window import Window
 from solie.worker import Collector, Manager, Simulator, Strategiest, Transactor
 
+logger = logging.getLogger(__name__)
 app_close_event = asyncio.Event()
 
 
@@ -59,8 +61,8 @@ def bring_to_life():
 
 
 async def live(window: Window):
-    asyncio.create_task(window.boot())
     asyncio.create_task(window.process_ui_events())
+    await window.boot()
 
     # Prepare workers
     collector = Collector(window)
@@ -92,5 +94,7 @@ async def live(window: Window):
     asyncio.create_task(simulator.display_available_years())
     asyncio.create_task(manager.check_binance_limits())
     asyncio.create_task(manager.display_internal_status())
+
+    logger.info("Started up")
 
     await app_close_event.wait()
