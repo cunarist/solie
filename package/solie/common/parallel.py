@@ -12,9 +12,6 @@ sync_manager = multiprocessing.Manager()
 
 def prepare_process_pool():
     global process_pool
-
-    # Use only half of the cores
-    # as stuffing all the cores with tasks leads to a system slowdown.
     process_pool = ProcessPoolExecutor(PROCESS_COUNT)
 
 
