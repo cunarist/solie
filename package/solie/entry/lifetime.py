@@ -54,7 +54,7 @@ async def live():
     close_event = asyncio.Event()
     scheduler = AsyncIOScheduler(timezone="UTC")
 
-    window = Window(close_event, scheduler)
+    window = Window(close_event)
     window.setPalette(dark_palette)
     AskPopup.install_window(window)
     OverlayPopup.install_window(window)
