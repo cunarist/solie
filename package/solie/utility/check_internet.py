@@ -8,8 +8,8 @@ logger = logging.getLogger(__name__)
 
 is_internet_checked = asyncio.Event()
 was_connected = False
-connected_functions: list[Callable[..., Coroutine]] = []
-disconnected_functions: list[Callable[..., Coroutine]] = []
+connected_functions: list[Callable[[], Coroutine]] = []
+disconnected_functions: list[Callable[[], Coroutine]] = []
 
 
 def internet_connected():
@@ -62,11 +62,11 @@ async def monitor_internet():
         await asyncio.sleep(1)
 
 
-def add_connected_functions(job: Callable[..., Coroutine]):
+def add_connected_functions(job: Callable[[], Coroutine]):
     global connected_functions
     connected_functions.append(job)
 
 
-def add_disconnected_functions(job: Callable[..., Coroutine]):
+def add_disconnected_functions(job: Callable[[], Coroutine]):
     global disconnected_functions
     disconnected_functions.append(job)

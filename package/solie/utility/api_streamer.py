@@ -8,9 +8,13 @@ logger = logging.getLogger(__name__)
 
 
 class ApiStreamer:
-    def __init__(self, url: str, when_received: Callable[..., Coroutine]):
+    def __init__(
+        self,
+        url: str,
+        handler: Callable[[dict], Coroutine] | Callable[[list], Coroutine],
+    ):
         self._url = url
-        self._when_received = when_received
+        self._handler = handler
         self.session = aiohttp.ClientSession()
 
         if url != "":
@@ -33,7 +37,7 @@ class ApiStreamer:
                             break
                         else:
                             received = received_raw.json()
-                            asyncio.create_task(self._when_received(received=received))
+                            asyncio.create_task(self._handler(received))
                     logger.info(f"Websocket stopped: {self._url}")
             except Exception as error:
                 # Handle errors that might occur due to network issues
