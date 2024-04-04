@@ -102,7 +102,7 @@ class CoinSelection(BaseOverlay):
         # explanation
         detail_text = QtWidgets.QLabel()
         detail_text.setText(
-            "These are all available coins on Binance."
+            "These are all the available coins from the token you chose."
             "\nYou can select a minimum of 1 and a maximum of 12."
         )
         detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)

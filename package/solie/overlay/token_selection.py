@@ -25,7 +25,8 @@ class TokenSelection(BaseOverlay):
 
         # ■■■■■ get all symbols ■■■■■
 
-        available_symbols = []
+        available_tokens: set[str] = set()
+        available_symbols: set[str] = set()
 
         response = await api_requester.binance(
             http_method="GET",
@@ -34,8 +35,10 @@ class TokenSelection(BaseOverlay):
         )
         about_symbols = response["symbols"]
         for about_symbol in about_symbols:
+            token = about_symbol["marginAsset"]
+            available_tokens.add(token)
             symbol = about_symbol["symbol"]
-            available_symbols.append(symbol)
+            available_symbols.add(symbol)
 
         # ■■■■■ get coin informations ■■■■■
 
@@ -59,7 +62,6 @@ class TokenSelection(BaseOverlay):
 
         # ■■■■■ set things ■■■■■
 
-        available_tokens = ["USDT", "BUSD"]
         number_of_markets = {token: 0 for token in available_tokens}
 
         for symbol in available_symbols:
@@ -94,7 +96,7 @@ class TokenSelection(BaseOverlay):
 
         # explanation
         detail_text = QtWidgets.QLabel()
-        detail_text.setText("These are all available tokens on Binance.")
+        detail_text.setText("These are all the available tokens on Binance.")
         detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         detail_text.setWordWrap(True)
         card_layout.addWidget(detail_text)
@@ -122,7 +124,7 @@ class TokenSelection(BaseOverlay):
         input_layout = QtWidgets.QGridLayout()
         blank_coin_pixmap = QtGui.QPixmap()
         blank_coin_pixmap.load(str(PACKAGE_PATH / "static" / "icon/blank_coin.png"))
-        for turn, token in enumerate(available_tokens):
+        for turn, token in enumerate(sorted(available_tokens)):
             this_layout = QtWidgets.QHBoxLayout()
             row = turn // 2
             column = turn % 2
