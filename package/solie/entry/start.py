@@ -64,6 +64,10 @@ def bring_to_life():
     # Prepare the process pool
     prepare_process_pool()
 
+    # Prepare logging
+    package_name = __name__.split(".")[0]
+    logging.getLogger(package_name).setLevel("DEBUG")
+
     # Run the async event loop
     asyncio.run(live(window, scheduler))
 
