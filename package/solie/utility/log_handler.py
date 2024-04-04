@@ -63,4 +63,5 @@ class LogHandler(logging.Handler):
         filepath = self.log_path / self.filename
         async with self.file_lock:
             async with aiofiles.open(filepath, "a", encoding="utf8") as file:
-                await file.write(f"{log_content}\n\n")
+                line_divider = "-" * 80
+                await file.write(f"{log_content}\n\n{line_divider}\n\n")
