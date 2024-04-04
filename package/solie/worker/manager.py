@@ -23,7 +23,7 @@ from solie.utility import (
 from solie.widget import ask
 from solie.window import Window
 
-from . import allies
+from .united import team
 
 WINDOW_LOCK_OPTIONS = (
     "NEVER",
@@ -202,7 +202,7 @@ class Manager:
             text = "\n\n".join(texts)
             self.window.label_33.setText(text)
 
-            block_sizes = allies.collector.aggtrade_candle_sizes
+            block_sizes = team.collector.aggtrade_candle_sizes
             lines = (f"{symbol} {count}" for (symbol, count) in block_sizes.items())
             text = "\n".join(lines)
             self.window.label_36.setText(text)

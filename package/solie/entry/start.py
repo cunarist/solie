@@ -14,7 +14,7 @@ from solie.worker import (
     Simulator,
     Strategiest,
     Transactor,
-    remember_allies,
+    team,
 )
 
 logger = logging.getLogger(__name__)
@@ -82,7 +82,7 @@ async def live(window: Window, scheduler: AsyncIOScheduler):
     strategist = Strategiest(window, scheduler)
     manager = Manager(window, scheduler)
 
-    remember_allies(collector, transactor, simulator, strategist, manager)
+    team.unite(collector, transactor, simulator, strategist, manager)
 
     tasks = [
         asyncio.create_task(collector.load()),

@@ -1,9 +1,9 @@
-from .allies import remember_allies
 from .collector import Collector
 from .manager import Manager
 from .simulator import Simulator
 from .strategist import Strategiest
 from .transactor import Transactor
+from .united import team
 
 __all__ = [
     "Collector",
@@ -11,5 +11,5 @@ __all__ = [
     "Simulator",
     "Strategiest",
     "Transactor",
-    "remember_allies",
+    "team",
 ]

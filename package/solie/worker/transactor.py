@@ -40,7 +40,7 @@ from solie.utility import (
 from solie.widget import ask, overlay
 from solie.window import Window
 
-from . import allies
+from .united import team
 
 logger = logging.getLogger(__name__)
 
@@ -736,7 +736,7 @@ class Transactor:
 
         # ■■■■■ check if the data exists ■■■■■
 
-        async with allies.collector.candle_data.read_lock as cell:
+        async with team.collector.candle_data.read_lock as cell:
             if len(cell.data) == 0:
                 return
 
@@ -750,7 +750,7 @@ class Transactor:
             for _ in range(50):
                 if find_stop_flag(task_name, task_id):
                     return
-                async with allies.collector.candle_data.read_lock as cell:
+                async with team.collector.candle_data.read_lock as cell:
                     last_index = cell.data.index[-1]
                     if last_index == before_moment:
                         break
@@ -764,15 +764,15 @@ class Transactor:
 
         symbol = self.viewing_symbol
         strategy_index = self.transaction_settings.strategy_index
-        strategy = allies.strategist.strategies.all[strategy_index]
+        strategy = team.strategist.strategies.all[strategy_index]
 
         # ■■■■■ get light data ■■■■■
 
-        async with allies.collector.realtime_data_chunks.read_lock as cell:
+        async with team.collector.realtime_data_chunks.read_lock as cell:
             before_chunk = cell.data[-2].copy()
             current_chunk = cell.data[-1].copy()
         realtime_data = np.concatenate((before_chunk, current_chunk))
-        async with allies.collector.aggregate_trades.read_lock as cell:
+        async with team.collector.aggregate_trades.read_lock as cell:
             aggregate_trades = cell.data.copy()
 
         # ■■■■■ draw light lines ■■■■■
@@ -875,7 +875,7 @@ class Transactor:
 
         # ■■■■■ get heavy data ■■■■■
 
-        async with allies.collector.candle_data.read_lock as cell:
+        async with team.collector.candle_data.read_lock as cell:
             candle_data_original = cell.data[get_from:slice_until][[symbol]].copy()
         async with self.unrealized_changes.read_lock as cell:
             unrealized_changes = cell.data.copy()
@@ -1250,7 +1250,7 @@ class Transactor:
             self.window.label_16.setText(text)
             return
 
-        cumulation_rate = await allies.collector.get_candle_data_cumulation_rate()
+        cumulation_rate = await team.collector.get_candle_data_cumulation_rate()
         if cumulation_rate < 1:
             text = (
                 "For auto transaction to work, the past 24 hour accumulation rate of"
@@ -1312,7 +1312,7 @@ class Transactor:
         if not self.is_key_restrictions_satisfied:
             return
 
-        cumulation_rate = await allies.collector.get_candle_data_cumulation_rate()
+        cumulation_rate = await team.collector.get_candle_data_cumulation_rate()
         if cumulation_rate < 1:
             return
 
@@ -1343,7 +1343,7 @@ class Transactor:
 
         # ■■■■■ Check if the data exists ■■■■■
 
-        async with allies.collector.candle_data.read_lock as cell:
+        async with team.collector.candle_data.read_lock as cell:
             if len(cell.data) == 0:
                 # case when the app is executed for the first time
                 return
@@ -1351,7 +1351,7 @@ class Transactor:
         # ■■■■■ Wait for the latest data to be added ■■■■■
 
         for _ in range(50):
-            async with allies.collector.candle_data.read_lock as cell:
+            async with team.collector.candle_data.read_lock as cell:
                 last_index = cell.data.index[-1]
                 if last_index == before_moment:
                     break
@@ -1360,7 +1360,7 @@ class Transactor:
         # ■■■■■ Get the candle data ■■■■■
 
         slice_from = datetime.now(timezone.utc) - timedelta(days=28)
-        async with allies.collector.candle_data.read_lock as cell:
+        async with team.collector.candle_data.read_lock as cell:
             candle_data = cell.data[slice_from:].copy()
 
         # ■■■■■ Make decision ■■■■■
@@ -1368,7 +1368,7 @@ class Transactor:
         target_symbols = self.window.data_settings.target_symbols
 
         strategy_index = self.transaction_settings.strategy_index
-        strategy = allies.strategist.strategies.all[strategy_index]
+        strategy = team.strategist.strategies.all[strategy_index]
 
         indicators_script = strategy.indicators_script
 
@@ -1876,7 +1876,7 @@ class Transactor:
 
         current_prices: dict[str, float] = {}
         for symbol in target_symbols:
-            async with allies.collector.aggregate_trades.read_lock as cell:
+            async with team.collector.aggregate_trades.read_lock as cell:
                 ar = cell.data[-10000:].copy()
             temp_ar = ar[str((symbol, "Price"))]
             temp_ar = temp_ar[temp_ar != 0]
