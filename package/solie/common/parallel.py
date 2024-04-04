@@ -7,7 +7,7 @@ from typing import Callable, TypeVar
 T = TypeVar("T")
 
 PROCESS_COUNT = multiprocessing.cpu_count()
-communicator = multiprocessing.Manager()
+sync_manager = multiprocessing.Manager()
 
 
 def prepare_process_pool():

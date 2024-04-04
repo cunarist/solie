@@ -12,7 +12,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtWidgets
 from scipy.signal import find_peaks
 
-from solie.common import communicator, go, outsource
+from solie.common import go, outsource, sync_manager
 from solie.utility import (
     CalculationInput,
     RWLock,
@@ -1012,7 +1012,7 @@ class Simulator:
         # ■■■■■ prepare per chunk data ■■■■■
 
         calculation_inputs: list[CalculationInput] = []
-        progress_list = communicator.list([0])
+        progress_list = sync_manager.list([0])
 
         if should_calculate:
             decision_script = strategy.decision_script
@@ -1042,7 +1042,7 @@ class Simulator:
                 ]
 
                 chunk_count = len(chunk_candle_data_list)
-                progress_list = communicator.list([0] * chunk_count)
+                progress_list = sync_manager.list([0] * chunk_count)
 
                 for turn, chunk_candle_data in enumerate(chunk_candle_data_list):
                     chunk_index = chunk_candle_data.index
