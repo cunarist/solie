@@ -92,33 +92,33 @@ class Simulator:
         # ■■■■■ connect UI events ■■■■■
 
         job = self.display_range_information
-        outsource(self.window.plot_widget_2.sigRangeChanged, job)
+        outsource(window.plot_widget_2.sigRangeChanged, job)
         job = self.set_minimum_view_range
-        outsource(self.window.plot_widget_2.sigRangeChanged, job)
+        outsource(window.plot_widget_2.sigRangeChanged, job)
         job = self.update_calculation_settings
-        outsource(self.window.comboBox.currentIndexChanged, job)
+        outsource(window.comboBox.currentIndexChanged, job)
         job = self.calculate
-        outsource(self.window.pushButton_3.clicked, job)
+        outsource(window.pushButton_3.clicked, job)
         job = self.update_presentation_settings
-        outsource(self.window.spinBox_2.editingFinished, job)
+        outsource(window.spinBox_2.editingFinished, job)
         job = self.update_presentation_settings
-        outsource(self.window.doubleSpinBox.editingFinished, job)
+        outsource(window.doubleSpinBox.editingFinished, job)
         job = self.update_presentation_settings
-        outsource(self.window.doubleSpinBox_2.editingFinished, job)
+        outsource(window.doubleSpinBox_2.editingFinished, job)
         job = self.erase
-        outsource(self.window.pushButton_4.clicked, job)
+        outsource(window.pushButton_4.clicked, job)
         job = self.update_calculation_settings
-        outsource(self.window.comboBox_5.currentIndexChanged, job)
+        outsource(window.comboBox_5.currentIndexChanged, job)
         job = self.toggle_combined_draw
-        outsource(self.window.checkBox_3.toggled, job)
+        outsource(window.checkBox_3.toggled, job)
         job = self.display_year_range
-        outsource(self.window.pushButton_15.clicked, job)
+        outsource(window.pushButton_15.clicked, job)
         job = self.delete_calculation_data
-        outsource(self.window.pushButton_16.clicked, job)
+        outsource(window.pushButton_16.clicked, job)
         job = self.draw
-        outsource(self.window.pushButton_17.clicked, job)
+        outsource(window.pushButton_17.clicked, job)
         job = self.update_viewing_symbol
-        outsource(self.window.comboBox_6.currentIndexChanged, job)
+        outsource(window.comboBox_6.currentIndexChanged, job)
 
         action_menu = QtWidgets.QMenu(self.window)
         self.window.pushButton_11.setMenu(action_menu)

@@ -149,9 +149,9 @@ class Collector:
         # ■■■■■ connect UI events ■■■■■
 
         job = self.guide_donation
-        outsource(self.window.pushButton_9.clicked, job)
+        outsource(window.pushButton_9.clicked, job)
         job = self.download_fill_candle_data
-        outsource(self.window.pushButton_2.clicked, job)
+        outsource(window.pushButton_2.clicked, job)
 
         action_menu = QtWidgets.QMenu(self.window)
         self.window.pushButton_13.setMenu(action_menu)

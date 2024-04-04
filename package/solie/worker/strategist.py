@@ -49,7 +49,7 @@ class Strategiest:
         # ■■■■■ connect UI events ■■■■■
 
         job = self.add_blank_strategy
-        outsource(self.window.pushButton_5.clicked, job)
+        outsource(window.pushButton_5.clicked, job)
 
     async def load(self):
         await aiofiles.os.makedirs(self.workerpath, exist_ok=True)

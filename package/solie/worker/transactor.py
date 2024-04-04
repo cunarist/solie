@@ -159,25 +159,25 @@ class Transactor:
 
         # Special widgets
         job = self.display_range_information
-        outsource(self.window.plot_widget.sigRangeChanged, job)
+        outsource(window.plot_widget.sigRangeChanged, job)
         job = self.set_minimum_view_range
-        outsource(self.window.plot_widget.sigRangeChanged, job)
+        outsource(window.plot_widget.sigRangeChanged, job)
         job = self.update_automation_settings
-        outsource(self.window.comboBox_2.currentIndexChanged, job)
+        outsource(window.comboBox_2.currentIndexChanged, job)
         job = self.update_automation_settings
-        outsource(self.window.checkBox.toggled, job)
+        outsource(window.checkBox.toggled, job)
         job = self.update_keys
-        outsource(self.window.lineEdit_4.editingFinished, job)
+        outsource(window.lineEdit_4.editingFinished, job)
         job = self.update_keys
-        outsource(self.window.lineEdit_6.editingFinished, job)
+        outsource(window.lineEdit_6.editingFinished, job)
         job = self.toggle_frequent_draw
-        outsource(self.window.checkBox_2.toggled, job)
+        outsource(window.checkBox_2.toggled, job)
         job = self.display_day_range
-        outsource(self.window.pushButton_14.clicked, job)
+        outsource(window.pushButton_14.clicked, job)
         job = self.update_mode_settings
-        outsource(self.window.spinBox.editingFinished, job)
+        outsource(window.spinBox.editingFinished, job)
         job = self.update_viewing_symbol
-        outsource(self.window.comboBox_4.currentIndexChanged, job)
+        outsource(window.comboBox_4.currentIndexChanged, job)
 
         action_menu = QtWidgets.QMenu(self.window)
         self.window.pushButton_12.setMenu(action_menu)

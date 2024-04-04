@@ -99,17 +99,17 @@ class Manager:
         # ■■■■■ connect UI events ■■■■■
 
         job = self.run_script
-        outsource(self.window.pushButton.clicked, job)
+        outsource(window.pushButton.clicked, job)
         job = self.open_datapath
-        outsource(self.window.pushButton_8.clicked, job)
+        outsource(window.pushButton_8.clicked, job)
         job = self.deselect_log_output
-        outsource(self.window.pushButton_6.clicked, job)
+        outsource(window.pushButton_6.clicked, job)
         job = self.reset_datapath
-        outsource(self.window.pushButton_22.clicked, job)
+        outsource(window.pushButton_22.clicked, job)
         job = self.open_documentation
-        outsource(self.window.pushButton_7.clicked, job)
+        outsource(window.pushButton_7.clicked, job)
         job = self.change_settings
-        outsource(self.window.comboBox_3.currentIndexChanged, job)
+        outsource(window.comboBox_3.currentIndexChanged, job)
 
     async def load(self):
         await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
