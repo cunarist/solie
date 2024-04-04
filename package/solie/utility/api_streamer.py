@@ -1,10 +1,17 @@
 import asyncio
+import json
 import logging
 from typing import Callable, Coroutine
 
 import aiohttp
 
 logger = logging.getLogger(__name__)
+
+
+class ApiStreamError(Exception):
+    def __init__(self, received: dict | list):
+        formatted = json.dumps(received, indent=2)
+        super().__init__(formatted)
 
 
 class ApiStreamer:
@@ -37,7 +44,14 @@ class ApiStreamer:
                             break
                         else:
                             received = received_raw.json()
-                            asyncio.create_task(self._handler(received))
+
+                            def done_callback(task: asyncio.Task, received=received):
+                                error = task.exception()
+                                if error:
+                                    raise ApiStreamError(received) from error
+
+                            task = asyncio.create_task(self._handler(received))
+                            task.add_done_callback(done_callback)
                     logger.info(f"Websocket stopped: {self._url}")
             except Exception as error:
                 # Handle errors that might occur due to network issues
