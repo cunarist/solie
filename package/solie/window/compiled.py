@@ -87,7 +87,7 @@ class Ui_MainWindow(object):
                         "   border-radius: 5em;\n"
 "}\n"
 "\n"
-"AskPopup, OverlayPanel {\n"
+"AskPopup, OverlayPopup {\n"
 "    background: rgba(0, 0, 0, 191);\n"
 "}\n"
 "\n"
