@@ -87,7 +87,8 @@ class StrategyDevelopInput(BaseOverlay):
 
             await ask(
                 "Sample scripts applied",
-                "It is not yet saved. Modify the code as you want.",
+                "It hasn't been saved yet,"
+                " feel free to customize the code to your liking.",
                 ["Okay"],
             )
 
