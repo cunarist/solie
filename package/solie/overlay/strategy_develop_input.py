@@ -13,6 +13,7 @@ class StrategyDevelopInput(BaseOverlay):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
+        self.strategy = strategy
 
         # ■■■■■ full layout ■■■■■
 
@@ -37,6 +38,7 @@ class StrategyDevelopInput(BaseOverlay):
         indicators_script_input = ScriptEditor(self)
         indicators_script_input.setPlainText(strategy.indicators_script)
         column_layout.addWidget(indicators_script_input)
+        self.indicators_script_input = indicators_script_input
 
         # column layout
         column_layout = QtWidgets.QVBoxLayout()
@@ -52,6 +54,7 @@ class StrategyDevelopInput(BaseOverlay):
         decision_script_input = ScriptEditor(self)
         decision_script_input.setPlainText(strategy.decision_script)
         column_layout.addWidget(decision_script_input)
+        self.decision_script_input = decision_script_input
 
         # ■■■■■ a card ■■■■■
 
@@ -157,3 +160,24 @@ class StrategyDevelopInput(BaseOverlay):
             QtWidgets.QSizePolicy.Policy.Minimum,
         )
         card_layout.addItem(spacer)
+
+    async def confirm_closing(self) -> bool:
+        strategy = self.strategy
+
+        written_decision = self.decision_script_input.toPlainText()
+        is_decision_script_saved = written_decision == strategy.decision_script
+        written_indicators = self.indicators_script_input.toPlainText()
+        is_indicators_script_saved = written_indicators == strategy.indicators_script
+        if is_decision_script_saved and is_indicators_script_saved:
+            return True
+
+        should_close = False
+        answer = await ask(
+            "Scripts are not saved yet",
+            "Are you sure you want to exit the editor without saving?",
+            ["Cancel", "Exit"],
+        )
+        if answer == 2:
+            should_close = True
+
+        return should_close

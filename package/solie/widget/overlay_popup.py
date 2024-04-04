@@ -13,6 +13,9 @@ from .transparent_scroll_area import TransparentScrollArea
 class BaseOverlay(QtWidgets.QWidget):
     done_event = asyncio.Event()
 
+    async def confirm_closing(self) -> bool:
+        return True
+
 
 W = TypeVar("W", bound=BaseOverlay)
 
@@ -111,7 +114,9 @@ class OverlayPopup(QtWidgets.QWidget):
             close_button_widget.setFont(close_button_font)
 
             async def job():
-                widget.done_event.set()
+                should_close = await widget.confirm_closing()
+                if should_close:
+                    widget.done_event.set()
 
             outsource(close_button_widget.clicked, job)
             this_layout.addWidget(close_button_widget)
