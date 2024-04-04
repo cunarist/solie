@@ -1,4 +1,4 @@
-import solie
+from .entry import bring_to_life
 
 if __name__ == "__main__":
-    solie.bring_to_life()
+    bring_to_life()
