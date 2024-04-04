@@ -49,7 +49,7 @@ class LogList(QtWidgets.QListWidget):
             for _ in range(remove_count):
                 self.takeItem(0)
 
-    async def show_fulltext(self, *args, **kwargs):
+    async def show_fulltext(self):
         selected_index = self.currentRow()
 
         selected_item = self.item(selected_index)

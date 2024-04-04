@@ -154,7 +154,7 @@ class TokenSelection(BaseOverlay):
         self.result: str
 
         # confirm function
-        async def job_cf(*args):
+        async def job_cf():
             selected_tokens = []
             for symbol, radiobox in token_radioboxes.items():
                 is_selected = radiobox.isChecked()

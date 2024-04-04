@@ -66,7 +66,7 @@ class DownloadFillOption(BaseOverlay):
         self.result: int | None = None
         for turn, text in enumerate(fill_options):
 
-            async def job(turn=turn, *args, **kwargs):
+            async def job(turn=turn):
                 self.result = turn
                 self.done_event.set()
 

@@ -150,7 +150,7 @@ class AskPopup(QtWidgets.QWidget):
         for turn, option in enumerate(options):
             option_button = QtWidgets.QPushButton(option, content_box)
 
-            async def job(answer=turn + 1, *args, **kwargs):
+            async def job(answer=turn + 1):
                 self.answer = answer
                 self.done_event.set()
 

@@ -51,7 +51,7 @@ class Strategiest:
         job = self.add_blank_strategy
         outsource(self.window.pushButton_5.clicked, job)
 
-    async def load(self, *args, **kwargs):
+    async def load(self):
         await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
 
         filepath = self.workerpath / "strategies.json"
@@ -75,12 +75,12 @@ class Strategiest:
                 first_strategy.decision_script = read_data
             self.strategies = Strategies(all=[first_strategy])
 
-    async def save_strategies(self, *args, **kwargs):
+    async def save_strategies(self):
         filepath = self.workerpath / "strategies.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             await file.write(self.strategies.to_json(indent=2))
 
-    async def display_strategies(self, *args, **kwargs):
+    async def display_strategies(self):
         self.window.comboBox_2.clear()
         self.window.comboBox.clear()
         for strategy_card in self.strategy_cards:
@@ -218,20 +218,20 @@ class Strategiest:
             card_layout.addWidget(edit_button)
             outsource(edit_button.clicked, job_us)
 
-    async def add_blank_strategy(self, *args, **kwargs):
+    async def add_blank_strategy(self):
         await self.remember_strategy_selections()
         new_strategy = Strategy(code_name=create_strategy_code_name())
         self.strategies.all.append(new_strategy)
         await self.display_strategies()
         await self.restore_strategy_selections()
 
-    async def remember_strategy_selections(self, *args, **kwargs):
+    async def remember_strategy_selections(self):
         before_index = self.window.comboBox_2.currentIndex()
         self.before_selections["transactor"] = self.strategies.all[before_index]
         before_index = self.window.comboBox.currentIndex()
         self.before_selections["simulator"] = self.strategies.all[before_index]
 
-    async def restore_strategy_selections(self, *args, **kwargs):
+    async def restore_strategy_selections(self):
         if self.before_selections["transactor"] in self.strategies.all:
             new_index = self.strategies.all.index(self.before_selections["transactor"])
             self.window.comboBox_2.setCurrentIndex(new_index)

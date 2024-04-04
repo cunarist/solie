@@ -170,7 +170,7 @@ class CoinSelection(BaseOverlay):
         self.result: list[str]
 
         # confirm function
-        async def job_cf(*args):
+        async def job_cf():
             selected_symbols: list[str] = []
             for symbol, checkbox in symbol_checkboxes.items():
                 is_checked = checkbox.isChecked()

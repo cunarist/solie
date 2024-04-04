@@ -111,7 +111,7 @@ class Manager:
         job = self.change_settings
         outsource(self.window.comboBox_3.currentIndexChanged, job)
 
-    async def load(self, *args, **kwargs):
+    async def load(self):
         await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
 
         # settings
@@ -133,7 +133,7 @@ class Manager:
             script = "logger.info(window)"
         self.window.plainTextEdit.setPlainText(script)
 
-    async def change_settings(self, *args, **kwargs):
+    async def change_settings(self):
         current_index = self.window.comboBox_3.currentIndex()
         self.settings["lock_board"] = WINDOW_LOCK_OPTIONS[current_index]
 
@@ -142,13 +142,13 @@ class Manager:
             content = json.dumps(self.settings, indent=2)
             await file.write(content)
 
-    async def open_datapath(self, *args, **kwargs):
+    async def open_datapath(self):
         await go(os.startfile, self.window.datapath)
 
-    async def deselect_log_output(self, *args, **kwargs):
+    async def deselect_log_output(self):
         self.window.listWidget.clearSelection()
 
-    async def display_internal_status(self, *args, **kwargs):
+    async def display_internal_status(self):
         while True:
             texts = []
             all_tasks = asyncio.all_tasks()
@@ -209,7 +209,7 @@ class Manager:
 
             await asyncio.sleep(0.1)
 
-    async def run_script(self, *args, **kwargs):
+    async def run_script(self):
         script_text = self.window.plainTextEdit.toPlainText()
         filepath = self.workerpath / "python_script.txt"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
@@ -217,7 +217,7 @@ class Manager:
         namespace = {"window": self.window, "logger": logging.getLogger(__name__)}
         exec(script_text, namespace)
 
-    async def check_online_status(self, *args, **kwargs):
+    async def check_online_status(self):
         if not internet_connected():
             return
 
@@ -241,7 +241,7 @@ class Manager:
 
         asyncio.create_task(job())
 
-    async def display_system_status(self, *args, **kwargs):
+    async def display_system_status(self):
         time = datetime.now(timezone.utc)
         time_text = time.strftime("%Y-%m-%d %H:%M:%S")
         is_internet_connected = internet_connected()
@@ -269,7 +269,7 @@ class Manager:
         text += f"Board {('unlocked' if board_enabled else 'locked')}"
         self.window.gauge.setText(text)
 
-    async def correct_time(self, *args, **kwargs):
+    async def correct_time(self):
         server_time_differences = self.online_status["server_time_differences"]
         if len(server_time_differences) < 30:
             return
@@ -281,7 +281,7 @@ class Manager:
         time_traveller.start()
         self.time_traveller = time_traveller
 
-    async def check_binance_limits(self, *args, **kwargs):
+    async def check_binance_limits(self):
         if not internet_connected():
             return
 
@@ -299,7 +299,7 @@ class Manager:
             limit_name = f"{limit_type}({interval_value}{interval_unit})"
             self.binance_limits[limit_name] = limit_value
 
-    async def reset_datapath(self, *args, **kwargs):
+    async def reset_datapath(self):
         answer = await ask(
             "Are you sure you want to change the data folder?",
             "Solie will shut down shortly. You will get to choose the new data folder"
@@ -315,10 +315,10 @@ class Manager:
         self.window.should_confirm_closing = False
         self.window.close()
 
-    async def open_documentation(self, *args, **kwargs):
+    async def open_documentation(self):
         await go(webbrowser.open, "https://solie-docs.cunarist.com")
 
-    async def lock_board(self, *args, **kwargs):
+    async def lock_board(self):
         lock_window_setting = self.settings["lock_board"]
 
         if lock_window_setting == "NEVER":

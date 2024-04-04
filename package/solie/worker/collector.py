@@ -165,7 +165,7 @@ class Collector:
         new_action = action_menu.addAction(text)
         outsource(new_action.triggered, job)
 
-    async def load(self, *args, **kwargs):
+    async def load(self):
         await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
 
         # candle data
@@ -178,7 +178,7 @@ class Collector:
                     df = await go(sort_data_frame, df)
                 cell.data = df
 
-    async def organize_data(self, *args, **kwargs):
+    async def organize_data(self):
         start_time = datetime.now(timezone.utc)
 
         async with self.candle_data.write_lock as cell:
@@ -206,7 +206,7 @@ class Collector:
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
         add_task_duration("collector_organize_data", duration)
 
-    async def save_candle_data(self, *args, **kwargs):
+    async def save_candle_data(self):
         # ■■■■■ default values ■■■■■
 
         current_year = datetime.now(timezone.utc).year
@@ -231,7 +231,7 @@ class Collector:
         if await aiofiles.os.path.isfile(filepath_new):
             await aiofiles.os.rename(filepath_new, filepath)
 
-    async def get_exchange_information(self, *args, **kwargs):
+    async def get_exchange_information(self):
         if not internet_connected():
             return
 
@@ -256,7 +256,7 @@ class Collector:
             price_precision = int(math.log10(1 / ticksize))
             self.price_precisions[symbol] = price_precision
 
-    async def fill_candle_data_holes(self, *args, **kwargs):
+    async def fill_candle_data_holes(self):
         # ■■■■■ check internet connection ■■■■■
 
         if not internet_connected():
@@ -368,7 +368,7 @@ class Collector:
             candle_data = pd.concat([original_candle_data, recent_candle_data])
             cell.data = candle_data
 
-    async def display_status_information(self, *args, **kwargs):
+    async def display_status_information(self):
         async with self.candle_data.read_lock as cell:
             if len(cell.data) == 0:
                 # when the app is executed for the first time
@@ -441,7 +441,7 @@ class Collector:
 
         self.window.label_6.setText(text)
 
-    async def get_candle_data_cumulation_rate(self, *args, **kwargs):
+    async def get_candle_data_cumulation_rate(self):
         current_moment = datetime.now(timezone.utc).replace(microsecond=0)
         current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
         count_start_moment = current_moment - timedelta(hours=24)
@@ -451,10 +451,10 @@ class Collector:
         cumulation_rate = min(float(1), (cumulated_moments + 1) / needed_moments)
         return cumulation_rate
 
-    async def open_binance_data_page(self, *args, **kwargs):
+    async def open_binance_data_page(self):
         await go(webbrowser.open, "https://www.binance.com/en/landing/data")
 
-    async def download_fill_candle_data(self, *args, **kwargs):
+    async def download_fill_candle_data(self):
         # ■■■■■ ask filling type ■■■■■
 
         overlay_widget = await overlay(
@@ -636,8 +636,7 @@ class Collector:
         asyncio.create_task(team.simulator.display_lines())
         asyncio.create_task(team.simulator.display_available_years())
 
-    async def add_book_tickers(self, *args, **kwargs):
-        received: dict = kwargs.get("received")  # type:ignore
+    async def add_book_tickers(self, received: dict):
         start_time = datetime.now(timezone.utc)
         symbol = received["s"]
         best_bid = received["b"]
@@ -654,8 +653,7 @@ class Collector:
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
         add_task_duration("add_book_tickers", duration)
 
-    async def add_mark_price(self, *args, **kwargs):
-        received: dict = kwargs.get("received")  # type:ignore
+    async def add_mark_price(self, received: list):
         start_time = datetime.now(timezone.utc)
         target_symbols = self.window.data_settings.target_symbols
         event_time = np.datetime64(received[0]["E"] * 10**6, "ns")
@@ -675,8 +673,7 @@ class Collector:
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
         add_task_duration("add_mark_price", duration)
 
-    async def add_aggregate_trades(self, *args, **kwargs):
-        received: dict = kwargs.get("received")  # type:ignore
+    async def add_aggregate_trades(self, received: dict):
         start_time = datetime.now(timezone.utc)
         symbol = received["s"]
         price = float(received["p"])
@@ -691,11 +688,11 @@ class Collector:
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
         add_task_duration("add_aggregate_trades", duration)
 
-    async def clear_aggregate_trades(self, *args, **kwargs):
+    async def clear_aggregate_trades(self):
         async with self.aggregate_trades.write_lock as cell:
             cell.data = cell.data[0:0].copy()
 
-    async def add_candle_data(self, *args, **kwargs):
+    async def add_candle_data(self):
         current_moment = datetime.now(timezone.utc).replace(microsecond=0)
         current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
         before_moment = current_moment - timedelta(seconds=10)
@@ -766,10 +763,10 @@ class Collector:
         duration = (datetime.now(timezone.utc) - current_moment).total_seconds()
         add_task_duration("add_candle_data", duration)
 
-    async def stop_filling_candle_data(self, *args, **kwargs):
+    async def stop_filling_candle_data(self):
         make_stop_flag("download_fill_candle_data")
 
-    async def guide_donation(self, *args, **kwargs):
+    async def guide_donation(self):
         await overlay(
             "Support Solie",
             DonationGuide(),

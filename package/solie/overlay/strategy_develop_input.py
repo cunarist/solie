@@ -70,7 +70,7 @@ class StrategyDevelopInput(BaseOverlay):
         card_layout.addItem(spacer)
 
         # sample script button
-        async def job_as(*args):
+        async def job_as():
             # indicators script
             filepath = PACKAGE_PATH / "static" / "sample_indicators_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
@@ -100,7 +100,7 @@ class StrategyDevelopInput(BaseOverlay):
         card_layout.addWidget(button)
 
         # confirm button
-        async def job_ss(*args):
+        async def job_ss():
             strategy.indicators_script = indicators_script_input.toPlainText()
             strategy.decision_script = decision_script_input.toPlainText()
             self.done_event.set()
@@ -125,7 +125,7 @@ class StrategyDevelopInput(BaseOverlay):
         card_layout.addWidget(action_button)
 
         # API docs button
-        async def job_ad(*args):
+        async def job_ad():
             url = "https://solie-docs.cunarist.com/making-strategy/"
             await go(webbrowser.open, url)
 
@@ -133,7 +133,7 @@ class StrategyDevelopInput(BaseOverlay):
         outsource(new_action.triggered, job_ad)
 
         # Pandas docs button
-        async def job_pd(*args):
+        async def job_pd():
             url = "https://pandas.pydata.org/docs/reference/index.html"
             await go(webbrowser.open, url)
 
@@ -141,7 +141,7 @@ class StrategyDevelopInput(BaseOverlay):
         outsource(new_action.triggered, job_pd)
 
         # TA docs button
-        async def job_td(*args):
+        async def job_td():
             url = "https://github.com/twopirllc/pandas-ta#indicators-by-category"
             await go(webbrowser.open, url)
 

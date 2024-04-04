@@ -140,20 +140,20 @@ class Simulator:
         new_action = action_menu.addAction(text)
         outsource(new_action.triggered, job)
 
-    async def load(self, *args, **kwargs):
+    async def load(self):
         await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
 
         text = "Nothing drawn"
         self.window.label_19.setText(text)
 
-    async def update_viewing_symbol(self, *args, **kwargs):
+    async def update_viewing_symbol(self):
         alias = self.window.comboBox_6.currentText()
         symbol = self.window.alias_to_symbol[alias]
         self.viewing_symbol = symbol
 
         await self.display_lines()
 
-    async def update_calculation_settings(self, *args, **kwargs):
+    async def update_calculation_settings(self):
         text = self.window.comboBox_5.currentText()
         if text == "":
             return
@@ -168,7 +168,7 @@ class Simulator:
 
         await self.display_lines()
 
-    async def update_presentation_settings(self, *args, **kwargs):
+    async def update_presentation_settings(self):
         input_value = self.window.spinBox_2.value()
         self.simulation_settings.leverage = input_value
         input_value = self.window.doubleSpinBox.value()
@@ -177,17 +177,10 @@ class Simulator:
         self.simulation_settings.maker_fee = input_value
         await self.present()
 
-    async def display_lines(self, *args, **kwargs):
+    async def display_lines(self, periodic=False, frequent=False):
         # ■■■■■ start the task ■■■■■
 
-        periodic = kwargs.get("periodic", False)
-        frequent = kwargs.get("frequent", False)
-        only_light_lines = kwargs.get("only_light_lines", False)
-
-        if only_light_lines:
-            task_name = "display_light_simulation_lines"
-        else:
-            task_name = "display_all_simulation_lines"
+        task_name = "display_simulation_lines"
 
         task_id = make_stop_flag(task_name)
 
@@ -327,11 +320,6 @@ class Simulator:
         # ■■■■■ record task duration ■■■■■
 
         pass
-
-        # ■■■■■ stop if the target is only light lines ■■■■■
-
-        if only_light_lines:
-            return
 
         # ■■■■■ set range of heavy data ■■■■■
 
@@ -700,7 +688,7 @@ class Simulator:
 
         await self.set_minimum_view_range()
 
-    async def erase(self, *args, **kwargs):
+    async def erase(self):
         self.raw_account_state = standardize_account_state(
             self.window.data_settings.target_symbols
         )
@@ -711,7 +699,7 @@ class Simulator:
 
         await self.present()
 
-    async def display_available_years(self, *args, **kwargs):
+    async def display_available_years(self):
         collector_path = team.collector.workerpath
         years = [
             int(format_numeric(filename))
@@ -729,10 +717,10 @@ class Simulator:
             self.window.comboBox_5.clear()
             self.window.comboBox_5.addItems([str(y) for y in years])
 
-    async def simulate_only_visible(self, *args, **kwargs):
+    async def simulate_only_visible(self):
         await self.calculate(only_visible=True)
 
-    async def display_range_information(self, *args, **kwargs):
+    async def display_range_information(self):
         task_id = make_stop_flag("display_simulation_range_information")
 
         symbol = self.viewing_symbol
@@ -829,7 +817,7 @@ class Simulator:
         text += f" {min_unrealized_change*100:+.4f}%"
         self.window.label_13.setText(text)
 
-    async def set_minimum_view_range(self, *args, **kwargs):
+    async def set_minimum_view_range(self):
         widget = self.window.plot_widget_2
         range_down = widget.getAxis("left").range[0]
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
@@ -837,10 +825,8 @@ class Simulator:
         range_down = widget.getAxis("left").range[0]
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
 
-    async def calculate(self, *args, **kwargs):
+    async def calculate(self, only_visible=True):
         task_id = make_stop_flag("calculate_simulation")
-
-        only_visible = kwargs.get("only_visible", False)
 
         prepare_step = 0
         calculate_step = 0
@@ -1188,7 +1174,7 @@ class Simulator:
                 content = pickle.dumps(virtual_state)
                 await file.write(content)
 
-    async def present(self, *args, **kwargs):
+    async def present(self):
         maker_fee = self.simulation_settings.maker_fee
         taker_fee = self.simulation_settings.taker_fee
         leverage = self.simulation_settings.leverage
@@ -1302,7 +1288,7 @@ class Simulator:
             text += f"Strategy version {strategy_version}"
             self.window.label_19.setText(text)
 
-    async def display_year_range(self, *args, **kwargs):
+    async def display_year_range(self):
         range_start = datetime(
             year=self.simulation_settings.year,
             month=1,
@@ -1320,7 +1306,7 @@ class Simulator:
         widget = self.window.plot_widget_2
         widget.setXRange(range_start, range_end)
 
-    async def delete_calculation_data(self, *args, **kwargs):
+    async def delete_calculation_data(self):
         year = self.simulation_settings.year
         strategy_index = self.simulation_settings.strategy_index
 
@@ -1382,7 +1368,7 @@ class Simulator:
 
         await self.erase()
 
-    async def draw(self, *args, **kwargs):
+    async def draw(self):
         year = self.simulation_settings.year
         strategy_index = self.simulation_settings.strategy_index
 
@@ -1425,16 +1411,16 @@ class Simulator:
             )
             return
 
-    async def match_graph_range(self, *args, **kwargs):
+    async def match_graph_range(self):
         range_start = self.window.plot_widget.getAxis("bottom").range[0]
         range_end = self.window.plot_widget.getAxis("bottom").range[1]
         widget = self.window.plot_widget_2
         widget.setXRange(range_start, range_end, padding=0)  # type:ignore
 
-    async def stop_calculation(self, *args, **kwargs):
+    async def stop_calculation(self):
         make_stop_flag("calculate_simulation")
 
-    async def analyze_unrealized_peaks(self, *args, **kwargs):
+    async def analyze_unrealized_peaks(self):
         async with self.unrealized_changes.read_lock as cell:
             peak_indexes, _ = find_peaks(-cell.data, distance=3600 / 10)  # type:ignore
             peak_sr = cell.data.iloc[peak_indexes]
@@ -1457,8 +1443,8 @@ class Simulator:
                 ["Okay"],
             )
 
-    async def toggle_combined_draw(self, *args, **kwargs):
-        is_checked = args[0]
+    async def toggle_combined_draw(self):
+        is_checked = self.window.checkBox_3.isChecked()
         if is_checked:
             self.should_draw_all_years = True
         else:

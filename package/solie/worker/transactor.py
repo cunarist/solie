@@ -207,7 +207,7 @@ class Transactor:
         new_action = action_menu.addAction(text)
         outsource(new_action.triggered, job)
 
-    async def load(self, *args, **kwargs):
+    async def load(self):
         await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
 
         # scribbles
@@ -252,7 +252,7 @@ class Transactor:
         if await aiofiles.os.path.isfile(filepath):
             self.auto_order_record = RWLock(await go(pd.read_pickle, filepath))
 
-    async def organize_data(self, *args, **kwargs):
+    async def organize_data(self):
         async with self.unrealized_changes.write_lock as cell:
             if not cell.data.index.is_unique:
                 unique_index = cell.data.index.drop_duplicates()
@@ -277,7 +277,7 @@ class Transactor:
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await go(sort_data_frame, cell.data)
 
-    async def save_large_data(self, *args, **kwargs):
+    async def save_large_data(self):
         async with self.unrealized_changes.read_lock as cell:
             unrealized_changes = cell.data.copy()
         await go(
@@ -299,13 +299,13 @@ class Transactor:
             self.workerpath / "asset_record.pickle",
         )
 
-    async def save_scribbles(self, *args, **kwargs):
+    async def save_scribbles(self):
         filepath = self.workerpath / "scribbles.pickle"
         async with aiofiles.open(filepath, "wb") as file:
             content = pickle.dumps(self.scribbles)
             await file.write(content)
 
-    async def update_user_data_stream(self, *args, **kwargs):
+    async def update_user_data_stream(self):
         if not internet_connected():
             return
 
@@ -326,9 +326,7 @@ class Transactor:
             self.listen_to_account,
         )
 
-    async def listen_to_account(self, *args, **kwargs):
-        received = kwargs["received"]
-
+    async def listen_to_account(self, received: dict):
         # ■■■■■ default values ■■■■■
 
         event_type = received["e"]
@@ -551,31 +549,31 @@ class Transactor:
 
         await self.cancel_conflicting_orders()
 
-    async def open_exchange(self, *args, **kwargs):
+    async def open_exchange(self):
         symbol = self.viewing_symbol
         await go(
             webbrowser.open,
             f"https://www.binance.com/en/futures/{symbol}",
         )
 
-    async def open_futures_wallet_page(self, *args, **kwargs):
+    async def open_futures_wallet_page(self):
         await go(
             webbrowser.open,
             "https://www.binance.com/en/my/wallet/account/futures",
         )
 
-    async def open_api_management_page(self, *args, **kwargs):
+    async def open_api_management_page(self):
         await go(
             webbrowser.open,
             "https://www.binance.com/en/my/settings/api-management",
         )
 
-    async def save_transaction_settings(self, *args, **kwargs):
+    async def save_transaction_settings(self):
         filepath = self.workerpath / "transaction_settings.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             await file.write(self.transaction_settings.to_json(indent=2))
 
-    async def update_keys(self, *args, **kwargs):
+    async def update_keys(self):
         binance_api_key = self.window.lineEdit_4.text()
         binance_api_secret = self.window.lineEdit_6.text()
 
@@ -586,7 +584,7 @@ class Transactor:
         self.api_requester.update_keys(binance_api_key, binance_api_secret)
         await self.update_user_data_stream()
 
-    async def update_automation_settings(self, *args, **kwargs):
+    async def update_automation_settings(self):
         # ■■■■■ get information about strategy ■■■■■
 
         strategy_index = self.window.comboBox_2.currentIndex()
@@ -607,7 +605,7 @@ class Transactor:
 
         await self.save_transaction_settings()
 
-    async def display_range_information(self, *args, **kwargs):
+    async def display_range_information(self):
         task_id = make_stop_flag("display_transaction_range_information")
 
         symbol = self.viewing_symbol
@@ -704,7 +702,7 @@ class Transactor:
         text += f" {min_unrealized_change*100:+.4f}%"
         self.window.label_8.setText(text)
 
-    async def set_minimum_view_range(self, *args, **kwargs):
+    async def set_minimum_view_range(self):
         widget = self.window.plot_widget
         range_down = widget.getAxis("left").range[0]
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
@@ -712,15 +710,12 @@ class Transactor:
         range_down = widget.getAxis("left").range[0]
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
 
-    async def display_strategy_index(self, *args, **kwargs):
+    async def display_strategy_index(self):
         strategy_index = self.transaction_settings.strategy_index
         self.window.comboBox_2.setCurrentIndex(strategy_index)
 
-    async def display_lines(self, *args, **kwargs):
+    async def display_lines(self, periodic=False, frequent=False):
         # ■■■■■ start the task ■■■■■
-
-        periodic = kwargs.get("periodic", False)
-        frequent = kwargs.get("frequent", False)
 
         task_name = "display_transaction_lines"
 
@@ -1212,15 +1207,15 @@ class Transactor:
 
         await self.set_minimum_view_range()
 
-    async def toggle_frequent_draw(self, *args, **kwargs):
-        is_checked = args[0]
+    async def toggle_frequent_draw(self):
+        is_checked = self.window.checkBox_2.isChecked()
         if is_checked:
             self.should_draw_frequently = True
         else:
             self.should_draw_frequently = False
         await self.display_lines()
 
-    async def update_viewing_symbol(self, *args, **kwargs):
+    async def update_viewing_symbol(self):
         alias = self.window.comboBox_4.currentText()
         symbol = self.window.alias_to_symbol[alias]
         self.viewing_symbol = symbol
@@ -1229,7 +1224,7 @@ class Transactor:
         asyncio.create_task(self.display_status_information())
         asyncio.create_task(self.display_range_information())
 
-    async def display_status_information(self, *args, **kwargs):
+    async def display_status_information(self):
         # ■■■■■ Display important things first ■■■■■
 
         time_passed = datetime.now(timezone.utc) - self.account_state["observed_until"]
@@ -1296,7 +1291,7 @@ class Transactor:
 
         self.window.label_16.setText(text)
 
-    async def perform_transaction(self, *args, **kwargs):
+    async def perform_transaction(self):
         # ■■■■■ Clear the progress bar ■■■■
 
         self.window.progressBar_2.setValue(0)
@@ -1414,19 +1409,19 @@ class Transactor:
 
         await self.place_orders(decision)
 
-    async def display_day_range(self, *args, **kwargs):
+    async def display_day_range(self):
         range_start = (datetime.now(timezone.utc) - timedelta(hours=24)).timestamp()
         range_end = datetime.now(timezone.utc).timestamp()
         widget = self.window.plot_widget
         widget.setXRange(range_start, range_end)
 
-    async def match_graph_range(self, *args, **kwargs):
+    async def match_graph_range(self):
         range_start = self.window.plot_widget_2.getAxis("bottom").range[0]
         range_end = self.window.plot_widget_2.getAxis("bottom").range[1]
         widget = self.window.plot_widget
         widget.setXRange(range_start, range_end, padding=0)  # type:ignore
 
-    async def update_mode_settings(self, *args, **kwargs):
+    async def update_mode_settings(self):
         desired_leverage = self.window.spinBox.value()
         self.transaction_settings.desired_leverage = desired_leverage
 
@@ -1464,7 +1459,7 @@ class Transactor:
 
         await self.save_transaction_settings()
 
-    async def watch_binance(self, *args, **kwargs):
+    async def watch_binance(self):
         # ■■■■■ Basic data ■■■■■
 
         target_symbols = self.window.data_settings.target_symbols
@@ -1870,8 +1865,7 @@ class Transactor:
                 is_satisfied = False
         self.is_key_restrictions_satisfied = is_satisfied
 
-    async def place_orders(self, *args, **kwargs):
-        decision = args[0]
+    async def place_orders(self, decision: dict):
         target_symbols = self.window.data_settings.target_symbols
 
         current_prices: dict[str, float] = {}
@@ -2195,7 +2189,7 @@ class Transactor:
             tasks = [asyncio.create_task(job_new_order(o)) for o in later_orders]
             await asyncio.wait(tasks)
 
-    async def clear_positions_and_open_orders(self, *args, **kwargs):
+    async def clear_positions_and_open_orders(self):
         decision = {}
         for symbol in self.window.data_settings.target_symbols:
             decision[symbol] = {
@@ -2204,7 +2198,7 @@ class Transactor:
             }
         await self.place_orders(decision)
 
-    async def cancel_conflicting_orders(self, *args, **kwargs):
+    async def cancel_conflicting_orders(self):
         if not self.transaction_settings.should_transact:
             return
 
@@ -2247,7 +2241,7 @@ class Transactor:
             tasks = [asyncio.create_task(job(c)) for c in conflicting_order_tuples]
             await asyncio.wait(tasks)
 
-    async def pan_view_range(self, *args, **kwargs):
+    async def pan_view_range(self):
         if not self.should_draw_frequently:
             return
 
@@ -2261,7 +2255,7 @@ class Transactor:
 
         widget.setXRange(range_start + 10, range_end + 10, padding=0)  # type:ignore
 
-    async def show_raw_account_state_object(self, *args, **kwargs):
+    async def show_raw_account_state_object(self):
         text = ""
 
         time = datetime.now(timezone.utc)

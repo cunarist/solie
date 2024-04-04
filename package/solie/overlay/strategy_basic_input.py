@@ -153,7 +153,7 @@ class StrategyBasicInput(BaseOverlay):
         cards_layout.addWidget(card)
 
         # function
-        async def job(*args):
+        async def job():
             code_name = code_name_input.text()
             if re.fullmatch(r"[A-Z]{6}", code_name):
                 strategy.code_name = code_name
