@@ -56,9 +56,9 @@ async def live():
     AskPopup.install_window(window)
     OverlayPopup.install_window(window)
 
+    logging.getLogger(PACKAGE_NAME).setLevel("DEBUG")
     asyncio.create_task(window.process_events())
     await window.boot()
-    logging.getLogger(PACKAGE_NAME).setLevel("DEBUG")
     logger.info("Started up")
 
     collector = Collector(window, scheduler)
