@@ -72,37 +72,6 @@ class StrategyDevelopInput(BaseOverlay):
         )
         card_layout.addItem(spacer)
 
-        # sample script button
-        async def job_as():
-            # indicators script
-            filepath = PACKAGE_PATH / "static" / "sample_indicators_script.txt"
-            async with aiofiles.open(filepath, "r", encoding="utf8") as file:
-                script = await file.read()
-
-            indicators_script_input.setPlainText(script)
-
-            # decision script
-            filepath = PACKAGE_PATH / "static" / "sample_decision_script.txt"
-            async with aiofiles.open(filepath, "r", encoding="utf8") as file:
-                script = await file.read()
-
-            decision_script_input.setPlainText(script)
-
-            await ask(
-                "Sample scripts applied",
-                "It hasn't been saved yet,"
-                " feel free to customize the code to your liking.",
-                ["Okay"],
-            )
-
-        button = QtWidgets.QPushButton("Fill with sample", card)
-        outsource(button.clicked, job_as)
-        button.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed,
-        )
-        card_layout.addWidget(button)
-
         # confirm button
         async def job_ss():
             strategy.indicators_script = indicators_script_input.toPlainText()
@@ -127,6 +96,32 @@ class StrategyDevelopInput(BaseOverlay):
         action_button.setText("☰")
         action_button.setMenu(action_menu)
         card_layout.addWidget(action_button)
+
+        # sample script button
+        async def job_as():
+            # indicators script
+            filepath = PACKAGE_PATH / "static" / "sample_indicators_script.txt"
+            async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+                script = await file.read()
+
+            indicators_script_input.setPlainText(script)
+
+            # decision script
+            filepath = PACKAGE_PATH / "static" / "sample_decision_script.txt"
+            async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+                script = await file.read()
+
+            decision_script_input.setPlainText(script)
+
+            await ask(
+                "Sample scripts applied",
+                "It hasn't been saved yet,"
+                " feel free to customize the code to your liking.",
+                ["Okay"],
+            )
+
+        new_action = action_menu.addAction("Apply sample scripts")
+        outsource(new_action.triggered, job_as)
 
         # API docs button
         async def job_ad():
