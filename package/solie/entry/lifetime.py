@@ -5,7 +5,7 @@ import sys
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtGui, QtWidgets
 
-from solie.common import PACKAGE_PATH
+from solie.common import PACKAGE_NAME, PACKAGE_PATH
 from solie.widget import AskPopup, OverlayPopup
 from solie.window import Window
 from solie.worker import (
@@ -21,9 +21,6 @@ logger = logging.getLogger(__name__)
 
 
 async def live():
-    package_name = __name__.split(".")[0]
-    logging.getLogger(package_name).setLevel("DEBUG")
-
     app = QtWidgets.QApplication(sys.argv)
 
     staticpath = PACKAGE_PATH / "static"
@@ -61,6 +58,7 @@ async def live():
 
     asyncio.create_task(window.process_events())
     await window.boot()
+    logging.getLogger(PACKAGE_NAME).setLevel("DEBUG")
     logger.info("Started up")
 
     collector = Collector(window, scheduler)
