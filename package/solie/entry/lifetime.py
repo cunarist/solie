@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import sys
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtGui, QtWidgets
@@ -21,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 async def live():
-    app = QtWidgets.QApplication(sys.argv)
+    app = QtWidgets.QApplication()
 
     staticpath = PACKAGE_PATH / "static"
     QtGui.QFontDatabase.addApplicationFont(str(staticpath / "source_code_pro.ttf"))
