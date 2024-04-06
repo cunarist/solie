@@ -2,7 +2,7 @@
 
 See old versions of Solie at a glance.
 
-### Version 8
+## 8.0
 
 ![](assets/capture_version_8_0.png)
 
@@ -13,7 +13,7 @@ See old versions of Solie at a glance.
 - Applied type safety to the entire codebase
 - Switched to Poetry for dependency management
 
-### Version 7
+## 7.0
 
 ![](assets/capture_version_7_0.png)
 
@@ -21,7 +21,7 @@ See old versions of Solie at a glance.
 - Open-sourced
 - Removed all fees
 
-### Version 6
+## 6.0
 
 ![](assets/capture_version_6_1.png)
 ![](assets/capture_version_6_2.png)
@@ -30,7 +30,7 @@ See old versions of Solie at a glance.
 - Auto fee payment
 - Multiple custom strategies and properties
 
-### Version 5
+## 5.0
 
 ![](assets/capture_version_5_1.png)
 ![](assets/capture_version_5_2.png)
@@ -44,7 +44,7 @@ See old versions of Solie at a glance.
 - Organized code in many areas
 - React to Binance historical data format change
 
-### Version 4
+## 4.0
 
 ![](assets/capture_version_4_1.png)
 ![](assets/capture_version_4_2.png)
@@ -58,7 +58,7 @@ See old versions of Solie at a glance.
 - Improved internal performance and improved stability
 - Only one basic strategy is provided
 
-### Version 3
+## 3.0
 
 - Released on April 24, 2022
 - Changed decision script to have its own loop statement
@@ -66,7 +66,7 @@ See old versions of Solie at a glance.
 - Changed to install all internal packages from scratch
 - Made updaters to be prepared in advance
 
-### Version 2
+## 2.0
 
 - Released on March 11, 2022
 - Support for limit order feature
@@ -77,7 +77,7 @@ See old versions of Solie at a glance.
 - Internal stylesheet integration and improvements
 - Modify the format of the information provided to the simulation
 
-### Version 1
+## 1.0
 
 - Released on March 7, 2022
 - High resolution DPI support
@@ -85,7 +85,7 @@ See old versions of Solie at a glance.
 - Changed to use the correct conda channel
 - Internal code cleanup
 
-### Pre-release
+## Pre-release
 
 ![](assets/capture_version_pre_3.png)
 ![](assets/capture_version_pre_2.png)
@@ -104,7 +104,7 @@ See old versions of Solie at a glance.
 - Added splash window
 - Start giving version numbering
 
-### Development Phase
+## Development Phase
 
 2022-02-21
 
