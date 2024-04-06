@@ -56,9 +56,11 @@ logger.info(my_dictionary)
 
 ![](assets/example_032.png)
 
-You can also access workers with the `team` variable. It also allows direct modification of internal data.
+You can also access workers. Direct modification of internal data is possible.
 
 ```python
+from solie.worker import team
+
 logger.debug(team.transactor.account_state)
 ```
 
@@ -66,6 +68,7 @@ If the format of the variable you want to output is `list` or `dict`, you can al
 
 ```python
 import json
+
 log_data = json.dumps(
     team.transactor.account_state,
     indent=2,

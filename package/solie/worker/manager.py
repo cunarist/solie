@@ -132,7 +132,7 @@ class Manager:
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 script = await file.read()
         else:
-            script = "logger.info(team)"
+            script = "from solie.worker import team\n\nlogger.info(team)"
         self.window.plainTextEdit.setPlainText(script)
 
     async def change_settings(self):
@@ -216,7 +216,7 @@ class Manager:
         filepath = self.workerpath / "python_script.txt"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             await file.write(script_text)
-        namespace = {"team": team, "logger": logger}
+        namespace = {"logger": logger}
         exec(script_text, namespace)
 
     async def check_online_status(self):
