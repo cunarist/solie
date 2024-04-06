@@ -2000,10 +2000,6 @@ class Transactor:
             tasks = [asyncio.create_task(job_new_order(o)) for o in now_orders]
             await asyncio.wait(tasks)
 
-        # ■■■■■ Wait for the positions to be affected by now orders ■■■■■
-
-        await asyncio.sleep(2.0)
-
         # ■■■■■ Do book orders ■■■■■
 
         book_orders = []
@@ -2068,6 +2064,16 @@ class Transactor:
             price_precision = self.price_precisions[symbol]
             quantity_precision = self.quantity_precisions[symbol]
             current_direction = self.account_state["positions"][symbol]["direction"]
+
+            # Even if there's no open position analyzed yet
+            # due to user data stream from Binance being slow,
+            # it's possible to assume that a position would have already been created
+            # if there was a `now_buy` or `now_sell` order.
+            if current_direction == "none":
+                if "now_buy" in decision[symbol]:
+                    current_direction = "long"
+                elif "now_sell" in decision[symbol]:
+                    current_direction = "short"
 
             if "later_up_close" in decision[symbol]:
                 command = decision[symbol]["later_up_close"]
