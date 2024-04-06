@@ -2075,6 +2075,13 @@ class Transactor:
                 elif "now_sell" in decision[symbol]:
                     current_direction = "short"
 
+            # Even if there's open position analyzed,
+            # it's possible to assume that a position would have already been close
+            # if there was a `now_close` order.
+            if current_direction in ("long", "short"):
+                if "now_close" in decision[symbol]:
+                    current_direction = "none"
+
             if "later_up_close" in decision[symbol]:
                 command = decision[symbol]["later_up_close"]
                 if current_direction in ("long", "short"):
