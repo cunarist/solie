@@ -1,6 +1,23 @@
 # Solie Change Logs
 
-See old versions of Solie at a glance.
+See historical changes of Solie at a glance.
+
+## 8.4
+
+- A problem with auto transaction was fixed. Now 'now' orders and 'later' orders can be placed together.
+- Fixed many glitches.
+
+## 8.3
+
+- The performance is much better now when you have years of candle data collected. This is because the candle data of previous years are stored in the disk, not memory anymore.
+
+## 8.2
+
+- Improved the strategy development experience.
+
+## 8.1
+
+- Simulation speed has become faster. Its speed is now about 200%~250% of that of before.
 
 ## 8.0
 
