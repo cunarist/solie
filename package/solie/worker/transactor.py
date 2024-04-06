@@ -1947,26 +1947,19 @@ class Transactor:
             leverage = self.leverages[symbol]
             maximum_quantity = self.maximum_quantities[symbol]
             minimum_notional = self.minimum_notionals[symbol]
-            price_precision = self.price_precisions[symbol]
             quantity_precision = self.quantity_precisions[symbol]
+            current_direction = self.account_state["positions"][symbol]["direction"]
 
             if "now_close" in decision[symbol]:
-                is_possible = True
                 command = decision[symbol]["now_close"]
                 quantity = maximum_quantity
-                if self.account_state["positions"][symbol]["direction"] == "long":
-                    side = "SELL"
-                elif self.account_state["positions"][symbol]["direction"] == "short":
-                    side = "BUY"
-                else:
-                    side = "NONE"  # Dummy
-                    is_possible = False
-                if is_possible:
+                if current_direction in ("long", "short"):
+                    order_side = "SELL" if current_direction == "long" else "BUY"
                     new_order = {
                         "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                         "symbol": symbol,
                         "type": "MARKET",
-                        "side": side,
+                        "side": order_side,
                         "quantity": quantity,
                         "reduceOnly": True,
                         "newOrderRespType": "RESULT",
@@ -2017,7 +2010,6 @@ class Transactor:
             if symbol not in decision:
                 continue
 
-            current_price = current_prices[symbol]
             leverage = self.leverages[symbol]
             maximum_quantity = self.maximum_quantities[symbol]
             minimum_notional = self.minimum_notionals[symbol]
@@ -2068,56 +2060,46 @@ class Transactor:
             if symbol not in decision:
                 continue
 
-            current_price = current_prices[symbol]
             leverage = self.leverages[symbol]
             maximum_quantity = self.maximum_quantities[symbol]
             minimum_notional = self.minimum_notionals[symbol]
             price_precision = self.price_precisions[symbol]
             quantity_precision = self.quantity_precisions[symbol]
+            current_direction = self.account_state["positions"][symbol]["direction"]
 
             if "later_up_close" in decision[symbol]:
-                is_possible = True
                 command = decision[symbol]["later_up_close"]
-                if self.account_state["positions"][symbol]["direction"] == "long":
-                    new_order_side = "SELL"
-                    new_order_type = "TAKE_PROFIT_MARKET"
-                elif self.account_state["positions"][symbol]["direction"] == "short":
-                    new_order_side = "BUY"
-                    new_order_type = "STOP_MARKET"
-                else:
-                    new_order_side = "NONE"  # Dummy
-                    new_order_type = "NONE"  # Dummy
-                    is_possible = False
-                if is_possible:
+                if current_direction in ("long", "short"):
+                    if current_direction == "long":
+                        order_side = "SELL"
+                        order_type = "TAKE_PROFIT_MARKET"
+                    else:
+                        order_side = "BUY"
+                        order_type = "STOP_MARKET"
                     new_order = {
                         "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                         "symbol": symbol,
-                        "type": new_order_type,
-                        "side": new_order_side,
+                        "type": order_type,
+                        "side": order_side,
                         "stopPrice": round(float(command["boundary"]), price_precision),
                         "closePosition": True,
                     }
                     later_orders.append(new_order)
 
             if "later_down_close" in decision[symbol]:
-                is_possible = True
                 command = decision[symbol]["later_down_close"]
-                if self.account_state["positions"][symbol]["direction"] == "long":
-                    new_order_side = "SELL"
-                    new_order_type = "STOP_MARKET"
-                elif self.account_state["positions"][symbol]["direction"] == "short":
-                    new_order_side = "BUY"
-                    new_order_type = "TAKE_PROFIT_MARKET"
-                else:
-                    new_order_side = "NONE"  # Dummy
-                    new_order_type = "NONE"  # Dummy
-                    is_possible = False
-                if is_possible:
+                if current_direction in ("long", "short"):
+                    if current_direction == "long":
+                        order_side = "SELL"
+                        order_type = "STOP_MARKET"
+                    else:
+                        order_side = "BUY"
+                        order_type = "TAKE_PROFIT_MARKET"
                     new_order = {
                         "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                         "symbol": symbol,
-                        "type": new_order_type,
-                        "side": new_order_side,
+                        "type": order_type,
+                        "side": order_side,
                         "stopPrice": round(float(command["boundary"]), price_precision),
                         "closePosition": True,
                     }
