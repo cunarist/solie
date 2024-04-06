@@ -1966,7 +1966,7 @@ class Transactor:
                     }
                     now_orders.append(new_order)
                 else:
-                    logger.warn("Cannot close position because there isn't any")
+                    logger.warn("Cannot close position when there isn't any")
 
             if "now_buy" in decision[symbol]:
                 command = decision[symbol]["now_buy"]
