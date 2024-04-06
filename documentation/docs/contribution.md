@@ -105,9 +105,3 @@ pyside6-uic craft/window.ui -o package/solie/window/compiled.py
 - The `print` command is only for development purposes only and should not be included in the final code. If there is information to be shown, it must be displayed in the user interface.
 - When a value is added to data that has a table form, it should be occupied by `datalocks` and then written at once so that one row can always be assumed to be completely intact. Be careful that there is no instantaneous blank space after a new row is added.
 - Time zone information must be included in UTC in `datetime.datetime` object. In addition to this, please include UTC time zone information wherever possible, such as `pandas.DatetimeIndex`.
-
-## 🏷️ Variable Terminology
-
-- `amount` has a negative value for a short position and a positive value for a long position. It is expressed in units of each coin, not dollars.
-- `role` has only one of two values, `maker` or `taker`, depending on whether liquidity was supplied at the time of trading.
-- `moment` refers to the reference time used for data recording. Structurally, it points to a row in a series or dataframe.
