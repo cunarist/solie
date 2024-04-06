@@ -96,11 +96,9 @@ pyside6-uic craft/window.ui -o package/solie/window/compiled.py
 
 ## 🚦 Rules
 
-- Solie is made purely in Python and uses Poetry as the default package management tool.
-- Use Ruff formatter for formatting and linting.
-- Use Pyright's basic type checking. If you're using Visual Studio Code, Pylance will provide a superset of Pyright’s functionality.
-- It should be easy for general users to use with just a few clicks.
-- It should be developed with the goal of working on both `Windows`, `Linux`, and `macOS`. Do not use platform-dependent packages such as `win32api`.
-- The `print` command is only for development purposes only and should not be included in the final code. If there is information to be shown, it must be displayed in the user interface.
-- When a value is added to data that has a table form, it should be occupied by `datalocks` and then written at once so that one row can always be assumed to be completely intact. Be careful that there is no instantaneous blank space after a new row is added.
-- Time zone information must be included in UTC in `datetime.datetime` object. In addition to this, please include UTC time zone information wherever possible, such as `pandas.DatetimeIndex`.
+- Solie is written entirely in Python and utilizes Poetry as the primary tool for managing packages.
+- Use the Ruff formatter for organizing code and identifying issues.
+- Employ Pyright in basic mode for type checks. If you're using Visual Studio Code, Pylance extends Pyright’s capabilities.
+- It should be user-friendly, allowing general users to navigate with just a few clicks.
+- Development targets compatibility across Windows, Linux, and macOS without relying on platform-specific packages like `win32api`.
+- UTC timezone information must be included in `datetime.datetime` objects. Also, include UTC timezone information wherever feasible, such as in `pandas.DatetimeIndex`.
