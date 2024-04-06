@@ -6,6 +6,7 @@ See historical changes of Solie at a glance.
 
 - Auto transaction with mixed 'now' and 'later' orders were stabilized further.
 - The internal codebase was vastly organized. Specifically, type safety and circular imports were addressed.
+- Now various asset tokens are selectable in a new data folder. Only `USDT` and `BUSD` were possible before.
 
 ## 8.4
 
