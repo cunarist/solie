@@ -1,6 +1,7 @@
 from collections import deque
+from datetime import datetime, timedelta, timezone
 
-task_durations = {
+task_durations: dict[str, deque[float]] = {
     "add_candle_data": deque(maxlen=360),
     "add_book_tickers": deque(maxlen=1280),
     "add_mark_price": deque(maxlen=10),
@@ -16,5 +17,11 @@ def add_task_duration(task_name, duration):
     task_durations[task_name].append(duration)
 
 
-def get_task_duration():
+def get_task_duration() -> dict[str, deque[float]]:
     return task_durations
+
+
+def get_current_moment() -> datetime:
+    current_moment = datetime.now(timezone.utc).replace(microsecond=0)
+    current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
+    return current_moment

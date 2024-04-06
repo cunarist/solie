@@ -27,7 +27,6 @@ from .download_from_binance import (
 from .log_handler import LogHandler
 from .pandas_related import combine_candle_data
 from .percent_axis_item import PercentAxisItem
-from .remember_task_durations import add_task_duration, get_task_duration
 from .rw_lock import RWLock
 from .simply_format import format_numeric
 from .sort_pandas import sort_data_frame, sort_series
@@ -48,6 +47,7 @@ from .structs import (
 )
 from .syntax_highlighter import SyntaxHighlighter
 from .time_axis_item import TimeAxisItem
+from .timing import add_task_duration, get_current_moment, get_task_duration
 from .user_settings import (
     DataSettings,
     read_data_settings,
@@ -109,4 +109,5 @@ __all__ = [
     "SimulationError",
     "is_internet_checked",
     "monitor_internet",
+    "get_current_moment",
 ]

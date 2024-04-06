@@ -27,6 +27,7 @@ from solie.utility import (
     fill_holes_with_aggtrades,
     find_stop_flag,
     format_numeric,
+    get_current_moment,
     internet_connected,
     make_stop_flag,
     sort_data_frame,
@@ -265,8 +266,7 @@ class Collector:
 
         # ■■■■■ moments ■■■■■
 
-        current_moment = datetime.now(timezone.utc).replace(microsecond=0)
-        current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
+        current_moment = get_current_moment()
         split_moment = current_moment - timedelta(days=2)
 
         # ■■■■■ fill holes ■■■■■
@@ -443,13 +443,12 @@ class Collector:
         self.window.label_6.setText(text)
 
     async def check_candle_data_cumulation_rate(self):
-        current_moment = datetime.now(timezone.utc).replace(microsecond=0)
-        current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
+        current_moment = get_current_moment()
         count_start_moment = current_moment - timedelta(hours=24)
         async with self.candle_data.read_lock as cell:
             cumulated_moments = len(cell.data[count_start_moment:].dropna())
         needed_moments = 24 * 60 * 60 / 10
-        cumulation_rate = min(float(1), (cumulated_moments + 1) / needed_moments)
+        cumulation_rate = min(1.0, (cumulated_moments + 1) / needed_moments)
         return cumulation_rate
 
     async def open_binance_data_page(self):
@@ -694,8 +693,7 @@ class Collector:
             cell.data = cell.data[0:0].copy()
 
     async def add_candle_data(self):
-        current_moment = datetime.now(timezone.utc).replace(microsecond=0)
-        current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
+        current_moment = get_current_moment()
         before_moment = current_moment - timedelta(seconds=10)
 
         async with self.aggregate_trades.read_lock as cell:

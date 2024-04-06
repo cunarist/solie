@@ -19,6 +19,7 @@ from solie.utility import (
     SimulationSettings,
     SimulationSummary,
     find_stop_flag,
+    get_current_moment,
     make_indicators,
     make_stop_flag,
     simulate_chunk,
@@ -198,8 +199,7 @@ class Simulator:
 
         # ■■■■■ wait for the latest data to be added ■■■■■
 
-        current_moment = datetime.now(timezone.utc).replace(microsecond=0)
-        current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
+        current_moment = get_current_moment()
         before_moment = current_moment - timedelta(seconds=10)
 
         if periodic:

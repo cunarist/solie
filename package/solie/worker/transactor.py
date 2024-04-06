@@ -27,6 +27,7 @@ from solie.utility import (
     ball_ceil,
     decide,
     find_stop_flag,
+    get_current_moment,
     internet_connected,
     list_to_dict,
     make_indicators,
@@ -737,8 +738,7 @@ class Transactor:
 
         # ■■■■■ wait for the latest data to be added ■■■■■
 
-        current_moment = datetime.now(timezone.utc).replace(microsecond=0)
-        current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
+        current_moment = get_current_moment()
         before_moment = current_moment - timedelta(seconds=10)
 
         if periodic:
@@ -1313,8 +1313,7 @@ class Transactor:
 
         # ■■■■■ Moment ■■■■■
 
-        current_moment = datetime.now(timezone.utc).replace(microsecond=0)
-        current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
+        current_moment = get_current_moment()
         before_moment = current_moment - timedelta(seconds=10)
 
         # ■■■■■ Play the progress bar ■■■■■
@@ -1472,8 +1471,7 @@ class Transactor:
 
         # ■■■■■ Moment ■■■■■
 
-        current_moment = datetime.now(timezone.utc).replace(microsecond=0)
-        current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
+        current_moment = get_current_moment()
         before_moment = current_moment - timedelta(seconds=10)
 
         # ■■■■■ Request exchange information ■■■■■
