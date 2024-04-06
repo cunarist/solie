@@ -442,13 +442,13 @@ class Collector:
 
         self.window.label_6.setText(text)
 
-    async def check_candle_data_cumulation_rate(self):
+    async def check_candle_data_cumulation_rate(self) -> float:
         current_moment = get_current_moment()
         count_start_moment = current_moment - timedelta(hours=24)
         async with self.candle_data.read_lock as cell:
             cumulated_moments = len(cell.data[count_start_moment:].dropna())
         needed_moments = 24 * 60 * 60 / 10
-        cumulation_rate = min(1.0, (cumulated_moments + 1) / needed_moments)
+        cumulation_rate = min(1.0, (cumulated_moments + 2) / needed_moments)
         return cumulation_rate
 
     async def open_binance_data_page(self):
