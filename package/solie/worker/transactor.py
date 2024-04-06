@@ -2076,7 +2076,7 @@ class Transactor:
                     current_direction = "short"
 
             # Even if there's open position analyzed,
-            # it's possible to assume that a position would have already been close
+            # it's possible to assume that a position would have already been closed
             # if there was a `now_close` order.
             if current_direction in ("long", "short"):
                 if "now_close" in decision[symbol]:
