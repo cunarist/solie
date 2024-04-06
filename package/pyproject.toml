@@ -29,8 +29,3 @@ dataclasses-json = "^0.6.4"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.ruff.lint]
-extend-select = ["N", "I", "T20", "SLF", "INP", "ASYNC"]
-exclude = ["solie/window/compiled.py"]
-ignore = ["F403"]
