@@ -1,6 +1,6 @@
 # Contribution Guide
 
-There are things that must be known in the process of making Solie. Guides below will help you dive into the Solie codebase.
+Guides below will help you dive into the Solie codebase.
 
 When using terminal commands from the following sections, always make sure that your current working directory is the root folder of the cloned repository.
 
@@ -15,7 +15,6 @@ Then, make sure [Poetry](https://python-poetry.org/) is installed on your system
 ```bash
 pip install pipx
 python -m pipx ensurepath
-# You might need to restart the terminal here
 pipx install poetry
 ```
 
@@ -29,7 +28,6 @@ Activate the Poetry shell and run the code.
 
 ```bash
 poetry shell
-# Once you've activated the shell, you don't need to do it again
 python -m solie
 ```
 
@@ -44,7 +42,7 @@ Note that what you're running here is a real Python code. Therefore, you can imp
 To output something as a log, you can use the default `logger`. When you run this code, you will see a new record being added to the log list in the `debugger`. `logger` can show anything of any type.
 
 ```python
-logger.debug("What you want to know about")
+logger.debug("Something you want to know about")
 ```
 
 You can also choose the importance of the log. There are 5 log levels: `DEBUG`, `INFO`, `WARNING`, `ERROR`, and `CRITICAL`. Our `logger` provided here will output all the levels.
@@ -86,6 +84,7 @@ In the `Log output`, all logs that occur during execution are stacked. If an err
 The user interface can be modified by editing the `./craft/window.ui` file with `Qt Designer`. Run the designer app with the terminal command below.
 
 ```bash
+poetry shell
 pyside6-designer
 ```
 
