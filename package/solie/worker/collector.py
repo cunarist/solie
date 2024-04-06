@@ -26,6 +26,7 @@ from solie.utility import (
     download_aggtrade_data,
     fill_holes_with_aggtrades,
     find_stop_flag,
+    format_numeric,
     internet_connected,
     make_stop_flag,
     sort_data_frame,
@@ -396,7 +397,7 @@ class Collector:
 
         # bottom information
         if len(self.markets_gone) == 0:
-            cumulation_rate = await self.get_candle_data_cumulation_rate()
+            cumulation_rate = await self.check_candle_data_cumulation_rate()
             async with self.realtime_data_chunks.read_lock as cell:
                 chunk_count = len(cell.data)
             first_written_time = None
@@ -441,7 +442,7 @@ class Collector:
 
         self.window.label_6.setText(text)
 
-    async def get_candle_data_cumulation_rate(self):
+    async def check_candle_data_cumulation_rate(self):
         current_moment = datetime.now(timezone.utc).replace(microsecond=0)
         current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
         count_start_moment = current_moment - timedelta(hours=24)
@@ -771,3 +772,16 @@ class Collector:
             "Support Solie",
             DonationGuide(),
         )
+
+    async def check_saved_years(self) -> list[int]:
+        years = [
+            int(format_numeric(filename))
+            for filename in await aiofiles.os.listdir(self.workerpath)
+            if filename.startswith("candle_data_") and filename.endswith(".pickle")
+        ]
+        return years
+
+    async def read_saved_candle_data(self, year: int) -> pd.DataFrame:
+        filepath = self.workerpath / f"candle_data_{year}.pickle"
+        candle_data: pd.DataFrame = await go(pd.read_pickle, filepath)
+        return candle_data

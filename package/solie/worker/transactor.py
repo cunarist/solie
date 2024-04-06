@@ -1245,7 +1245,7 @@ class Transactor:
             self.window.label_16.setText(text)
             return
 
-        cumulation_rate = await team.collector.get_candle_data_cumulation_rate()
+        cumulation_rate = await team.collector.check_candle_data_cumulation_rate()
         if cumulation_rate < 1:
             text = (
                 "For auto transaction to work, the past 24 hour accumulation rate of"
@@ -1307,7 +1307,7 @@ class Transactor:
         if not self.is_key_restrictions_satisfied:
             return
 
-        cumulation_rate = await team.collector.get_candle_data_cumulation_rate()
+        cumulation_rate = await team.collector.check_candle_data_cumulation_rate()
         if cumulation_rate < 1:
             return
 

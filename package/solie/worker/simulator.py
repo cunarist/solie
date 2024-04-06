@@ -19,7 +19,6 @@ from solie.utility import (
     SimulationSettings,
     SimulationSummary,
     find_stop_flag,
-    format_numeric,
     make_indicators,
     make_stop_flag,
     simulate_chunk,
@@ -324,12 +323,7 @@ class Simulator:
         # ■■■■■ set range of heavy data ■■■■■
 
         if should_draw_all_years:
-            collector_path = team.collector.workerpath
-            years = [
-                int(format_numeric(filename))
-                for filename in await aiofiles.os.listdir(collector_path)
-                if filename.startswith("candle_data_") and filename.endswith(".pickle")
-            ]
+            years = await team.collector.check_saved_years()
             slice_from = datetime.fromtimestamp(0, tz=timezone.utc)
             slice_until = datetime.now(timezone.utc)
             slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
@@ -348,8 +342,7 @@ class Simulator:
 
         divided_datas: list[pd.DataFrame] = []
         for year in years:
-            filepath = team.collector.workerpath / f"candle_data_{year}.pickle"
-            more_df = await go(pd.read_pickle, filepath)
+            more_df = await team.collector.read_saved_candle_data(year)
             divided_datas.append(more_df)
         candle_data_original: pd.DataFrame = await go(pd.concat, divided_datas)
         if not candle_data_original.index.is_monotonic_increasing:
@@ -700,12 +693,7 @@ class Simulator:
         await self.present()
 
     async def display_available_years(self):
-        collector_path = team.collector.workerpath
-        years = [
-            int(format_numeric(filename))
-            for filename in await aiofiles.os.listdir(collector_path)
-            if filename.startswith("candle_data_") and filename.endswith(".pickle")
-        ]
+        years = await team.collector.check_saved_years()
         years.sort(reverse=True)
 
         widget = self.window.comboBox_5
@@ -905,8 +893,7 @@ class Simulator:
         slice_until -= timedelta(seconds=1)
 
         # Get the candle data of this year.
-        filepath = team.collector.workerpath / f"candle_data_{year}.pickle"
-        year_candle_data: pd.DataFrame = await go(pd.read_pickle, filepath)
+        year_candle_data = await team.collector.read_saved_candle_data(year)
 
         # Interpolate so that there's no inappropriate holes.
         year_candle_data = year_candle_data.interpolate()
