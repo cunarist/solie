@@ -2,6 +2,11 @@
 
 See historical changes of Solie at a glance.
 
+## 8.5
+
+- Auto transaction with mixed 'now' and 'later' orders were stabilized further.
+- The internal codebase was vastly organized. Specifically, type safety and circular imports were addressed.
+
 ## 8.4
 
 - A problem with auto transaction was fixed. Now 'now' orders and 'later' orders can be placed together.
