@@ -64,7 +64,7 @@ from solie.worker import team
 logger.debug(team.transactor.account_state)
 ```
 
-If the format of the variable you want to output is `list` or `dict`, you can also output it much better with the help of the `json` standard library.
+If the format of the variable you want to output is `list` or `dict`, you can log it with better readability with the help of the `json` standard library.
 
 ```python
 import json
