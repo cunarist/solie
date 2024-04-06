@@ -33,6 +33,8 @@ WINDOW_LOCK_OPTIONS = (
     "1_HOUR",
 )
 
+logger = logging.getLogger(__name__)
+
 
 class Manager:
     def __init__(self, window: Window, scheduler: AsyncIOScheduler):
@@ -130,7 +132,7 @@ class Manager:
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 script = await file.read()
         else:
-            script = "logger.info(window)"
+            script = "logger.info(team)"
         self.window.plainTextEdit.setPlainText(script)
 
     async def change_settings(self):
@@ -214,7 +216,7 @@ class Manager:
         filepath = self.workerpath / "python_script.txt"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             await file.write(script_text)
-        namespace = {"window": self.window, "logger": logging.getLogger(__name__)}
+        namespace = {"team": team, "logger": logger}
         exec(script_text, namespace)
 
     async def check_online_status(self):

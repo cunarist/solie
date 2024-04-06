@@ -56,17 +56,21 @@ logger.info(my_dictionary)
 
 ![](assets/example_032.png)
 
-You can also access the window with the `window` variable. It also allows direct modification of internal data.
+You can also access workers with the `team` variable. It also allows direct modification of internal data.
 
 ```python
-logger.debug(window.transactor.account_state)
+logger.debug(team.transactor.account_state)
 ```
 
 If the format of the variable you want to output is `list` or `dict`, you can also output it much better with the help of the `json` standard library.
 
 ```python
 import json
-log_data = json.dumps(window.transactor.account_state, indent=2, default=str)
+log_data = json.dumps(
+    team.transactor.account_state,
+    indent=2,
+    default=str
+)
 logger.debug(log_data)
 ```
 
