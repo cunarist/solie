@@ -1965,6 +1965,8 @@ class Transactor:
                         "newOrderRespType": "RESULT",
                     }
                     now_orders.append(new_order)
+                else:
+                    logger.warn("Cannot close position because there isn't any")
 
             if "now_buy" in decision[symbol]:
                 command = decision[symbol]["now_buy"]
@@ -2085,6 +2087,8 @@ class Transactor:
                         "closePosition": True,
                     }
                     later_orders.append(new_order)
+                else:
+                    logger.warn("Cannot place `later_up_close` with no open position")
 
             if "later_down_close" in decision[symbol]:
                 command = decision[symbol]["later_down_close"]
@@ -2104,6 +2108,8 @@ class Transactor:
                         "closePosition": True,
                     }
                     later_orders.append(new_order)
+                else:
+                    logger.warn("Cannot place `later_down_close` with no open position")
 
             if "later_up_buy" in decision[symbol]:
                 command = decision[symbol]["later_up_buy"]
