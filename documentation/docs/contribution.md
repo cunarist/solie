@@ -76,20 +76,20 @@ logger.debug(log_data)
 
 ![](assets/example_034.png)
 
-In the `Log output`, all logs that occur during execution are stacked. If an error occurs, it is also logged. If you're writing a strategy script and something doesn't work, you can come here to figure out the cause.
+In the `Log output`, all logs that occur during execution are stacked. If an error occurs, it is also logged. If you're writing a strategy script and something doesn't work, visit here to figure out the cause.
 
 ## 🕹️ User Interface
 
-The user interface can be changed by editing the `./craft/user_interface.ui` file with the `Qt Designer`. Open it with below terminal command.
+The user interface can be modified by editing the `./craft/window.ui` file with `Qt Designer`. Run the designer app with the terminal command below.
 
 ```bash
 pyside6-designer
 ```
 
-After editing the UI file, you have to compile it as a Python module.
+After editing the UI file, you should compile it into a Python module.
 
 ```bash
-pyside6-uic craft/user_interface.ui -o package/solie/window/compiled.py
+pyside6-uic craft/window.ui -o package/solie/window/compiled.py
 ```
 
 ## 🚦 Rules
