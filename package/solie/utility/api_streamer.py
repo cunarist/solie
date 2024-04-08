@@ -23,7 +23,6 @@ class ApiStreamer:
         self._url = url
         self._handler = handler
         self._session = ClientSession()
-
         self._task = asyncio.create_task(self._keep_listening())
 
     async def _keep_listening(self):
