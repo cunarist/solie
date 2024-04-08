@@ -145,12 +145,7 @@ class Transactor:
 
         # ■■■■■ websocket streamings ■■■■■
 
-        self.api_streamers = {
-            "ACCOUNT": ApiStreamer(
-                "",
-                self.listen_to_account,
-            )
-        }
+        self.user_data_streamer: ApiStreamer | None = None
 
         # ■■■■■ invoked by the internet connection status change ■■■■■
 
@@ -313,6 +308,9 @@ class Transactor:
         if not internet_connected():
             return
 
+        if self.user_data_streamer:
+            await self.user_data_streamer.close()
+
         try:
             payload = {}
             response = await self.api_requester.binance(
@@ -321,12 +319,12 @@ class Transactor:
                 payload=payload,
             )
         except ApiRequestError:
+            self.user_data_streamer = None
             return
 
         listen_key = response["listenKey"]
-
-        self.api_streamers["ACCOUNT"] = ApiStreamer(
-            "wss://fstream.binance.com/ws/" + listen_key,
+        self.user_data_streamer = ApiStreamer(
+            f"wss://fstream.binance.com/ws/{listen_key}",
             self.listen_to_account,
         )
 

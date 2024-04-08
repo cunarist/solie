@@ -22,26 +22,15 @@ class ApiStreamer:
     ):
         self._url = url
         self._handler = handler
-        self.session = ClientSession()
+        self._session = ClientSession()
 
-        if url != "":
-            asyncio.create_task(self._run_websocket())
+        self._task = asyncio.create_task(self._keep_listening())
 
-    def __del__(self):
-        asyncio.create_task(self._close_self())
+    async def close(self):
+        await self._session.close()
 
-    async def _run_websocket(self):
-        while True:
-            try:
-                await self._keep_connection()
-            except Exception as error:
-                # Handle errors that might occur due to network issues
-                logger.exception(f"Websocket error: {error}")
-                # Wait for a few seconds before attempting to reconnect
-                await asyncio.sleep(5)
-
-    async def _keep_connection(self):
-        async with self.session.ws_connect(self._url) as websocket:
+    async def _keep_listening(self):
+        async with self._session.ws_connect(self._url) as websocket:
             logger.info(f"Websocket connected: {self._url}")
             async for received_raw in websocket:
                 stop_types = (WSMsgType.CLOSED, WSMsgType.ERROR)
@@ -59,6 +48,3 @@ class ApiStreamer:
                     task = asyncio.create_task(self._handler(received))
                     task.add_done_callback(done_callback)
             logger.info(f"Websocket stopped: {self._url}")
-
-    async def _close_self(self):
-        await self.session.close()

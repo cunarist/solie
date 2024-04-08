@@ -126,23 +126,25 @@ class Collector:
 
         # ■■■■■ websocket streamings ■■■■■
 
-        self.api_streamers = {
-            "MARK_PRICE": ApiStreamer(
-                "wss://fstream.binance.com/ws/!markPrice@arr@1s",
-                self.add_mark_price,
-            ),
-        }
-        for symbol in self.window.data_settings.target_symbols:
-            api_streamer = ApiStreamer(
-                f"wss://fstream.binance.com/ws/{symbol.lower()}@bookTicker",
+        self.mark_price_streamer = ApiStreamer(
+            "wss://fstream.binance.com/ws/!markPrice@arr@1s",
+            self.add_mark_price,
+        )
+
+        self.book_ticker_streamers = [
+            ApiStreamer(
+                f"wss://fstream.binance.com/ws/{s.lower()}@bookTicker",
                 self.add_book_tickers,
             )
-            self.api_streamers[f"BOOK_TICKER_{symbol}"] = api_streamer
-            api_streamer = ApiStreamer(
-                f"wss://fstream.binance.com/ws/{symbol.lower()}@aggTrade",
+            for s in self.window.data_settings.target_symbols
+        ]
+        self.aggtrade_streamers = [
+            ApiStreamer(
+                f"wss://fstream.binance.com/ws/{s.lower()}@aggTrade",
                 self.add_aggregate_trades,
             )
-            self.api_streamers[f"AGG_TRADE_{symbol}"] = api_streamer
+            for s in self.window.data_settings.target_symbols
+        ]
 
         # ■■■■■ invoked by the internet connection status change ■■■■■
 

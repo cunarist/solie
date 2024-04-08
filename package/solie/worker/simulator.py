@@ -85,8 +85,6 @@ class Simulator:
 
         # ■■■■■ websocket streamings ■■■■■
 
-        self.api_streamers = {}
-
         # ■■■■■ invoked by the internet connection status change ■■■■■
 
         # ■■■■■ connect UI events ■■■■■
