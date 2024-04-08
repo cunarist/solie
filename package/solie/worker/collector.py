@@ -20,7 +20,6 @@ from solie.utility import (
     ApiStreamer,
     DownloadPreset,
     RWLock,
-    add_disconnected_functions,
     add_task_duration,
     combine_candle_data,
     download_aggtrade_data,
@@ -32,6 +31,7 @@ from solie.utility import (
     make_stop_flag,
     sort_data_frame,
     standardize_candle_data,
+    when_internet_disconnected,
 )
 from solie.widget import overlay
 from solie.window import Window
@@ -148,7 +148,7 @@ class Collector:
 
         # ■■■■■ invoked by the internet connection status change ■■■■■
 
-        add_disconnected_functions(self.clear_aggregate_trades)
+        when_internet_disconnected(self.clear_aggregate_trades)
 
         # ■■■■■ connect UI events ■■■■■
 

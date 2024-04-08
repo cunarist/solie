@@ -165,7 +165,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             await ask(
                 "No internet connection",
                 "Internet connection is necessary for Solie to start up.",
-                ["Okay"],
+                ["Retry"],
             )
             await asyncio.sleep(1)
 

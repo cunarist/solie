@@ -11,11 +11,11 @@ from .api_streamer import ApiStreamer
 from .backward_compatibility import examine_data_files
 from .ball import ball_ceil, ball_floor
 from .check_internet import (
-    add_connected_functions,
-    add_disconnected_functions,
     internet_connected,
     is_internet_checked,
     monitor_internet,
+    when_internet_connected,
+    when_internet_disconnected,
 )
 from .compare_versions import is_left_version_higher
 from .convert import list_to_dict, value_to_indexes
@@ -64,8 +64,8 @@ __all__ = [
     "ApiStreamer",
     "ball_ceil",
     "ball_floor",
-    "add_connected_functions",
-    "add_disconnected_functions",
+    "when_internet_connected",
+    "when_internet_disconnected",
     "internet_connected",
     "monitor_internet",
     "combine_candle_data",

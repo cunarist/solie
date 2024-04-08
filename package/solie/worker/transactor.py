@@ -22,7 +22,6 @@ from solie.utility import (
     ApiStreamer,
     RWLock,
     TransactionSettings,
-    add_connected_functions,
     add_task_duration,
     ball_ceil,
     decide,
@@ -37,6 +36,7 @@ from solie.utility import (
     standardize_account_state,
     standardize_asset_record,
     standardize_unrealized_changes,
+    when_internet_connected,
 )
 from solie.widget import ask, overlay
 from solie.window import Window
@@ -149,7 +149,7 @@ class Transactor:
 
         # ■■■■■ invoked by the internet connection status change ■■■■■
 
-        add_connected_functions(self.watch_binance)
+        when_internet_connected(self.watch_binance)
 
         # ■■■■■ connect UI events ■■■■■
 
