@@ -64,7 +64,7 @@ async def examine_data_files(datapath: Path):
     except Exception:
         pass
 
-    # 6.3: Auto_trade and manual_trade
+    # 6.3: Possible causes are now `auto_trade` and `manual_trade`
     try:
         filepath = datapath / "transactor" / "asset_record.pickle"
         asset_record: pd.DataFrame = await go(pd.read_pickle, filepath)
