@@ -19,7 +19,6 @@ from solie.utility import (
     get_task_duration,
     internet_connected,
     save_datapath,
-    value_to_indexes,
 )
 from solie.widget import ask
 from solie.window import Window
@@ -112,9 +111,7 @@ class Manager:
                 content = await file.read()
                 self.management_settings = ManagementSettings.from_json(content)
         self.window.comboBox_3.setCurrentIndex(
-            value_to_indexes(WINDOW_LOCK_OPTIONS, self.management_settings.lock_board)[
-                0
-            ]
+            WINDOW_LOCK_OPTIONS.index(self.management_settings.lock_board)
         )
 
         # python script

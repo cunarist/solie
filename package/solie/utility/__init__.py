@@ -18,7 +18,7 @@ from .check_internet import (
     when_internet_disconnected,
 )
 from .compare_versions import is_left_version_higher
-from .convert import list_to_dict, value_to_indexes
+from .convert import list_to_dict
 from .download_from_binance import (
     DownloadPreset,
     download_aggtrade_data,
@@ -71,7 +71,6 @@ __all__ = [
     "combine_candle_data",
     "is_left_version_higher",
     "list_to_dict",
-    "value_to_indexes",
     "decide",
     "download_aggtrade_data",
     "examine_data_files",
