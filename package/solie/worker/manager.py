@@ -13,7 +13,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from solie.common import PROCESS_COUNT, go, outsource
 from solie.utility import (
-    WINDOW_LOCK_OPTIONS,
+    BOARD_LOCK_OPTIONS,
     ApiRequester,
     ManagementSettings,
     get_task_duration,
@@ -111,7 +111,7 @@ class Manager:
                 content = await file.read()
                 self.management_settings = ManagementSettings.from_json(content)
         self.window.comboBox_3.setCurrentIndex(
-            WINDOW_LOCK_OPTIONS.index(self.management_settings.lock_board)
+            BOARD_LOCK_OPTIONS.index(self.management_settings.lock_board)
         )
 
         # python script
@@ -125,7 +125,7 @@ class Manager:
 
     async def change_settings(self):
         current_index = self.window.comboBox_3.currentIndex()
-        self.management_settings.lock_board = WINDOW_LOCK_OPTIONS[current_index]
+        self.management_settings.lock_board = BOARD_LOCK_OPTIONS[current_index]
 
         filepath = self.workerpath / "management_settings.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
@@ -308,17 +308,17 @@ class Manager:
         await go(webbrowser.open, "https://solie-docs.cunarist.com")
 
     async def lock_board(self):
-        lock_window_setting = self.management_settings.lock_board
+        lock_board = self.management_settings.lock_board
 
-        if lock_window_setting == "NEVER":
+        if lock_board == BOARD_LOCK_OPTIONS[0]:
             return
-        elif lock_window_setting == "10_SECOND":
+        elif lock_board == BOARD_LOCK_OPTIONS[1]:
             wait_time = timedelta(seconds=10)
-        elif lock_window_setting == "1_MINUTE":
+        elif lock_board == BOARD_LOCK_OPTIONS[2]:
             wait_time = timedelta(minutes=1)
-        elif lock_window_setting == "10_MINUTE":
+        elif lock_board == BOARD_LOCK_OPTIONS[3]:
             wait_time = timedelta(minutes=10)
-        elif lock_window_setting == "1_HOUR":
+        elif lock_board == BOARD_LOCK_OPTIONS[4]:
             wait_time = timedelta(hours=1)
         else:
             raise ValueError("Invalid duration value for locking the window")

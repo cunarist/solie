@@ -46,7 +46,7 @@ class SimulationSummary:
     strategy_version: str
 
 
-WINDOW_LOCK_OPTIONS = (
+BOARD_LOCK_OPTIONS = (
     "NEVER",
     "10_SECOND",
     "1_MINUTE",
@@ -57,4 +57,4 @@ WINDOW_LOCK_OPTIONS = (
 
 @dataclass
 class ManagementSettings(DataClassJsonMixin):
-    lock_board: str = "NEVER"  # One of `WINDOW_LOCK_OPTIONS`
+    lock_board: str = "NEVER"  # One of `BOARD_LOCK_OPTIONS`
