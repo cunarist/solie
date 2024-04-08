@@ -27,11 +27,11 @@ class ApiStreamer:
 
     async def _keep_listening(self):
         async with self._session.ws_connect(self._url) as websocket:
-            logger.info(f"Websocket connected: {self._url}")
+            logger.info(f"Websocket connected\n{self._url}")
             async for received_raw in websocket:
                 stop_types = (WSMsgType.CLOSED, WSMsgType.ERROR)
                 if received_raw.type in stop_types:
-                    logger.info(f"Websocket closed: {self._url}")
+                    logger.info(f"Websocket closed\n{self._url}")
                     break
                 else:
                     received = received_raw.json()
@@ -43,7 +43,7 @@ class ApiStreamer:
 
                     task = asyncio.create_task(self._handler(received))
                     task.add_done_callback(done_callback)
-            logger.info(f"Websocket stopped: {self._url}")
+            logger.info(f"Websocket stopped\n{self._url}")
 
     async def close(self):
         await self._session.close()
