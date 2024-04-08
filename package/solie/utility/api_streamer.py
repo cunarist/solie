@@ -26,9 +26,6 @@ class ApiStreamer:
 
         self._task = asyncio.create_task(self._keep_listening())
 
-    async def close(self):
-        await self._session.close()
-
     async def _keep_listening(self):
         async with self._session.ws_connect(self._url) as websocket:
             logger.info(f"Websocket connected: {self._url}")
@@ -48,3 +45,6 @@ class ApiStreamer:
                     task = asyncio.create_task(self._handler(received))
                     task.add_done_callback(done_callback)
             logger.info(f"Websocket stopped: {self._url}")
+
+    async def close(self):
+        await self._session.close()
