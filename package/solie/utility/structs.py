@@ -44,3 +44,17 @@ class SimulationSummary:
     year: int
     strategy_code_name: str
     strategy_version: str
+
+
+WINDOW_LOCK_OPTIONS = (
+    "NEVER",
+    "10_SECOND",
+    "1_MINUTE",
+    "10_MINUTE",
+    "1_HOUR",
+)
+
+
+@dataclass
+class ManagementSettings(DataClassJsonMixin):
+    lock_board: str = "NEVER"  # One of `WINDOW_LOCK_OPTIONS`

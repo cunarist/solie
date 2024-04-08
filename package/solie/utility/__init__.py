@@ -39,6 +39,8 @@ from .standardize import (
 )
 from .stop_flag import find_stop_flag, make_stop_flag
 from .structs import (
+    WINDOW_LOCK_OPTIONS,
+    ManagementSettings,
     SimulationSettings,
     SimulationSummary,
     Strategies,
@@ -110,4 +112,6 @@ __all__ = [
     "is_internet_checked",
     "monitor_internet",
     "get_current_moment",
+    "ManagementSettings",
+    "WINDOW_LOCK_OPTIONS",
 ]

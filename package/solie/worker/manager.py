@@ -1,5 +1,4 @@
 import asyncio
-import json
 import logging
 import os
 import statistics
@@ -14,7 +13,9 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from solie.common import PROCESS_COUNT, go, outsource
 from solie.utility import (
+    WINDOW_LOCK_OPTIONS,
     ApiRequester,
+    ManagementSettings,
     get_task_duration,
     internet_connected,
     save_datapath,
@@ -24,14 +25,6 @@ from solie.widget import ask
 from solie.window import Window
 
 from .united import team
-
-WINDOW_LOCK_OPTIONS = (
-    "NEVER",
-    "10_SECOND",
-    "1_MINUTE",
-    "10_MINUTE",
-    "1_HOUR",
-)
 
 logger = logging.getLogger(__name__)
 
@@ -56,9 +49,7 @@ class Manager:
         }
         self.binance_limits = {}
 
-        self.settings = {
-            "lock_board": "NEVER",
-        }
+        self.management_settings = ManagementSettings()
 
         time_traveller = time_machine.travel(datetime.now(timezone.utc))
         time_traveller.start()
@@ -117,13 +108,15 @@ class Manager:
         await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
 
         # settings
-        filepath = self.workerpath / "settings.json"
+        filepath = self.workerpath / "management_settings.json"
         if await aiofiles.os.path.isfile(filepath):
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 content = await file.read()
-                self.settings = json.loads(content)
+                self.management_settings = ManagementSettings.from_json(content)
         self.window.comboBox_3.setCurrentIndex(
-            value_to_indexes(WINDOW_LOCK_OPTIONS, self.settings["lock_board"])[0]
+            value_to_indexes(WINDOW_LOCK_OPTIONS, self.management_settings.lock_board)[
+                0
+            ]
         )
 
         # python script
@@ -137,12 +130,11 @@ class Manager:
 
     async def change_settings(self):
         current_index = self.window.comboBox_3.currentIndex()
-        self.settings["lock_board"] = WINDOW_LOCK_OPTIONS[current_index]
+        self.management_settings.lock_board = WINDOW_LOCK_OPTIONS[current_index]
 
-        filepath = self.workerpath / "settings.json"
+        filepath = self.workerpath / "management_settings.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-            content = json.dumps(self.settings, indent=2)
-            await file.write(content)
+            await file.write(self.management_settings.to_json(indent=2))
 
     async def open_datapath(self):
         await go(os.startfile, self.window.datapath)
@@ -321,7 +313,7 @@ class Manager:
         await go(webbrowser.open, "https://solie-docs.cunarist.com")
 
     async def lock_board(self):
-        lock_window_setting = self.settings["lock_board"]
+        lock_window_setting = self.management_settings.lock_board
 
         if lock_window_setting == "NEVER":
             return
