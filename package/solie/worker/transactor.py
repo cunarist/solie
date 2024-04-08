@@ -506,8 +506,6 @@ class Transactor:
                 async with self.auto_order_record.read_lock as cell:
                     symbol_df = cell.data[cell.data["Symbol"] == symbol]
                     unique_order_ids = symbol_df["Order ID"].unique()
-                    if order_id in unique_order_ids:
-                        mask_sr = symbol_df["Order ID"] == order_id
 
                 async with self.asset_record.write_lock as cell:
                     symbol_df = cell.data[cell.data["Symbol"] == symbol]
