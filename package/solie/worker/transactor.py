@@ -241,17 +241,20 @@ class Transactor:
         # unrealized changes
         filepath = self.workerpath / "unrealized_changes.pickle"
         if await aiofiles.os.path.isfile(filepath):
-            self.unrealized_changes = RWLock(await go(pd.read_pickle, filepath))
+            sr: pd.Series = await go(pd.read_pickle, filepath)
+            self.unrealized_changes = RWLock(sr)
 
         # asset record
         filepath = self.workerpath / "asset_record.pickle"
         if await aiofiles.os.path.isfile(filepath):
-            self.asset_record = RWLock(await go(pd.read_pickle, filepath))
+            df: pd.DataFrame = await go(pd.read_pickle, filepath)
+            self.asset_record = RWLock(df)
 
         # auto order record
         filepath = self.workerpath / "auto_order_record.pickle"
         if await aiofiles.os.path.isfile(filepath):
-            self.auto_order_record = RWLock(await go(pd.read_pickle, filepath))
+            df: pd.DataFrame = await go(pd.read_pickle, filepath)
+            self.auto_order_record = RWLock(df)
 
     async def organize_data(self):
         async with self.unrealized_changes.write_lock as cell:
