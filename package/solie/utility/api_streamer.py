@@ -23,8 +23,9 @@ class ApiStreamer:
         self._url = url
         self._handler = handler
         self._session = ClientSession()
-        self._task = asyncio.create_task(self._keep_connecting())
         self._is_open = True
+
+        asyncio.create_task(self._keep_connecting())
 
     async def _keep_connecting(self):
         while self._is_open:
