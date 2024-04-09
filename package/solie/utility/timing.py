@@ -8,7 +8,6 @@ task_durations: dict[str, deque[float]] = {
     "add_aggregate_trades": deque(maxlen=1280),
     "collector_organize_data": deque(maxlen=60),
     "perform_transaction": deque(maxlen=360),
-    "display_light_transaction_lines": deque(maxlen=60),
     "display_transaction_lines": deque(maxlen=20),
 }
 
