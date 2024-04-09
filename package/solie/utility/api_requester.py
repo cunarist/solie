@@ -1,10 +1,11 @@
+import asyncio
 import hashlib
 import hmac
 import json
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 
-import aiohttp
+from aiohttp import ClientSession
 
 
 class ApiRequestError(Exception):
@@ -20,12 +21,16 @@ class ApiRequester:
     used_rates = {}
 
     def __init__(self):
-        self.binance_api_key = ""
-        self.binance_api_secret = ""
+        self._session = ClientSession()
+        self._binance_api_key = ""
+        self._binance_api_secret = ""
+
+    def __del__(self):
+        asyncio.create_task(self._session.close())
 
     def update_keys(self, binance_api_key: str, binance_api_secret: str):
-        self.binance_api_key = binance_api_key
-        self.binance_api_secret = binance_api_secret
+        self._binance_api_key = binance_api_key
+        self._binance_api_secret = binance_api_secret
 
     async def binance(
         self, http_method: str, path: str, payload: dict = {}, server="futures"
@@ -35,11 +40,11 @@ class ApiRequester:
         query_string = query_string.replace("%27", "%22")
 
         signature = hmac.new(
-            self.binance_api_secret.encode("utf-8"),
+            self._binance_api_secret.encode("utf-8"),
             query_string.encode("utf-8"),
             hashlib.sha256,
         ).hexdigest()
-        headers = {"X-MBX-APIKEY": self.binance_api_key}
+        headers = {"X-MBX-APIKEY": self._binance_api_key}
 
         if server == "spot":
             url = "https://api.binance.com"
@@ -50,16 +55,13 @@ class ApiRequester:
         url += path
         url += "?" + query_string + "&signature=" + signature
 
-        async with aiohttp.ClientSession() as session:
-            async with session.request(
-                method=http_method, url=url, headers=headers
-            ) as raw_response:
-                response = await raw_response.json()
+        async with self._session.request(http_method, url, headers=headers) as raw:
+            response = await raw.json()
 
         # record api usage
-        for header_key in raw_response.headers.keys():
+        for header_key in raw.headers.keys():
             if "X-MBX" in header_key:
-                write_value = raw_response.headers[header_key]
+                write_value = raw.headers[header_key]
                 current_time = datetime.now(timezone.utc)
                 self.used_rates[header_key] = (write_value, current_time)
 
@@ -79,9 +81,8 @@ class ApiRequester:
 
         url = "https://api.coingecko.com" + path + "?" + query_string
 
-        async with aiohttp.ClientSession() as session:
-            async with session.request(method=http_method, url=url) as raw_response:
-                response = await raw_response.json()
+        async with self._session.request(http_method, url) as raw:
+            response = await raw.json()
 
         return response
 
@@ -90,13 +91,10 @@ class ApiRequester:
             "User-agent": "Mozilla/5.0",
         }
 
-        async with aiohttp.ClientSession() as session:
-            async with session.request(
-                method="GET", url=url, headers=headers
-            ) as raw_response:
-                response = await raw_response.read()
+        async with self._session.request("GET", url, headers=headers) as raw:
+            response = await raw.read()
 
-        status_code = raw_response.status
+        status_code = raw.status
         if status_code != 200:
             text = f"HTTP {status_code}\n{url}"
             raise ApiRequestError(text, None)
