@@ -142,6 +142,11 @@ class Transactor:
             trigger="cron",
             hour="*",
         )
+        self.scheduler.add_job(
+            self.update_user_data_stream,
+            trigger="cron",
+            hour="*",
+        )
 
         # ■■■■■ websocket streamings ■■■■■
 

@@ -3,7 +3,7 @@ import json
 import logging
 from typing import Callable, Coroutine
 
-from aiohttp import ClientSession, WSMsgType
+from aiohttp import ClientError, ClientSession, WSMsgType
 
 logger = logging.getLogger(__name__)
 
@@ -29,11 +29,15 @@ class ApiStreamer:
 
     async def _keep_connecting(self):
         while self._is_open:
-            await self._keep_listening()
+            try:
+                await self._keep_listening()
+            except ClientError:
+                # This happens when internet is disconnected, etc...
+                pass
             await asyncio.sleep(5.0)
 
     async def _keep_listening(self):
-        async with self._session.ws_connect(self._url) as websocket:
+        async with self._session.ws_connect(self._url, heartbeat=5.0) as websocket:
             logger.info(f"Websocket connected\n{self._url}")
             async for received_raw in websocket:
                 stop_types = (WSMsgType.CLOSED, WSMsgType.ERROR)
