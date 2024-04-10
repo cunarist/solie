@@ -6,6 +6,8 @@ from urllib.request import urlopen
 import numpy as np
 import pandas as pd
 
+from .timing import to_moment
+
 
 @dataclass
 class DownloadPreset:
@@ -145,16 +147,17 @@ def fill_holes_with_aggtrades(
 ) -> pd.DataFrame:
     fill_moment = moment_to_fill_from
 
-    while fill_moment < last_fetched_time - timedelta(seconds=10):
+    last_fetched_moment = to_moment(last_fetched_time)
+    while fill_moment < last_fetched_moment:
         block_start = fill_moment
         block_end = fill_moment + timedelta(seconds=10)
 
-        aggtrade_prices = []
-        aggtrade_volumes = []
+        aggtrade_prices: list[float] = []
+        aggtrade_volumes: list[float] = []
         for _, aggtrade in sorted(aggtrades.items()):
             # sorted by time
             aggtrade_time = datetime.fromtimestamp(
-                aggtrade["T"] / 1000, tz=timezone.utc
+                int(aggtrade["T"]) / 1000, tz=timezone.utc
             )
             if block_start <= aggtrade_time < block_end:
                 aggtrade_prices.append(float(aggtrade["p"]))

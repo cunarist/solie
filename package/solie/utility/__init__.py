@@ -49,7 +49,7 @@ from .structs import (
 )
 from .syntax_highlighter import SyntaxHighlighter
 from .time_axis_item import TimeAxisItem
-from .timing import add_task_duration, get_current_moment, get_task_duration
+from .timing import add_task_duration, get_task_duration, to_moment
 from .user_settings import (
     DataSettings,
     read_data_settings,
@@ -110,7 +110,7 @@ __all__ = [
     "SimulationError",
     "is_internet_checked",
     "monitor_internet",
-    "get_current_moment",
+    "to_moment",
     "ManagementSettings",
     "BOARD_LOCK_OPTIONS",
 ]

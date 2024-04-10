@@ -26,7 +26,6 @@ from solie.utility import (
     ball_ceil,
     decide,
     find_stop_flag,
-    get_current_moment,
     internet_connected,
     list_to_dict,
     make_indicators,
@@ -36,6 +35,7 @@ from solie.utility import (
     standardize_account_state,
     standardize_asset_record,
     standardize_unrealized_changes,
+    to_moment,
     when_internet_connected,
     when_internet_disconnected,
 )
@@ -354,7 +354,7 @@ class Transactor:
         # ■■■■■ default values ■■■■■
 
         event_type = str(received["e"])
-        event_timestamp = float(received["E"]) / 1000
+        event_timestamp = int(received["E"]) / 1000
         event_time = datetime.fromtimestamp(event_timestamp, tz=timezone.utc)
 
         self.account_state["observed_until"] = event_time
@@ -758,7 +758,7 @@ class Transactor:
 
         # ■■■■■ wait for the latest data to be added ■■■■■
 
-        current_moment = get_current_moment()
+        current_moment = to_moment(datetime.now(timezone.utc))
         before_moment = current_moment - timedelta(seconds=10)
 
         if periodic:
@@ -1333,7 +1333,7 @@ class Transactor:
 
         # ■■■■■ Moment ■■■■■
 
-        current_moment = get_current_moment()
+        current_moment = to_moment(datetime.now(timezone.utc))
         before_moment = current_moment - timedelta(seconds=10)
 
         # ■■■■■ Play the progress bar ■■■■■
@@ -1491,7 +1491,7 @@ class Transactor:
 
         # ■■■■■ Moment ■■■■■
 
-        current_moment = get_current_moment()
+        current_moment = to_moment(datetime.now(timezone.utc))
         before_moment = current_moment - timedelta(seconds=10)
 
         # ■■■■■ Request exchange information ■■■■■

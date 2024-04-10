@@ -26,11 +26,11 @@ from solie.utility import (
     fill_holes_with_aggtrades,
     find_stop_flag,
     format_numeric,
-    get_current_moment,
     internet_connected,
     make_stop_flag,
     sort_data_frame,
     standardize_candle_data,
+    to_moment,
     when_internet_disconnected,
 )
 from solie.widget import overlay
@@ -268,7 +268,7 @@ class Collector:
 
         # ■■■■■ moments ■■■■■
 
-        current_moment = get_current_moment()
+        current_moment = to_moment(datetime.now(timezone.utc))
         split_moment = current_moment - timedelta(days=2)
 
         # ■■■■■ fill holes ■■■■■
@@ -283,6 +283,7 @@ class Collector:
         did_fill = False
 
         target_symbols = self.window.data_settings.target_symbols
+        needed_moments = int((86400 - 60) / 10) + 1
         while len(full_symbols) < len(target_symbols) and request_count < 10:
             for symbol in target_symbols:
                 if symbol in full_symbols:
@@ -298,7 +299,7 @@ class Collector:
                 temp_sr = pd.Series(0, index=base_index)
                 written_moments = len(temp_sr)
 
-                if written_moments == (86400 - 60) / 10 + 1:
+                if written_moments == needed_moments:
                     # case when there are no holes
                     full_symbols.add(symbol)
                     continue
@@ -332,7 +333,7 @@ class Collector:
                         self.markets_gone.add(symbol)
                         break
                     for aggtrade in response:
-                        aggtrade_id = aggtrade["a"]
+                        aggtrade_id = int(aggtrade["a"])
                         aggtrades[aggtrade_id] = aggtrade
                     last_fetched_id = max(aggtrades.keys())
                     last_fetched_time = datetime.fromtimestamp(
@@ -437,7 +438,7 @@ class Collector:
     async def check_candle_data_cumulation_rate(self) -> float:
         # End slicing at previous moment
         # because current moment might still be filling.
-        current_moment = get_current_moment()
+        current_moment = to_moment(datetime.now(timezone.utc))
         count_end_moment = current_moment - timedelta(seconds=10)
         count_start_moment = count_end_moment - timedelta(hours=24)
 
@@ -693,7 +694,7 @@ class Collector:
             cell.data = cell.data[0:0].copy()
 
     async def add_candle_data(self):
-        current_moment = get_current_moment()
+        current_moment = to_moment(datetime.now(timezone.utc))
         before_moment = current_moment - timedelta(seconds=10)
 
         async with self.aggregate_trades.read_lock as cell:

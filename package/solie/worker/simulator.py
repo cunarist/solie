@@ -19,7 +19,6 @@ from solie.utility import (
     SimulationSettings,
     SimulationSummary,
     find_stop_flag,
-    get_current_moment,
     make_indicators,
     make_stop_flag,
     simulate_chunk,
@@ -28,6 +27,7 @@ from solie.utility import (
     standardize_account_state,
     standardize_asset_record,
     standardize_unrealized_changes,
+    to_moment,
 )
 from solie.widget import ask
 from solie.window import Window
@@ -197,7 +197,7 @@ class Simulator:
 
         # ■■■■■ wait for the latest data to be added ■■■■■
 
-        current_moment = get_current_moment()
+        current_moment = to_moment(datetime.now(timezone.utc))
         before_moment = current_moment - timedelta(seconds=10)
 
         if periodic:

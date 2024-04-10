@@ -1,5 +1,5 @@
 from collections import deque
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 task_durations: dict[str, deque[float]] = {
     "add_candle_data": deque(maxlen=360),
@@ -20,7 +20,11 @@ def get_task_duration() -> dict[str, deque[float]]:
     return task_durations
 
 
-def get_current_moment() -> datetime:
-    current_moment = datetime.now(timezone.utc).replace(microsecond=0)
-    current_moment = current_moment - timedelta(seconds=current_moment.second % 10)
-    return current_moment
+def to_moment(exact_time: datetime) -> datetime:
+    """
+    In Solie's terminlogy, moment refers to a time on a 10-second unit.
+    This is because one candlestick holds 10 seconds of information.
+    """
+    moment = exact_time.replace(microsecond=0)
+    moment = moment - timedelta(seconds=moment.second % 10)
+    return moment
