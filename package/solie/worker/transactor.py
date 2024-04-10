@@ -313,6 +313,18 @@ class Transactor:
             await file.write(content)
 
     async def update_user_data_stream(self):
+        """
+        Prepares the WebSocket user data stream from Binance,
+        providing updates on account changes and market order results.
+
+        Although rare, the listen key may change over time.
+        Additionally, the Binance API documentation recommends
+        extending the user data stream every hour.
+        Thus, this function should be called periodically to maintain the stream.
+
+        - https://binance-docs.github.io/apidocs/futures/en/#start-user-data-stream-user_stream
+        """
+
         async def close_stream():
             if self.user_data_streamer:
                 await self.user_data_streamer.close()
