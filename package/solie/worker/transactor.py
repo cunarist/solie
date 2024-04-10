@@ -37,6 +37,7 @@ from solie.utility import (
     standardize_asset_record,
     standardize_unrealized_changes,
     when_internet_connected,
+    when_internet_disconnected,
 )
 from solie.widget import ask, overlay
 from solie.window import Window
@@ -154,7 +155,10 @@ class Transactor:
 
         # ■■■■■ invoked by the internet connection status change ■■■■■
 
+        when_internet_disconnected(self.remove_user_data_stream)
+
         when_internet_connected(self.watch_binance)
+        when_internet_connected(self.update_user_data_stream)
 
         # ■■■■■ connect UI events ■■■■■
 
@@ -309,6 +313,11 @@ class Transactor:
             content = pickle.dumps(self.scribbles)
             await file.write(content)
 
+    async def remove_user_data_stream(self):
+        if self.user_data_streamer:
+            await self.user_data_streamer.close()
+            self.user_data_streamer = None
+
     async def update_user_data_stream(self):
         if not internet_connected():
             return
@@ -317,19 +326,27 @@ class Transactor:
             await self.user_data_streamer.close()
 
         try:
-            payload = {}
             response = await self.api_requester.binance(
                 http_method="POST",
                 path="/fapi/v1/listenKey",
-                payload=payload,
             )
         except ApiRequestError:
             self.user_data_streamer = None
             return
 
         listen_key = response["listenKey"]
+        new_url = f"wss://fstream.binance.com/ws/{listen_key}"
+
+        if self.user_data_streamer:
+            if new_url == self.user_data_streamer.url:
+                # If the listen key hasn't changed, do nothing.
+                return
+            else:
+                # If the listen key has changed, close the previous session.
+                await self.user_data_streamer.close()
+
         self.user_data_streamer = ApiStreamer(
-            f"wss://fstream.binance.com/ws/{listen_key}",
+            new_url,
             self.listen_to_account,
         )
 
@@ -1970,7 +1987,8 @@ class Transactor:
                     }
                     now_orders.append(new_order)
                 else:
-                    logger.warn("Cannot close position when there isn't any")
+                    text = "Cannot close position when there isn't any"
+                    logger.warning(text)
 
             if "now_buy" in decision[symbol]:
                 command = decision[symbol]["now_buy"]
@@ -2105,7 +2123,8 @@ class Transactor:
                     }
                     later_orders.append(new_order)
                 else:
-                    logger.warn("Cannot place `later_up_close` with no open position")
+                    text = "Cannot place `later_up_close` with no open position"
+                    logger.warning(text)
 
             if "later_down_close" in decision[symbol]:
                 command = decision[symbol]["later_down_close"]
@@ -2126,7 +2145,8 @@ class Transactor:
                     }
                     later_orders.append(new_order)
                 else:
-                    logger.warn("Cannot place `later_down_close` with no open position")
+                    text = "Cannot place `later_down_close` with no open position"
+                    logger.warning(text)
 
             if "later_up_buy" in decision[symbol]:
                 command = decision[symbol]["later_up_buy"]

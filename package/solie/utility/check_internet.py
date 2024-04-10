@@ -6,41 +6,47 @@ from aiohttp import ClientSession
 
 logger = logging.getLogger(__name__)
 
+
+ATTEMPT_IP = [
+    "1.0.0.1",  # Cloudflare
+    "1.1.1.1",  # Cloudflare
+    "208.67.222.222",  # OpenDNS
+    "208.67.220.220",  # OpenDNS
+]
+
+is_connected = False
 is_internet_checked = asyncio.Event()
-was_connected = False
+
 connected_functions: list[Callable[[], Coroutine]] = []
 disconnected_functions: list[Callable[[], Coroutine]] = []
 
 
 def internet_connected():
     if is_internet_checked.is_set():
-        return was_connected
+        return is_connected
     else:
         raise RuntimeError("Internet connection is not being monitored")
 
 
 async def monitor_internet():
-    global was_connected
+    global is_connected
     while True:
-        # try to connect to DNS servers
-        attempt_ips = [
-            "1.0.0.1",  # Cloudflare
-            "1.1.1.1",  # Cloudflare
-            "208.67.222.222",  # OpenDNS
-            "208.67.220.220",  # OpenDNS
-        ]
-        is_connected = False
+        # Try to connect to DNS servers and analyze internet connection
+        was_connected = is_connected
+        analyzed = False
         async with ClientSession() as session:
-            for attempt_ip in attempt_ips:
+            for attempt_ip in ATTEMPT_IP:
                 try:
                     async with session.get(f"http://{attempt_ip}") as response:
                         if response.status == 200:
-                            is_connected = True
+                            analyzed = True
                             break
                 except Exception:
                     pass
+        is_connected = analyzed
+        is_internet_checked.set()
 
-        # detect changes
+        # Detect changes
         if was_connected and not is_connected:
             for job in disconnected_functions:
                 asyncio.create_task(job())
@@ -50,11 +56,7 @@ async def monitor_internet():
                 asyncio.create_task(job())
             logger.info("Internet connected")
 
-        # remember connection state
-        was_connected = is_connected
-        is_internet_checked.set()
-
-        # wait for a while
+        # Wait for a while
         await asyncio.sleep(1)
 
 
