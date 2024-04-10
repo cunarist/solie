@@ -52,7 +52,7 @@ class Collector:
         # ■■■■■ internal memory ■■■■■
 
         self.price_precisions: dict[str, int] = {}  # Symbol and decimal places
-        self.markets_gone: list[str] = []  # Symbols
+        self.markets_gone: set[str] = set()  # Symbols
 
         # ■■■■■ remember and display ■■■■■
 
@@ -273,8 +273,7 @@ class Collector:
 
         # ■■■■■ fill holes ■■■■■
 
-        markets_gone = []
-        full_symbols = []
+        full_symbols: set[str] = set()
         request_count = 0
 
         # only the recent part
@@ -301,7 +300,7 @@ class Collector:
 
                 if written_moments == (86400 - 60) / 10 + 1:
                     # case when there are no holes
-                    full_symbols.append(symbol)
+                    full_symbols.add(symbol)
                     continue
 
                 if from_moment not in temp_sr.index:
@@ -330,8 +329,7 @@ class Collector:
                     )
                     request_count += 1
                     if len(response) == 0:
-                        if symbol not in markets_gone:
-                            markets_gone.append(symbol)
+                        self.markets_gone.add(symbol)
                         break
                     for aggtrade in response:
                         aggtrade_id = aggtrade["a"]
@@ -350,8 +348,6 @@ class Collector:
                     last_fetched_time,
                 )
                 did_fill = True
-
-        self.markets_gone = markets_gone
 
         if not did_fill:
             return
@@ -431,16 +427,10 @@ class Collector:
             text += f"Realtime data length {written_length_text}"
         else:
             markets_gone = self.markets_gone
-            if len(markets_gone) == 1:
-                text = (
-                    f"It seems that {markets_gone[0]} market is removed by Binance."
-                    + " You should make a new data folder."
-                )
-            else:
-                text = (
-                    f"It seems that {', '.join(markets_gone)} markets are removed by Binance."
-                    + " You should make a new data folder."
-                )
+            text = (
+                f"It seems that {', '.join(markets_gone)} markets are removed by Binance."
+                + " You should make a new data folder."
+            )
 
         self.window.label_6.setText(text)
 
