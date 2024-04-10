@@ -322,9 +322,6 @@ class Transactor:
         if not internet_connected():
             return
 
-        if self.user_data_streamer:
-            await self.user_data_streamer.close()
-
         try:
             response = await self.api_requester.binance(
                 http_method="POST",
