@@ -2,6 +2,12 @@
 
 See historical changes of Solie at a glance.
 
+## 8.6
+
+- Temporary internet disconnections are now handled more gracefully.
+- User data stream is now extended or renewed periodically. A problem with red or blue dots not being recorded on the transaction graphs has been fixed.
+- Several bugs related to listening to user data stream have been fixed.
+
 ## 8.5
 
 - Auto transaction with mixed 'now' and 'later' orders was stabilized further.

@@ -1,10 +1,11 @@
 [tool.poetry]
 name = "solie"
-version = "8.5.1"
+version = "8.6.0"
 description = "GUI trading bot designed for targeting the futures markets of Binance"
 authors = ["Cunarist"]
 readme = "README.md"
 repository = "https://github.com/cunarist/solie"
+documentation = "https://solie-docs.cunarist.com"
 
 [tool.poetry.dependencies]
 python = "^3.9,<3.13"
