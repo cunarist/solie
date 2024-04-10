@@ -1,7 +1,7 @@
 import asyncio
 from asyncio import AbstractEventLoop, Future, Task
 from collections import deque
-from typing import Any, Generic, TypeVar
+from typing import Generic, TypeVar
 
 
 # The internal lock object managing the RWLock state.
@@ -17,7 +17,7 @@ class _RWLockCore:
         self._r_state: int = 0
         self._w_state: int = 0
         # tasks will be few, so a list is not inefficient
-        self._owning: list[tuple[Task[Any], int]] = []
+        self._owning: list[tuple[Task, int]] = []
 
     @property
     def r_state(self) -> int:
@@ -158,7 +158,7 @@ class _ContextManagerMixin:
     def __enter__(self):
         raise RuntimeError('"await" should be used as context manager expression')
 
-    def __exit__(self, *args: Any):
+    def __exit__(self, *args):
         # This must exist because __enter__ exists, even though that
         # always raises; that's how the with-statement works.
         pass  # pragma: no cover
@@ -169,7 +169,7 @@ class _ContextManagerMixin:
         # statement for locks.
         return None
 
-    async def __aexit__(self, *args: list[Any]):
+    async def __aexit__(self, *args: list):
         self.release()
 
     async def acquire(self):

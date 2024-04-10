@@ -353,8 +353,8 @@ class Transactor:
     async def listen_to_account(self, received: dict):
         # ■■■■■ default values ■■■■■
 
-        event_type = received["e"]
-        event_timestamp = received["E"] / 1000
+        event_type = str(received["e"])
+        event_timestamp = float(received["E"]) / 1000
         event_time = datetime.fromtimestamp(event_timestamp, tz=timezone.utc)
 
         self.account_state["observed_until"] = event_time
@@ -362,11 +362,11 @@ class Transactor:
         # ■■■■■ do the task according to event type ■■■■■
 
         if event_type == "listenKeyExpired":
-            text = "Binance user data stream listen key got expired"
+            text = "Binance user data stream listen key has expired"
             logger.warning(text)
             await self.update_user_data_stream()
 
-        if event_type == "ACCOUNT_UPDATE":
+        elif event_type == "ACCOUNT_UPDATE":
             about_update = received["a"]
             about_assets = about_update["B"]
             about_positions = about_update["P"]
@@ -374,10 +374,9 @@ class Transactor:
             asset_token = self.window.data_settings.asset_token
 
             about_assets_keyed = list_to_dict(about_assets, "a")
-            if asset_token in about_assets_keyed:
-                about_asset = about_assets_keyed[asset_token]
-                wallet_balance = float(about_asset["wb"])
-                self.wallet_balance_state = wallet_balance
+            about_asset = about_assets_keyed[asset_token]
+            wallet_balance = float(about_asset["wb"])
+            self.account_state["wallet_balance"] = wallet_balance
 
             about_positions_keyed = list_to_dict(about_positions, "ps")
             if "BOTH" in about_positions_keyed:
@@ -387,15 +386,15 @@ class Transactor:
                 if about_position["s"] not in target_symbols:
                     return
 
-                symbol = about_position["s"]
+                symbol = str(about_position["s"])
                 amount = float(about_position["pa"])
                 entry_price = float(about_position["ep"])
 
                 leverage = self.leverages[symbol]
                 margin = abs(amount) * entry_price / leverage
-                if amount < 0:
+                if amount < 0.0:
                     direction = "short"
-                elif amount > 0:
+                elif amount > 0.0:
                     direction = "long"
                 else:
                     direction = "none"
@@ -405,7 +404,7 @@ class Transactor:
                 self.account_state["positions"][symbol]["entry_price"] = entry_price
                 self.account_state["positions"][symbol]["update_time"] = event_time
 
-        if event_type == "ORDER_TRADE_UPDATE":
+        elif event_type == "ORDER_TRADE_UPDATE":
             about_update = received["o"]
 
             target_symbols = self.window.data_settings.target_symbols
@@ -413,24 +412,24 @@ class Transactor:
                 return
 
             # from received
-            symbol = about_update.get("s")
-            order_id = about_update.get("i")
-            order_type = about_update.get("o")
-            order_status = about_update.get("X")
-            execution_type = about_update.get("x")
+            symbol = str(about_update["s"])
+            order_id = int(about_update["i"])
+            order_type = str(about_update["o"])
+            order_status = str(about_update["X"])
+            execution_type = str(about_update["x"])
 
-            side = about_update.get("S")
-            close_position = about_update.get("cp")
-            is_maker = about_update.get("m")
+            side = str(about_update["S"])
+            close_position = bool(about_update["cp"])
+            is_maker = bool(about_update["m"])
 
-            origianal_quantity = float(about_update.get("q", 0))
-            executed_quantity = float(about_update.get("z", 0))
-            last_filled_quantity = float(about_update.get("l", 0))
-            last_filled_price = float(about_update.get("L", 0))
-            price = float(about_update.get("p", 0))
-            stop_price = float(about_update.get("sp", 0))
-            commission = float(about_update.get("n", 0))
-            realized_profit = float(about_update.get("rp", 0))
+            origianal_quantity = float(about_update["q"])
+            executed_quantity = float(about_update["z"])
+            last_filled_quantity = float(about_update["l"])
+            last_filled_price = float(about_update["L"])
+            price = float(about_update["p"])
+            stop_price = float(about_update["sp"])
+            commission = float(about_update["n"])
+            realized_profit = float(about_update["rp"])
 
             # from remembered
             leverage = self.leverages[symbol]
@@ -534,11 +533,11 @@ class Transactor:
                     last_index = cell.data.index[-1]
                     if does_record_exist:
                         mask_sr = symbol_df["Order ID"] == order_id
-                        recorded_time = symbol_df.index[mask_sr][0]
-                        recorded_value = symbol_df.loc[recorded_time, "Margin Ratio"]
-                        new_value = recorded_value + added_margin_ratio
-                        cell.data.loc[recorded_time, "Margin Ratio"] = new_value
-                        last_asset: float = cell.data.loc[last_index, "Result Asset"]  # type:ignore
+                        rec_time = symbol_df.index[mask_sr][0]
+                        rec_value = float(symbol_df.loc[rec_time, "Margin Ratio"])  # type:ignore
+                        new_value = rec_value + added_margin_ratio
+                        cell.data.loc[rec_time, "Margin Ratio"] = new_value
+                        last_asset = float(cell.data.loc[last_index, "Result Asset"])  # type:ignore
                         new_value = last_asset + added_revenue
                         cell.data.loc[last_index, "Result Asset"] = new_value
                     else:
@@ -557,7 +556,7 @@ class Transactor:
                         cell.data.loc[record_time, "Margin Ratio"] = new_value
                         new_value = order_id
                         cell.data.loc[record_time, "Order ID"] = new_value
-                        last_asset: float = cell.data.loc[last_index, "Result Asset"]  # type:ignore
+                        last_asset = float(cell.data.loc[last_index, "Result Asset"])  # type:ignore
                         new_value = last_asset + added_revenue
                         cell.data.loc[record_time, "Result Asset"] = new_value
                         if order_id in unique_order_ids:

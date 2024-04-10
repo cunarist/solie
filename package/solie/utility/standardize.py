@@ -20,14 +20,14 @@ def standardize_candle_data(target_symbols: list[str]):
 
 def standardize_account_state(target_symbols: list[str]):
     return {
-        "observed_until": datetime.fromtimestamp(0, tz=timezone.utc),
-        "wallet_balance": 1,
+        "observed_until": datetime.fromtimestamp(0.0, tz=timezone.utc),
+        "wallet_balance": 1.0,
         "positions": {
             symbol: {
-                "margin": 0,
+                "margin": 0.0,
                 "direction": "none",
-                "entry_price": 0,
-                "update_time": datetime.fromtimestamp(0, tz=timezone.utc),
+                "entry_price": 0.0,
+                "update_time": datetime.fromtimestamp(0.0, tz=timezone.utc),
             }
             for symbol in target_symbols
         },
