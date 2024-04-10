@@ -990,7 +990,7 @@ class Simulator:
             indicators_script = strategy.indicators_script
 
             # a little more data for generation
-            provide_from = calculate_from - timedelta(days=7)
+            provide_from = calculate_from - timedelta(days=28)
             year_indicators = await go(
                 make_indicators,
                 target_symbols=target_symbols,
