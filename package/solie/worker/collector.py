@@ -435,12 +435,20 @@ class Collector:
         self.window.label_6.setText(text)
 
     async def check_candle_data_cumulation_rate(self) -> float:
+        # End slicing at previous moment
+        # because current moment might still be filling.
         current_moment = get_current_moment()
-        count_start_moment = current_moment - timedelta(hours=24)
+        count_end_moment = current_moment - timedelta(seconds=10)
+        count_start_moment = count_end_moment - timedelta(hours=24)
+
+        # Pandas dataframe slicing uses inclusive end.
+        count_end_moment -= timedelta(seconds=1)
+
         async with self.candle_data.read_lock as cell:
-            cumulated_moments = len(cell.data[count_start_moment:].dropna())
-        needed_moments = 24 * 60 * 60 / 10
-        cumulation_rate = min(1.0, (cumulated_moments + 2) / needed_moments)
+            cumulated = len(cell.data[count_start_moment:count_end_moment].dropna())
+        needed_moments = 6 * 60 * 24
+        cumulation_rate = cumulated / needed_moments
+
         return cumulation_rate
 
     async def open_binance_data_page(self):
