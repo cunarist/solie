@@ -328,7 +328,7 @@ class Transactor:
                 path="/fapi/v1/listenKey",
             )
         except ApiRequestError:
-            self.user_data_streamer = None
+            await self.remove_user_data_stream()
             return
 
         listen_key = response["listenKey"]
