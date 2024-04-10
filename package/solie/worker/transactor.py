@@ -155,10 +155,9 @@ class Transactor:
 
         # ■■■■■ invoked by the internet connection status change ■■■■■
 
-        when_internet_disconnected(self.remove_user_data_stream)
-
         when_internet_connected(self.watch_binance)
         when_internet_connected(self.update_user_data_stream)
+        when_internet_disconnected(self.update_user_data_stream)
 
         # ■■■■■ connect UI events ■■■■■
 
@@ -313,13 +312,14 @@ class Transactor:
             content = pickle.dumps(self.scribbles)
             await file.write(content)
 
-    async def remove_user_data_stream(self):
-        if self.user_data_streamer:
-            await self.user_data_streamer.close()
-            self.user_data_streamer = None
-
     async def update_user_data_stream(self):
+        async def close_stream():
+            if self.user_data_streamer:
+                await self.user_data_streamer.close()
+                self.user_data_streamer = None
+
         if not internet_connected():
+            await close_stream()
             return
 
         try:
@@ -328,7 +328,7 @@ class Transactor:
                 path="/fapi/v1/listenKey",
             )
         except ApiRequestError:
-            await self.remove_user_data_stream()
+            await close_stream()
             return
 
         listen_key = response["listenKey"]
