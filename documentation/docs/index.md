@@ -27,7 +27,7 @@ python --version
 
 Then, install Solie.
 
-```
+```bash
 pip install solie
 ```
 
@@ -35,7 +35,7 @@ pip install solie
 
 You can easily run Solie with the command below.
 
-```
+```bash
 python -m solie
 ```
 
