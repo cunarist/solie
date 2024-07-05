@@ -453,7 +453,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.horizontalLayout_16.addWidget(self.plot_widget_4)
         self.horizontalLayout_28.addWidget(self.plot_widget_6)
 
-        plot_item: pyqtgraph.PlotItem = self.plot_widget.plotItem
+        plot_item: pyqtgraph.PlotItem = self.plot_widget.plotItem  # type:ignore
         plot_item_1 = self.plot_widget_1.plotItem
         plot_item_4 = self.plot_widget_4.plotItem
         plot_item_6 = self.plot_widget_6.plotItem
@@ -473,16 +473,16 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         plot_item_6.vb.setLimits(xMin=0)  # type:ignore
         plot_item.setDownsampling(auto=True, mode="subsample")
         plot_item.setClipToView(True)
-        plot_item.setAutoVisible(y=True)
+        plot_item.setAutoVisible(y=True)  # type:ignore
         plot_item_1.setDownsampling(auto=True, mode="subsample")
         plot_item_1.setClipToView(True)
-        plot_item_1.setAutoVisible(y=True)
+        plot_item_1.setAutoVisible(y=True)  # type:ignore
         plot_item_4.setDownsampling(auto=True, mode="subsample")
         plot_item_4.setClipToView(True)
-        plot_item_4.setAutoVisible(y=True)
+        plot_item_4.setAutoVisible(y=True)  # type:ignore
         plot_item_6.setDownsampling(auto=True, mode="subsample")
         plot_item_6.setClipToView(True)
-        plot_item_6.setAutoVisible(y=True)
+        plot_item_6.setAutoVisible(y=True)  # type:ignore
         axis_items = {
             "top": TimeAxisItem(orientation="top"),
             "bottom": TimeAxisItem(orientation="bottom"),
@@ -699,16 +699,16 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         plot_item_7.vb.setLimits(xMin=0)  # type:ignore
         plot_item_2.setDownsampling(auto=True, mode="subsample")
         plot_item_2.setClipToView(True)
-        plot_item_2.setAutoVisible(y=True)
+        plot_item_2.setAutoVisible(y=True)  # type:ignore
         plot_item_3.setDownsampling(auto=True, mode="subsample")
         plot_item_3.setClipToView(True)
-        plot_item_3.setAutoVisible(y=True)
+        plot_item_3.setAutoVisible(y=True)  # type:ignore
         plot_item_5.setDownsampling(auto=True, mode="subsample")
         plot_item_5.setClipToView(True)
-        plot_item_5.setAutoVisible(y=True)
+        plot_item_5.setAutoVisible(y=True)  # type:ignore
         plot_item_7.setDownsampling(auto=True, mode="subsample")
         plot_item_7.setClipToView(True)
-        plot_item_7.setAutoVisible(y=True)
+        plot_item_7.setAutoVisible(y=True)  # type:ignore
         axis_items = {
             "top": TimeAxisItem(orientation="top"),
             "bottom": TimeAxisItem(orientation="bottom"),

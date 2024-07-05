@@ -776,7 +776,7 @@ class Simulator:
         if len(unrealized_changes) > 0:
             min_unrealized_change = unrealized_changes.min()
         else:
-            min_unrealized_change = 0
+            min_unrealized_change = 0.0
 
         if find_stop_flag("display_simulation_range_information", task_id):
             return
@@ -800,7 +800,7 @@ class Simulator:
         text += f"Total realized profit {symbol_yield:+.4f}({total_yield:+.4f})%"
         text += "  ⦁  "
         text += "Lowest unrealized profit"
-        text += f" {min_unrealized_change*100:+.4f}%"
+        text += f" {min_unrealized_change*100:+.4f}%"  # type:ignore
         self.window.label_13.setText(text)
 
     async def set_minimum_view_range(self):
@@ -994,13 +994,13 @@ class Simulator:
             year_indicators = await go(
                 make_indicators,
                 target_symbols=target_symbols,
-                candle_data=year_candle_data[provide_from:calculate_until],
+                candle_data=year_candle_data[provide_from:calculate_until],  # type:ignore
                 indicators_script=indicators_script,
             )
 
             # range cut
-            needed_candle_data = year_candle_data[calculate_from:calculate_until]
-            needed_index: pd.DatetimeIndex = needed_candle_data.index  # type: ignore
+            needed_candle_data = year_candle_data[calculate_from:calculate_until]  # type:ignore
+            needed_index: pd.DatetimeIndex = needed_candle_data.index  # type:ignore
             needed_indicators = year_indicators.reindex(needed_index)
 
             if should_parallelize:
@@ -1116,7 +1116,7 @@ class Simulator:
                 concat_data = [unrealized_changes, chunk_unrealized_changes]
                 unrealized_changes: pd.Series = pd.concat(concat_data)  # type:ignore
             mask = ~unrealized_changes.index.duplicated()
-            unrealized_changes = unrealized_changes[mask]
+            unrealized_changes = unrealized_changes[mask]  # type:ignore
             if not unrealized_changes.index.is_monotonic_increasing:
                 unrealized_changes = await go(sort_series, unrealized_changes)
 
@@ -1204,7 +1204,7 @@ class Simulator:
             chunk_result_asset_sr = chunk_asset_record["Result Asset"]
             chunk_asset_shifts = chunk_result_asset_sr.diff()
             if len(chunk_asset_shifts) > 0:
-                chunk_asset_shifts.iloc[0] = 0
+                chunk_asset_shifts.iloc[0] = 0.0  # type:ignore
             lazy_chunk_result_asset = chunk_result_asset_sr.shift(periods=1)
             if len(lazy_chunk_result_asset) > 0:
                 lazy_chunk_result_asset.iloc[0] = 1

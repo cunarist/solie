@@ -310,7 +310,7 @@ class Collector:
                     temp_sr[until_moment] = np.nan
                 temp_sr = await go(temp_sr.asfreq, "10S")
                 isnan_sr = await go(temp_sr.isna)
-                nan_index = isnan_sr[isnan_sr == 1].index
+                nan_index = isnan_sr[isnan_sr == 1].index  # type:ignore
                 moment_to_fill_from: datetime = nan_index[0]  # type:ignore
 
                 # request historical aggtrade data
