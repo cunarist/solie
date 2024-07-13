@@ -21,6 +21,8 @@ from solie.utility import (
     ApiRequester,
     ApiRequestError,
     ApiStreamer,
+    BookTicker,
+    MarkPrice,
     RWLock,
     TransactionSettings,
     add_task_duration,
@@ -793,21 +795,20 @@ class Transactor:
 
         # ■■■■■ get light data ■■■■■
 
-        async with team.collector.realtime_data_chunks.read_lock as cell:
-            before_chunk = cell.data[-2].copy()
-            current_chunk = cell.data[-1].copy()
-        realtime_data = np.concatenate((before_chunk, current_chunk))
+        realtime_data = team.collector.realtime_data
         async with team.collector.aggregate_trades.read_lock as cell:
             aggregate_trades = cell.data.copy()
 
         # ■■■■■ draw light lines ■■■■■
 
         # mark price
-        data_x = realtime_data["index"].astype(np.int64) / 10**9
-        data_y = realtime_data[str((symbol, "Mark Price"))]
-        mask = data_y != 0
-        data_y = data_y[mask]
-        data_x = data_x[mask]
+        mark_prices = [
+            d
+            for d in realtime_data
+            if isinstance(d, MarkPrice) and d.symbol == symbol and d.mark_price > 0.0
+        ]
+        data_y = [d.mark_price for d in mark_prices]
+        data_x = [d.timestamp / 10**3 for d in mark_prices]
         widget = self.window.transaction_lines["mark_price"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
@@ -845,22 +846,19 @@ class Transactor:
         await asyncio.sleep(0)
 
         # book tickers
-        data_x = realtime_data["index"].astype(np.int64) / 10**9
-        data_y = realtime_data[str((symbol, "Best Bid Price"))]
-        mask = data_y != 0
-        data_y = data_y[mask]
-        data_x = data_x[mask]
+        book_tickers = [
+            d for d in realtime_data if isinstance(d, BookTicker) and d.symbol == symbol
+        ]
+        data_x = [d.timestamp / 10**3 for d in book_tickers]
+
+        data_y = [d.best_bid_price for d in book_tickers]
         widget = self.window.transaction_lines["book_tickers"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
         await asyncio.sleep(0)
 
-        data_x = realtime_data["index"].astype(np.int64) / 10**9
-        data_y = realtime_data[str((symbol, "Best Ask Price"))]
-        mask = data_y != 0
-        data_y = data_y[mask]
-        data_x = data_x[mask]
+        data_y = [d.best_ask_price for d in book_tickers]
         widget = self.window.transaction_lines["book_tickers"][1]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):

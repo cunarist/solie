@@ -58,3 +58,21 @@ BOARD_LOCK_OPTIONS = (
 @dataclass
 class ManagementSettings(DataClassJsonMixin):
     lock_board: str = "NEVER"  # One of `BOARD_LOCK_OPTIONS`
+
+
+@dataclass
+class BookTicker:
+    timestamp: int  # In milliseconds
+    symbol: str
+    best_bid_price: float
+    best_ask_price: float
+
+
+@dataclass
+class MarkPrice:
+    timestamp: int  # In milliseconds
+    symbol: str
+    mark_price: float
+
+
+RealtimeEvent = BookTicker | MarkPrice

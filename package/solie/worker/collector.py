@@ -19,7 +19,10 @@ from solie.overlay import DonationGuide, DownloadFillOption
 from solie.utility import (
     ApiRequester,
     ApiStreamer,
+    BookTicker,
     DownloadPreset,
+    MarkPrice,
+    RealtimeEvent,
     RWLock,
     add_task_duration,
     combine_candle_data,
@@ -70,17 +73,8 @@ class Collector:
             standardize_candle_data(window.data_settings.target_symbols)
         )
 
-        # Realtime data chunks
-        field_names = itertools.product(
-            window.data_settings.target_symbols,
-            ("Best Bid Price", "Best Ask Price", "Mark Price"),
-        )
-        field_names = [str(field_name) for field_name in field_names]
-        dtype = [(field_name, np.float32) for field_name in field_names]
-        dtpye = [("index", "datetime64[ns]")] + dtype
-        self.realtime_data_chunks = RWLock(
-            deque([np.recarray(shape=(0,), dtype=dtpye) for _ in range(2)], maxlen=64)
-        )
+        # Realtime data
+        self.realtime_data: deque[RealtimeEvent] = deque([], 2 ** (8 + 8 + 6))
 
         # Aggregate trades
         field_names = itertools.product(
@@ -193,13 +187,6 @@ class Collector:
                 cell.data = cell.data.reindex(unique_index)
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await go(sort_data_frame, cell.data)
-
-        async with self.realtime_data_chunks.write_lock as cell:
-            cell.data[-1].sort(order="index")
-            if len(cell.data[-1]) > 2**16:
-                new_chunk = cell.data[-1][0:0].copy()
-                cell.data.append(new_chunk)
-                del new_chunk
 
         async with self.aggregate_trades.write_lock as cell:
             cell.data.sort(order="index")
@@ -398,25 +385,18 @@ class Collector:
         # bottom information
         if len(self.markets_gone) == 0:
             cumulation_rate = await self.check_candle_data_cumulation_rate()
-            async with self.realtime_data_chunks.read_lock as cell:
-                chunk_count = len(cell.data)
             first_written_time = None
             last_written_time = None
-            for turn in range(chunk_count):
-                async with self.realtime_data_chunks.read_lock as cell:
-                    if len(cell.data[turn]) > 0:
-                        if first_written_time is None:
-                            first_record = cell.data[turn][0]
-                            first_written_time = first_record["index"]
-                            del first_record
-                        last_record = cell.data[turn][-1]
-                        last_written_time = last_record["index"]
-                        del last_record
-            if first_written_time is not None and last_written_time is not None:
-                written_seconds = last_written_time - first_written_time
-                written_seconds = written_seconds.astype(np.int64) / 10**9
+            realtime_data = self.realtime_data
+            if len(realtime_data) > 0:
+                if first_written_time is None:
+                    first_record = realtime_data[0]
+                    first_written_time = first_record.timestamp
+                last_record = realtime_data[-1]
+                last_written_time = last_record.timestamp
+                written_seconds = (last_written_time - first_written_time) / 10**3
             else:
-                written_seconds = 0
+                written_seconds = 0.0
             written_length = timedelta(seconds=written_seconds)
             range_days = written_length.days
             range_hours, remains = divmod(written_length.seconds, 3600)
@@ -643,35 +623,33 @@ class Collector:
         symbol = received["s"]
         best_bid = received["b"]
         best_ask = received["a"]
-        event_time = np.datetime64(received["E"] * 10**6, "ns")
-        async with self.realtime_data_chunks.write_lock as cell:
-            original_size = cell.data[-1].shape[0]
-            cell.data[-1].resize(original_size + 1, refcheck=False)
-            cell.data[-1][-1]["index"] = event_time
-            find_key = str((symbol, "Best Bid Price"))
-            cell.data[-1][-1][find_key] = best_bid
-            find_key = str((symbol, "Best Ask Price"))
-            cell.data[-1][-1][find_key] = best_ask
+        event_time = received["E"]  # In milliseconds
+
+        book_ticker = BookTicker(
+            timestamp=event_time,
+            symbol=symbol,
+            best_bid_price=best_bid,
+            best_ask_price=best_ask,
+        )
+        self.realtime_data.append(book_ticker)
+
         duration = time.perf_counter() - start_time
         add_task_duration("add_book_tickers", duration)
 
     async def add_mark_price(self, received: list):
         start_time = time.perf_counter()
         target_symbols = self.window.data_settings.target_symbols
-        event_time = np.datetime64(received[0]["E"] * 10**6, "ns")
-        filtered_data = {}
+        event_time = received[0]["E"]  # In milliseconds
         for about_mark_price in received:
             symbol = about_mark_price["s"]
             if symbol in target_symbols:
                 mark_price = float(about_mark_price["p"])
-                filtered_data[symbol] = mark_price
-        async with self.realtime_data_chunks.write_lock as cell:
-            original_size = cell.data[-1].shape[0]
-            cell.data[-1].resize(original_size + 1, refcheck=False)
-            cell.data[-1][-1]["index"] = event_time
-            for symbol, mark_price in filtered_data.items():
-                find_key = str((symbol, "Mark Price"))
-                cell.data[-1][-1][find_key] = mark_price
+                mark_price = MarkPrice(
+                    timestamp=event_time,
+                    symbol=symbol,
+                    mark_price=mark_price,
+                )
+                self.realtime_data.append(mark_price)
         duration = time.perf_counter() - start_time
         add_task_duration("add_mark_price", duration)
 
