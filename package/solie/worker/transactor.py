@@ -33,6 +33,7 @@ from solie.utility import (
     list_to_dict,
     make_indicators,
     make_stop_flag,
+    slice_deque,
     sort_data_frame,
     sort_series,
     standardize_account_state,
@@ -795,8 +796,8 @@ class Transactor:
 
         # ■■■■■ get light data ■■■■■
 
-        realtime_data = team.collector.realtime_data
-        aggregate_trades = team.collector.aggregate_trades
+        realtime_data = slice_deque(team.collector.realtime_data, 2 ** (10 + 6))
+        aggregate_trades = slice_deque(team.collector.aggregate_trades, 2 ** (10 + 6))
 
         # ■■■■■ draw light lines ■■■■■
 

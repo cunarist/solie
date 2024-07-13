@@ -18,7 +18,7 @@ from .check_internet import (
     when_internet_disconnected,
 )
 from .compare_versions import is_left_version_higher
-from .convert import list_to_dict
+from .convert import list_to_dict, slice_deque
 from .download_from_binance import (
     DownloadPreset,
     download_aggtrade_data,
@@ -119,4 +119,5 @@ __all__ = [
     "BookTicker",
     "MarkPrice",
     "AggregateTrade",
+    "slice_deque",
 ]
