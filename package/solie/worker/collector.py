@@ -621,8 +621,8 @@ class Collector:
     async def add_book_tickers(self, received: dict):
         start_time = time.perf_counter()
         symbol = received["s"]
-        best_bid = received["b"]
-        best_ask = received["a"]
+        best_bid = float(received["b"])
+        best_ask = float(received["a"])
         event_time = received["E"]  # In milliseconds
 
         book_ticker = BookTicker(
