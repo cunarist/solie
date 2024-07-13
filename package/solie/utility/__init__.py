@@ -40,6 +40,7 @@ from .standardize import (
 from .stop_flag import find_stop_flag, make_stop_flag
 from .structs import (
     BOARD_LOCK_OPTIONS,
+    AggregateTrade,
     BookTicker,
     ManagementSettings,
     MarkPrice,
@@ -119,4 +120,5 @@ __all__ = [
     "BookTicker",
     "MarkPrice",
     "RealtimeEvent",
+    "AggregateTrade",
 ]

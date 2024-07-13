@@ -225,8 +225,7 @@ class Simulator:
         # ■■■■■ get light data ■■■■■
 
         realtime_data = team.collector.realtime_data
-        async with team.collector.aggregate_trades.read_lock as cell:
-            aggregate_trades = cell.data.copy()
+        aggregate_trades = team.collector.aggregate_trades
 
         # ■■■■■ draw light lines ■■■■■
 
@@ -244,12 +243,11 @@ class Simulator:
             return
         await asyncio.sleep(0)
 
-        # last price
-        data_x = aggregate_trades["index"].astype(np.int64) / 10**9
-        data_y = aggregate_trades[str((symbol, "Price"))]
-        mask = data_y != 0
-        data_y = data_y[mask]
-        data_x = data_x[mask]
+        # last price and volume
+        filtered = [t for t in aggregate_trades if t.symbol == symbol]
+
+        data_x = [t.timestamp / 10**3 for t in filtered]
+        data_y = [t.price for t in filtered]
         widget = self.window.simulation_lines["last_price"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
@@ -257,8 +255,8 @@ class Simulator:
         await asyncio.sleep(0)
 
         # last trade volume
-        index_ar = aggregate_trades["index"].astype(np.int64) / 10**9
-        value_ar = aggregate_trades[str((symbol, "Volume"))]
+        index_ar = np.array([t.timestamp / 10**3 for t in filtered])
+        value_ar = np.array([t.volume for t in filtered])
         mask = value_ar != 0
         index_ar = index_ar[mask]
         value_ar = value_ar[mask]

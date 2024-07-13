@@ -796,8 +796,7 @@ class Transactor:
         # ■■■■■ get light data ■■■■■
 
         realtime_data = team.collector.realtime_data
-        async with team.collector.aggregate_trades.read_lock as cell:
-            aggregate_trades = cell.data.copy()
+        aggregate_trades = team.collector.aggregate_trades
 
         # ■■■■■ draw light lines ■■■■■
 
@@ -815,24 +814,19 @@ class Transactor:
             return
         await asyncio.sleep(0)
 
-        # last price
-        data_x = aggregate_trades["index"].astype(np.int64) / 10**9
-        data_y = aggregate_trades[str((symbol, "Price"))]
-        mask = data_y != 0
-        data_y = data_y[mask]
-        data_x = data_x[mask]
+        # last price and volume
+        filtered = [t for t in aggregate_trades if t.symbol == symbol]
+
+        data_x = [t.timestamp / 10**3 for t in filtered]
+        data_y = [t.price for t in filtered]
         widget = self.window.transaction_lines["last_price"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
         await asyncio.sleep(0)
 
-        # last trade volume
-        index_ar = aggregate_trades["index"].astype(np.int64) / 10**9
-        value_ar = aggregate_trades[str((symbol, "Volume"))]
-        mask = value_ar != 0
-        index_ar = index_ar[mask]
-        value_ar = value_ar[mask]
+        index_ar = np.array([t.timestamp / 10**3 for t in filtered])
+        value_ar = np.array([t.volume for t in filtered])
         length = len(index_ar)
         zero_ar = np.zeros(length)
         nan_ar = np.empty(length)
@@ -1894,14 +1888,17 @@ class Transactor:
 
     async def place_orders(self, decision: dict):
         target_symbols = self.window.data_settings.target_symbols
+        current_timestamp = to_moment(datetime.now(timezone.utc)).timestamp() * 1000
 
         current_prices: dict[str, float] = {}
         for symbol in target_symbols:
-            async with team.collector.aggregate_trades.read_lock as cell:
-                ar = cell.data[-10000:].copy()
-            temp_ar = ar[str((symbol, "Price"))]
-            temp_ar = temp_ar[temp_ar != 0]
-            current_prices[symbol] = float(temp_ar[-1])
+            for aggregate_trade in reversed(team.collector.aggregate_trades):
+                if aggregate_trade.symbol != symbol:
+                    continue
+                if aggregate_trade.timestamp < current_timestamp - 60 * 1000:
+                    raise ValueError("Recent price is not available for placing orders")
+                current_prices[symbol] = aggregate_trade.price
+                break
 
         # cancel_all
         # now_close

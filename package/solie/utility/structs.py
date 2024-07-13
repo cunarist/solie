@@ -76,3 +76,11 @@ class MarkPrice:
 
 
 RealtimeEvent = BookTicker | MarkPrice
+
+
+@dataclass
+class AggregateTrade:
+    timestamp: int  # In milliseconds
+    symbol: str
+    price: float
+    volume: float
