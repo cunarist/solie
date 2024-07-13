@@ -22,7 +22,6 @@ from solie.utility import (
     BookTicker,
     DownloadPreset,
     MarkPrice,
-    RealtimeEvent,
     RWLock,
     add_task_duration,
     combine_candle_data,
@@ -74,8 +73,8 @@ class Collector:
         )
 
         # Realtime data
-        self.realtime_data: deque[RealtimeEvent] = deque([], 2 ** (10 + 10 + 2))
-        self.aggregate_trades: deque[AggregateTrade] = deque([], 2 ** (10 + 10))
+        self.realtime_data = deque[BookTicker | MarkPrice]([], 2 ** (10 + 10 + 2))
+        self.aggregate_trades = deque[AggregateTrade]([], 2 ** (10 + 10))
 
         # ■■■■■ repetitive schedules ■■■■■
 

@@ -75,9 +75,6 @@ class MarkPrice:
     mark_price: float
 
 
-RealtimeEvent = BookTicker | MarkPrice
-
-
 @dataclass
 class AggregateTrade:
     timestamp: int  # In milliseconds

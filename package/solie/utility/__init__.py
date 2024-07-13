@@ -44,7 +44,6 @@ from .structs import (
     BookTicker,
     ManagementSettings,
     MarkPrice,
-    RealtimeEvent,
     SimulationSettings,
     SimulationSummary,
     Strategies,
@@ -119,6 +118,5 @@ __all__ = [
     "BOARD_LOCK_OPTIONS",
     "BookTicker",
     "MarkPrice",
-    "RealtimeEvent",
     "AggregateTrade",
 ]
