@@ -4,6 +4,7 @@ import logging
 import math
 import pickle
 import re
+import time
 import webbrowser
 from datetime import datetime, timedelta, timezone
 
@@ -782,7 +783,7 @@ class Transactor:
 
         # ■■■■■ get ready for task duration measurement ■■■■■
 
-        task_start_time = datetime.now(timezone.utc)
+        start_time = time.perf_counter()
 
         # ■■■■■ check things ■■■■■
 
@@ -1139,7 +1140,7 @@ class Transactor:
 
         # ■■■■■ record task duration ■■■■■
 
-        duration = (datetime.now(timezone.utc) - task_start_time).total_seconds()
+        duration = time.perf_counter() - start_time
         add_task_duration(task_name, duration)
 
         # ■■■■■ make indicators ■■■■■
@@ -1342,6 +1343,7 @@ class Transactor:
 
         # ■■■■■ Moment ■■■■■
 
+        start_time = time.perf_counter()
         current_moment = to_moment(datetime.now(timezone.utc))
         before_moment = current_moment - timedelta(seconds=10)
 
@@ -1430,7 +1432,7 @@ class Transactor:
         # ■■■■■ Record task duration ■■■■■
 
         is_cycle_done = True
-        duration = (datetime.now(timezone.utc) - current_moment).total_seconds()
+        duration = time.perf_counter() - start_time
         add_task_duration("perform_transaction", duration)
 
         # ■■■■■ Place order ■■■■■

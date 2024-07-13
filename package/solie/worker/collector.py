@@ -3,6 +3,7 @@ import itertools
 import logging
 import math
 import random
+import time
 import webbrowser
 from collections import deque
 from datetime import datetime, timedelta, timezone
@@ -183,7 +184,7 @@ class Collector:
                 cell.data = df
 
     async def organize_data(self):
-        start_time = datetime.now(timezone.utc)
+        start_time = time.perf_counter()
 
         async with self.candle_data.write_lock as cell:
             original_index = cell.data.index
@@ -207,7 +208,7 @@ class Collector:
             mask = cell.data["index"] > slice_from
             cell.data = cell.data[mask].copy()
 
-        duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+        duration = time.perf_counter() - start_time
         add_task_duration("collector_organize_data", duration)
 
     async def save_candle_data(self):
@@ -638,7 +639,7 @@ class Collector:
         asyncio.create_task(team.simulator.display_available_years())
 
     async def add_book_tickers(self, received: dict):
-        start_time = datetime.now(timezone.utc)
+        start_time = time.perf_counter()
         symbol = received["s"]
         best_bid = received["b"]
         best_ask = received["a"]
@@ -651,11 +652,11 @@ class Collector:
             cell.data[-1][-1][find_key] = best_bid
             find_key = str((symbol, "Best Ask Price"))
             cell.data[-1][-1][find_key] = best_ask
-        duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+        duration = time.perf_counter() - start_time
         add_task_duration("add_book_tickers", duration)
 
     async def add_mark_price(self, received: list):
-        start_time = datetime.now(timezone.utc)
+        start_time = time.perf_counter()
         target_symbols = self.window.data_settings.target_symbols
         event_time = np.datetime64(received[0]["E"] * 10**6, "ns")
         filtered_data = {}
@@ -671,11 +672,11 @@ class Collector:
             for symbol, mark_price in filtered_data.items():
                 find_key = str((symbol, "Mark Price"))
                 cell.data[-1][-1][find_key] = mark_price
-        duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+        duration = time.perf_counter() - start_time
         add_task_duration("add_mark_price", duration)
 
     async def add_aggregate_trades(self, received: dict):
-        start_time = datetime.now(timezone.utc)
+        start_time = time.perf_counter()
         symbol = received["s"]
         price = float(received["p"])
         volume = float(received["q"])
@@ -686,7 +687,7 @@ class Collector:
             cell.data[-1]["index"] = trade_time
             cell.data[-1][str((symbol, "Price"))] = price
             cell.data[-1][str((symbol, "Volume"))] = volume
-        duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+        duration = time.perf_counter() - start_time
         add_task_duration("add_aggregate_trades", duration)
 
     async def clear_aggregate_trades(self):
@@ -694,6 +695,7 @@ class Collector:
             cell.data = cell.data[0:0].copy()
 
     async def add_candle_data(self):
+        start_time = time.perf_counter()
         current_moment = to_moment(datetime.now(timezone.utc))
         before_moment = current_moment - timedelta(seconds=10)
 
@@ -760,7 +762,7 @@ class Collector:
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await go(sort_data_frame, cell.data)
 
-        duration = (datetime.now(timezone.utc) - current_moment).total_seconds()
+        duration = time.perf_counter() - start_time
         add_task_duration("add_candle_data", duration)
 
     async def stop_filling_candle_data(self):
