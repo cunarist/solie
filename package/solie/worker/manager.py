@@ -192,6 +192,9 @@ class Manager:
             self.window.label_33.setText(text)
 
             texts = []
+            async with team.collector.candle_data.read_lock as cell:
+                candle_data_len = len(cell.data)
+            texts.append(f"candle_data {candle_data_len}")
             texts.append(f"realtime_data {len(team.collector.realtime_data)}")
             texts.append(f"aggregate_trades {len(team.collector.aggregate_trades)}")
             text = "\n".join(texts)
