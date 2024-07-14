@@ -2,6 +2,10 @@
 
 See historical changes of Solie at a glance.
 
+## 8.7
+
+- Realtime data collection has become more faster and stable.
+
 ## 8.6
 
 - Temporary internet disconnections are now handled more gracefully.
