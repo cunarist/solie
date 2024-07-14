@@ -27,16 +27,8 @@ python --version
 
 Then, install Solie.
 
-```
+```bash
 pip install solie
-```
-
-### Running Inside Terminal
-
-You can easily run Solie with the command below.
-
-```
-python -m solie
 ```
 
 ### Running With a Script File
