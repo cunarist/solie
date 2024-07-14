@@ -246,8 +246,9 @@ class Simulator:
 
         # last price and volume
         filtered = [t for t in aggregate_trades if t.symbol == symbol]
+        timestamps = [t.timestamp / 10**3 for t in filtered]
 
-        data_x = [t.timestamp / 10**3 for t in filtered]
+        data_x = timestamps.copy()
         data_y = [t.price for t in filtered]
         widget = self.window.simulation_lines["last_price"][0]
         widget.setData(data_x, data_y)
@@ -256,7 +257,7 @@ class Simulator:
         await asyncio.sleep(0)
 
         # last trade volume
-        index_ar = np.array([t.timestamp / 10**3 for t in filtered])
+        index_ar = np.array(timestamps)
         value_ar = np.array([t.volume for t in filtered])
         mask = value_ar != 0
         index_ar = index_ar[mask]
