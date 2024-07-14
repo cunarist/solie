@@ -1893,8 +1893,11 @@ class Transactor:
         current_timestamp = to_moment(datetime.now(timezone.utc)).timestamp() * 1000
 
         current_prices: dict[str, float] = {}
+        recent_aggregate_trades = slice_deque(
+            team.collector.aggregate_trades, 2 ** (10 + 6)
+        )
         for symbol in target_symbols:
-            for aggregate_trade in reversed(team.collector.aggregate_trades):
+            for aggregate_trade in reversed(recent_aggregate_trades):
                 if aggregate_trade.symbol != symbol:
                     continue
                 if aggregate_trade.timestamp < current_timestamp - 60 * 1000:

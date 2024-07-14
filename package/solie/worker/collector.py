@@ -31,6 +31,7 @@ from solie.utility import (
     format_numeric,
     internet_connected,
     make_stop_flag,
+    slice_deque,
     sort_data_frame,
     standardize_candle_data,
     to_moment,
@@ -351,9 +352,10 @@ class Collector:
 
         # price
         price_precisions = self.price_precisions
+        recent_aggregate_trades = slice_deque(self.aggregate_trades, 2 ** (10 + 6))
         for symbol in self.window.data_settings.target_symbols:
             latest_price: float | None = None
-            for aggregate_trade in reversed(self.aggregate_trades):
+            for aggregate_trade in reversed(recent_aggregate_trades):
                 if aggregate_trade.symbol == symbol:
                     latest_price = aggregate_trade.price
                     break
