@@ -1,5 +1,4 @@
 import asyncio
-import itertools
 import logging
 import math
 import random
@@ -17,9 +16,12 @@ from PySide6 import QtWidgets
 from solie.common import go, outsource
 from solie.overlay import DonationGuide, DownloadFillOption
 from solie.utility import (
+    AggregateTrade,
     ApiRequester,
     ApiStreamer,
+    BookTicker,
     DownloadPreset,
+    MarkPrice,
     RWLock,
     add_task_duration,
     combine_candle_data,
@@ -29,6 +31,7 @@ from solie.utility import (
     format_numeric,
     internet_connected,
     make_stop_flag,
+    slice_deque,
     sort_data_frame,
     standardize_candle_data,
     to_moment,
@@ -59,7 +62,7 @@ class Collector:
 
         self.api_requester = ApiRequester()
 
-        self.aggtrade_candle_sizes = {}
+        self.aggtrade_candle_sizes: dict[str, int] = {}
         for symbol in window.data_settings.target_symbols:
             self.aggtrade_candle_sizes[symbol] = 0
 
@@ -70,27 +73,9 @@ class Collector:
             standardize_candle_data(window.data_settings.target_symbols)
         )
 
-        # Realtime data chunks
-        field_names = itertools.product(
-            window.data_settings.target_symbols,
-            ("Best Bid Price", "Best Ask Price", "Mark Price"),
-        )
-        field_names = [str(field_name) for field_name in field_names]
-        dtype = [(field_name, np.float32) for field_name in field_names]
-        dtpye = [("index", "datetime64[ns]")] + dtype
-        self.realtime_data_chunks = RWLock(
-            deque([np.recarray(shape=(0,), dtype=dtpye) for _ in range(2)], maxlen=64)
-        )
-
-        # Aggregate trades
-        field_names = itertools.product(
-            window.data_settings.target_symbols,
-            ("Price", "Volume"),
-        )
-        field_names = [str(field_name) for field_name in field_names]
-        dtype = [(field_name, np.float32) for field_name in field_names]
-        dtpye = [("index", "datetime64[ns]")] + dtype
-        self.aggregate_trades = RWLock(np.recarray(shape=(0,), dtype=dtpye))
+        # Realtime data
+        self.realtime_data = deque[BookTicker | MarkPrice]([], 2 ** (10 + 10 + 2))
+        self.aggregate_trades = deque[AggregateTrade]([], 2 ** (10 + 10))
 
         # ■■■■■ repetitive schedules ■■■■■
 
@@ -193,20 +178,6 @@ class Collector:
                 cell.data = cell.data.reindex(unique_index)
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await go(sort_data_frame, cell.data)
-
-        async with self.realtime_data_chunks.write_lock as cell:
-            cell.data[-1].sort(order="index")
-            if len(cell.data[-1]) > 2**16:
-                new_chunk = cell.data[-1][0:0].copy()
-                cell.data.append(new_chunk)
-                del new_chunk
-
-        async with self.aggregate_trades.write_lock as cell:
-            cell.data.sort(order="index")
-            last_index = cell.data[-1]["index"]
-            slice_from = last_index - np.timedelta64(60, "s")
-            mask = cell.data["index"] > slice_from
-            cell.data = cell.data[mask].copy()
 
         duration = time.perf_counter() - start_time
         add_task_duration("collector_organize_data", duration)
@@ -380,43 +351,36 @@ class Collector:
             return
 
         # price
-        async with self.aggregate_trades.read_lock as cell:
-            ar = cell.data.copy()
         price_precisions = self.price_precisions
-
+        recent_aggregate_trades = slice_deque(self.aggregate_trades, 2 ** (10 + 6))
         for symbol in self.window.data_settings.target_symbols:
-            temp_ar = ar[str((symbol, "Price"))]
-            temp_ar = temp_ar[temp_ar != 0]
-            if len(temp_ar) > 0:
-                price_precision = price_precisions[symbol]
-                latest_price = temp_ar[-1]
-                text = f"＄{latest_price:.{price_precision}f}"
-            else:
+            latest_price: float | None = None
+            for aggregate_trade in reversed(recent_aggregate_trades):
+                if aggregate_trade.symbol == symbol:
+                    latest_price = aggregate_trade.price
+                    break
+            if latest_price is None:
                 text = "Unavailable"
+            else:
+                price_precision = price_precisions[symbol]
+                text = f"＄{latest_price:.{price_precision}f}"
             self.window.price_labels[symbol].setText(text)
 
         # bottom information
         if len(self.markets_gone) == 0:
             cumulation_rate = await self.check_candle_data_cumulation_rate()
-            async with self.realtime_data_chunks.read_lock as cell:
-                chunk_count = len(cell.data)
             first_written_time = None
             last_written_time = None
-            for turn in range(chunk_count):
-                async with self.realtime_data_chunks.read_lock as cell:
-                    if len(cell.data[turn]) > 0:
-                        if first_written_time is None:
-                            first_record = cell.data[turn][0]
-                            first_written_time = first_record["index"]
-                            del first_record
-                        last_record = cell.data[turn][-1]
-                        last_written_time = last_record["index"]
-                        del last_record
-            if first_written_time is not None and last_written_time is not None:
-                written_seconds = last_written_time - first_written_time
-                written_seconds = written_seconds.astype(np.int64) / 10**9
+            realtime_data = self.realtime_data
+            if len(realtime_data) > 0:
+                if first_written_time is None:
+                    first_record = realtime_data[0]
+                    first_written_time = first_record.timestamp
+                last_record = realtime_data[-1]
+                last_written_time = last_record.timestamp
+                written_seconds = (last_written_time - first_written_time) / 10**3
             else:
-                written_seconds = 0
+                written_seconds = 0.0
             written_length = timedelta(seconds=written_seconds)
             range_days = written_length.days
             range_hours, remains = divmod(written_length.seconds, 3600)
@@ -641,37 +605,35 @@ class Collector:
     async def add_book_tickers(self, received: dict):
         start_time = time.perf_counter()
         symbol = received["s"]
-        best_bid = received["b"]
-        best_ask = received["a"]
-        event_time = np.datetime64(received["E"] * 10**6, "ns")
-        async with self.realtime_data_chunks.write_lock as cell:
-            original_size = cell.data[-1].shape[0]
-            cell.data[-1].resize(original_size + 1, refcheck=False)
-            cell.data[-1][-1]["index"] = event_time
-            find_key = str((symbol, "Best Bid Price"))
-            cell.data[-1][-1][find_key] = best_bid
-            find_key = str((symbol, "Best Ask Price"))
-            cell.data[-1][-1][find_key] = best_ask
+        best_bid = float(received["b"])
+        best_ask = float(received["a"])
+        event_time = received["E"]  # In milliseconds
+
+        book_ticker = BookTicker(
+            timestamp=event_time,
+            symbol=symbol,
+            best_bid_price=best_bid,
+            best_ask_price=best_ask,
+        )
+        self.realtime_data.append(book_ticker)
+
         duration = time.perf_counter() - start_time
         add_task_duration("add_book_tickers", duration)
 
     async def add_mark_price(self, received: list):
         start_time = time.perf_counter()
         target_symbols = self.window.data_settings.target_symbols
-        event_time = np.datetime64(received[0]["E"] * 10**6, "ns")
-        filtered_data = {}
+        event_time = received[0]["E"]  # In milliseconds
         for about_mark_price in received:
             symbol = about_mark_price["s"]
             if symbol in target_symbols:
                 mark_price = float(about_mark_price["p"])
-                filtered_data[symbol] = mark_price
-        async with self.realtime_data_chunks.write_lock as cell:
-            original_size = cell.data[-1].shape[0]
-            cell.data[-1].resize(original_size + 1, refcheck=False)
-            cell.data[-1][-1]["index"] = event_time
-            for symbol, mark_price in filtered_data.items():
-                find_key = str((symbol, "Mark Price"))
-                cell.data[-1][-1][find_key] = mark_price
+                mark_price = MarkPrice(
+                    timestamp=event_time,
+                    symbol=symbol,
+                    mark_price=mark_price,
+                )
+                self.realtime_data.append(mark_price)
         duration = time.perf_counter() - start_time
         add_task_duration("add_mark_price", duration)
 
@@ -680,63 +642,66 @@ class Collector:
         symbol = received["s"]
         price = float(received["p"])
         volume = float(received["q"])
-        trade_time = np.datetime64(received["T"] * 10**6, "ns")
-        async with self.aggregate_trades.write_lock as cell:
-            original_size = cell.data.shape[0]
-            cell.data.resize(original_size + 1, refcheck=False)
-            cell.data[-1]["index"] = trade_time
-            cell.data[-1][str((symbol, "Price"))] = price
-            cell.data[-1][str((symbol, "Volume"))] = volume
+        trade_time = received["T"]  # In milliseconds
+
+        aggregate_trade = AggregateTrade(
+            timestamp=trade_time,
+            symbol=symbol,
+            price=price,
+            volume=volume,
+        )
+        self.aggregate_trades.append(aggregate_trade)
+
         duration = time.perf_counter() - start_time
         add_task_duration("add_aggregate_trades", duration)
 
     async def clear_aggregate_trades(self):
-        async with self.aggregate_trades.write_lock as cell:
-            cell.data = cell.data[0:0].copy()
+        self.realtime_data.clear()
 
     async def add_candle_data(self):
         start_time = time.perf_counter()
+
+        # Prepare basic infos.
         current_moment = to_moment(datetime.now(timezone.utc))
-        before_moment = current_moment - timedelta(seconds=10)
+        before_moment = current_moment - timedelta(seconds=10.0)
+        collect_from = int(before_moment.timestamp()) * 1000
+        collect_to = int(current_moment.timestamp()) * 1000
+        aggregate_trades = self.aggregate_trades
 
-        async with self.aggregate_trades.read_lock as cell:
-            data_length = len(cell.data)
-        if data_length == 0:
+        # Ensure that the data have been watched for long enough.
+        first_received_index = aggregate_trades[0].timestamp
+        if collect_from <= first_received_index:
             return
 
-        for _ in range(20):
-            async with self.aggregate_trades.read_lock as cell:
-                last_received_index = cell.data[-1]["index"]
-            if np.datetime64(current_moment) < last_received_index:
+        # Collect trades that should be included in the candle.
+        collected_aggregate_trades: list[AggregateTrade] = []
+        for aggregate_trade in reversed(aggregate_trades):
+            if aggregate_trade.timestamp < collect_from - 1000:
+                # Go additional 1000 millliseconds backward.
                 break
-            await asyncio.sleep(0.1)
-
-        async with self.aggregate_trades.read_lock as cell:
-            aggregate_trades = cell.data.copy()
-
-        first_received_index = aggregate_trades[0]["index"]
-        if first_received_index >= np.datetime64(before_moment):
+            collected_aggregate_trades.append(aggregate_trade)
+        if len(collected_aggregate_trades) == 0:
             return
+        collected_aggregate_trades.reverse()  # Sort by time
+        collected_aggregate_trades = [
+            t
+            for t in collected_aggregate_trades
+            if collect_from < t.timestamp < collect_to
+        ]
 
-        new_datas = {}
-
+        new_values = {}
         for symbol in self.window.data_settings.target_symbols:
-            block_start_timestamp = before_moment.timestamp()
-            block_end_timestamp = current_moment.timestamp()
+            symbol_aggregate_trades = [
+                t for t in collected_aggregate_trades if t.symbol == symbol
+            ]
+            self.aggtrade_candle_sizes[symbol] = len(symbol_aggregate_trades)
 
-            index_ar = aggregate_trades["index"].astype(np.int64) / 10**9
-            after_start_mask = block_start_timestamp <= index_ar
-            before_end_mask = index_ar < block_end_timestamp
-            block_ar = aggregate_trades[after_start_mask & before_end_mask]
-            block_ar = block_ar[block_ar[str((symbol, "Volume"))] != 0]
-            self.aggtrade_candle_sizes[symbol] = block_ar.size
-
-            if len(block_ar) > 0:
-                open_price = block_ar[0][str((symbol, "Price"))]
-                high_price = block_ar[str((symbol, "Price"))].max()
-                low_price = block_ar[str((symbol, "Price"))].min()
-                close_price = block_ar[-1][str((symbol, "Price"))]
-                sum_volume = block_ar[str((symbol, "Volume"))].sum()
+            if len(symbol_aggregate_trades) > 0:
+                open_price = symbol_aggregate_trades[0].price
+                high_price = max([t.price for t in symbol_aggregate_trades])
+                low_price = min([t.price for t in symbol_aggregate_trades])
+                close_price = symbol_aggregate_trades[-1].price
+                sum_volume = sum([t.volume for t in symbol_aggregate_trades])
             else:
                 async with self.candle_data.read_lock as cell:
                     inspect_sr = cell.data.iloc[-60:][(symbol, "Close")].copy()
@@ -748,16 +713,16 @@ class Collector:
                 high_price = last_price
                 low_price = last_price
                 close_price = last_price
-                sum_volume = 0
+                sum_volume = 0.0
 
-            new_datas[(symbol, "Open")] = open_price
-            new_datas[(symbol, "High")] = high_price
-            new_datas[(symbol, "Low")] = low_price
-            new_datas[(symbol, "Close")] = close_price
-            new_datas[(symbol, "Volume")] = sum_volume
+            new_values[(symbol, "Open")] = open_price
+            new_values[(symbol, "High")] = high_price
+            new_values[(symbol, "Low")] = low_price
+            new_values[(symbol, "Close")] = close_price
+            new_values[(symbol, "Volume")] = sum_volume
 
         async with self.candle_data.write_lock as cell:
-            for column_name, new_data_value in new_datas.items():
+            for column_name, new_data_value in new_values.items():
                 cell.data.loc[before_moment, column_name] = new_data_value
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await go(sort_data_frame, cell.data)

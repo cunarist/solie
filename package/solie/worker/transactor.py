@@ -21,6 +21,8 @@ from solie.utility import (
     ApiRequester,
     ApiRequestError,
     ApiStreamer,
+    BookTicker,
+    MarkPrice,
     RWLock,
     TransactionSettings,
     add_task_duration,
@@ -31,6 +33,7 @@ from solie.utility import (
     list_to_dict,
     make_indicators,
     make_stop_flag,
+    slice_deque,
     sort_data_frame,
     sort_series,
     standardize_account_state,
@@ -793,45 +796,39 @@ class Transactor:
 
         # ■■■■■ get light data ■■■■■
 
-        async with team.collector.realtime_data_chunks.read_lock as cell:
-            before_chunk = cell.data[-2].copy()
-            current_chunk = cell.data[-1].copy()
-        realtime_data = np.concatenate((before_chunk, current_chunk))
-        async with team.collector.aggregate_trades.read_lock as cell:
-            aggregate_trades = cell.data.copy()
+        realtime_data = slice_deque(team.collector.realtime_data, 2 ** (10 + 6))
+        aggregate_trades = slice_deque(team.collector.aggregate_trades, 2 ** (10 + 6))
 
         # ■■■■■ draw light lines ■■■■■
 
         # mark price
-        data_x = realtime_data["index"].astype(np.int64) / 10**9
-        data_y = realtime_data[str((symbol, "Mark Price"))]
-        mask = data_y != 0
-        data_y = data_y[mask]
-        data_x = data_x[mask]
+        mark_prices = [
+            d
+            for d in realtime_data
+            if isinstance(d, MarkPrice) and d.symbol == symbol and d.mark_price > 0.0
+        ]
+        data_y = [d.mark_price for d in mark_prices]
+        data_x = [d.timestamp / 10**3 for d in mark_prices]
         widget = self.window.transaction_lines["mark_price"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
         await asyncio.sleep(0)
 
-        # last price
-        data_x = aggregate_trades["index"].astype(np.int64) / 10**9
-        data_y = aggregate_trades[str((symbol, "Price"))]
-        mask = data_y != 0
-        data_y = data_y[mask]
-        data_x = data_x[mask]
+        # last price and volume
+        filtered = [t for t in aggregate_trades if t.symbol == symbol]
+        timestamps = [t.timestamp / 10**3 for t in filtered]
+
+        data_x = timestamps.copy()
+        data_y = [t.price for t in filtered]
         widget = self.window.transaction_lines["last_price"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
         await asyncio.sleep(0)
 
-        # last trade volume
-        index_ar = aggregate_trades["index"].astype(np.int64) / 10**9
-        value_ar = aggregate_trades[str((symbol, "Volume"))]
-        mask = value_ar != 0
-        index_ar = index_ar[mask]
-        value_ar = value_ar[mask]
+        index_ar = np.array(timestamps)
+        value_ar = np.array([t.volume for t in filtered])
         length = len(index_ar)
         zero_ar = np.zeros(length)
         nan_ar = np.empty(length)
@@ -845,22 +842,19 @@ class Transactor:
         await asyncio.sleep(0)
 
         # book tickers
-        data_x = realtime_data["index"].astype(np.int64) / 10**9
-        data_y = realtime_data[str((symbol, "Best Bid Price"))]
-        mask = data_y != 0
-        data_y = data_y[mask]
-        data_x = data_x[mask]
+        book_tickers = [
+            d for d in realtime_data if isinstance(d, BookTicker) and d.symbol == symbol
+        ]
+        data_x = [d.timestamp / 10**3 for d in book_tickers]
+
+        data_y = [d.best_bid_price for d in book_tickers]
         widget = self.window.transaction_lines["book_tickers"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
         await asyncio.sleep(0)
 
-        data_x = realtime_data["index"].astype(np.int64) / 10**9
-        data_y = realtime_data[str((symbol, "Best Ask Price"))]
-        mask = data_y != 0
-        data_y = data_y[mask]
-        data_x = data_x[mask]
+        data_y = [d.best_ask_price for d in book_tickers]
         widget = self.window.transaction_lines["book_tickers"][1]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
@@ -1896,14 +1890,20 @@ class Transactor:
 
     async def place_orders(self, decision: dict):
         target_symbols = self.window.data_settings.target_symbols
+        current_timestamp = to_moment(datetime.now(timezone.utc)).timestamp() * 1000
 
         current_prices: dict[str, float] = {}
+        recent_aggregate_trades = slice_deque(
+            team.collector.aggregate_trades, 2 ** (10 + 6)
+        )
         for symbol in target_symbols:
-            async with team.collector.aggregate_trades.read_lock as cell:
-                ar = cell.data[-10000:].copy()
-            temp_ar = ar[str((symbol, "Price"))]
-            temp_ar = temp_ar[temp_ar != 0]
-            current_prices[symbol] = float(temp_ar[-1])
+            for aggregate_trade in reversed(recent_aggregate_trades):
+                if aggregate_trade.symbol != symbol:
+                    continue
+                if aggregate_trade.timestamp < current_timestamp - 60 * 1000:
+                    raise ValueError("Recent price is not available for placing orders")
+                current_prices[symbol] = aggregate_trade.price
+                break
 
         # cancel_all
         # now_close
