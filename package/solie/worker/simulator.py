@@ -12,7 +12,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtWidgets
 from scipy.signal import find_peaks
 
-from solie.common import go, outsource, sync_manager
+from solie.common import get_sync_manager, go, outsource
 from solie.utility import (
     BookTicker,
     CalculationInput,
@@ -979,6 +979,8 @@ class Simulator:
         prepare_step = 5
 
         # ■■■■■ prepare per chunk data ■■■■■
+
+        sync_manager = get_sync_manager()
 
         calculation_inputs: list[CalculationInput] = []
         progress_list = sync_manager.list([0])

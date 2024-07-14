@@ -1,18 +1,26 @@
 import asyncio
 import functools
-import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import Manager, cpu_count
+from multiprocessing.managers import SyncManager
 from typing import Callable, TypeVar
 
 T = TypeVar("T")
 
-PROCESS_COUNT = multiprocessing.cpu_count()
-sync_manager = multiprocessing.Manager()
+PROCESS_COUNT = cpu_count()
+sync_manager: SyncManager | None = None
 
 
 def prepare_process_pool():
     global process_pool
     process_pool = ProcessPoolExecutor(PROCESS_COUNT)
+
+
+def get_sync_manager() -> SyncManager:
+    global sync_manager
+    if sync_manager is None:
+        sync_manager = Manager()
+    return sync_manager
 
 
 async def go(callable: Callable[..., T], *args, **kwargs) -> T:
