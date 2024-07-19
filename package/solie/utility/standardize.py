@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 
-def standardize_candle_data(target_symbols: list[str]):
+def create_empty_candle_data(target_symbols: list[str]):
     return pd.DataFrame(
         columns=pd.MultiIndex.from_product(
             [
@@ -51,7 +51,7 @@ def standardize_asset_record():
     )
 
 
-def standardize_unrealized_changes():
+def create_empty_unrealized_changes():
     return pd.Series(index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32)
 
 

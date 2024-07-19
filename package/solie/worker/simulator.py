@@ -20,6 +20,7 @@ from solie.utility import (
     RWLock,
     SimulationSettings,
     SimulationSummary,
+    create_empty_unrealized_changes,
     find_stop_flag,
     make_indicators,
     make_stop_flag,
@@ -29,7 +30,6 @@ from solie.utility import (
     sort_series,
     standardize_account_state,
     standardize_asset_record,
-    standardize_unrealized_changes,
     to_moment,
 )
 from solie.widget import ask
@@ -63,14 +63,14 @@ class Simulator:
         )
         self.raw_scribbles = {}
         self.raw_asset_record = RWLock(standardize_asset_record())
-        self.raw_unrealized_changes = RWLock(standardize_unrealized_changes())
+        self.raw_unrealized_changes = RWLock(create_empty_unrealized_changes())
 
         self.account_state = standardize_account_state(
             self.window.data_settings.target_symbols
         )
         self.scribbles = {}
         self.asset_record = RWLock(standardize_asset_record())
-        self.unrealized_changes = RWLock(standardize_unrealized_changes())
+        self.unrealized_changes = RWLock(create_empty_unrealized_changes())
 
         # ■■■■■ repetitive schedules ■■■■■
 
@@ -683,7 +683,7 @@ class Simulator:
         )
         self.raw_scribbles = {}
         self.raw_asset_record = RWLock(standardize_asset_record())
-        self.raw_unrealized_changes = RWLock(standardize_unrealized_changes())
+        self.raw_unrealized_changes = RWLock(create_empty_unrealized_changes())
         self.simulation_summary = None
 
         await self.present()
@@ -899,7 +899,7 @@ class Simulator:
         # ■■■■■ prepare data and calculation range ■■■■■
 
         blank_asset_record = standardize_asset_record()
-        blank_unrealized_changes = standardize_unrealized_changes()
+        blank_unrealized_changes = create_empty_unrealized_changes()
         blank_scribbles = {}
         blank_account_state = standardize_account_state(
             self.window.data_settings.target_symbols

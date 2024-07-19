@@ -27,6 +27,7 @@ from solie.utility import (
     TransactionSettings,
     add_task_duration,
     ball_ceil,
+    create_empty_unrealized_changes,
     decide,
     find_stop_flag,
     internet_connected,
@@ -38,7 +39,6 @@ from solie.utility import (
     sort_series,
     standardize_account_state,
     standardize_asset_record,
-    standardize_unrealized_changes,
     to_moment,
     when_internet_connected,
     when_internet_disconnected,
@@ -82,7 +82,7 @@ class Transactor:
 
         self.scribbles = {}
         self.transaction_settings = TransactionSettings()
-        self.unrealized_changes = RWLock(standardize_unrealized_changes())
+        self.unrealized_changes = RWLock(create_empty_unrealized_changes())
         self.asset_record = RWLock(standardize_asset_record())
         self.auto_order_record = RWLock(
             pd.DataFrame(

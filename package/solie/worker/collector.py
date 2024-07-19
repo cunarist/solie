@@ -25,6 +25,7 @@ from solie.utility import (
     RWLock,
     add_task_duration,
     combine_candle_data,
+    create_empty_candle_data,
     download_aggtrade_data,
     fill_holes_with_aggtrades,
     find_stop_flag,
@@ -33,7 +34,6 @@ from solie.utility import (
     make_stop_flag,
     slice_deque,
     sort_data_frame,
-    standardize_candle_data,
     to_moment,
     when_internet_disconnected,
 )
@@ -70,7 +70,7 @@ class Collector:
         # It's expected to have only the data of current year,
         # while data of previous years are stored in the disk.
         self.candle_data = RWLock(
-            standardize_candle_data(window.data_settings.target_symbols)
+            create_empty_candle_data(window.data_settings.target_symbols)
         )
 
         # Realtime data
