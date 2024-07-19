@@ -27,6 +27,8 @@ from solie.utility import (
     TransactionSettings,
     add_task_duration,
     ball_ceil,
+    create_empty_account_state,
+    create_empty_asset_record,
     create_empty_unrealized_changes,
     decide,
     find_stop_flag,
@@ -37,8 +39,6 @@ from solie.utility import (
     slice_deque,
     sort_data_frame,
     sort_series,
-    standardize_account_state,
-    standardize_asset_record,
     to_moment,
     when_internet_connected,
     when_internet_disconnected,
@@ -76,14 +76,14 @@ class Transactor:
         self.viewing_symbol = window.data_settings.target_symbols[0]
         self.should_draw_frequently = True
 
-        self.account_state = standardize_account_state(
+        self.account_state = create_empty_account_state(
             window.data_settings.target_symbols
         )
 
         self.scribbles = {}
         self.transaction_settings = TransactionSettings()
         self.unrealized_changes = RWLock(create_empty_unrealized_changes())
-        self.asset_record = RWLock(standardize_asset_record())
+        self.asset_record = RWLock(create_empty_asset_record())
         self.auto_order_record = RWLock(
             pd.DataFrame(
                 columns=[

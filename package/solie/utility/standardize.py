@@ -18,7 +18,7 @@ def create_empty_candle_data(target_symbols: list[str]):
     )
 
 
-def standardize_account_state(target_symbols: list[str]):
+def create_empty_account_state(target_symbols: list[str]):
     return {
         "observed_until": datetime.fromtimestamp(0.0, tz=timezone.utc),
         "wallet_balance": 1.0,
@@ -35,7 +35,7 @@ def standardize_account_state(target_symbols: list[str]):
     }
 
 
-def standardize_asset_record():
+def create_empty_asset_record():
     return pd.DataFrame(
         columns=[
             "Cause",

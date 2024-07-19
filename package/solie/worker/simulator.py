@@ -20,6 +20,8 @@ from solie.utility import (
     RWLock,
     SimulationSettings,
     SimulationSummary,
+    create_empty_account_state,
+    create_empty_asset_record,
     create_empty_unrealized_changes,
     find_stop_flag,
     make_indicators,
@@ -28,8 +30,6 @@ from solie.utility import (
     slice_deque,
     sort_data_frame,
     sort_series,
-    standardize_account_state,
-    standardize_asset_record,
     to_moment,
 )
 from solie.widget import ask
@@ -58,18 +58,18 @@ class Simulator:
         )
         self.simulation_summary: SimulationSummary | None = None
 
-        self.raw_account_state = standardize_account_state(
+        self.raw_account_state = create_empty_account_state(
             self.window.data_settings.target_symbols
         )
         self.raw_scribbles = {}
-        self.raw_asset_record = RWLock(standardize_asset_record())
+        self.raw_asset_record = RWLock(create_empty_asset_record())
         self.raw_unrealized_changes = RWLock(create_empty_unrealized_changes())
 
-        self.account_state = standardize_account_state(
+        self.account_state = create_empty_account_state(
             self.window.data_settings.target_symbols
         )
         self.scribbles = {}
-        self.asset_record = RWLock(standardize_asset_record())
+        self.asset_record = RWLock(create_empty_asset_record())
         self.unrealized_changes = RWLock(create_empty_unrealized_changes())
 
         # ■■■■■ repetitive schedules ■■■■■
@@ -678,11 +678,11 @@ class Simulator:
         await self.set_minimum_view_range()
 
     async def erase(self):
-        self.raw_account_state = standardize_account_state(
+        self.raw_account_state = create_empty_account_state(
             self.window.data_settings.target_symbols
         )
         self.raw_scribbles = {}
-        self.raw_asset_record = RWLock(standardize_asset_record())
+        self.raw_asset_record = RWLock(create_empty_asset_record())
         self.raw_unrealized_changes = RWLock(create_empty_unrealized_changes())
         self.simulation_summary = None
 
@@ -898,10 +898,10 @@ class Simulator:
 
         # ■■■■■ prepare data and calculation range ■■■■■
 
-        blank_asset_record = standardize_asset_record()
+        blank_asset_record = create_empty_asset_record()
         blank_unrealized_changes = create_empty_unrealized_changes()
         blank_scribbles = {}
-        blank_account_state = standardize_account_state(
+        blank_account_state = create_empty_account_state(
             self.window.data_settings.target_symbols
         )
         blank_virtual_state = {
