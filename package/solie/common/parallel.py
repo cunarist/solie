@@ -31,10 +31,10 @@ async def go(callable: Callable[..., T], *args, **kwargs) -> T:
     asynchronously outside `asyncio`'s event loop.
 
     Example:
-    ```
+    ```python
     # Define a blocking function
     def my_blocking_function(a, b):
-        for _ in range(100000):
+        for _ in range(1000000):
             pass
         return a + b
 
