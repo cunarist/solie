@@ -5,7 +5,7 @@ from typing import Generic, TypeVar
 
 
 # The internal lock object managing the RWLock state.
-class _RWLockCore:
+class RWLockCore:
     _RL = 1
     _WL = 2
 
@@ -154,31 +154,6 @@ class _RWLockCore:
                     self._r_state += 1
 
 
-class _ContextManagerMixin:
-    def __enter__(self):
-        raise RuntimeError('"await" should be used as context manager expression')
-
-    def __exit__(self, *args):
-        # This must exist because __enter__ exists, even though that
-        # always raises; that's how the with-statement works.
-        pass  # pragma: no cover
-
-    async def __aenter__(self):
-        await self.acquire()
-        # We have no use for the "as ..."  clause in the with
-        # statement for locks.
-        return None
-
-    async def __aexit__(self, *args: list):
-        self.release()
-
-    async def acquire(self):
-        raise NotImplementedError  # pragma: no cover
-
-    def release(self):
-        raise NotImplementedError  # pragma: no cover
-
-
 T = TypeVar("T")
 
 
@@ -188,8 +163,8 @@ class Cell(Generic[T]):
 
 
 # Lock objects to access the _RWLockCore in reader or writer mode
-class ReadLock(_ContextManagerMixin, Generic[T]):
-    def __init__(self, lock: _RWLockCore, wrapper: Cell[T]):
+class ReadLock(Generic[T]):
+    def __init__(self, lock: RWLockCore, wrapper: Cell[T]):
         self._wrapper = wrapper
         self._lock = lock
 
@@ -209,8 +184,8 @@ class ReadLock(_ContextManagerMixin, Generic[T]):
         return "<ReaderLock: [{}]>".format(status)
 
 
-class WriteLock(_ContextManagerMixin, Generic[T]):
-    def __init__(self, lock: _RWLockCore, wrapper: Cell[T]):
+class WriteLock(Generic[T]):
+    def __init__(self, lock: RWLockCore, wrapper: Cell[T]):
         self._wrapper = wrapper
         self._lock = lock
 
@@ -237,13 +212,11 @@ class RWLock(Generic[T]):
     lock is exclusive.
     """
 
-    core = _RWLockCore
-
     def __init__(self, cell_data: T, fast: bool = True):
         loop = asyncio.get_running_loop()
         self._wrapper = Cell(cell_data)
         self._loop = loop
-        core = self.core(fast, self._loop)
+        core = RWLockCore(fast, self._loop)
         self.read_lock = ReadLock(core, self._wrapper)
         self.write_lock = WriteLock(core, self._wrapper)
 

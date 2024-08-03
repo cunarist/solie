@@ -8,19 +8,19 @@ class Gauge(QtWidgets.QPushButton):
         self.normal_text = ""
         self.lock_text = "🔒"
 
-    def enterEvent(self, event):  # noqa:N802
+    def enterEvent(self, event):
         self.is_mouse_over = True
         self.setFlat(False)
         super().setText(self.lock_text)
         super().enterEvent(event)
 
-    def leaveEvent(self, event):  # noqa:N802
+    def leaveEvent(self, event):
         self.is_mouse_over = False
         self.setFlat(True)
         super().setText(self.normal_text)
         super().leaveEvent(event)
 
-    def setText(self, text):  # noqa:N802
+    def setText(self, text):
         self.normal_text = text
         if self.is_mouse_over:
             super().setText(self.lock_text)

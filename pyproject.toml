@@ -11,7 +11,7 @@ pyright = "*"
 pygount = "*"
 
 [tool.pyright]
-typeCheckingMode = "basic"
+typeCheckingMode = "standard"
 ignore = ["package/solie/window/compiled.py"]
 
 [tool.ruff.lint]

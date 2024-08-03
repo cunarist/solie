@@ -7,7 +7,9 @@ class PercentAxisItem(AxisItem):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def tickValues(self, min_value, max_value, size):  # noqa:N802
+    def tickValues(self, minVal: float, maxVal: float, size: float):
+        min_value = minVal
+        max_value = maxVal
         min_value = max(0.001 * max_value, min_value)
 
         min_power = math.ceil(math.log(min_value, 1.01))
@@ -28,15 +30,15 @@ class PercentAxisItem(AxisItem):
             (max_value - min_value, minor_ticks),
         ]
 
-    def tickStrings(self, tick_values, scale, spacing):  # noqa:N802
+    def tickStrings(self, values: list[float], scale: float, spacing: float):
         optimal_count = max(2, math.ceil(self.size().height() / 20))
         distance = spacing / optimal_count
 
         strings = []
 
-        if len(tick_values) > 0:
-            next_condition = tick_values[0]
-            for tick_value in tick_values:
+        if len(values) > 0:
+            next_condition = values[0]
+            for tick_value in values:
                 if tick_value >= next_condition:
                     next_condition = tick_value + distance
                     string = self.format_fixed_float(tick_value, 6)
@@ -47,7 +49,7 @@ class PercentAxisItem(AxisItem):
         return strings
 
     def format_fixed_float(
-        self, number: int | float, width=4, positive_sign=False
+        self, number: float, width=4, positive_sign=False
     ) -> str:
         if width < 4:
             width = 4

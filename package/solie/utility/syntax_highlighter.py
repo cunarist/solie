@@ -3,10 +3,10 @@ from PySide6 import QtGui
 
 
 class SyntaxHighlighter(QtGui.QSyntaxHighlighter):
-    def highlightBlock(self, script):  # noqa:N802
+    def highlightBlock(self, text):
         current_position = 0
 
-        for token, text_block in lex(script, self._lexer):
+        for token, text_block in lex(text, self._lexer):
             length = len(text_block)
             text_format = None
             for text_type in self._mapping.keys():

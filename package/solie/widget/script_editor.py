@@ -13,7 +13,8 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
         self.setLineWrapMode(ScriptEditor.LineWrapMode.NoWrap)
         SyntaxHighlighter(parent).setDocument(self.document())
 
-    def keyPressEvent(self, event):  # noqa:N802
+    def keyPressEvent(self, e):
+        event = e
         should_indent = event.key() == QtCore.Qt.Key.Key_Tab
         should_dedent = event.key() == QtCore.Qt.Key.Key_Backtab
         if should_indent or should_dedent:
@@ -55,7 +56,8 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
             return
         return super().keyPressEvent(event)
 
-    def focusOutEvent(self, event):  # noqa:N802
+    def focusOutEvent(self, e):
+        event = e
         # apply formatter style
         scroll_position = self.verticalScrollBar().value()
         text = self.toPlainText()

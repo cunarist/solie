@@ -24,16 +24,18 @@ class AskPopup(QtWidgets.QWidget):
     done_event = asyncio.Event()
     installed_window: QtWidgets.QMainWindow
 
-    def showEvent(self, event):  # noqa:N802
+    def showEvent(self, event):
         # needed for filling the window when resized
         parent: QtWidgets.QMainWindow = self.parent()  # type:ignore
         self.setGeometry(parent.rect())
 
-    def eventFilter(self, source, event):  # noqa:N802
+    def eventFilter(self, watched, event):
+        if not isinstance(watched, QtWidgets.QWidget):
+            raise NotImplementedError
         # needed for filling the window when resized
         if event.type() == event.Type.Resize:
-            self.setGeometry(source.rect())
-        return super().eventFilter(source, event)
+            self.setGeometry(watched.rect())  
+        return super().eventFilter(watched, event)
 
     @classmethod
     def install_window(cls, window: QtWidgets.QMainWindow):

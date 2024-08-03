@@ -11,7 +11,9 @@ class TimeAxisItem(AxisItem):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def tickValues(self, min_value, max_value, size):  # noqa:N802
+    def tickValues(self, minVal: float, maxVal: float, size: float):
+        min_value = minVal
+        max_value = maxVal
         if min_value <= 0:  # use standard implementation from parent
             return AxisItem.tickValues(self, min_value, max_value, size)
 
@@ -85,17 +87,17 @@ class TimeAxisItem(AxisItem):
 
         return [(distance.total_seconds(), majticks)]
 
-    def tickStrings(self, tick_values, scale, spacing):  # noqa:N802
+    def tickStrings(self, values:list[float], scale:float, spacing:float):
         """Reimplemented from PlotItem to adjust to the range"""
 
-        count = len(tick_values)
+        count = len(values)
         sample = 1
         if count > 12:
             sample = math.ceil((count / 12))
         offset = math.floor((count % sample) / 2)
         return_data = []
 
-        if not tick_values:
+        if not values:
             return []
 
         if spacing >= 31622400:  # 366 days
@@ -121,7 +123,7 @@ class TimeAxisItem(AxisItem):
             # fmt = '%S.%f"'
             fmt = "[+%fms]"  # explicitly relative to last second
 
-        for turn, tick_value in enumerate(tick_values):
+        for turn, tick_value in enumerate(values):
             if (turn - offset) % sample == 0:
                 try:
                     tick_time = datetime.fromtimestamp(tick_value, tz=timezone.utc)

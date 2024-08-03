@@ -72,7 +72,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.should_confirm_closing = False
 
-    def closeEvent(self, event):  # noqa:N802
+    def closeEvent(self, event):
         event.ignore()
 
         async def job_close():
@@ -100,7 +100,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         asyncio.create_task(job_close())
 
-    def mouseReleaseEvent(self, event):  # noqa:N802
+    def mouseReleaseEvent(self, event):
         self.last_interaction = datetime.now(timezone.utc)
 
         if self.board.isEnabled():
