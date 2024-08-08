@@ -141,7 +141,7 @@ def download_aggtrade_data(download_target: DownloadPreset) -> pd.DataFrame | No
 def fill_holes_with_aggtrades(
     symbol: str,
     recent_candle_data: pd.DataFrame,
-    aggtrades: pd.DataFrame,
+    aggtrades: dict,
     moment_to_fill_from: datetime,
     last_fetched_time: datetime,
 ) -> pd.DataFrame:

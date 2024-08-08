@@ -3,9 +3,10 @@ import functools
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import Manager, cpu_count
 from multiprocessing.managers import SyncManager
-from typing import Callable, TypeVar
+from typing import Callable, TypeVar, ParamSpec
 
 T = TypeVar("T")
+P = ParamSpec("P")
 
 PROCESS_COUNT = cpu_count()
 sync_manager: SyncManager | None = None
@@ -23,7 +24,7 @@ def get_sync_manager() -> SyncManager:
     return sync_manager
 
 
-async def go(callable: Callable[..., T], *args, **kwargs) -> T:
+async def go(callable: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
     """
     Executes the given callable in a separate process pool
     using `asyncio`'s `run_in_executor`.
