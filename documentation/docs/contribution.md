@@ -12,7 +12,7 @@ Execute the runner code inside its virtual environment.
 
 ```bash
 cd runner
-uv run usage.py
+uv run usage
 ```
 
 ## 🧰 Debugging
