@@ -4,31 +4,15 @@ Guides below will help you dive into the Solie codebase.
 
 When using terminal commands from the following sections, always make sure that your current working directory is the root folder of the cloned repository.
 
-## 🧮 Preparing the Repository
+## 🧮 Running Code
 
-You need to install some components on your system first.
+You need to install some components on your system first. Begin by installing the Python package manager, [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
-First, install [Python](https://www.python.org/). We recommend using the official Python installer provided from the website to ensure stability. Don't forget to add `python` command to PATH during the installation.
-
-Then, make sure [Poetry](https://python-poetry.org/) is installed on your system.
+Execute the runner code inside its virtual environment.
 
 ```bash
-pip install pipx
-python -m pipx ensurepath
-pipx install poetry
-```
-
-Install the dependencies. You only have to do this once.
-
-```bash
-poetry install
-```
-
-Activate the Poetry shell and run the code.
-
-```bash
-poetry shell
-python -m solie
+cd runner
+uv run usage.py
 ```
 
 ## 🧰 Debugging
@@ -84,8 +68,8 @@ In the `Log output`, all logs that occur during execution are stacked. If an err
 The user interface can be modified by editing the `./craft/window.ui` file with `Qt Designer`. Run the designer app with the terminal command below.
 
 ```bash
-poetry shell
-pyside6-designer
+cd package
+uv run pyside6-designer
 ```
 
 After editing the UI file, you should compile it into a Python module.
@@ -96,7 +80,7 @@ pyside6-uic craft/window.ui -o package/solie/window/compiled.py
 
 ## 🚦 Rules
 
-- Solie is written entirely in Python and utilizes Poetry as the primary tool for managing packages.
+- Solie is written entirely in Python and utilizes [uv](https://docs.astral.sh/uv/) as the primary tool for managing packages.
 - Use the Ruff formatter for organizing code and identifying issues.
 - Employ Pyright in basic mode for type checks. If you're using Visual Studio Code, Pylance extends Pyright’s capabilities.
 - It should be user-friendly, allowing general users to navigate with just a few clicks.

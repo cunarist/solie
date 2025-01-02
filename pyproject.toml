@@ -1,18 +1,17 @@
-[tool.poetry]
-package-mode = false
+[project]
+name = "solie-workspace"
+version = "0.1.0"
 
-[tool.poetry.dependencies]
-python = "^3.10,<3.13"
-solie = { path = "package/", develop = true }
+[tool.uv.sources]
+solie = { workspace = true }
 
-[tool.poetry.dev-dependencies]
-ruff = "*"
-pyright = "*"
-pygount = "*"
+[tool.uv.workspace]
+members = ["documentation", "package", "runner"]
 
 [tool.pyright]
 typeCheckingMode = "standard"
 ignore = ["package/solie/window/compiled.py"]
+extraPaths = ["package"]
 
 [tool.ruff.lint]
 extend-select = ["N", "I", "T20", "SLF", "INP", "ASYNC"]
