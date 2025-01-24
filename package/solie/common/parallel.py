@@ -3,7 +3,7 @@ import functools
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import Manager, cpu_count
 from multiprocessing.managers import SyncManager
-from typing import Callable, TypeVar, ParamSpec
+from typing import Callable, ParamSpec, TypeVar
 
 T = TypeVar("T")
 P = ParamSpec("P")
