@@ -6,6 +6,7 @@ members = ["documentation", "package", "runner"]
 
 [tool.pyright]
 typeCheckingMode = "standard"
+reportUnnecessaryTypeIgnoreComment = true
 ignore = ["package/solie/window/compiled.py"]
 extraPaths = ["package"]
 

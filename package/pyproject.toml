@@ -8,6 +8,7 @@ requires-python = ">=3.10,<3.13"
 dependencies = [
     "numpy~=1.26.2",
     "pandas~=1.5.3",
+    "pandas-stubs~=1.5.3",
     "scipy~=1.11.3",
     "pyside6~=6.7.0",
     "pyqtgraph~=0.13.7",

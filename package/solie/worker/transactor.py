@@ -267,14 +267,14 @@ class Transactor:
         async with self.unrealized_changes.write_lock as cell:
             if not cell.data.index.is_unique:
                 unique_index = cell.data.index.drop_duplicates()
-                cell.data = cell.data.reindex(unique_index)
+                cell.data = cell.data.reindex(unique_index)  # type:ignore
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await go(sort_series, cell.data)
 
         async with self.auto_order_record.write_lock as cell:
             if not cell.data.index.is_unique:
                 unique_index = cell.data.index.drop_duplicates()
-                cell.data = cell.data.reindex(unique_index)
+                cell.data = cell.data.reindex(unique_index)  # type:ignore
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await go(sort_data_frame, cell.data)
             max_length = 2**16
@@ -284,7 +284,7 @@ class Transactor:
         async with self.asset_record.write_lock as cell:
             if not cell.data.index.is_unique:
                 unique_index = cell.data.index.drop_duplicates()
-                cell.data = cell.data.reindex(unique_index)
+                cell.data = cell.data.reindex(unique_index)  # type:ignore
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await go(sort_data_frame, cell.data)
 
@@ -733,7 +733,7 @@ class Transactor:
         text += f"Total realized profit {symbol_yield:+.4f}({total_yield:+.4f})%"
         text += "  ⦁  "
         text += "Lowest unrealized profit"
-        text += f" {min_unrealized_change * 100:+.4f}%"  # type:ignore
+        text += f" {min_unrealized_change * 100:+.4f}%"
         self.window.label_8.setText(text)
 
     async def set_minimum_view_range(self):
@@ -918,7 +918,7 @@ class Transactor:
 
         if len(candle_data) > 0:
             last_written_moment = candle_data.index[-1]
-            new_moment = last_written_moment + timedelta(seconds=10)
+            new_moment = last_written_moment + timedelta(seconds=10)  # type:ignore
             new_index = candle_data.index.union([new_moment])
             candle_data = candle_data.reindex(new_index)
 

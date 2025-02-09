@@ -175,7 +175,7 @@ class Collector:
             original_index = cell.data.index
             if not cell.data.index.is_unique:
                 unique_index = original_index.drop_duplicates()
-                cell.data = cell.data.reindex(unique_index)
+                cell.data = cell.data.reindex(unique_index)  # type:ignore
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await go(sort_data_frame, cell.data)
 
@@ -282,7 +282,7 @@ class Collector:
                     temp_sr[until_moment] = np.nan
                 temp_sr = await go(temp_sr.asfreq, "10S")
                 isnan_sr = await go(temp_sr.isna)
-                nan_index = isnan_sr[isnan_sr == 1].index  # type:ignore
+                nan_index = isnan_sr[isnan_sr == 1].index
                 moment_to_fill_from: datetime = nan_index[0]  # type:ignore
 
                 # request historical aggtrade data

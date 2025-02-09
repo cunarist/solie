@@ -86,7 +86,7 @@ def download_aggtrade_data(download_target: DownloadPreset) -> pd.DataFrame | No
     # fill index holes that's smaller than 10 minutes
     temp_sr = pd.Series(0, index=df.index, dtype=np.float32)
     temp_sr = temp_sr.groupby(temp_sr.index).first()
-    temp_sr = temp_sr.resample("10s").agg("mean")
+    temp_sr: pd.Series = temp_sr.resample("10s").agg("mean")  # type:ignore
     temp_sr = temp_sr.interpolate(limit=60, limit_direction="forward")
     temp_sr = temp_sr.replace(np.nan, 1)
     temp_sr = temp_sr.replace(0, np.nan)

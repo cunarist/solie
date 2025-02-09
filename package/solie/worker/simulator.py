@@ -365,7 +365,7 @@ class Simulator:
 
         if len(candle_data) > 0:
             last_written_moment = candle_data.index[-1]
-            new_moment = last_written_moment + timedelta(seconds=10)
+            new_moment = last_written_moment + timedelta(seconds=10)  # type:ignore
             new_index = candle_data.index.union([new_moment])
             candle_data = candle_data.reindex(new_index)
 
@@ -798,7 +798,7 @@ class Simulator:
         text += f"Total realized profit {symbol_yield:+.4f}({total_yield:+.4f})%"
         text += "  ⦁  "
         text += "Lowest unrealized profit"
-        text += f" {min_unrealized_change * 100:+.4f}%"  # type:ignore
+        text += f" {min_unrealized_change * 100:+.4f}%"
         self.window.label_13.setText(text)
 
     async def set_minimum_view_range(self):
@@ -1104,7 +1104,7 @@ class Simulator:
             for chunk_ouput_data in calculation_output_data:
                 chunk_asset_record = chunk_ouput_data.chunk_asset_record
                 concat_data = [asset_record, chunk_asset_record]
-                asset_record: pd.DataFrame = pd.concat(concat_data)  # type:ignore
+                asset_record: pd.DataFrame = pd.concat(concat_data)
             mask = ~asset_record.index.duplicated()
             asset_record = asset_record[mask]
             if not asset_record.index.is_monotonic_increasing:
@@ -1114,9 +1114,9 @@ class Simulator:
             for chunk_ouput_data in calculation_output_data:
                 chunk_unrealized_changes = chunk_ouput_data.chunk_unrealized_changes
                 concat_data = [unrealized_changes, chunk_unrealized_changes]
-                unrealized_changes: pd.Series = pd.concat(concat_data)  # type:ignore
+                unrealized_changes: pd.Series = pd.concat(concat_data)
             mask = ~unrealized_changes.index.duplicated()
-            unrealized_changes = unrealized_changes[mask]  # type:ignore
+            unrealized_changes = unrealized_changes[mask]
             if not unrealized_changes.index.is_monotonic_increasing:
                 unrealized_changes = await go(sort_series, unrealized_changes)
 
@@ -1204,7 +1204,7 @@ class Simulator:
             chunk_result_asset_sr = chunk_asset_record["Result Asset"]
             chunk_asset_shifts = chunk_result_asset_sr.diff()
             if len(chunk_asset_shifts) > 0:
-                chunk_asset_shifts.iloc[0] = 0.0  # type:ignore
+                chunk_asset_shifts.iloc[0] = 0.0
             lazy_chunk_result_asset = chunk_result_asset_sr.shift(periods=1)
             if len(lazy_chunk_result_asset) > 0:
                 lazy_chunk_result_asset.iloc[0] = 1
@@ -1407,7 +1407,7 @@ class Simulator:
 
     async def analyze_unrealized_peaks(self):
         async with self.unrealized_changes.read_lock as cell:
-            peak_indexes, _ = find_peaks(-cell.data, distance=3600 / 10)  # type:ignore
+            peak_indexes, _ = find_peaks(-cell.data, distance=3600 / 10)
             peak_sr = cell.data.iloc[peak_indexes]
         peak_sr = peak_sr.sort_values().iloc[:12]
         if len(peak_sr) < 12:
