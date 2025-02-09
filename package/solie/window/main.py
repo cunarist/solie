@@ -905,12 +905,3 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.splash_screen.hide()
         self.board.show()
         self.gauge.show()
-
-    async def process_events(self):
-        interval = 1 / 240
-        app_instance = QtCore.QCoreApplication.instance()
-        if app_instance is None:
-            raise ValueError("App instance is none, cannot process events")
-        while True:
-            app_instance.processEvents()
-            await asyncio.sleep(interval)

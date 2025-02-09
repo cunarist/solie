@@ -26,6 +26,7 @@ dependencies = [
     "dataclasses-json~=0.6.4",
     "setuptools~=75.6.0",
     "typing-extensions~=4.12.2",
+    "qasync~=0.27.1",
 ]
 
 [build-system]

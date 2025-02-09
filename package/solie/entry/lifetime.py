@@ -19,9 +19,7 @@ from solie.worker import (
 logger = logging.getLogger(__name__)
 
 
-async def live():
-    app = QtWidgets.QApplication()
-
+async def live(app: QtWidgets.QApplication):
     staticpath = PACKAGE_PATH / "static"
     QtGui.QFontDatabase.addApplicationFont(str(staticpath / "source_code_pro.ttf"))
     QtGui.QFontDatabase.addApplicationFont(str(staticpath / "notosans_regular.ttf"))
@@ -56,7 +54,6 @@ async def live():
     OverlayPopup.install_window(window)
 
     logging.getLogger(PACKAGE_NAME).setLevel("DEBUG")
-    spawn(window.process_events())
     await window.boot()
     logger.info("Started up")
 

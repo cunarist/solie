@@ -1,6 +1,9 @@
 import asyncio
 import sys
 
+from PySide6 import QtWidgets
+from qasync import QEventLoop
+
 from solie.common import prepare_process_pool
 
 from .lifetime import live
@@ -8,5 +11,12 @@ from .lifetime import live
 
 def bring_to_life():
     prepare_process_pool()
-    asyncio.run(live())
+
+    app = QtWidgets.QApplication()
+    event_loop = QEventLoop(app)
+    asyncio.set_event_loop(event_loop)
+
+    with event_loop:
+        event_loop.run_until_complete(live(app))
+
     sys.exit()
