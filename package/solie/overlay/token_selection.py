@@ -23,8 +23,8 @@ class TokenSelection(BaseOverlay):
 
         # ■■■■■ get all symbols ■■■■■
 
-        available_tokens: set[str] = set()
-        available_symbols: set[str] = set()
+        available_tokens = set[str]()
+        available_symbols = set[str]()
 
         response = await api_requester.binance(
             http_method="GET",

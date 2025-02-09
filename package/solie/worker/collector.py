@@ -56,7 +56,7 @@ class Collector:
         # ■■■■■ internal memory ■■■■■
 
         self.price_precisions: dict[str, int] = {}  # Symbol and decimal places
-        self.markets_gone: set[str] = set()  # Symbols
+        self.markets_gone = set[str]()  # Symbols
 
         # ■■■■■ remember and display ■■■■■
 
@@ -245,7 +245,7 @@ class Collector:
 
         # ■■■■■ fill holes ■■■■■
 
-        full_symbols: set[str] = set()
+        full_symbols = set[str]()
         request_count = 0
 
         # only the recent part
@@ -537,7 +537,7 @@ class Collector:
 
         # Gather information about years.
         current_year = datetime.now(timezone.utc).year
-        all_years: set[int] = {t.year for t in download_presets}
+        all_years = {t.year for t in download_presets}
 
         # Download and save historical data by year for lower memory usage.
         # Key is the year, value is the list of download presets.

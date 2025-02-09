@@ -12,8 +12,8 @@ class RWLockCore:
     def __init__(self, fast: bool, loop: AbstractEventLoop):
         self._do_yield = not fast
         self._loop = loop
-        self._read_waiters: deque[Future[None]] = deque()
-        self._write_waiters: deque[Future[None]] = deque()
+        self._read_waiters = deque[Future[None]]()
+        self._write_waiters = deque[Future[None]]()
         self._r_state: int = 0
         self._w_state: int = 0
         # tasks will be few, so a list is not inefficient
