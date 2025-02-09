@@ -2,7 +2,6 @@ import logging
 import math
 import pickle
 import re
-import time
 import webbrowser
 from asyncio import Task, current_task, gather, sleep, wait
 from datetime import datetime, timedelta, timezone
@@ -23,13 +22,13 @@ from solie.utility import (
     ApiStreamer,
     BookTicker,
     Decision,
+    DurationRecorder,
     MarkPrice,
     OpenOrder,
     OrderType,
     PositionDirection,
     RWLock,
     TransactionSettings,
-    add_task_duration,
     ball_ceil,
     create_empty_account_state,
     create_empty_asset_record,
@@ -787,7 +786,7 @@ class Transactor:
 
         # ■■■■■ get ready for task duration measurement ■■■■■
 
-        start_time = time.perf_counter()
+        duration_recorder = DurationRecorder("DISPLAY_TRANSACTION_LINES")
 
         # ■■■■■ check things ■■■■■
 
@@ -1183,8 +1182,7 @@ class Transactor:
 
         # ■■■■■ record task duration ■■■■■
 
-        duration = time.perf_counter() - start_time
-        add_task_duration("DISPLAY_TRANSACTION_LINES", duration)
+        duration_recorder.record()
 
         # ■■■■■ set minimum view range ■■■■■
 
@@ -1296,7 +1294,7 @@ class Transactor:
 
         # ■■■■■ Moment ■■■■■
 
-        start_time = time.perf_counter()
+        duration_recorder = DurationRecorder("PERFORM_TRANSACTION")
         current_moment = to_moment(datetime.now(timezone.utc))
         before_moment = current_moment - timedelta(seconds=10)
 
@@ -1390,8 +1388,7 @@ class Transactor:
         # ■■■■■ Record task duration ■■■■■
 
         is_cycle_done = True
-        duration = time.perf_counter() - start_time
-        add_task_duration("PERFORM_TRANSACTION", duration)
+        duration_recorder.record()
 
         # ■■■■■ Place order ■■■■■
 
@@ -2242,8 +2239,8 @@ class Transactor:
     async def show_raw_account_state_object(self):
         text = ""
 
-        time = datetime.now(timezone.utc)
-        time_text = time.strftime("%Y-%m-%d %H:%M:%S")
+        now_time = datetime.now(timezone.utc)
+        time_text = now_time.strftime("%Y-%m-%d %H:%M:%S")
         text += f"At UTC {time_text}"
 
         text += "\n\n"

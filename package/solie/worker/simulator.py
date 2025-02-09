@@ -1,7 +1,6 @@
 import math
 import pickle
 import re
-import time
 from asyncio import Task, current_task, gather, sleep
 from datetime import datetime, timedelta, timezone
 
@@ -18,13 +17,13 @@ from solie.utility import (
     AccountState,
     BookTicker,
     CalculationInput,
+    DurationRecorder,
     MarkPrice,
     RWLock,
     SimulationSettings,
     SimulationSummary,
     VirtualPosition,
     VirtualState,
-    add_task_duration,
     create_empty_account_state,
     create_empty_asset_record,
     create_empty_unrealized_changes,
@@ -223,7 +222,7 @@ class Simulator:
 
         # ■■■■■ get ready for task duration measurement ■■■■■
 
-        start_time = time.perf_counter()
+        duration_recorder = DurationRecorder("DISPLAY_SIMULATION_LINES")
 
         # ■■■■■ check things ■■■■■
 
@@ -635,8 +634,7 @@ class Simulator:
 
         # ■■■■■ record task duration ■■■■■
 
-        duration = time.perf_counter() - start_time
-        add_task_duration("DISPLAY_SIMULATION_LINES", duration)
+        duration_recorder.record()
 
         # ■■■■■ set minimum view range ■■■■■
 

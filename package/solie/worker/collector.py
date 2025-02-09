@@ -1,7 +1,6 @@
 import logging
 import math
 import random
-import time
 import webbrowser
 from asyncio import Task, current_task, sleep, wait
 from collections import deque
@@ -23,9 +22,9 @@ from solie.utility import (
     BookTicker,
     DownloadPreset,
     DownloadUnitSize,
+    DurationRecorder,
     MarkPrice,
     RWLock,
-    add_task_duration,
     combine_candle_data,
     create_empty_candle_data,
     download_aggtrade_data,
@@ -171,7 +170,7 @@ class Collector:
                 cell.data = df
 
     async def organize_data(self):
-        start_time = time.perf_counter()
+        duration_recorder = DurationRecorder("ORGANIZE_COLLECTOR_DATA")
 
         async with self.candle_data.write_lock as cell:
             original_index = cell.data.index
@@ -181,8 +180,7 @@ class Collector:
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await spawn_blocking(sort_data_frame, cell.data)
 
-        duration = time.perf_counter() - start_time
-        add_task_duration("ORGANIZE_COLLECTOR_DATA", duration)
+        duration_recorder.record()
 
     async def save_candle_data(self):
         # ■■■■■ default values ■■■■■
@@ -616,7 +614,8 @@ class Collector:
         spawn(team.simulator.display_available_years())
 
     async def add_book_tickers(self, received: dict[str, Any]):
-        start_time = time.perf_counter()
+        duration_recorder = DurationRecorder("ADD_BOOK_TICKERS")
+
         symbol = received["s"]
         best_bid = float(received["b"])
         best_ask = float(received["a"])
@@ -630,11 +629,11 @@ class Collector:
         )
         self.realtime_data.append(book_ticker)
 
-        duration = time.perf_counter() - start_time
-        add_task_duration("ADD_BOOK_TICKERS", duration)
+        duration_recorder.record()
 
     async def add_mark_price(self, received: list[dict[str, Any]]):
-        start_time = time.perf_counter()
+        duration_recorder = DurationRecorder("ADD_MARK_PRICE")
+
         target_symbols = self.window.data_settings.target_symbols
         event_time = received[0]["E"]  # In milliseconds
         for about_mark_price in received:
@@ -647,11 +646,12 @@ class Collector:
                     mark_price=mark_price,
                 )
                 self.realtime_data.append(mark_price)
-        duration = time.perf_counter() - start_time
-        add_task_duration("ADD_MARK_PRICE", duration)
+
+        duration_recorder.record()
 
     async def add_aggregate_trades(self, received: dict[str, Any]):
-        start_time = time.perf_counter()
+        duration_recorder = DurationRecorder("ADD_AGGREGATE_TRADES")
+
         symbol = received["s"]
         price = float(received["p"])
         volume = float(received["q"])
@@ -665,14 +665,13 @@ class Collector:
         )
         self.aggregate_trades.append(aggregate_trade)
 
-        duration = time.perf_counter() - start_time
-        add_task_duration("ADD_AGGREGATE_TRADES", duration)
+        duration_recorder.record()
 
     async def clear_aggregate_trades(self):
         self.realtime_data.clear()
 
     async def add_candle_data(self):
-        start_time = time.perf_counter()
+        duration_recorder = DurationRecorder("ADD_CANDLE_DATA")
 
         # Prepare basic infos.
         current_moment = to_moment(datetime.now(timezone.utc))
@@ -740,8 +739,7 @@ class Collector:
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await spawn_blocking(sort_data_frame, cell.data)
 
-        duration = time.perf_counter() - start_time
-        add_task_duration("ADD_CANDLE_DATA", duration)
+        duration_recorder.record()
 
     async def stop_filling_candle_data(self):
         if self.download_fill_task is not None:

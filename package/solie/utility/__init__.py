@@ -61,7 +61,7 @@ from .standardize import (
 )
 from .syntax_highlighter import SyntaxHighlighter
 from .time_axis_item import TimeAxisItem
-from .timing import add_task_duration, get_task_durations, to_moment
+from .timing import DurationRecorder, get_task_durations, to_moment
 from .user_settings import (
     DataSettings,
     read_data_settings,
@@ -84,6 +84,7 @@ __all__ = [
     "Decision",
     "DownloadPreset",
     "DownloadUnitSize",
+    "DurationRecorder",
     "LogHandler",
     "ManagementSettings",
     "MarkPrice",
@@ -104,7 +105,6 @@ __all__ = [
     "VirtualPlacement",
     "VirtualPosition",
     "VirtualState",
-    "add_task_duration",
     "ball_ceil",
     "ball_floor",
     "combine_candle_data",
