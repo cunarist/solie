@@ -242,8 +242,8 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             coin_icon_urls[coin_symbol] = about_coin["image"]
             coin_ranks[coin_symbol] = about_coin["market_cap_rank"]
 
-        self.alias_to_symbol = {}
-        self.symbol_to_alias = {}
+        self.alias_to_symbol: dict[str, str] = {}
+        self.symbol_to_alias: dict[str, str] = {}
 
         for symbol in target_symbols:
             coin_symbol = symbol.removesuffix(asset_token)

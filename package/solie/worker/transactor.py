@@ -1160,13 +1160,13 @@ class Transactor:
         # ■■■■■ draw strategy lines ■■■■■
 
         # price indicators
-        df = indicators[symbol]["Price"]
+        df: pd.DataFrame = indicators[symbol]["PRICE"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         data_x += 5
         line_list = self.window.transaction_lines["price_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
-                column_name = df.columns[turn]
+                column_name = str(df.columns[turn])
                 sr = df[column_name]
                 data_y = sr.to_numpy(dtype=np.float32)
                 inside_strings = re.findall(r"\(([^)]+)", column_name)
@@ -1185,13 +1185,13 @@ class Transactor:
                 widget.clear()
 
         # trade volume indicators
-        df = indicators[symbol]["Volume"]
+        df: pd.DataFrame = indicators[symbol]["VOLUME"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         data_x += 5
         line_list = self.window.transaction_lines["volume_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
-                column_name = df.columns[turn]
+                column_name = str(df.columns[turn])
                 sr = df[column_name]
                 data_y = sr.to_numpy(dtype=np.float32)
                 inside_strings = re.findall(r"\(([^)]+)", column_name)
@@ -1210,13 +1210,13 @@ class Transactor:
                 widget.clear()
 
         # abstract indicators
-        df = indicators[symbol]["Abstract"]
+        df: pd.DataFrame = indicators[symbol]["ABSTRACT"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         data_x += 5
         line_list = self.window.transaction_lines["abstract_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
-                column_name = df.columns[turn]
+                column_name = str(df.columns[turn])
                 sr = df[column_name]
                 data_y = sr.to_numpy(dtype=np.float32)
                 inside_strings = re.findall(r"\(([^)]+)", column_name)
@@ -1414,10 +1414,14 @@ class Transactor:
         symbol_indicators = await asyncio.gather(*coroutines)
         indicators = pd.concat(symbol_indicators, axis="columns")
 
-        current_candle_data: np.record = candle_data.tail(1).to_records()[-1]
-        current_indicators: np.record = indicators.to_records()[-1]
-        decision_script = strategy.decision_script
+        data_row: np.record = candle_data.tail(1).to_records()[-1]
+        data_keys = data_row.dtype.names or ()
+        current_candle_data = {k: data_row[k] for k in data_keys}
+        data_row: np.record = indicators.to_records()[-1]
+        data_keys = data_row.dtype.names or ()
+        current_indicators = {k: data_row[k] for k in data_keys}
 
+        decision_script = strategy.decision_script
         decision_pack = await spawn_blocking(
             decide,
             target_symbols=target_symbols,

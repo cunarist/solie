@@ -606,13 +606,13 @@ class Simulator:
         # ■■■■■ draw strategy lines ■■■■■
 
         # price indicators
-        df = indicators[symbol]["Price"]
+        df: pd.DataFrame = indicators[symbol]["PRICE"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         data_x += 5
         line_list = self.window.simulation_lines["price_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
-                column_name = df.columns[turn]
+                column_name = str(df.columns[turn])
                 sr = df[column_name]
                 data_y = sr.to_numpy(dtype=np.float32)
                 inside_strings = re.findall(r"\(([^)]+)", column_name)
@@ -631,13 +631,13 @@ class Simulator:
                 widget.clear()
 
         # trade volume indicators
-        df = indicators[symbol]["Volume"]
+        df: pd.DataFrame = indicators[symbol]["VOLUME"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         data_x += 5
         line_list = self.window.simulation_lines["volume_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
-                column_name = df.columns[turn]
+                column_name = str(df.columns[turn])
                 sr = df[column_name]
                 data_y = sr.to_numpy(dtype=np.float32)
                 inside_strings = re.findall(r"\(([^)]+)", column_name)
@@ -656,13 +656,13 @@ class Simulator:
                 widget.clear()
 
         # abstract indicators
-        df = indicators[symbol]["Abstract"]
+        df: pd.DataFrame = indicators[symbol]["ABSTRACT"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         data_x += 5
         line_list = self.window.simulation_lines["abstract_indicators"]
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
-                column_name = df.columns[turn]
+                column_name = str(df.columns[turn])
                 sr = df[column_name]
                 data_y = sr.to_numpy(dtype=np.float32)
                 inside_strings = re.findall(r"\(([^)]+)", column_name)

@@ -9,7 +9,6 @@ from typing import Any, NamedTuple
 
 import numpy as np
 import pandas as pd
-import pandas_ta as ta
 from pydantic import BaseModel
 
 from .data_models import (
@@ -47,7 +46,7 @@ def make_indicators(
 
     blank_columns = itertools.product(
         target_symbols,
-        ("Price", "Volume", "Abstract"),
+        ("PRICE", "VOLUME", "ABSTRACT"),
         ("Blank",),
     )
     new_indicators: dict[tuple, pd.Series] = {}
@@ -62,9 +61,6 @@ def make_indicators(
     # ■■■■■ make individual indicators ■■■■■
 
     namespace = {
-        "ta": ta,
-        "pd": pd,
-        "np": np,
         "target_symbols": target_symbols,
         "candle_data": candle_data,
         "new_indicators": new_indicators,
@@ -98,8 +94,8 @@ class DecisionPack(BaseModel):
 def decide(
     target_symbols: list[str],
     current_moment: datetime,
-    current_candle_data: np.record,
-    current_indicators: np.record,
+    current_candle_data: dict[str, float],
+    current_indicators: dict[str, float],
     account_state: AccountState,
     scribbles: dict[Any, Any],
     decision_script: str | CodeType,
@@ -113,10 +109,6 @@ def decide(
     # ■■■■■ write decisions ■■■■■
 
     namespace = {
-        "datetime": datetime,
-        "timezone": timezone,
-        "timedelta": timedelta,
-        "math": math,
         "target_symbols": target_symbols,
         "current_moment": current_moment,
         "current_candle_data": current_candle_data,
@@ -659,8 +651,13 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
 
         # ■■■■■ make decision and place order ■■■■■
 
-        current_candle_data: np.record = candle_data_ar[cycle]
-        current_indicators: np.record = indicators_ar[cycle]
+        data_row: np.record = candle_data_ar[cycle]
+        data_keys = data_row.dtype.names or ()
+        current_candle_data = {k: data_row[k] for k in data_keys}
+        data_row: np.record = indicators_ar[cycle]
+        data_keys = data_row.dtype.names or ()
+        current_indicators = {k: data_row[k] for k in data_keys}
+
         decision_pack = decide(
             target_symbols=target_symbols,
             current_moment=current_moment,

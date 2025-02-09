@@ -42,17 +42,9 @@ Indicators script is used to create indicators used for graph display and decisi
 
 Variables provided by default are as follows. You can use these without any import statements.
 
-- `target_symbols`(`list`): The symbols being observed.
+- `target_symbols`(`list[str]`): The symbols being observed.
 - `candle_data`(`pandas.DataFrame`): Candle data. Extra 28 days of data before desired calculation range is included.
-- `new_indicators`(`dict`): An object that holds newly created indicators.
-
-!!! warning
-
-    Though these variables are still accessible in version 8, they will be removed in version 9. Use the explicit `import` statements to use these modules.
-
-    - `ta`(`module`): Python package `pandas-ta`. Used for making indicators.
-    - `pd`(`module`): Python package `pandas`.
-    - `np`(`module`): Python package `numpy`.
+- `new_indicators`(`dict[tuple[str, str, str], pandas.Series]`): An object that holds newly created indicators.
 
 ### Basic Syntax
 
@@ -87,14 +79,14 @@ Candle data exists internally in the form of a tabular `pandas.DataFrame`.
 You can extract partial `pandas.Series` data from `candle_data`.
 
 ```python
-for symbol in target_symbols:
+import pandas as pd
 
-    # Each of these is a `pandas.Series` column object
-    open_sr = candle_data[(symbol, "Open")]
-    high_sr = candle_data[(symbol, "High")]
-    low_sr = candle_data[(symbol, "Low")]
-    close_sr = candle_data[(symbol, "Close")]
-    volume_sr = candle_data[(symbol, "Volume")]
+for symbol in target_symbols:
+    open_sr: pd.Series = candle_data[(symbol, "Open")]
+    high_sr: pd.Series = candle_data[(symbol, "High")]
+    low_sr: pd.Series = candle_data[(symbol, "Low")]
+    close_sr: pd.Series = candle_data[(symbol, "Close")]
+    volume_sr: pd.Series = candle_data[(symbol, "Volume")]
 ```
 
 The `pandas.Series` object has the following form. A one-dimensional array containing values ​​over time.
@@ -125,31 +117,33 @@ The `pandas.Series` object has the following form. A one-dimensional array conta
 Solie uses the `pandas-ta` package. Creation of dozens of basic indicators is available with this, including moving average, bollinger band, double exponential moving average, triple exponential moving average, stochastic, and parabolic. For more information, check the official documentation of `pandas-ta`[🔗](https://github.com/twopirllc/pandas-ta).
 
 ```python
-for symbol in target_symbols:
+import pandas_ta as ta
 
+for symbol in target_symbols:
     close_sr = candle_data[(symbol, "Close")]
-    sma_sr = ta.sma(close_sr, 60) # Returns `pandas.Series` object
-    # 60 of 10 second candles means 600 seconds(10 minutes)
+    sma_sr: pd.Series = ta.sma(close_sr, 60)
+    # 60 candles represent 600 seconds(10 minutes)
 ```
 
 Once you have created the indicators, simply put them in a `dict` object called `new_indicators` as appropriate tuple keys. After that, multiple `pandas.Series` objects inside this object are merged into a single indicators object. After writing this and saving it, you will see the indicator in the graph view. It can also be used in strategic decisions.
 
 ```python
-for symbol in target_symbols:
+import pandas_ta as ta
 
+for symbol in target_symbols:
     close_sr = candle_data[(symbol, "Close")]
     sma_sr = ta.sma(close_sr, 60)
-    # Here, the tuple key is `(symbol, "Price", "SMA")`
-    new_indicators[(symbol, "Price", "SMA")] = sma_sr
+    # Here, the tuple key is `(symbol, "PRICE", "SMA")`
+    new_indicators[(symbol, "PRICE", "SMA")] = sma_sr
 ```
 
 ![](assets/example_011.png)
 
-The tuple key has 3 values. The first value represents a symbol and the third value would be any name you want. The second value determines which scale graph to draw on. It should be one of `Price`, `Volume`, or `Abstract`.
+The tuple key has 3 values. The first value represents a symbol and the third value would be any name you want. The second value determines which scale graph to draw on. It should be one of `PRICE`, `VOLUME`, or `ABSTRACT`.
 
-- Graph 1: `Price` indicators
-- Graph 2: `Volume` indcators
-- Graph 3: `Abstract` indicators
+- Graph 1: `PRICE` indicators
+- Graph 2: `VOLUME` indcators
+- Graph 3: `ABSTRACT` indicators
 - Graph 4: Only asset information
 
 ![](assets/example_010.png)
@@ -159,11 +153,12 @@ The tuple key has 3 values. The first value represents a symbol and the third va
 You can set the color drawn on the graph as you wish. Just put parentheses next to the name and color code it. Color codes can be chosen on a color combination site[🔗](https://htmlcolorcodes.com/).
 
 ```python
-for symbol in target_symbols:
+import pandas_ta as ta
 
+for symbol in target_symbols:
     close_sr = candle_data[(symbol, "Close")]
     sma_sr = ta.sma(close_sr, 60)
-    new_indicators[(symbol, "Price", "SMA (#649CFF)")] = sma_sr  # Blue
+    new_indicators[(symbol, "PRICE", "SMA (#649CFF)")] = sma_sr  # Blue
 ```
 
 ![](assets/example_012.png)
@@ -172,28 +167,30 @@ Up to this point, indicators generation has been completed using the `pandas.Ser
 Below is the code that creates the average of two different moving averages.
 
 ```python
-for symbol in target_symbols:
+import pandas_ta as ta
 
+for symbol in target_symbols:
     close_sr = candle_data[(symbol, "Close")]
     sma_one = ta.sma(close_sr, 60)
     sma_two = ta.sma(close_sr, 360)
 
     average_sma = (sma_one + sma_two) / 2
-    new_indicators[(symbol, "Price", "Average SMA")] = average_sma
+    new_indicators[(symbol, "PRICE", "Average SMA")] = average_sma
 ```
 
 Below is the code that creates a market overheating indicator with two different moving averages and limits the value to not exceed 0.8. In the picture, you can see that everything above 0.8 is cut off.
 
 ```python
-for symbol in target_symbols:
+import pandas_ta as ta
 
-    volume_sr = candle_data[(symbol, "Volume")]
+for symbol in target_symbols:
+    volume_sr = candle_data[(symbol, "VOLUME")]
     sma_one = ta.sma(volume_sr, 360)
     sma_two = ta.sma(volume_sr, 2160)
 
     wildness = sma_one / sma_two  # Division operation
     wildness[wildness > 0.8] = 0.8  # Set the limit
-    new_indicators[(symbol, "Abstract", "Wildness")] = wildness
+    new_indicators[(symbol, "ABSTRACT", "Wildness")] = wildness
 ```
 
 ![](assets/example_013.png)
@@ -202,10 +199,9 @@ Below is the code that simply creates an indicator that delays the closing price
 
 ```python
 for symbol in target_symbols:
-
     close_sr = candle_data[(symbol, "Close")]
     shifted_sr = close_sr.shift(60) # `pandas.Series` method
-    new_indicators[(symbol, "Price", "Shifted")] = shifted_sr
+    new_indicators[(symbol, "PRICE", "Shifted")] = shifted_sr
 ```
 
 ![](assets/example_014.png) As demonstrated, many variations are possible for indicators generation through coding.
@@ -218,27 +214,18 @@ The decision script is executed repeatedly every 10 seconds, which is the time l
 
 Variables provided by default are as follows. You can use these without any import statements.
 
-- `target_symbols`(`list`): The symbols being observed.
+- `target_symbols`(`list[str]`): The symbols being observed.
 - `current_moment`(`datetime.datetime`): The current time rounded down to the base time. For example, if the current exact time is 14:03:22.335 on January 3, 2022, then `current_moment` appears as 14:03:20 on January 3, 2022 in the 10-second interval.
 
-- `current_candle_data`(`numpy.record`): Only the most recent row is truncated from the observation data recorded up to the current time. Contains price and volume information from the market.
+- `current_candle_data`(`dict[tuple[str, str], float]`): Only the most recent row is truncated from the observation data recorded up to the current time. Contains price and volume information from the market.
 
-- `current_indicators`(`numpy.record`): Only the most recent row up to the current time is provided. It contains different indicator information depending on the indicators script.
+- `current_indicators`(`dict[tuple[str, str, str], float]`): Only the most recent row up to the current time is provided. It contains different indicator information depending on the indicators script.
 
-- `account_state`(`dict`): Contains current account status information. An object for reading. Writing something inside has no effect.
+- `account_state`(`AccountState`): Contains current account status information. An object for reading. Writing something inside has no effect.
 
-- `scribbles`(`dict`): Free writing space where you can write anything. After making a strategic decision, you can put whatever you want to remember inside this object.
+- `scribbles`(`dict[Any, Any]`): Free writing space where you can write anything. After making a strategic decision, you can put whatever you want to remember inside this object.
 
-- `decision`(`dict`): This is the core object that contains the strategic judgment.
-
-!!! warning
-
-    Though these variables are still accessible in version 8, they will be removed in version 9. Use the explicit `import` statements to use these modules.
-
-    - `datetime`(`class`): part of the Python standard library.
-    - `timezone`(`class`): part of the Python standard library.
-    - `timedelta`(`class`): part of the Python standard library.
-    - `math`(`module`): part of the Python standard library.
+- `decisions`(`dict[str, dict[OrderType, Decision]]`): This is the core object that contains the strategic judgment.
 
 ### Basic Syntax
 
@@ -252,7 +239,7 @@ close_price = current_candle_data[str(("BTCUSDT", "Close"))]
 sum_volume = current_candle_data[str(("BTCUSDT", "Volume"))]
 ```
 
-`account_state` object provided by the API has a structure like below.
+`AccountState` object provided by the API has a structure like below.
 
 ```python
 class OrderType(Enum):
@@ -303,11 +290,11 @@ scribbles["did_i_do_something"] = True
 did_i_do_it_before = scribbles.get("did_i_do_something", False)
 ```
 
-You can check the indicator's current value with `str`ized `tuple` key.
+You can check the indicator's current value with stringified tuple key.
 
 ```python
 # Creating an indicator named SMA in the Price category with the indicators script
-sma_value = current_indicators[str(("BTCUSDT", "Price", "SMA"))]
+sma_value = current_indicators[str(("BTCUSDT", "PRICE", "SMA"))]
 ```
 
 ### Decision Types
@@ -398,7 +385,7 @@ Order type `LATER_UP_SELL` puts an order to buy sell when the price goes up to t
 from solie.utility import Decision, OrderType
 current_price = current_candle_data[str((symbol, "Close"))]
 wallet_balance = account_state.wallet_balance
-decisions[symbol][OrderType.LATER_UP_SELL] = (
+decisions[symbol][OrderType.LATER_UP_SELL] = Decision(
     boundary=current_price * 1.05,
     margin=wallet_balance * 0.08,
 )

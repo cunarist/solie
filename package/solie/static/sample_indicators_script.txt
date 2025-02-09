@@ -14,16 +14,16 @@ for symbol in target_symbols:
     # Price scale indicators
     price_sma_one = ta.sma(close_sr, short_period)
     price_sma_two = ta.sma(close_sr, long_period)
-    new_indicators[(symbol, "Price", "SMA One (#00BBFF)")] = price_sma_one
-    new_indicators[(symbol, "Price", "SMA Two (#FF6666)")] = price_sma_two
+    new_indicators[(symbol, "PRICE", "SMA One (#00BBFF)")] = price_sma_one
+    new_indicators[(symbol, "PRICE", "SMA Two (#FF6666)")] = price_sma_two
 
     # Volume scale indicators
     volume_sma_one = ta.sma(volume_sr, short_period * 2)
     volume_sma_two = ta.sma(volume_sr, long_period * 2)
-    new_indicators[(symbol, "Volume", "SMA One")] = volume_sma_one
-    new_indicators[(symbol, "Volume", "SMA Two")] = volume_sma_two
+    new_indicators[(symbol, "VOLUME", "SMA One")] = volume_sma_one
+    new_indicators[(symbol, "VOLUME", "SMA Two")] = volume_sma_two
 
     # Abstract scale indicators
     wildness = volume_sma_one / volume_sma_two
     wildness[wildness > 1.5] = 1.5
-    new_indicators[(symbol, "Abstract", "Wildness")] = wildness
+    new_indicators[(symbol, "ABSTRACT", "Wildness")] = wildness

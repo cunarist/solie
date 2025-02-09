@@ -9,9 +9,9 @@ for symbol in target_symbols:
 
     current_price = current_candle_data[str((symbol, "Close"))]
 
-    indicator_key = str((symbol, "Price", "SMA One (#00BBFF)"))
+    indicator_key = str((symbol, "PRICE", "SMA One (#00BBFF)"))
     price_sma_one = current_indicators[indicator_key]
-    indicator_key = str((symbol, "Price", "SMA Two (#FF6666)"))
+    indicator_key = str((symbol, "PRICE", "SMA Two (#FF6666)"))
     price_sma_two = current_indicators[indicator_key]
 
     position = account_state.positions[symbol]
