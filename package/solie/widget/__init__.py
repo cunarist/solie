@@ -1,6 +1,7 @@
 from .ask_popup import AskPopup, ask
 from .brand_label import BrandLabel
 from .gauge import Gauge
+from .graph_lines import GraphLines
 from .horizontal_divider import HorizontalDivider
 from .log_list import LogList
 from .overlay_popup import BaseOverlay, OverlayPopup, overlay
@@ -16,6 +17,7 @@ __all__ = [
     "BaseOverlay",
     "BrandLabel",
     "Gauge",
+    "GraphLines",
     "HorizontalDivider",
     "LogList",
     "OverlayPopup",

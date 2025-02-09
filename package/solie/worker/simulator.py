@@ -96,9 +96,9 @@ class Simulator:
         # ■■■■■ connect UI events ■■■■■
 
         job = self.display_range_information
-        outsource(window.plot_widget_2.sigRangeChanged, job)
+        outsource(window.simulation_graph.price_widget.sigRangeChanged, job)
         job = self.set_minimum_view_range
-        outsource(window.plot_widget_2.sigRangeChanged, job)
+        outsource(window.simulation_graph.price_widget.sigRangeChanged, job)
         job = self.update_calculation_settings
         outsource(window.comboBox.currentIndexChanged, job)
         job = self.calculate
@@ -241,7 +241,7 @@ class Simulator:
         ]
         data_y = [d.mark_price for d in mark_prices]
         data_x = [d.timestamp / 10**3 for d in mark_prices]
-        widget = self.window.simulation_lines["mark_price"][0]
+        widget = self.window.simulation_graph.mark_price
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -253,7 +253,7 @@ class Simulator:
 
         data_x = timestamps.copy()
         data_y = [t.price for t in filtered]
-        widget = self.window.simulation_lines["last_price"][0]
+        widget = self.window.simulation_graph.last_price
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -271,7 +271,7 @@ class Simulator:
         nan_ar[:] = np.nan
         data_x = np.repeat(index_ar, 3)
         data_y = np.stack([nan_ar, zero_ar, value_ar], axis=1).reshape(-1)
-        widget = self.window.simulation_lines["last_volume"][0]
+        widget = self.window.simulation_graph.last_volume
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -284,14 +284,14 @@ class Simulator:
         data_x = [d.timestamp / 10**3 for d in book_tickers]
 
         data_y = [d.best_bid_price for d in book_tickers]
-        widget = self.window.simulation_lines["book_tickers"][0]
+        widget = self.window.simulation_graph.book_tickers.line_a
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
         await asyncio.sleep(0)
 
         data_y = [d.best_ask_price for d in book_tickers]
-        widget = self.window.simulation_lines["book_tickers"][1]
+        widget = self.window.simulation_graph.book_tickers.line_b
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -309,7 +309,7 @@ class Simulator:
         else:
             data_x = []
             data_y = []
-        widget = self.window.simulation_lines["entry_price"][0]
+        widget = self.window.simulation_graph.entry_price
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -436,7 +436,7 @@ class Simulator:
             ],
             axis=1,
         ).reshape(-1)
-        widget = self.window.simulation_lines["price_rise"][0]
+        widget = self.window.simulation_graph.price_rise
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -470,7 +470,7 @@ class Simulator:
             ],
             axis=1,
         ).reshape(-1)
-        widget = self.window.simulation_lines["price_fall"][0]
+        widget = self.window.simulation_graph.price_fall
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -504,7 +504,7 @@ class Simulator:
             ],
             axis=1,
         ).reshape(-1)
-        widget = self.window.simulation_lines["price_stay"][0]
+        widget = self.window.simulation_graph.price_stay
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -514,7 +514,7 @@ class Simulator:
         sr = candle_data[(symbol, "HIGH")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.window.simulation_lines["wobbles"][0]
+        widget = self.window.simulation_graph.wobbles.line_a
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -523,7 +523,7 @@ class Simulator:
         sr = candle_data[(symbol, "LOW")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.window.simulation_lines["wobbles"][1]
+        widget = self.window.simulation_graph.wobbles.line_b
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -534,7 +534,7 @@ class Simulator:
         sr = sr.fillna(value=0)
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.window.simulation_lines["volume"][0]
+        widget = self.window.simulation_graph.volume
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -543,7 +543,7 @@ class Simulator:
         # asset
         data_x = asset_record["RESULT_ASSET"].index.to_numpy(dtype=np.int64) / 10**9
         data_y = asset_record["RESULT_ASSET"].to_numpy(dtype=np.float32)
-        widget = self.window.simulation_lines["asset"][0]
+        widget = self.window.simulation_graph.asset
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -557,7 +557,7 @@ class Simulator:
         sr = sr * (1 + unrealized_changes_sr)
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9 + 5
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.window.simulation_lines["asset_with_unrealized_profit"][0]
+        widget = self.window.simulation_graph.asset_with_unrealized_profit
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -569,7 +569,7 @@ class Simulator:
         sr = df["FILL_PRICE"]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.window.simulation_lines["sell"][0]
+        widget = self.window.simulation_graph.sell
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -580,7 +580,7 @@ class Simulator:
         sr = df["FILL_PRICE"]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.window.simulation_lines["buy"][0]
+        widget = self.window.simulation_graph.buy
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
@@ -609,7 +609,7 @@ class Simulator:
         df: pd.DataFrame = indicators[symbol]["PRICE"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         data_x += 5
-        line_list = self.window.simulation_lines["price_indicators"]
+        line_list = self.window.simulation_graph.price_indicators
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
                 column_name = str(df.columns[turn])
@@ -634,7 +634,7 @@ class Simulator:
         df: pd.DataFrame = indicators[symbol]["VOLUME"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         data_x += 5
-        line_list = self.window.simulation_lines["volume_indicators"]
+        line_list = self.window.simulation_graph.volume_indicators
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
                 column_name = str(df.columns[turn])
@@ -659,7 +659,7 @@ class Simulator:
         df: pd.DataFrame = indicators[symbol]["ABSTRACT"]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         data_x += 5
-        line_list = self.window.simulation_lines["abstract_indicators"]
+        line_list = self.window.simulation_graph.abstract_indicators
         for turn, widget in enumerate(line_list):
             if turn < len(df.columns):
                 column_name = str(df.columns[turn])
@@ -715,15 +715,16 @@ class Simulator:
         task_id = make_stop_flag("display_simulation_range_information")
 
         symbol = self.viewing_symbol
+        price_widget = self.window.simulation_graph.price_widget
 
-        range_start_timestamp = self.window.plot_widget_2.getAxis("bottom").range[0]
+        range_start_timestamp = price_widget.getAxis("bottom").range[0]
         range_start_timestamp = max(range_start_timestamp, 0.0)
         range_start = datetime.fromtimestamp(range_start_timestamp, tz=timezone.utc)
 
         if find_stop_flag("display_simulation_range_information", task_id):
             return
 
-        range_end_timestamp = self.window.plot_widget_2.getAxis("bottom").range[1]
+        range_end_timestamp = price_widget.getAxis("bottom").range[1]
         if range_end_timestamp < 0:
             # case when pyqtgraph passed negative value because it's too big
             range_end_timestamp = 9223339636
@@ -786,7 +787,7 @@ class Simulator:
         if find_stop_flag("display_simulation_range_information", task_id):
             return
 
-        view_range = self.window.plot_widget_2.getAxis("left").range
+        view_range = price_widget.getAxis("left").range
         range_down = view_range[0]
         range_up = view_range[1]
         price_range_height = (1 - range_down / range_up) * 100
@@ -809,10 +810,10 @@ class Simulator:
         self.window.label_13.setText(text)
 
     async def set_minimum_view_range(self):
-        widget = self.window.plot_widget_2
+        widget = self.window.simulation_graph.price_widget
         range_down = widget.getAxis("left").range[0]
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
-        widget = self.window.plot_widget_3
+        widget = self.window.simulation_graph.asset_widget
         range_down = widget.getAxis("left").range[0]
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
 
@@ -934,7 +935,8 @@ class Simulator:
             previous_account_state = blank_account_state.model_copy(deep=True)
             previous_virtual_state = blank_virtual_state.model_copy(deep=True)
 
-            view_range = self.window.plot_widget_2.getAxis("bottom").range
+            graph_widget = self.window.simulation_graph.price_widget
+            view_range = graph_widget.getAxis("bottom").range
             view_start = datetime.fromtimestamp(view_range[0], tz=timezone.utc)
             view_end = datetime.fromtimestamp(view_range[1], tz=timezone.utc)
 
@@ -1300,7 +1302,7 @@ class Simulator:
             tzinfo=timezone.utc,
         )
         range_end = range_end.timestamp()
-        widget = self.window.plot_widget_2
+        widget = self.window.simulation_graph.price_widget
         widget.setXRange(range_start, range_end)
 
     async def delete_calculation_data(self):
@@ -1409,10 +1411,12 @@ class Simulator:
             return
 
     async def match_graph_range(self):
-        range_start = self.window.plot_widget.getAxis("bottom").range[0]
-        range_end = self.window.plot_widget.getAxis("bottom").range[1]
-        widget = self.window.plot_widget_2
-        widget.setXRange(range_start, range_end, padding=0)  # type:ignore
+        graph_from = self.window.transaction_graph.price_widget
+        graph_to = self.window.simulation_graph.price_widget
+        graph_range = graph_from.getAxis("bottom").range
+        range_start = graph_range[0]
+        range_end = graph_range[1]
+        graph_to.setXRange(range_start, range_end, padding=0)  # type:ignore
 
     async def stop_calculation(self):
         make_stop_flag("calculate_simulation")
