@@ -1,5 +1,4 @@
 import asyncio
-import json
 import logging
 import math
 import pickle
@@ -22,7 +21,11 @@ from solie.utility import (
     ApiRequestError,
     ApiStreamer,
     BookTicker,
+    Decision,
     MarkPrice,
+    OpenOrder,
+    OrderType,
+    PositionDirection,
     RWLock,
     TransactionSettings,
     add_task_duration,
@@ -370,7 +373,7 @@ class Transactor:
         event_timestamp = int(received["E"]) / 1000
         event_time = datetime.fromtimestamp(event_timestamp, tz=timezone.utc)
 
-        self.account_state["observed_until"] = event_time
+        self.account_state.observed_until = event_time
 
         # ■■■■■ do the task according to event type ■■■■■
 
@@ -389,7 +392,7 @@ class Transactor:
             about_assets_keyed = list_to_dict(about_assets, "a")
             about_asset = about_assets_keyed[asset_token]
             wallet_balance = float(about_asset["wb"])
-            self.account_state["wallet_balance"] = wallet_balance
+            self.account_state.wallet_balance = wallet_balance
 
             about_positions_keyed = list_to_dict(about_positions, "ps")
             if "BOTH" in about_positions_keyed:
@@ -406,16 +409,17 @@ class Transactor:
                 leverage = self.leverages[symbol]
                 margin = abs(amount) * entry_price / leverage
                 if amount < 0.0:
-                    direction = "short"
+                    direction = PositionDirection.SHORT
                 elif amount > 0.0:
-                    direction = "long"
+                    direction = PositionDirection.LONG
                 else:
-                    direction = "none"
+                    direction = PositionDirection.LONG
 
-                self.account_state["positions"][symbol]["margin"] = margin
-                self.account_state["positions"][symbol]["direction"] = direction
-                self.account_state["positions"][symbol]["entry_price"] = entry_price
-                self.account_state["positions"][symbol]["update_time"] = event_time
+                position = self.account_state.positions[symbol]
+                position.margin = margin
+                position.direction = direction
+                position.entry_price = entry_price
+                position.update_time = event_time
 
         elif event_type == "ORDER_TRADE_UPDATE":
             about_update = received["o"]
@@ -446,34 +450,34 @@ class Transactor:
 
             # from remembered
             leverage = self.leverages[symbol]
-            wallet_balance = self.account_state["wallet_balance"]
+            wallet_balance = self.account_state.wallet_balance
 
             # when the order is removed
             if order_status not in ("NEW", "PARTIALLY_FILLED"):
-                if order_id in self.account_state["open_orders"][symbol].keys():
-                    self.account_state["open_orders"][symbol].pop(order_id)
+                if order_id in self.account_state.open_orders[symbol].keys():
+                    self.account_state.open_orders[symbol].pop(order_id)
 
             # when the order is left or created
             if order_status in ("NEW", "PARTIALLY_FILLED"):
                 if order_type == "STOP_MARKET":
                     if close_position:
                         if side == "BUY":
-                            command_name = "later_up_close"
+                            order_type = OrderType.LATER_UP_CLOSE
                             boundary = stop_price
                             left_margin = None
                         elif side == "SELL":
-                            command_name = "later_down_close"
+                            order_type = OrderType.LATER_DOWN_CLOSE
                             boundary = stop_price
                             left_margin = None
                         else:
                             raise ValueError("Cannot order with this side")
                     elif side == "BUY":
-                        command_name = "later_up_buy"
+                        order_type = OrderType.LATER_UP_BUY
                         boundary = stop_price
                         left_quantity = origianal_quantity
                         left_margin = left_quantity * boundary / leverage
                     elif side == "SELL":
-                        command_name = "later_down_sell"
+                        order_type = OrderType.LATER_DOWN_SELL
                         boundary = stop_price
                         left_quantity = origianal_quantity
                         left_margin = left_quantity * boundary / leverage
@@ -482,22 +486,22 @@ class Transactor:
                 elif order_type == "TAKE_PROFIT_MARKET":
                     if close_position:
                         if side == "BUY":
-                            command_name = "later_down_close"
+                            order_type = OrderType.LATER_DOWN_CLOSE
                             boundary = stop_price
                             left_margin = None
                         elif side == "SELL":
-                            command_name = "later_up_close"
+                            order_type = OrderType.LATER_UP_CLOSE
                             boundary = stop_price
                             left_margin = None
                         else:
                             raise ValueError("Cannot order with this side")
                     elif side == "BUY":
-                        command_name = "later_down_buy"
+                        order_type = OrderType.LATER_DOWN_BUY
                         boundary = stop_price
                         left_quantity = origianal_quantity
                         left_margin = left_quantity * boundary / leverage
                     elif side == "SELL":
-                        command_name = "later_up_sell"
+                        order_type = OrderType.LATER_UP_SELL
                         boundary = stop_price
                         left_quantity = origianal_quantity
                         left_margin = left_quantity * boundary / leverage
@@ -505,28 +509,28 @@ class Transactor:
                         raise ValueError("Cannot order with this side")
                 elif order_type == "LIMIT":
                     if side == "BUY":
-                        command_name = "book_buy"
+                        order_type = OrderType.BOOK_BUY
                         boundary = price
                         left_quantity = origianal_quantity - executed_quantity
                         left_margin = left_quantity * boundary / leverage
                     elif side == "SELL":
-                        command_name = "book_sell"
+                        order_type = OrderType.BOOK_SELL
                         boundary = price
                         left_quantity = origianal_quantity - executed_quantity
                         left_margin = left_quantity * boundary / leverage
                     else:
                         raise ValueError("Cannot order with this side")
                 else:
-                    command_name = "other"
+                    order_type = OrderType.OTHER
                     boundary = max(price, stop_price)
                     left_quantity = origianal_quantity - executed_quantity
                     left_margin = left_quantity * boundary / leverage
 
-                self.account_state["open_orders"][symbol][order_id] = {
-                    "command_name": command_name,
-                    "boundary": boundary,
-                    "left_margin": left_margin,
-                }
+                self.account_state.open_orders[symbol][order_id] = OpenOrder(
+                    order_type=order_type,
+                    boundary=boundary,
+                    left_margin=left_margin,
+                )
 
             # when the order is filled
             if execution_type == "TRADE":
@@ -862,9 +866,9 @@ class Transactor:
         await asyncio.sleep(0)
 
         # entry price
-        entry_price = self.account_state["positions"][symbol]["entry_price"]
-        first_moment = self.account_state["observed_until"] - timedelta(hours=12)
-        last_moment = self.account_state["observed_until"] + timedelta(hours=12)
+        entry_price = self.account_state.positions[symbol].entry_price
+        first_moment = self.account_state.observed_until - timedelta(hours=12)
+        last_moment = self.account_state.observed_until + timedelta(hours=12)
         if entry_price != 0:
             data_x = np.linspace(
                 first_moment.timestamp(), last_moment.timestamp(), num=1000
@@ -923,8 +927,8 @@ class Transactor:
             candle_data = candle_data.reindex(new_index)
 
         if last_asset is not None:
-            observed_until = self.account_state["observed_until"]
-            if len(asset_record) == 0 or asset_record.index[-1] < observed_until:
+            observed_until = self.account_state.observed_until
+            if len(asset_record) == 0 or asset_record.index[-1] < observed_until:  # type:ignore
                 if slice_from < observed_until:
                     asset_record.loc[observed_until, "Cause"] = "other"
                     asset_record.loc[observed_until, "Result Asset"] = last_asset
@@ -1253,7 +1257,7 @@ class Transactor:
     async def display_status_information(self):
         # ■■■■■ Display important things first ■■■■■
 
-        time_passed = datetime.now(timezone.utc) - self.account_state["observed_until"]
+        time_passed = datetime.now(timezone.utc) - self.account_state.observed_until
         if time_passed > timedelta(seconds=30):
             text = (
                 "Couldn't get the latest info on your Binance account due to a problem"
@@ -1282,18 +1286,18 @@ class Transactor:
 
         # ■■■■■ display assets and positions information ■■■■■
 
-        position = self.account_state["positions"][self.viewing_symbol]
-        if position["direction"] == "long":
+        position = self.account_state.positions[self.viewing_symbol]
+        if position.direction == PositionDirection.LONG:
             direction_text = "long"
-        elif position["direction"] == "short":
+        elif position.direction == PositionDirection.SHORT:
             direction_text = "short"
         else:
             direction_text = "none"
         margin_sum = 0
-        for each_position in self.account_state["positions"].values():
-            margin_sum += each_position["margin"]
+        for each_position in self.account_state.positions.values():
+            margin_sum += each_position.margin
 
-        open_orders = self.account_state["open_orders"]
+        open_orders = self.account_state.open_orders
         open_orders_count = len(open_orders[self.viewing_symbol])
         all_open_orders_count = 0
         for symbol_open_orders in open_orders.values():
@@ -1301,15 +1305,15 @@ class Transactor:
 
         text = ""
         text += "Total asset"
-        text += f" ${self.account_state['wallet_balance']:.4f}"
+        text += f" ${self.account_state.wallet_balance:.4f}"
         text += "  ⦁  "
-        text += f"Investment ${position['margin']:.4f}"
+        text += f"Investment ${position.margin:.4f}"
         text += f"({margin_sum:.4f})"
         text += "  ⦁  "
         text += f"Direction {direction_text}"
         text += "  ⦁  "
         text += "Entry price"
-        text += f" ${position['entry_price']:.4f}"
+        text += f" ${position.entry_price:.4f}"
         text += "  ⦁  "
         text += "Open orders"
         text += f" {open_orders_count}"
@@ -1413,7 +1417,7 @@ class Transactor:
         current_indicators: np.record = indicators.to_records()[-1]
         decision_script = strategy.decision_script
 
-        decision, scribbles = await spawn_blocking(
+        decisions, scribbles = await spawn_blocking(
             decide,
             target_symbols=target_symbols,
             current_moment=current_moment,
@@ -1433,7 +1437,7 @@ class Transactor:
 
         # ■■■■■ Place order ■■■■■
 
-        await self.place_orders(decision)
+        await self.place_orders(decisions)
 
     async def display_day_range(self):
         range_start = (datetime.now(timezone.utc) - timedelta(hours=24)).timestamp()
@@ -1591,14 +1595,14 @@ class Transactor:
         # ■■■■■ Update account state ■■■■■
 
         # observed until
-        self.account_state["observed_until"] = current_moment
+        self.account_state.observed_until = current_moment
 
         # wallet_balance
         about_assets = about_account["assets"]
         about_assets_keyed = list_to_dict(about_assets, "asset")
         about_asset = about_assets_keyed[asset_token]
         wallet_balance = float(about_asset["walletBalance"])
-        self.account_state["wallet_balance"] = wallet_balance
+        self.account_state.wallet_balance = wallet_balance
 
         about_positions = about_account["positions"]
         about_positions_keyed = list_to_dict(about_positions, "symbol")
@@ -1607,12 +1611,12 @@ class Transactor:
         for symbol in target_symbols:
             about_position = about_positions_keyed[symbol]
 
-            if float(about_position["notional"]) > 0:
-                direction = "long"
-            elif float(about_position["notional"]) < 0:
-                direction = "short"
+            if float(about_position["notional"]) > 0.0:
+                direction = PositionDirection.LONG
+            elif float(about_position["notional"]) < 0.0:
+                direction = PositionDirection.SHORT
             else:
-                direction = "none"
+                direction = PositionDirection.NONE
 
             entry_price = float(about_position["entryPrice"])
             update_time = int(float(about_position["updateTime"]) / 1000)
@@ -1621,13 +1625,14 @@ class Transactor:
             amount = float(about_position["positionAmt"])
             margin = abs(amount) * entry_price / leverage
 
-            self.account_state["positions"][symbol]["margin"] = margin
-            self.account_state["positions"][symbol]["direction"] = direction
-            self.account_state["positions"][symbol]["entry_price"] = entry_price
-            self.account_state["positions"][symbol]["update_time"] = update_time
+            position = self.account_state.positions[symbol]
+            position.margin = margin
+            position.direction = direction
+            position.entry_price = entry_price
+            position.update_time = update_time
 
         # open orders
-        open_orders = {}
+        open_orders: dict[str, dict[int, OpenOrder]] = {}
         for symbol in target_symbols:
             open_orders[symbol] = {}
 
@@ -1650,22 +1655,22 @@ class Transactor:
                 if order_type == "STOP_MARKET":
                     if close_position:
                         if side == "BUY":
-                            command_name = "later_up_close"
+                            order_type = OrderType.LATER_UP_CLOSE
                             boundary = stop_price
                             left_margin = None
                         elif side == "SELL":
-                            command_name = "later_down_close"
+                            order_type = OrderType.LATER_DOWN_CLOSE
                             boundary = stop_price
                             left_margin = None
                         else:
                             raise ValueError("Cannot order with this side")
                     elif side == "BUY":
-                        command_name = "later_up_buy"
+                        order_type = OrderType.LATER_UP_BUY
                         boundary = stop_price
                         left_quantity = origianal_quantity
                         left_margin = left_quantity * boundary / leverage
                     elif side == "SELL":
-                        command_name = "later_down_sell"
+                        order_type = OrderType.LATER_DOWN_SELL
                         boundary = stop_price
                         left_quantity = origianal_quantity
                         left_margin = left_quantity * boundary / leverage
@@ -1674,22 +1679,22 @@ class Transactor:
                 elif order_type == "TAKE_PROFIT_MARKET":
                     if close_position:
                         if side == "BUY":
-                            command_name = "later_down_close"
+                            order_type = OrderType.LATER_DOWN_CLOSE
                             boundary = stop_price
                             left_margin = None
                         elif side == "SELL":
-                            command_name = "later_up_close"
+                            order_type = OrderType.LATER_UP_CLOSE
                             boundary = stop_price
                             left_margin = None
                         else:
                             raise ValueError("Cannot order with this side")
                     elif side == "BUY":
-                        command_name = "later_down_buy"
+                        order_type = OrderType.LATER_DOWN_BUY
                         boundary = stop_price
                         left_quantity = origianal_quantity
                         left_margin = left_quantity * boundary / leverage
                     elif side == "SELL":
-                        command_name = "later_up_sell"
+                        order_type = OrderType.LATER_UP_SELL
                         boundary = stop_price
                         left_quantity = origianal_quantity
                         left_margin = left_quantity * boundary / leverage
@@ -1697,30 +1702,30 @@ class Transactor:
                         raise ValueError("Cannot order with this side")
                 elif order_type == "LIMIT":
                     if side == "BUY":
-                        command_name = "book_buy"
+                        order_type = OrderType.BOOK_BUY
                         boundary = price
                         left_quantity = origianal_quantity - executed_quantity
                         left_margin = left_quantity * boundary / leverage
                     elif side == "SELL":
-                        command_name = "book_sell"
+                        order_type = OrderType.BOOK_SELL
                         boundary = price
                         left_quantity = origianal_quantity - executed_quantity
                         left_margin = left_quantity * boundary / leverage
                     else:
                         raise ValueError("Cannot order with this side")
                 else:
-                    command_name = "other"
+                    order_type = OrderType.OTHER
                     boundary = max(price, stop_price)
                     left_quantity = origianal_quantity - executed_quantity
                     left_margin = left_quantity * boundary / leverage
 
-                open_orders[symbol][order_id] = {
-                    "command_name": command_name,
-                    "boundary": boundary,
-                    "left_margin": left_margin,
-                }
+                open_orders[symbol][order_id] = OpenOrder(
+                    order_type=order_type,
+                    boundary=boundary,
+                    left_margin=left_margin,
+                )
 
-        self.account_state["open_orders"] = open_orders
+        self.account_state.open_orders = open_orders
 
         # ■■■■■ Update hidden state ■■■■■
 
@@ -1816,12 +1821,8 @@ class Transactor:
                 if isolated:
                     # close position if exists
                     if notional != 0:
-                        decision = {
-                            symbol: {
-                                "now_close": {},
-                            },
-                        }
-                        await self.place_orders(decision)
+                        decisions = {symbol: {OrderType.NOW_CLOSE: Decision()}}
+                        await self.place_orders(decisions)
 
                     # change to crossed margin mode
                     timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
@@ -1890,7 +1891,7 @@ class Transactor:
                 is_satisfied = False
         self.is_key_restrictions_satisfied = is_satisfied
 
-    async def place_orders(self, decision: dict):
+    async def place_orders(self, decisions: dict[str, dict[OrderType, Decision]]):
         target_symbols = self.window.data_settings.target_symbols
         current_timestamp = to_moment(datetime.now(timezone.utc)).timestamp() * 1000
 
@@ -1906,19 +1907,6 @@ class Transactor:
                     raise ValueError("Recent price is not available for placing orders")
                 current_prices[symbol] = aggregate_trade.price
                 break
-
-        # cancel_all
-        # now_close
-        # now_buy
-        # now_sell
-        # later_up_close
-        # later_down_close
-        # later_up_buy
-        # later_down_buy
-        # later_up_sell
-        # later_down_sell
-        # book_buy
-        # book_sell
 
         # ■■■■■ Prepare closure functions ■■■■■
 
@@ -1954,10 +1942,10 @@ class Transactor:
         cancel_orders = []
 
         for symbol in target_symbols:
-            if symbol not in decision:
+            if symbol not in decisions:
                 continue
 
-            if "cancel_all" in decision[symbol]:
+            if OrderType.CANCEL_ALL in decisions[symbol]:
                 cancel_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
@@ -1973,7 +1961,7 @@ class Transactor:
         now_orders = []
 
         for symbol in target_symbols:
-            if symbol not in decision:
+            if symbol not in decisions:
                 continue
 
             current_price = current_prices[symbol]
@@ -1981,13 +1969,14 @@ class Transactor:
             maximum_quantity = self.maximum_quantities[symbol]
             minimum_notional = self.minimum_notionals[symbol]
             quantity_precision = self.quantity_precisions[symbol]
-            current_direction = self.account_state["positions"][symbol]["direction"]
+            current_direction = self.account_state.positions[symbol].direction
 
-            if "now_close" in decision[symbol]:
-                command = decision[symbol]["now_close"]
+            if OrderType.NOW_CLOSE in decisions[symbol]:
                 quantity = maximum_quantity
-                if current_direction in ("long", "short"):
-                    order_side = "SELL" if current_direction == "long" else "BUY"
+                if current_direction != PositionDirection.NONE:
+                    order_side = (
+                        "SELL" if current_direction == PositionDirection.LONG else "BUY"
+                    )
                     new_order = {
                         "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                         "symbol": symbol,
@@ -2002,9 +1991,9 @@ class Transactor:
                     text = "Cannot close position when there isn't any"
                     logger.warning(text)
 
-            if "now_buy" in decision[symbol]:
-                command = decision[symbol]["now_buy"]
-                notional = max(minimum_notional, float(command["margin"]) * leverage)
+            if OrderType.NOW_BUY in decisions[symbol]:
+                decision = decisions[symbol][OrderType.NOW_BUY]
+                notional = max(minimum_notional, float(decision.margin) * leverage)
                 quantity = min(maximum_quantity, notional / current_price)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2016,9 +2005,9 @@ class Transactor:
                 }
                 now_orders.append(new_order)
 
-            if "now_sell" in decision[symbol]:
-                command = decision[symbol]["now_sell"]
-                notional = max(minimum_notional, float(command["margin"]) * leverage)
+            if OrderType.NOW_SELL in decisions[symbol]:
+                decision = decisions[symbol][OrderType.NOW_SELL]
+                notional = max(minimum_notional, float(decision.margin) * leverage)
                 quantity = min(maximum_quantity, notional / current_price)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2039,7 +2028,7 @@ class Transactor:
         book_orders = []
 
         for symbol in target_symbols:
-            if symbol not in decision:
+            if symbol not in decisions:
                 continue
 
             leverage = self.leverages[symbol]
@@ -2048,10 +2037,10 @@ class Transactor:
             price_precision = self.price_precisions[symbol]
             quantity_precision = self.quantity_precisions[symbol]
 
-            if "book_buy" in decision[symbol]:
-                command = decision[symbol]["book_buy"]
-                notional = max(minimum_notional, float(command["margin"]) * leverage)
-                boundary = float(command["boundary"])
+            if OrderType.BOOK_BUY in decisions[symbol]:
+                decision = decisions[symbol][OrderType.BOOK_BUY]
+                notional = max(minimum_notional, float(decision.margin) * leverage)
+                boundary = float(decision.boundary)
                 quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2064,10 +2053,10 @@ class Transactor:
                 }
                 book_orders.append(new_order)
 
-            if "book_sell" in decision[symbol]:
-                command = decision[symbol]["book_sell"]
-                notional = max(minimum_notional, float(command["margin"]) * leverage)
-                boundary = float(command["boundary"])
+            if OrderType.BOOK_SELL in decisions[symbol]:
+                decision = decisions[symbol][OrderType.BOOK_SELL]
+                notional = max(minimum_notional, float(decision.margin) * leverage)
+                boundary = float(decision.boundary)
                 quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2089,7 +2078,7 @@ class Transactor:
         later_orders = []
 
         for symbol in target_symbols:
-            if symbol not in decision:
+            if symbol not in decisions:
                 continue
 
             leverage = self.leverages[symbol]
@@ -2097,29 +2086,29 @@ class Transactor:
             minimum_notional = self.minimum_notionals[symbol]
             price_precision = self.price_precisions[symbol]
             quantity_precision = self.quantity_precisions[symbol]
-            current_direction = self.account_state["positions"][symbol]["direction"]
+            current_direction = self.account_state.positions[symbol].direction
 
             # Even if there's no open position analyzed yet
             # due to user data stream from Binance being slow,
             # it's possible to assume that a position would have already been created
             # if there was a `now_buy` or `now_sell` order.
-            if current_direction == "none":
-                if "now_buy" in decision[symbol]:
-                    current_direction = "long"
-                elif "now_sell" in decision[symbol]:
-                    current_direction = "short"
+            if current_direction == PositionDirection.NONE:
+                if OrderType.NOW_BUY in decisions[symbol]:
+                    current_direction = PositionDirection.LONG
+                elif OrderType.NOW_SELL in decisions[symbol]:
+                    current_direction = PositionDirection.SHORT
 
             # Even if there's open position analyzed,
             # it's possible to assume that a position would have already been closed
             # if there was a `now_close` order.
-            if current_direction in ("long", "short"):
-                if "now_close" in decision[symbol]:
-                    current_direction = "none"
+            if current_direction != PositionDirection.NONE:
+                if OrderType.NOW_CLOSE in decisions[symbol]:
+                    current_direction = PositionDirection.NONE
 
-            if "later_up_close" in decision[symbol]:
-                command = decision[symbol]["later_up_close"]
-                if current_direction in ("long", "short"):
-                    if current_direction == "long":
+            if OrderType.LATER_UP_CLOSE in decisions[symbol]:
+                decision = decisions[symbol][OrderType.LATER_UP_CLOSE]
+                if current_direction != PositionDirection.NONE:
+                    if current_direction == PositionDirection.LONG:
                         order_side = "SELL"
                         order_type = "TAKE_PROFIT_MARKET"
                     else:
@@ -2130,7 +2119,7 @@ class Transactor:
                         "symbol": symbol,
                         "type": order_type,
                         "side": order_side,
-                        "stopPrice": round(float(command["boundary"]), price_precision),
+                        "stopPrice": round(float(decision.boundary), price_precision),
                         "closePosition": True,
                     }
                     later_orders.append(new_order)
@@ -2138,10 +2127,10 @@ class Transactor:
                     text = "Cannot place `later_up_close` with no open position"
                     logger.warning(text)
 
-            if "later_down_close" in decision[symbol]:
-                command = decision[symbol]["later_down_close"]
-                if current_direction in ("long", "short"):
-                    if current_direction == "long":
+            if OrderType.LATER_DOWN_CLOSE in decisions[symbol]:
+                decision = decisions[symbol][OrderType.LATER_DOWN_CLOSE]
+                if current_direction != PositionDirection.NONE:
+                    if current_direction == PositionDirection.LONG:
                         order_side = "SELL"
                         order_type = "STOP_MARKET"
                     else:
@@ -2152,7 +2141,7 @@ class Transactor:
                         "symbol": symbol,
                         "type": order_type,
                         "side": order_side,
-                        "stopPrice": round(float(command["boundary"]), price_precision),
+                        "stopPrice": round(float(decision.boundary), price_precision),
                         "closePosition": True,
                     }
                     later_orders.append(new_order)
@@ -2160,10 +2149,10 @@ class Transactor:
                     text = "Cannot place `later_down_close` with no open position"
                     logger.warning(text)
 
-            if "later_up_buy" in decision[symbol]:
-                command = decision[symbol]["later_up_buy"]
-                notional = max(minimum_notional, float(command["margin"]) * leverage)
-                boundary = float(command["boundary"])
+            if OrderType.LATER_UP_BUY in decisions[symbol]:
+                decision = decisions[symbol][OrderType.LATER_UP_BUY]
+                notional = max(minimum_notional, float(decision.margin) * leverage)
+                boundary = float(decision.boundary)
                 quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2175,10 +2164,10 @@ class Transactor:
                 }
                 later_orders.append(new_order)
 
-            if "later_down_buy" in decision[symbol]:
-                command = decision[symbol]["later_down_buy"]
-                notional = max(minimum_notional, float(command["margin"]) * leverage)
-                boundary = float(command["boundary"])
+            if OrderType.LATER_DOWN_BUY in decisions[symbol]:
+                decision = decisions[symbol][OrderType.LATER_DOWN_BUY]
+                notional = max(minimum_notional, float(decision.margin) * leverage)
+                boundary = float(decision.boundary)
                 quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2190,10 +2179,10 @@ class Transactor:
                 }
                 later_orders.append(new_order)
 
-            if "later_up_sell" in decision[symbol]:
-                command = decision[symbol]["later_up_sell"]
-                notional = max(minimum_notional, float(command["margin"]) * leverage)
-                boundary = float(command["boundary"])
+            if OrderType.LATER_UP_SELL in decisions[symbol]:
+                decision = decisions[symbol][OrderType.LATER_UP_SELL]
+                notional = max(minimum_notional, float(decision.margin) * leverage)
+                boundary = float(decision.boundary)
                 quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2205,10 +2194,10 @@ class Transactor:
                 }
                 later_orders.append(new_order)
 
-            if "later_down_sell" in decision[symbol]:
-                command = decision[symbol]["later_down_sell"]
-                notional = max(minimum_notional, float(command["margin"]) * leverage)
-                boundary = float(command["boundary"])
+            if OrderType.LATER_DOWN_SELL in decisions[symbol]:
+                decision = decisions[symbol][OrderType.LATER_DOWN_SELL]
+                notional = max(minimum_notional, float(decision.margin) * leverage)
+                boundary = float(decision.boundary)
                 quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2225,13 +2214,13 @@ class Transactor:
             await asyncio.wait(tasks)
 
     async def clear_positions_and_open_orders(self):
-        decision = {}
+        decisions: dict[str, dict[OrderType, Decision]] = {}
         for symbol in self.window.data_settings.target_symbols:
-            decision[symbol] = {
-                "cancel_all": {},
-                "now_close": {},
+            decisions[symbol] = {
+                OrderType.CANCEL_ALL: Decision(),
+                OrderType.NOW_CLOSE: Decision(),
             }
-        await self.place_orders(decision)
+        await self.place_orders(decisions)
 
     async def cancel_conflicting_orders(self):
         if not self.transaction_settings.should_transact:
@@ -2239,16 +2228,16 @@ class Transactor:
 
         conflicting_order_tuples = []
         for symbol in self.window.data_settings.target_symbols:
-            symbol_open_orders = self.account_state["open_orders"][symbol]
-            groups_by_command: dict[str, list[int]] = {}
+            symbol_open_orders = self.account_state.open_orders[symbol]
+            grouped_open_orders: dict[OrderType, list[int]] = {}
             for order_id, open_order_state in symbol_open_orders.items():
-                command_name = open_order_state["command_name"]
-                if command_name not in groups_by_command.keys():
-                    groups_by_command[command_name] = [order_id]
+                order_type = open_order_state.order_type
+                if order_type not in grouped_open_orders.keys():
+                    grouped_open_orders[order_type] = [order_id]
                 else:
-                    groups_by_command[command_name].append(order_id)
-            for command_name, group in groups_by_command.items():
-                if command_name == "other":
+                    grouped_open_orders[order_type].append(order_id)
+            for order_type, group in grouped_open_orders.items():
+                if order_type == OrderType.OTHER:
                     for order_id in group:
                         conflicting_order_tuples.append((symbol, order_id))
                 elif len(group) > 1:
@@ -2298,7 +2287,7 @@ class Transactor:
         text += f"At UTC {time_text}"
 
         text += "\n\n"
-        text += json.dumps(self.account_state, indent=2, default=str)
+        text += self.account_state.to_json(indent=2, default=str)
 
         await overlay(
             "This is the raw account state object",

@@ -39,11 +39,17 @@ from .standardize import (
 )
 from .stop_flag import find_stop_flag, make_stop_flag
 from .structs import (
+    AccountState,
     AggregateTrade,
     BoardLockOptions,
     BookTicker,
+    Decision,
     ManagementSettings,
     MarkPrice,
+    OpenOrder,
+    OrderType,
+    Position,
+    PositionDirection,
     SimulationSettings,
     SimulationSummary,
     Strategies,
@@ -62,6 +68,7 @@ from .user_settings import (
 )
 
 __all__ = [
+    "AccountState",
     "AggregateTrade",
     "ApiRequestError",
     "ApiRequester",
@@ -71,11 +78,16 @@ __all__ = [
     "CalculationInput",
     "CalculationOutput",
     "DataSettings",
+    "Decision",
     "DownloadPreset",
     "LogHandler",
     "ManagementSettings",
     "MarkPrice",
+    "OpenOrder",
+    "OrderType",
     "PercentAxisItem",
+    "Position",
+    "PositionDirection",
     "RWLock",
     "SimulationError",
     "SimulationSettings",

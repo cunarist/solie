@@ -2,6 +2,7 @@ import asyncio
 import math
 import pickle
 import re
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 import aiofiles
@@ -14,6 +15,7 @@ from scipy.signal import find_peaks
 
 from solie.common import get_sync_manager, outsource, spawn, spawn_blocking
 from solie.utility import (
+    AccountState,
     BookTicker,
     CalculationInput,
     MarkPrice,
@@ -295,9 +297,9 @@ class Simulator:
         await asyncio.sleep(0)
 
         # entry price
-        entry_price = self.account_state["positions"][symbol]["entry_price"]
-        first_moment = self.account_state["observed_until"] - timedelta(hours=12)
-        last_moment = self.account_state["observed_until"] + timedelta(hours=12)
+        entry_price = self.account_state.positions[symbol].entry_price
+        first_moment = self.account_state.observed_until - timedelta(hours=12)
+        last_moment = self.account_state.observed_until + timedelta(hours=12)
         if entry_price != 0:
             data_x = np.linspace(
                 first_moment.timestamp(), last_moment.timestamp(), num=1000
@@ -372,8 +374,8 @@ class Simulator:
             candle_data = candle_data.reindex(new_index)
 
         if last_asset is not None:
-            observed_until = self.account_state["observed_until"]
-            if len(asset_record) == 0 or asset_record.index[-1] < observed_until:
+            observed_until = self.account_state.observed_until
+            if len(asset_record) == 0 or asset_record.index[-1] < observed_until:  # type:ignore
                 if slice_from < observed_until:
                     asset_record.loc[observed_until, "Cause"] = "other"
                     asset_record.loc[observed_until, "Result Asset"] = last_asset
@@ -813,7 +815,7 @@ class Simulator:
         range_down = widget.getAxis("left").range[0]
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
 
-    async def calculate(self, only_visible=True):
+    async def calculate(self, only_visible=False):
         task_id = make_stop_flag("calculate_simulation")
 
         prepare_step = 0
@@ -928,7 +930,7 @@ class Simulator:
             previous_asset_record = blank_asset_record.copy()
             previous_unrealized_changes = blank_unrealized_changes.copy()
             previous_scribbles = blank_scribbles.copy()
-            previous_account_state = blank_account_state.copy()
+            previous_account_state = replace(blank_account_state)
             previous_virtual_state = blank_virtual_state.copy()
 
             view_range = self.window.plot_widget_2.getAxis("bottom").range
@@ -958,18 +960,18 @@ class Simulator:
                     previous_scribbles = pickle.loads(content)
                 async with aiofiles.open(account_state_path, "rb") as file:
                     content = await file.read()
-                    previous_account_state = pickle.loads(content)
+                    previous_account_state: AccountState = pickle.loads(content)
                 async with aiofiles.open(virtual_state_path, "rb") as file:
                     content = await file.read()
                     previous_virtual_state = pickle.loads(content)
 
-                calculate_from = previous_account_state["observed_until"]
+                calculate_from = previous_account_state.observed_until
                 calculate_until = slice_until
             except FileNotFoundError:
                 previous_asset_record = blank_asset_record.copy()
                 previous_unrealized_changes = blank_unrealized_changes.copy()
                 previous_scribbles = blank_scribbles.copy()
-                previous_account_state = blank_account_state.copy()
+                previous_account_state = replace(blank_account_state)
                 previous_virtual_state = blank_virtual_state.copy()
 
                 calculate_from = slice_from
@@ -1178,7 +1180,7 @@ class Simulator:
             unrealized_changes = cell.data.copy()
 
         scribbles = self.raw_scribbles.copy()
-        account_state = self.raw_account_state.copy()
+        account_state = replace(self.raw_account_state)
 
         # ■■■■■ get strategy details ■■■■
 
@@ -1251,7 +1253,7 @@ class Simulator:
         presentation_asset_record = asset_record.copy()
         presentation_unrealized_changes = unrealized_changes.copy()
         presentation_scribbles = scribbles.copy()
-        presentation_account_state = account_state.copy()
+        presentation_account_state = replace(account_state)
 
         # ■■■■■ remember ■■■■■
 
@@ -1389,7 +1391,7 @@ class Simulator:
                 self.raw_scribbles = pickle.loads(content)
             async with aiofiles.open(account_state_path, "rb") as file:
                 content = await file.read()
-                self.raw_account_state = pickle.loads(content)
+                self.raw_account_state: AccountState = pickle.loads(content)
             self.simulation_summary = SimulationSummary(
                 year=year,
                 strategy_code_name=strategy_code_name,

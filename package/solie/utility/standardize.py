@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
 
+from .structs import AccountState, Position, PositionDirection
+
 
 def create_empty_candle_data(target_symbols: list[str]):
     return pd.DataFrame(
@@ -18,21 +20,21 @@ def create_empty_candle_data(target_symbols: list[str]):
     )
 
 
-def create_empty_account_state(target_symbols: list[str]):
-    return {
-        "observed_until": datetime.fromtimestamp(0.0, tz=timezone.utc),
-        "wallet_balance": 1.0,
-        "positions": {
-            symbol: {
-                "margin": 0.0,
-                "direction": "none",
-                "entry_price": 0.0,
-                "update_time": datetime.fromtimestamp(0.0, tz=timezone.utc),
-            }
-            for symbol in target_symbols
+def create_empty_account_state(target_symbols: list[str]) -> AccountState:
+    return AccountState(
+        observed_until=datetime.fromtimestamp(0.0, tz=timezone.utc),
+        wallet_balance=1.0,
+        positions={
+            s: Position(
+                margin=0.0,
+                direction=PositionDirection.NONE,
+                entry_price=0.0,
+                update_time=datetime.fromtimestamp(0.0, tz=timezone.utc),
+            )
+            for s in target_symbols
         },
-        "open_orders": {symbol: {} for symbol in target_symbols},
-    }
+        open_orders={s: {} for s in target_symbols},
+    )
 
 
 def create_empty_asset_record():

@@ -252,33 +252,43 @@ close_price = current_candle_data[str(("BTCUSDT", "Close"))]
 sum_volume = current_candle_data[str(("BTCUSDT", "Volume"))]
 ```
 
-`account_state` object provided by the API has a structure like this.
+`account_state` object provided by the API has a structure like below.
 
 ```python
-{
-  "observed_until": datetime.datetime(...),
-  "wallet_balance": 1523.130323872, # total assets, in dollars
-  "positions": {
-    "BTCUSDT": {
-      "margin": 95.262900110, # Amount invested, in dollars
-      "direction": "short", # current position direction, one of none/long/short
-      "entry_price": 32126.275370193, # average price
-      "update_time": datetime.datetime(...), # Time of the last trade in this position
-    }
-    ...
-  },
-  "open_orders": {
-    "BTCUSDT:"{
-      532563634: { # Order ID
-        "command": "later_down_buy", # what kind of decision
-        "boundary": 28260.0, # price activated
-        "left_margin": 226.321665911, # Amount to be input, in dollars
-      }
-      ...
-    }
-    ...
-  },
-}
+class OrderType(Enum):
+    NOW_BUY = 0
+    NOW_SELL = 1
+    NOW_CLOSE = 2
+    CANCEL_ALL = 3
+    BOOK_BUY = 4
+    BOOK_SELL = 5
+    LATER_UP_BUY = 6
+    LATER_UP_SELL = 7
+    LATER_UP_CLOSE = 8
+    LATER_DOWN_BUY = 9
+    LATER_DOWN_SELL = 10
+    LATER_DOWN_CLOSE = 11
+    OTHER = 12
+
+
+class OpenOrder:
+    order_type: OrderType
+    boundary: float
+    left_margin: float | None
+
+
+class Position:
+    margin: float
+    direction: PositionDirection
+    entry_price: float
+    update_time: datetime
+
+
+class AccountState:
+    observed_until: datetime
+    wallet_balance: float
+    positions: dict[str, Position]
+    open_orders: dict[str, dict[int, OpenOrder]]
 ```
 
 `scribbles` are saved as `pickle` files. So it can hold almost any type of Python objects.
@@ -306,118 +316,129 @@ There are 12 possible order commands, each corresponding to a specific order typ
 
 > Numbers do not have to be in `float` type. Other similar types, such as `numpy.float64`, also work well.
 
-Command `cancel_all` cancels all open orders of the symbol market.
+Order type `CANCEL_ALL` cancels all open orders of the symbol market.
 
 ```python
-decision[symbol]["cancel_all"] = {}
+from solie.utility import Decision, OrderType
+decisions[symbol][OrderType.CANCEL_ALL] = Decision()
 ```
 
-Command `now_close` closes the position immediately. Corresponds to `Market Buy` or `Market Sell` orders on Binance with the maximum quantity and `Reduce Only`.
+Order type `NOW_CLOSE` closes the position immediately. Corresponds to `Market Buy` or `Market Sell` orders on Binance with the maximum quantity and `Reduce Only`.
 
 ```python
-decision[symbol]["now_close"] = {}
+from solie.utility import Decision, OrderType
+decisions[symbol][OrderType.NOW_CLOSE] = Decision()
 ```
 
-Command `now_buy` buys directly at market price. Corresponds to Binance order `Market Buy`.
+Order type `NOW_BUY` buys directly at market price. Corresponds to Binance order `Market Buy`.
 
 ```python
-wallet_balance = account_state["wallet_balance"]
-decision[symbol]["now_buy"] = {
-    "margin": wallet_balance * 0.08,
-}
+from solie.utility import Decision, OrderType
+wallet_balance = account_state.wallet_balance
+decisions[symbol][OrderType.NOW_BUY] = Decision(
+    margin=wallet_balance * 0.08,
+)
 ```
 
-Command `now_sell` sells directly at market price. Corresponds to Binance order `Market Sell`.
+Order type `NOW_SELL` sells directly at market price. Corresponds to Binance order `Market Sell`.
 
 ```python
-wallet_balance = account_state["wallet_balance"]
-decision[symbol]["now_sell"] = {
-    "margin": wallet_balance * 0.08,
-}
+from solie.utility import Decision, OrderType
+wallet_balance = account_state.wallet_balance
+decisions[symbol][OrderType.NOW_SELL] = Decision(
+    margin=wallet_balance * 0.08,
+)
 ```
 
-Command `later_up_close` puts an order that will close the position when the price goes up to that boundary. Corresponds to Binance order `Stop Market Buy` or `Take Profit Market Sell` with `Close Position` enabled.
+Order type `LATER_UP_CLOSE` puts an order that will close the position when the price goes up to that boundary. Corresponds to Binance order `Stop Market Buy` or `Take Profit Market Sell` with `Close Position` enabled.
+
+```python
+from solie.utility import Decision, OrderType
+current_price = current_candle_data[str((symbol, "Close"))]
+decisions[symbol][OrderType.LATER_UP_CLOSE] = Decision(
+    boundary=current_price * 1.05,
+)
+```
+
+Order type `LATER_DOWN_CLOSE` puts an order that will close the position when the price goes down to that boundary. Corresponds to Binance order `Stop Market Sell` or `Take Profit Market Buy` with `Close Position` enabled.
+
+```python
+from solie.utility import Decision, OrderType
+current_price = current_candle_data[str((symbol, "Close"))]
+decisions[symbol][OrderType.LATER_DOWN_CLOSE] = Decision(
+    boundary=current_price * 0.95,
+)
+```
+
+Order type `LATER_UP_BUY` puts an order to buy when the price goes up to that boundary. Corresponds to Binance order `Stop Market Buy`.
+
+```python
+from solie.utility import Decision, OrderType
+current_price = current_candle_data[str((symbol, "Close"))]
+wallet_balance = account_state.wallet_balance
+decisions[symbol][OrderType.LATER_UP_BUY] = Decision(
+    boundary=current_price * 1.05,
+    margin=wallet_balance * 0.08,
+)
+```
+
+Order type `LATER_DOWN_BUY` puts an order to buy when the price goes down to that boundary. Corresponds to Binance order `Take Profit Market Buy`.
+
+```python
+from solie.utility import Decision, OrderType
+current_price = current_candle_data[str((symbol, "Close"))]
+wallet_balance = account_state.wallet_balance
+decisions[symbol][OrderType.LATER_DOWN_BUY] = Decision(
+    boundary=current_price * 0.95,
+    margin=wallet_balance * 0.08,
+)
+```
+
+Order type `LATER_UP_SELL` puts an order to buy sell when the price goes up to that boundary. Corresponds to Binance order `Take Profit Market Sell`.
+
+```python
+from solie.utility import Decision, OrderType
+current_price = current_candle_data[str((symbol, "Close"))]
+wallet_balance = account_state.wallet_balance
+decisions[symbol][OrderType.LATER_UP_SELL] = (
+    boundary=current_price * 1.05,
+    margin=wallet_balance * 0.08,
+)
+```
+
+Order type `LATER_DOWN_SELL` puts an order to sell when the price goes down to that boundary.Corresponds to Binance order `Stop Market Sell`.
+
+```python
+from solie.utility import Decision, OrderType
+current_price = current_candle_data[str((symbol, "Close"))]
+wallet_balance = account_state.wallet_balance
+decisions[symbol][OrderType.LATER_DOWN_SELL] = Decision(
+    boundary=current_price * 0.95,
+    margin=wallet_balance * 0.08,
+)
+```
+
+Order type `BOOK_BUY` puts a limit buy order that is added to the order book. Corresponds to Binance order `Limit Buy`.
+
+```python
+from solie.utility import Decision, OrderType
+current_price = current_candle_data[str((symbol, "Close"))]
+wallet_balance = account_state.wallet_balance
+decisions[symbol][OrderType.BOOK_BUY] = Decision(
+    boundary=current_price * 0.95,
+    margin=wallet_balance * 0.08,
+)
+```
+
+Order type `BOOK_SELL` puts a limit sell order that is added to the order book. Corresponds to Binance order `Limit Sell`.
 
 ```python
 current_price = current_candle_data[str((symbol, "Close"))]
-decision[symbol]["later_up_close"] = {
-    "boundary": current_price * 1.05,
-}
-```
-
-Command `later_down_close` puts an order that will close the position when the price goes down to that boundary. Corresponds to Binance order `Stop Market Sell` or `Take Profit Market Buy` with `Close Position` enabled.
-
-```python
-current_price = current_candle_data[str((symbol, "Close"))]
-decision[symbol]["later_down_close"] = {
-    "boundary": current_price * 0.95,
-}
-```
-
-Command `later_up_buy` puts an order to buy when the price goes up to that boundary. Corresponds to Binance order `Stop Market Buy`.
-
-```python
-current_price = current_candle_data[str((symbol, "Close"))]
-wallet_balance = account_state["wallet_balance"]
-decision[symbol]["later_up_buy"] = {
-    "boundary": current_price * 1.05,
-    "margin": wallet_balance * 0.08,
-}
-```
-
-Command `later_down_buy` puts an order to buy when the price goes down to that boundary. Corresponds to Binance order `Take Profit Market Buy`.
-
-```python
-current_price = current_candle_data[str((symbol, "Close"))]
-wallet_balance = account_state["wallet_balance"]
-decision[symbol]["later_down_buy"] = {
-    "boundary": current_price * 0.95,
-    "margin": wallet_balance * 0.08,
-}
-```
-
-Command `later_up_sell` puts an order to buy sell when the price goes up to that boundary. Corresponds to Binance order `Take Profit Market Sell`.
-
-```python
-current_price = current_candle_data[str((symbol, "Close"))]
-wallet_balance = account_state["wallet_balance"]
-decision[symbol]["later_up_sell"] = {
-    "boundary": current_price * 1.05,
-    "margin": wallet_balance * 0.08,
-}
-```
-
-Command `later_down_sell` puts an order to sell when the price goes down to that boundary.Corresponds to Binance order `Stop Market Sell`.
-
-```python
-current_price = current_candle_data[str((symbol, "Close"))]
-wallet_balance = account_state["wallet_balance"]
-decision[symbol]["later_down_sell"] = {
-    "boundary": current_price * 0.95,
-    "margin": wallet_balance * 0.08,
-}
-```
-
-Command `book_buy` puts a limit buy order that is added to the order book. Corresponds to Binance order `Limit Buy`.
-
-```python
-current_price = current_candle_data[str((symbol, "Close"))]
-wallet_balance = account_state["wallet_balance"]
-decision[symbol]["book_buy"] = {
-    "boundary": current_price * 0.95,
-    "margin": wallet_balance * 0.08,
-}
-```
-
-Command `book_sell` puts a limit sell order that is added to the order book. Corresponds to Binance order `Limit Sell`.
-
-```python
-current_price = current_candle_data[str((symbol, "Close"))]
-wallet_balance = account_state["wallet_balance"]
-decision[symbol]["book_sell"] = {
-    "boundary": current_price * 1.05,
-    "margin": wallet_balance * 0.08,
-}
+wallet_balance = account_state.wallet_balance
+decisions[symbol][OrderType.BOOK_SELL] = Decision(
+    boundary=current_price * 1.05,
+    margin=wallet_balance * 0.08,
+)
 ```
 
 > In automatic ordering and simulation, all prices are based on `Last Price`. `Mark Price` is not used in the calculation.
@@ -426,6 +447,6 @@ decision[symbol]["book_sell"] = {
 
 Binance has a minimum order amount. As of February 2022, it is $5. In addition, the decimal precision of the quantity that can be ordered for each symbol is fixed. Therefore, in the actual automatic order, the order is sent with the quantity slightly rounded up from the `margin` determined by the decision. Because of this rounding, the actual amount being orders can have a significant amount of numerical error. Always check your position status before making an order in the decision script.
 
-Open orders are limited to only one per type. During an actual automatic order, even if multiple open orders of the same type are stacked, all but the most recent one will be lost. This is Solie's own rules for a convenient decision system. For example, there cannot be more than one open order classified as `later_up_buy` at the same time. However, it is possible to have different kinds of commands open simultaneously. An open spell with `later_up_buy` and an open spell with `later_up_sell` can exist at the same time.
+Open orders are limited to only one per type. During an actual automatic order, even if multiple open orders of the same type are stacked, all but the most recent one will be lost. This is Solie's own rules for a convenient decision system. For example, there cannot be more than one open order classified as `LATER_UP_BUY` at the same time. However, it is possible to have different kinds of commands open simultaneously. An open spell with `LATER_UP_BUY` and an open spell with `LATER_UP_SELL` can exist at the same time.
 
 Even with the same `margin`, the actual amount value will vary depending on the leverage. For example, putting in a margin of $5 at 4x leverage means you are investing $20 in real money. Since leverage is the concept of borrowing and investing, the amount invested in my assets is less than the actual investment amount by the leverage multiplier.

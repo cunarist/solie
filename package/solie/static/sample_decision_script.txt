@@ -1,8 +1,9 @@
 import math
 from datetime import datetime, timedelta, timezone
+from solie.utility import Decision, OrderType, PositionDirection
 
 acquire_ratio = 0.8 / len(target_symbols)  # Split asset by symbol count
-wallet_balance = account_state["wallet_balance"]
+wallet_balance = account_state.wallet_balance
 
 for symbol in target_symbols:
 
@@ -13,32 +14,31 @@ for symbol in target_symbols:
     indicator_key = str((symbol, "Price", "SMA Two (#FF6666)"))
     price_sma_two = current_indicators[indicator_key]
 
-    position_direction = account_state["positions"][symbol]["direction"]
-    position_margin = account_state["positions"][symbol]["margin"]
+    position = account_state.positions[symbol]
 
     scribbles["remember_data"] = True  # Remember something
     remember_data = scribbles.get("remember_data", False)  # Get it later
 
-    if position_direction == "none":
+    if position.direction == PositionDirection.NONE:
         if price_sma_one > price_sma_two:
-            decision[symbol]["now_buy"] = {
-                "margin": acquire_ratio * wallet_balance,
-            }
+            decisions[symbol][OrderType.NOW_BUY] = Decision(
+                margin=acquire_ratio * wallet_balance,
+            )
         elif price_sma_one < price_sma_two:
-            decision[symbol]["now_sell"] = {
-                "margin": acquire_ratio * wallet_balance,
-            }
+            decisions[symbol][OrderType.NOW_SELL] = Decision(
+                margin=acquire_ratio * wallet_balance,
+            )
 
-    elif position_direction == "long":
+    elif position.direction == PositionDirection.LONG:
         if price_sma_one < price_sma_two:
-            decision[symbol]["now_sell"] = {
-                "margin":
-                position_margin + acquire_ratio * wallet_balance,  # Flip
-            }
+            # Flip
+            decisions[symbol][OrderType.NOW_SELL] = Decision(
+                margin=position.margin + acquire_ratio * wallet_balance
+            )
 
-    elif position_direction == "short":
+    elif position.direction == PositionDirection.SHORT:
         if price_sma_one > price_sma_two:
-            decision[symbol]["now_buy"] = {
-                "margin":
-                position_margin + acquire_ratio * wallet_balance,  # Flip
-            }
+            # Flip
+            decisions[symbol][OrderType.NOW_BUY] = Decision(
+                margin=position.margin + acquire_ratio * wallet_balance
+            )

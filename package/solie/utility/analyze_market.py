@@ -1,15 +1,24 @@
 import itertools
 import math
 import random
-from dataclasses import dataclass
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from multiprocessing.managers import ListProxy
 from types import CodeType
-from typing import Tuple
+from typing import Any, NamedTuple
 
 import numpy as np
 import pandas as pd
 import pandas_ta as ta
+
+from .structs import (
+    AccountState,
+    Decision,
+    OpenOrder,
+    OrderType,
+    Position,
+    PositionDirection,
+)
 
 
 def make_indicators(
@@ -78,20 +87,25 @@ def make_indicators(
         return indicators
 
 
+class DecisionPack(NamedTuple):
+    decisions: dict[str, dict[OrderType, Decision]]
+    scribbles: dict[Any, Any]
+
+
 def decide(
     target_symbols: list[str],
     current_moment: datetime,
     current_candle_data: np.record,
     current_indicators: np.record,
-    account_state: dict,
+    account_state: AccountState,
     scribbles: dict,
     decision_script: str | CodeType,
-) -> Tuple[dict, dict]:
+) -> DecisionPack:
     # ■■■■■ decision template ■■■■■
 
-    decision = {}
+    decisions: dict[str, dict[OrderType, Decision]] = {}
     for symbol in target_symbols:
-        decision[symbol] = {}
+        decisions[symbol] = {}
 
     # ■■■■■ write decisions ■■■■■
 
@@ -106,29 +120,28 @@ def decide(
         "current_indicators": current_indicators,
         "account_state": account_state,
         "scribbles": scribbles,
-        "decision": decision,
+        "decisions": decisions,
     }
 
     exec(decision_script, namespace)
 
     # ■■■■■ return decision ■■■■■
 
-    blank_symbols = []
-    for symbol, symbol_decision in decision.items():
-        if len(symbol_decision) == 0:
+    blank_symbols: list[str] = []
+    for symbol, symbol_decisions in decisions.items():
+        if len(symbol_decisions) == 0:
             blank_symbols.append(symbol)
     for blank_symbol in blank_symbols:
-        decision.pop(blank_symbol)
+        decisions.pop(blank_symbol)
 
-    return decision, scribbles
+    return DecisionPack(decisions, scribbles)
 
 
 class SimulationError(Exception):
     pass
 
 
-@dataclass
-class CalculationInput:
+class CalculationInput(NamedTuple):
     progress_list: ListProxy
     target_progress: int
     target_symbols: list[str]
@@ -138,18 +151,20 @@ class CalculationInput:
     chunk_asset_record: pd.DataFrame
     chunk_unrealized_changes: pd.Series
     chunk_scribbles: dict
-    chunk_account_state: dict
+    chunk_account_state: AccountState
     chunk_virtual_state: dict
     decision_script: str
 
 
-@dataclass
-class CalculationOutput:
+class CalculationOutput(NamedTuple):
     chunk_asset_record: pd.DataFrame
     chunk_unrealized_changes: pd.Series
     chunk_scribbles: dict
-    chunk_account_state: dict
+    chunk_account_state: AccountState
     chunk_virtual_state: dict
+
+
+ORDER_ID_MIN, ORDER_ID_MAX = 10**18, 10**19 - 1
 
 
 def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
@@ -226,54 +241,60 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
             is_margin_nan = False
 
             # special placements
-            if "cancel_all" in chunk_virtual_state["placements"][symbol]:
+            if OrderType.CANCEL_ALL in chunk_virtual_state["placements"][symbol]:
                 cancel_placement_names = []
-                for placement_name in chunk_virtual_state["placements"][symbol].keys():
-                    if any(s in placement_name for s in ("later", "book")):
-                        cancel_placement_names.append(placement_name)
+                for order_type in chunk_virtual_state["placements"][symbol].keys():
+                    if order_type.is_later() or order_type.is_book():
+                        cancel_placement_names.append(order_type)
                 for cancel_placement_name in cancel_placement_names:
                     chunk_virtual_state["placements"][symbol].pop(cancel_placement_name)
-                chunk_virtual_state["placements"][symbol].pop("cancel_all")
+                chunk_virtual_state["placements"][symbol].pop(OrderType.CANCEL_ALL)
 
             # instant placements
-            if "now_close" in chunk_virtual_state["placements"][symbol]:
+            if OrderType.NOW_CLOSE in chunk_virtual_state["placements"][symbol]:
                 would_trade_happen = True
-                command = chunk_virtual_state["placements"][symbol]["now_close"]
+                placement = chunk_virtual_state["placements"][symbol][
+                    OrderType.NOW_CLOSE
+                ]
                 role = "taker"
                 fill_price = open_price + price_speed * (decision_lag / 1000)
                 amount_shift = -chunk_virtual_state["locations"][symbol]["amount"]
-                chunk_virtual_state["placements"][symbol].pop("now_close")
+                chunk_virtual_state["placements"][symbol].pop(OrderType.NOW_CLOSE)
 
-            if "now_buy" in chunk_virtual_state["placements"][symbol]:
+            if OrderType.NOW_BUY in chunk_virtual_state["placements"][symbol]:
                 would_trade_happen = True
-                command = chunk_virtual_state["placements"][symbol]["now_buy"]
+                placement = chunk_virtual_state["placements"][symbol][OrderType.NOW_BUY]
                 role = "taker"
                 fill_price = open_price + price_speed * (decision_lag / 1000)
-                fill_margin = command["margin"]
+                fill_margin = placement["margin"]
                 if fill_margin < 0:
                     is_margin_negative = True
                 if math.isnan(fill_margin):
                     is_margin_nan = True
                 amount_shift = fill_margin / fill_price
-                chunk_virtual_state["placements"][symbol].pop("now_buy")
+                chunk_virtual_state["placements"][symbol].pop(OrderType.NOW_BUY)
 
-            if "now_sell" in chunk_virtual_state["placements"][symbol]:
+            if OrderType.NOW_SELL in chunk_virtual_state["placements"][symbol]:
                 would_trade_happen = True
-                command = chunk_virtual_state["placements"][symbol]["now_sell"]
+                placement = chunk_virtual_state["placements"][symbol][
+                    OrderType.NOW_SELL
+                ]
                 role = "taker"
                 fill_price = open_price + price_speed * (decision_lag / 1000)
-                fill_margin = command["margin"]
+                fill_margin = placement["margin"]
                 if fill_margin < 0:
                     is_margin_negative = True
                 if math.isnan(fill_margin):
                     is_margin_nan = True
                 amount_shift = -fill_margin / fill_price
-                chunk_virtual_state["placements"][symbol].pop("now_sell")
+                chunk_virtual_state["placements"][symbol].pop(OrderType.NOW_SELL)
 
             # conditional placements
-            if "later_up_close" in chunk_virtual_state["placements"][symbol]:
-                command = chunk_virtual_state["placements"][symbol]["later_up_close"]
-                boundary = command["boundary"]
+            if OrderType.LATER_UP_CLOSE in chunk_virtual_state["placements"][symbol]:
+                placement = chunk_virtual_state["placements"][symbol][
+                    OrderType.LATER_UP_CLOSE
+                ]
+                boundary = placement["boundary"]
 
                 wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
                 wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
@@ -284,11 +305,15 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
                     role = "taker"
                     fill_price = boundary
                     amount_shift = -chunk_virtual_state["locations"][symbol]["amount"]
-                    chunk_virtual_state["placements"][symbol].pop("later_up_close")
+                    chunk_virtual_state["placements"][symbol].pop(
+                        OrderType.LATER_UP_CLOSE
+                    )
 
-            if "later_down_close" in chunk_virtual_state["placements"][symbol]:
-                command = chunk_virtual_state["placements"][symbol]["later_down_close"]
-                boundary = command["boundary"]
+            if OrderType.LATER_DOWN_CLOSE in chunk_virtual_state["placements"][symbol]:
+                placement = chunk_virtual_state["placements"][symbol][
+                    OrderType.LATER_DOWN_CLOSE
+                ]
+                boundary = placement["boundary"]
 
                 wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
                 wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
@@ -299,11 +324,15 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
                     role = "taker"
                     fill_price = boundary
                     amount_shift = -chunk_virtual_state["locations"][symbol]["amount"]
-                    chunk_virtual_state["placements"][symbol].pop("later_down_close")
+                    chunk_virtual_state["placements"][symbol].pop(
+                        OrderType.LATER_DOWN_CLOSE
+                    )
 
-            if "later_up_buy" in chunk_virtual_state["placements"][symbol]:
-                command = chunk_virtual_state["placements"][symbol]["later_up_buy"]
-                boundary = command["boundary"]
+            if OrderType.LATER_UP_BUY in chunk_virtual_state["placements"][symbol]:
+                placement = chunk_virtual_state["placements"][symbol][
+                    OrderType.LATER_UP_BUY
+                ]
+                boundary = placement["boundary"]
 
                 wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
                 wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
@@ -313,17 +342,21 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
                     would_trade_happen = True
                     role = "taker"
                     fill_price = boundary
-                    fill_margin = command["margin"]
+                    fill_margin = placement["margin"]
                     if fill_margin < 0:
                         is_margin_negative = True
                     if math.isnan(fill_margin):
                         is_margin_nan = True
                     amount_shift = fill_margin / fill_price
-                    chunk_virtual_state["placements"][symbol].pop("later_up_buy")
+                    chunk_virtual_state["placements"][symbol].pop(
+                        OrderType.LATER_UP_BUY
+                    )
 
-            if "later_down_buy" in chunk_virtual_state["placements"][symbol]:
-                command = chunk_virtual_state["placements"][symbol]["later_down_buy"]
-                boundary = command["boundary"]
+            if OrderType.LATER_DOWN_BUY in chunk_virtual_state["placements"][symbol]:
+                placement = chunk_virtual_state["placements"][symbol][
+                    OrderType.LATER_DOWN_BUY
+                ]
+                boundary = placement["boundary"]
 
                 wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
                 wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
@@ -333,37 +366,21 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
                     would_trade_happen = True
                     role = "taker"
                     fill_price = boundary
-                    fill_margin = command["margin"]
+                    fill_margin = placement["margin"]
                     if fill_margin < 0:
                         is_margin_negative = True
                     if math.isnan(fill_margin):
                         is_margin_nan = True
                     amount_shift = fill_margin / fill_price
-                    chunk_virtual_state["placements"][symbol].pop("later_down_buy")
+                    chunk_virtual_state["placements"][symbol].pop(
+                        OrderType.LATER_DOWN_BUY
+                    )
 
-            if "later_up_sell" in chunk_virtual_state["placements"][symbol]:
-                command = chunk_virtual_state["placements"][symbol]["later_up_sell"]
-                boundary = command["boundary"]
-
-                wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
-                wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
-                did_cross = wobble_low < boundary < wobble_high
-
-                if did_cross:
-                    would_trade_happen = True
-                    role = "taker"
-                    fill_price = boundary
-                    fill_margin = command["margin"]
-                    if fill_margin < 0:
-                        is_margin_negative = True
-                    if math.isnan(fill_margin):
-                        is_margin_nan = True
-                    amount_shift = -fill_margin / fill_price
-                    chunk_virtual_state["placements"][symbol].pop("later_up_sell")
-
-            if "later_down_sell" in chunk_virtual_state["placements"][symbol]:
-                command = chunk_virtual_state["placements"][symbol]["later_down_sell"]
-                boundary = command["boundary"]
+            if OrderType.LATER_UP_SELL in chunk_virtual_state["placements"][symbol]:
+                placement = chunk_virtual_state["placements"][symbol][
+                    OrderType.LATER_UP_SELL
+                ]
+                boundary = placement["boundary"]
 
                 wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
                 wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
@@ -373,17 +390,45 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
                     would_trade_happen = True
                     role = "taker"
                     fill_price = boundary
-                    fill_margin = command["margin"]
+                    fill_margin = placement["margin"]
                     if fill_margin < 0:
                         is_margin_negative = True
                     if math.isnan(fill_margin):
                         is_margin_nan = True
                     amount_shift = -fill_margin / fill_price
-                    chunk_virtual_state["placements"][symbol].pop("later_down_sell")
+                    chunk_virtual_state["placements"][symbol].pop(
+                        OrderType.LATER_UP_SELL
+                    )
 
-            if "book_buy" in chunk_virtual_state["placements"][symbol]:
-                command = chunk_virtual_state["placements"][symbol]["book_buy"]
-                boundary = command["boundary"]
+            if OrderType.LATER_DOWN_SELL in chunk_virtual_state["placements"][symbol]:
+                placement = chunk_virtual_state["placements"][symbol][
+                    OrderType.LATER_DOWN_SELL
+                ]
+                boundary = placement["boundary"]
+
+                wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
+                wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
+                did_cross = wobble_low < boundary < wobble_high
+
+                if did_cross:
+                    would_trade_happen = True
+                    role = "taker"
+                    fill_price = boundary
+                    fill_margin = placement["margin"]
+                    if fill_margin < 0:
+                        is_margin_negative = True
+                    if math.isnan(fill_margin):
+                        is_margin_nan = True
+                    amount_shift = -fill_margin / fill_price
+                    chunk_virtual_state["placements"][symbol].pop(
+                        OrderType.LATER_DOWN_SELL
+                    )
+
+            if OrderType.BOOK_BUY in chunk_virtual_state["placements"][symbol]:
+                placement = chunk_virtual_state["placements"][symbol][
+                    OrderType.BOOK_BUY
+                ]
+                boundary = placement["boundary"]
 
                 wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
                 wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
@@ -393,17 +438,19 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
                     would_trade_happen = True
                     role = "maker"
                     fill_price = boundary
-                    fill_margin = command["margin"]
+                    fill_margin = placement["margin"]
                     if fill_margin < 0:
                         is_margin_negative = True
                     if math.isnan(fill_margin):
                         is_margin_nan = True
                     amount_shift = fill_margin / fill_price
-                    chunk_virtual_state["placements"][symbol].pop("book_buy")
+                    chunk_virtual_state["placements"][symbol].pop(OrderType.BOOK_BUY)
 
-            if "book_sell" in chunk_virtual_state["placements"][symbol]:
-                command = chunk_virtual_state["placements"][symbol]["book_sell"]
-                boundary = command["boundary"]
+            if OrderType.BOOK_SELL in chunk_virtual_state["placements"][symbol]:
+                placement = chunk_virtual_state["placements"][symbol][
+                    OrderType.BOOK_SELL
+                ]
+                boundary = placement["boundary"]
 
                 wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
                 wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
@@ -413,13 +460,13 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
                     would_trade_happen = True
                     role = "maker"
                     fill_price = boundary
-                    fill_margin = command["margin"]
+                    fill_margin = placement["margin"]
                     if fill_margin < 0:
                         is_margin_negative = True
                     if math.isnan(fill_margin):
                         is_margin_nan = True
                     amount_shift = -fill_margin / fill_price
-                    chunk_virtual_state["placements"][symbol].pop("book_sell")
+                    chunk_virtual_state["placements"][symbol].pop(OrderType.BOOK_SELL)
 
             # check if situation is okay
             if is_margin_negative:
@@ -506,33 +553,33 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
             current_amount = chunk_virtual_state["locations"][symbol]["amount"]
             current_margin = abs(current_amount) * current_entry_price
             current_margin = float(current_margin)
-            symbol_position = {}
-            symbol_position["entry_price"] = current_entry_price
-            symbol_position["margin"] = current_margin
-            if chunk_virtual_state["locations"][symbol]["amount"] > 0:
-                symbol_position["direction"] = "long"
-            if chunk_virtual_state["locations"][symbol]["amount"] < 0:
-                symbol_position["direction"] = "short"
-            if chunk_virtual_state["locations"][symbol]["amount"] == 0:
-                symbol_position["direction"] = "none"
-            chunk_account_state["positions"][symbol] = symbol_position
+            if current_amount > 0.0:
+                current_direction = PositionDirection.LONG
+            elif current_amount < 0.0:
+                current_direction = PositionDirection.SHORT
+            else:
+                current_direction = PositionDirection.NONE
+            symbol_position = Position(
+                margin=current_margin,
+                direction=current_direction,
+                entry_price=current_entry_price,
+                update_time=datetime.fromtimestamp(0),
+            )
+            chunk_account_state.positions[symbol] = symbol_position
 
             # placements
             symbol_placements = chunk_virtual_state["placements"][symbol]
-            symbol_open_orders = {}
-            for command_name, placement in symbol_placements.items():
+            symbol_open_orders: dict[int, OpenOrder] = {}
+            for order_type, placement in symbol_placements.items():
                 order_id = placement["order_id"]
                 boundary = float(placement["boundary"])
-                if "margin" in placement.keys():
-                    left_margin = float(placement["margin"])
-                else:
-                    left_margin = None
-                symbol_open_orders[order_id] = {
-                    "command_name": command_name,
-                    "boundary": boundary,
-                    "left_margin": left_margin,
-                }
-            chunk_account_state["open_orders"][symbol] = symbol_open_orders
+                left_margin = float(placement["margin"])
+                symbol_open_orders[order_id] = OpenOrder(
+                    order_type=order_type,
+                    boundary=boundary,
+                    left_margin=left_margin,
+                )
+            chunk_account_state.open_orders[symbol] = symbol_open_orders
 
             # ■■■■■ record (symbol dependent) ■■■■■
 
@@ -555,7 +602,7 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
 
                 margin_ratio = abs(amount_shift) * open_price / wallet_balance
 
-                order_id = random.randint(10**18, 10**19 - 1)
+                order_id = random.randint(ORDER_ID_MIN, ORDER_ID_MAX)
 
                 if amount_shift > 0:
                     side = "buy"
@@ -583,7 +630,7 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
                 asset_record_ar[-1]["Result Asset"] = wallet_balance
 
                 update_time = fill_time.astype(datetime).replace(tzinfo=timezone.utc)
-                chunk_account_state["positions"][symbol]["update_time"] = update_time
+                chunk_account_state.positions[symbol].update_time = update_time
 
         # ■■■■■ understand the situation ■■■■■
 
@@ -614,8 +661,8 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
 
         # ■■■■■ update the account state (symbol independent) ■■■■■
 
-        chunk_account_state["observed_until"] = current_moment
-        chunk_account_state["wallet_balance"] = float(wallet_balance)
+        chunk_account_state.observed_until = current_moment
+        chunk_account_state.wallet_balance = float(wallet_balance)
 
         # ■■■■■ record (symbol independent) ■■■■■
 
@@ -628,20 +675,24 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
 
         current_candle_data: np.record = candle_data_ar[cycle]
         current_indicators: np.record = indicators_ar[cycle]
-        decision, chunk_scribbles = decide(
+        decisions, chunk_scribbles = decide(
             target_symbols=target_symbols,
             current_moment=current_moment,
             current_candle_data=current_candle_data,
             current_indicators=current_indicators,
-            account_state=chunk_account_state.copy(),
+            account_state=replace(chunk_account_state),
             scribbles=chunk_scribbles,
             decision_script=decision_script_compiled,
         )
 
-        for symbol_key, symbol_decision in decision.items():
-            for each_decision in symbol_decision.values():
-                each_decision["order_id"] = random.randint(10**18, 10**19 - 1)
-            chunk_virtual_state["placements"][symbol_key].update(decision[symbol_key])
+        for symbol_key, symbol_decisions in decisions.items():
+            for order_type, decision in symbol_decisions.items():
+                placement = {
+                    "order_id": random.randint(ORDER_ID_MIN, ORDER_ID_MAX),
+                    "boundary": decision.boundary,
+                    "margin": decision.margin,
+                }
+                chunk_virtual_state["placements"][symbol_key][order_type] = placement
 
         # ■■■■■ report the progress in seconds ■■■■■
 

@@ -1,10 +1,10 @@
 from asyncio import Task, create_task
-from typing import Coroutine, TypeVar
+from typing import Any, Coroutine, TypeVar
 
 T = TypeVar("T")
 
 # A set to keep track of all running tasks.
-all_tasks = set[Task]()
+all_tasks = set[Task[Any]]()
 
 
 def spawn(coroutine: Coroutine[None, None, T]) -> Task[T]:
