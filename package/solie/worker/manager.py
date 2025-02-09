@@ -132,7 +132,14 @@ class Manager:
             await file.write(self.management_settings.to_json(indent=2))
 
     async def open_datapath(self):
-        await go(os.startfile, self.window.datapath)
+        if os.name == "nt":
+            await go(os.startfile, self.window.datapath)
+        else:
+            await ask(
+                "Opening explorer is not supported on this platform.",
+                "Please open the folder manually.",
+                ["Okay"],
+            )
 
     async def deselect_log_output(self):
         self.window.listWidget.clearSelection()
