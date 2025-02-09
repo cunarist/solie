@@ -13,7 +13,7 @@ import pandas as pd
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtWidgets
 
-from solie.common import go, outsource, spawn
+from solie.common import outsource, spawn, spawn_blocking
 from solie.overlay import DonationGuide, DownloadFillOption
 from solie.utility import (
     AggregateTrade,
@@ -163,9 +163,9 @@ class Collector:
         async with self.candle_data.write_lock as cell:
             filepath = self.workerpath / f"candle_data_{current_year}.pickle"
             if await aiofiles.os.path.isfile(filepath):
-                df: pd.DataFrame = await go(pd.read_pickle, filepath)
+                df: pd.DataFrame = await spawn_blocking(pd.read_pickle, filepath)
                 if not df.index.is_monotonic_increasing:
-                    df = await go(sort_data_frame, df)
+                    df = await spawn_blocking(sort_data_frame, df)
                 cell.data = df
 
     async def organize_data(self):
@@ -177,7 +177,7 @@ class Collector:
                 unique_index = original_index.drop_duplicates()
                 cell.data = cell.data.reindex(unique_index)  # type:ignore
             if not cell.data.index.is_monotonic_increasing:
-                cell.data = await go(sort_data_frame, cell.data)
+                cell.data = await spawn_blocking(sort_data_frame, cell.data)
 
         duration = time.perf_counter() - start_time
         add_task_duration("collector_organize_data", duration)
@@ -196,7 +196,7 @@ class Collector:
 
         # ■■■■■ make a new file ■■■■■
 
-        await go(year_df.to_pickle, filepath_new)
+        await spawn_blocking(year_df.to_pickle, filepath_new)
 
         # ■■■■■ safely replace the existing file ■■■■■
 
@@ -280,8 +280,8 @@ class Collector:
                     temp_sr[from_moment] = np.nan
                 if until_moment not in temp_sr.index:
                     temp_sr[until_moment] = np.nan
-                temp_sr = await go(temp_sr.asfreq, "10S")
-                isnan_sr = await go(temp_sr.isna)
+                temp_sr = await spawn_blocking(temp_sr.asfreq, "10S")
+                isnan_sr = await spawn_blocking(temp_sr.isna)
                 nan_index = isnan_sr[isnan_sr == 1].index
                 moment_to_fill_from: datetime = nan_index[0]  # type:ignore
 
@@ -312,7 +312,7 @@ class Collector:
                         aggtrades[last_fetched_id]["T"] / 1000, tz=timezone.utc
                     )
 
-                recent_candle_data = await go(
+                recent_candle_data = await spawn_blocking(
                     fill_holes_with_aggtrades,
                     symbol,
                     recent_candle_data,
@@ -333,7 +333,7 @@ class Collector:
             temp_df = cell.data[cell.data.index >= split_moment]
             recent_candle_data = recent_candle_data.combine_first(temp_df)
             if not recent_candle_data.index.is_monotonic_increasing:
-                recent_candle_data = await go(
+                recent_candle_data = await spawn_blocking(
                     sort_data_frame,
                     recent_candle_data,
                 )
@@ -418,7 +418,7 @@ class Collector:
         return cumulation_rate
 
     async def open_binance_data_page(self):
-        await go(webbrowser.open, "https://www.binance.com/en/landing/data")
+        await spawn_blocking(webbrowser.open, "https://www.binance.com/en/landing/data")
 
     async def download_fill_candle_data(self):
         # ■■■■■ ask filling type ■■■■■
@@ -559,11 +559,13 @@ class Collector:
                 if find_stop_flag("download_fill_candle_data", task_id):
                     return
 
-                returned = await go(download_aggtrade_data, download_preset)
+                returned = await spawn_blocking(download_aggtrade_data, download_preset)
                 if returned is not None:
                     new_df = returned
                     async with combined_df.write_lock as cell:
-                        new = await go(combine_candle_data, new_df, cell.data)
+                        new = await spawn_blocking(
+                            combine_candle_data, new_df, cell.data
+                        )
                         cell.data = new
 
                 done_steps += 1
@@ -575,7 +577,7 @@ class Collector:
                 # For data of previous years,
                 # save them in the disk.
                 async with combined_df.read_lock as cell:
-                    await go(
+                    await spawn_blocking(
                         cell.data.to_pickle,
                         self.workerpath / f"candle_data_{preset_year}.pickle",
                     )
@@ -584,7 +586,7 @@ class Collector:
                 # and store them in the memory.
                 async with combined_df.read_lock as cell:
                     async with self.candle_data.write_lock as cell_worker:
-                        cell_worker.data = await go(
+                        cell_worker.data = await spawn_blocking(
                             combine_candle_data,
                             cell.data,
                             cell_worker.data,
@@ -725,7 +727,7 @@ class Collector:
             for column_name, new_data_value in new_values.items():
                 cell.data.loc[before_moment, column_name] = new_data_value
             if not cell.data.index.is_monotonic_increasing:
-                cell.data = await go(sort_data_frame, cell.data)
+                cell.data = await spawn_blocking(sort_data_frame, cell.data)
 
         duration = time.perf_counter() - start_time
         add_task_duration("add_candle_data", duration)
@@ -749,5 +751,5 @@ class Collector:
 
     async def read_saved_candle_data(self, year: int) -> pd.DataFrame:
         filepath = self.workerpath / f"candle_data_{year}.pickle"
-        candle_data: pd.DataFrame = await go(pd.read_pickle, filepath)
+        candle_data: pd.DataFrame = await spawn_blocking(pd.read_pickle, filepath)
         return candle_data

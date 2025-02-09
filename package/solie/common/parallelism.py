@@ -24,7 +24,9 @@ def get_sync_manager() -> SyncManager:
     return sync_manager
 
 
-async def go(callable: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
+async def spawn_blocking(
+    callable: Callable[P, T], *args: P.args, **kwargs: P.kwargs
+) -> T:
     """
     Executes the given callable in a separate process pool
     using `asyncio`'s `run_in_executor`.

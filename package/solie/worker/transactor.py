@@ -15,7 +15,7 @@ import pandas as pd
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtWidgets
 
-from solie.common import go, outsource, spawn
+from solie.common import outsource, spawn, spawn_blocking
 from solie.overlay import LongTextView
 from solie.utility import (
     ApiRequester,
@@ -248,19 +248,19 @@ class Transactor:
         # unrealized changes
         filepath = self.workerpath / "unrealized_changes.pickle"
         if await aiofiles.os.path.isfile(filepath):
-            sr: pd.Series = await go(pd.read_pickle, filepath)
+            sr: pd.Series = await spawn_blocking(pd.read_pickle, filepath)
             self.unrealized_changes = RWLock(sr)
 
         # asset record
         filepath = self.workerpath / "asset_record.pickle"
         if await aiofiles.os.path.isfile(filepath):
-            df: pd.DataFrame = await go(pd.read_pickle, filepath)
+            df: pd.DataFrame = await spawn_blocking(pd.read_pickle, filepath)
             self.asset_record = RWLock(df)
 
         # auto order record
         filepath = self.workerpath / "auto_order_record.pickle"
         if await aiofiles.os.path.isfile(filepath):
-            df: pd.DataFrame = await go(pd.read_pickle, filepath)
+            df: pd.DataFrame = await spawn_blocking(pd.read_pickle, filepath)
             self.auto_order_record = RWLock(df)
 
     async def organize_data(self):
@@ -269,14 +269,14 @@ class Transactor:
                 unique_index = cell.data.index.drop_duplicates()
                 cell.data = cell.data.reindex(unique_index)  # type:ignore
             if not cell.data.index.is_monotonic_increasing:
-                cell.data = await go(sort_series, cell.data)
+                cell.data = await spawn_blocking(sort_series, cell.data)
 
         async with self.auto_order_record.write_lock as cell:
             if not cell.data.index.is_unique:
                 unique_index = cell.data.index.drop_duplicates()
                 cell.data = cell.data.reindex(unique_index)  # type:ignore
             if not cell.data.index.is_monotonic_increasing:
-                cell.data = await go(sort_data_frame, cell.data)
+                cell.data = await spawn_blocking(sort_data_frame, cell.data)
             max_length = 2**16
             if len(cell.data) > max_length:
                 cell.data = cell.data.iloc[-max_length:].copy()
@@ -286,26 +286,26 @@ class Transactor:
                 unique_index = cell.data.index.drop_duplicates()
                 cell.data = cell.data.reindex(unique_index)  # type:ignore
             if not cell.data.index.is_monotonic_increasing:
-                cell.data = await go(sort_data_frame, cell.data)
+                cell.data = await spawn_blocking(sort_data_frame, cell.data)
 
     async def save_large_data(self):
         async with self.unrealized_changes.read_lock as cell:
             unrealized_changes = cell.data.copy()
-        await go(
+        await spawn_blocking(
             unrealized_changes.to_pickle,
             self.workerpath / "unrealized_changes.pickle",
         )
 
         async with self.auto_order_record.read_lock as cell:
             auto_order_record = cell.data.copy()
-        await go(
+        await spawn_blocking(
             auto_order_record.to_pickle,
             self.workerpath / "auto_order_record.pickle",
         )
 
         async with self.asset_record.read_lock as cell:
             asset_record = cell.data.copy()
-        await go(
+        await spawn_blocking(
             asset_record.to_pickle,
             self.workerpath / "asset_record.pickle",
         )
@@ -577,7 +577,7 @@ class Transactor:
                         else:
                             cell.data.loc[record_time, "Cause"] = "manual_trade"
                     if not cell.data.index.is_monotonic_increasing:
-                        cell.data = await go(sort_data_frame, cell.data)
+                        cell.data = await spawn_blocking(sort_data_frame, cell.data)
 
         # ■■■■■ cancel conflicting orders ■■■■■
 
@@ -585,19 +585,19 @@ class Transactor:
 
     async def open_exchange(self):
         symbol = self.viewing_symbol
-        await go(
+        await spawn_blocking(
             webbrowser.open,
             f"https://www.binance.com/en/futures/{symbol}",
         )
 
     async def open_futures_wallet_page(self):
-        await go(
+        await spawn_blocking(
             webbrowser.open,
             "https://www.binance.com/en/my/wallet/account/futures",
         )
 
     async def open_api_management_page(self):
-        await go(
+        await spawn_blocking(
             webbrowser.open,
             "https://www.binance.com/en/my/settings/api-management",
         )
@@ -929,7 +929,9 @@ class Transactor:
                     asset_record.loc[observed_until, "Cause"] = "other"
                     asset_record.loc[observed_until, "Result Asset"] = last_asset
                     if not asset_record.index.is_monotonic_increasing:
-                        asset_record = await go(sort_data_frame, asset_record)
+                        asset_record = await spawn_blocking(
+                            sort_data_frame, asset_record
+                        )
 
         # add the left end
 
@@ -937,7 +939,7 @@ class Transactor:
             asset_record.loc[slice_from, "Cause"] = "other"
             asset_record.loc[slice_from, "Result Asset"] = before_asset
             if not asset_record.index.is_monotonic_increasing:
-                asset_record = await go(sort_data_frame, asset_record)
+                asset_record = await spawn_blocking(sort_data_frame, asset_record)
 
         # ■■■■■ draw heavy lines ■■■■■
 
@@ -1141,7 +1143,7 @@ class Transactor:
 
         indicators_script = strategy.indicators_script
 
-        indicators = await go(
+        indicators = await spawn_blocking(
             make_indicators,
             target_symbols=[self.viewing_symbol],
             candle_data=candle_data_original,
@@ -1395,7 +1397,7 @@ class Transactor:
         coroutines = []
         for symbol in target_symbols:
             coroutines.append(
-                go(
+                spawn_blocking(
                     make_indicators,
                     target_symbols=[symbol],
                     candle_data=candle_data[[symbol]],
@@ -1411,7 +1413,7 @@ class Transactor:
         current_indicators: np.record = indicators.to_records()[-1]
         decision_script = strategy.decision_script
 
-        decision, scribbles = await go(
+        decision, scribbles = await spawn_blocking(
             decide,
             target_symbols=target_symbols,
             current_moment=current_moment,
@@ -1740,7 +1742,7 @@ class Transactor:
         async with self.unrealized_changes.write_lock as cell:
             cell.data[before_moment] = unrealized_change
             if not cell.data.index.is_monotonic_increasing:
-                cell.data = await go(sort_series, cell.data)
+                cell.data = await spawn_blocking(sort_series, cell.data)
 
         # ■■■■■ Make an asset trace if it's blank ■■■■■
 
@@ -1769,7 +1771,7 @@ class Transactor:
                 cell.data.loc[current_time, "Cause"] = "other"
                 cell.data.loc[current_time, "Result Asset"] = wallet_balance
                 if not cell.data.index.is_monotonic_increasing:
-                    cell.data = await go(sort_data_frame, cell.data)
+                    cell.data = await spawn_blocking(sort_data_frame, cell.data)
         else:
             # when the difference is small enough to consider as an numeric error
             async with self.asset_record.write_lock as cell:
@@ -1943,7 +1945,7 @@ class Transactor:
                 cell.data.loc[update_time, "Symbol"] = order_symbol
                 cell.data.loc[update_time, "Order ID"] = order_id
                 if not cell.data.index.is_monotonic_increasing:
-                    cell.data = await go(sort_data_frame, cell.data)
+                    cell.data = await spawn_blocking(sort_data_frame, cell.data)
 
         # ■■■■■ Do cancel orders ■■■■■
 

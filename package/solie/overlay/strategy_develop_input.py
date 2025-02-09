@@ -3,7 +3,7 @@ import webbrowser
 import aiofiles
 from PySide6 import QtCore, QtWidgets
 
-from solie.common import PACKAGE_PATH, go, outsource
+from solie.common import PACKAGE_PATH, outsource, spawn_blocking
 from solie.utility import Strategy
 from solie.widget import BaseOverlay, ScriptEditor, VerticalDivider, ask
 
@@ -126,7 +126,7 @@ class StrategyDevelopInput(BaseOverlay):
         # API docs button
         async def job_ad():
             url = "https://solie-docs.cunarist.com/making-strategy/"
-            await go(webbrowser.open, url)
+            await spawn_blocking(webbrowser.open, url)
 
         new_action = action_menu.addAction("Show Solie API docs")
         outsource(new_action.triggered, job_ad)
@@ -134,7 +134,7 @@ class StrategyDevelopInput(BaseOverlay):
         # Pandas docs button
         async def job_pd():
             url = "https://pandas.pydata.org/docs/reference/index.html"
-            await go(webbrowser.open, url)
+            await spawn_blocking(webbrowser.open, url)
 
         new_action = action_menu.addAction("Show Pandas API docs")
         outsource(new_action.triggered, job_pd)
@@ -142,7 +142,7 @@ class StrategyDevelopInput(BaseOverlay):
         # TA docs button
         async def job_td():
             url = "https://github.com/twopirllc/pandas-ta#indicators-by-category"
-            await go(webbrowser.open, url)
+            await spawn_blocking(webbrowser.open, url)
 
         new_action = action_menu.addAction("Show TA API docs")
         outsource(new_action.triggered, job_td)

@@ -1,9 +1,9 @@
 from pathlib import Path
 
-import xdialog
 from PySide6 import QtCore, QtGui, QtWidgets
+from xdialog import directory
 
-from solie.common import go, outsource
+from solie.common import outsource, spawn_blocking
 from solie.widget import BaseOverlay, HorizontalDivider, ask
 
 
@@ -81,7 +81,8 @@ class DatapathInput(BaseOverlay):
 
         async def job_dp():
             nonlocal datapath
-            datapath = Path(await go(xdialog.directory, title="Data folder"))
+            str_path = await spawn_blocking(directory, title="Data folder")
+            datapath = Path(str_path)
             folder_label.setText(str(datapath))
 
         # choose button

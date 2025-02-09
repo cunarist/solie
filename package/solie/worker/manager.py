@@ -11,7 +11,7 @@ import aiofiles.os
 import time_machine
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from solie.common import PROCESS_COUNT, go, outsource, spawn
+from solie.common import PROCESS_COUNT, outsource, spawn, spawn_blocking
 from solie.utility import (
     ApiRequester,
     BoardLockOptions,
@@ -130,7 +130,7 @@ class Manager:
 
     async def open_datapath(self):
         if os.name == "nt":
-            await go(os.startfile, self.window.datapath)
+            await spawn_blocking(os.startfile, self.window.datapath)
         else:
             await ask(
                 "Opening explorer is not supported on this platform.",
@@ -318,7 +318,7 @@ class Manager:
         self.window.close()
 
     async def open_documentation(self):
-        await go(webbrowser.open, "https://solie-docs.cunarist.com")
+        await spawn_blocking(webbrowser.open, "https://solie-docs.cunarist.com")
 
     async def lock_board(self):
         lock_board = self.management_settings.lock_board

@@ -12,7 +12,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtWidgets
 from scipy.signal import find_peaks
 
-from solie.common import get_sync_manager, go, outsource, spawn
+from solie.common import get_sync_manager, outsource, spawn, spawn_blocking
 from solie.utility import (
     BookTicker,
     CalculationInput,
@@ -340,9 +340,11 @@ class Simulator:
         for year in years:
             more_df = await team.collector.read_saved_candle_data(year)
             divided_datas.append(more_df)
-        candle_data_original: pd.DataFrame = await go(pd.concat, divided_datas)
+        candle_data_original = await spawn_blocking(pd.concat, divided_datas)
         if not candle_data_original.index.is_monotonic_increasing:
-            candle_data_original = await go(sort_data_frame, candle_data_original)
+            candle_data_original = await spawn_blocking(
+                sort_data_frame, candle_data_original
+            )
         async with self.unrealized_changes.read_lock as cell:
             unrealized_changes = cell.data.copy()
         async with self.asset_record.read_lock as cell:
@@ -376,7 +378,9 @@ class Simulator:
                     asset_record.loc[observed_until, "Cause"] = "other"
                     asset_record.loc[observed_until, "Result Asset"] = last_asset
                     if not asset_record.index.is_monotonic_increasing:
-                        asset_record = await go(sort_data_frame, asset_record)
+                        asset_record = await spawn_blocking(
+                            sort_data_frame, asset_record
+                        )
 
         # add the left end
 
@@ -384,7 +388,7 @@ class Simulator:
             asset_record.loc[slice_from, "Cause"] = "other"
             asset_record.loc[slice_from, "Result Asset"] = before_asset
             if not asset_record.index.is_monotonic_increasing:
-                asset_record = await go(sort_data_frame, asset_record)
+                asset_record = await spawn_blocking(sort_data_frame, asset_record)
 
         # ■■■■■ draw heavy lines ■■■■■
 
@@ -587,7 +591,7 @@ class Simulator:
 
         indicators_script = strategy.indicators_script
 
-        indicators = await go(
+        indicators = await spawn_blocking(
             make_indicators,
             target_symbols=[self.viewing_symbol],
             candle_data=candle_data_original,
@@ -941,11 +945,11 @@ class Simulator:
         else:
             # when calculating properly
             try:
-                previous_asset_record: pd.DataFrame = await go(
+                previous_asset_record: pd.DataFrame = await spawn_blocking(
                     pd.read_pickle,
                     asset_record_path,
                 )
-                previous_unrealized_changes: pd.Series = await go(
+                previous_unrealized_changes: pd.Series = await spawn_blocking(
                     pd.read_pickle,
                     unrealized_changes_path,
                 )
@@ -991,7 +995,7 @@ class Simulator:
 
             # a little more data for generation
             provide_from = calculate_from - timedelta(days=28)
-            year_indicators = await go(
+            year_indicators = await spawn_blocking(
                 make_indicators,
                 target_symbols=target_symbols,
                 candle_data=year_candle_data[provide_from:calculate_until],  # type:ignore
@@ -1074,7 +1078,8 @@ class Simulator:
 
         if should_calculate:
             coroutines = [
-                go(simulate_chunk, input_data) for input_data in calculation_inputs
+                spawn_blocking(simulate_chunk, input_data)
+                for input_data in calculation_inputs
             ]
             gathered = asyncio.gather(*coroutines)
 
@@ -1108,7 +1113,7 @@ class Simulator:
             mask = ~asset_record.index.duplicated()
             asset_record = asset_record[mask]
             if not asset_record.index.is_monotonic_increasing:
-                asset_record = await go(sort_data_frame, asset_record)
+                asset_record = await spawn_blocking(sort_data_frame, asset_record)
 
             unrealized_changes = previous_unrealized_changes
             for chunk_ouput_data in calculation_output_data:
@@ -1118,7 +1123,9 @@ class Simulator:
             mask = ~unrealized_changes.index.duplicated()
             unrealized_changes = unrealized_changes[mask]
             if not unrealized_changes.index.is_monotonic_increasing:
-                unrealized_changes = await go(sort_series, unrealized_changes)
+                unrealized_changes = await spawn_blocking(
+                    sort_series, unrealized_changes
+                )
 
             scribbles = calculation_output_data[-1].chunk_scribbles
             account_state = calculation_output_data[-1].chunk_account_state
@@ -1147,8 +1154,8 @@ class Simulator:
         # ■■■■■ save if properly calculated ■■■■■
 
         if not only_visible and should_calculate:
-            await go(asset_record.to_pickle, asset_record_path)
-            await go(unrealized_changes.to_pickle, unrealized_changes_path)
+            await spawn_blocking(asset_record.to_pickle, asset_record_path)
+            await spawn_blocking(unrealized_changes.to_pickle, unrealized_changes_path)
             async with aiofiles.open(scribbles_path, "wb") as file:
                 content = pickle.dumps(scribbles)
                 await file.write(content)
@@ -1229,13 +1236,15 @@ class Simulator:
         unrealized_changes = unrealized_changes * leverage
         year_asset_changes: pd.Series = pd.concat(chunk_asset_changes_list)
         if not year_asset_changes.index.is_monotonic_increasing:
-            year_asset_changes = await go(sort_series, year_asset_changes)
+            year_asset_changes = await spawn_blocking(sort_series, year_asset_changes)
 
         if len(asset_record) > 0:
             start_point = asset_record.index[0]
             year_asset_changes[start_point] = float(1)
             if not year_asset_changes.index.is_monotonic_increasing:
-                year_asset_changes = await go(sort_series, year_asset_changes)
+                year_asset_changes = await spawn_blocking(
+                    sort_series, year_asset_changes
+                )
         asset_record = asset_record.reindex(year_asset_changes.index)
         asset_record["Result Asset"] = year_asset_changes.cumprod()
 
@@ -1370,10 +1379,10 @@ class Simulator:
 
         try:
             async with self.raw_asset_record.write_lock as cell:
-                new = await go(pd.read_pickle, asset_record_path)
+                new = await spawn_blocking(pd.read_pickle, asset_record_path)
                 cell.data = new
             async with self.raw_unrealized_changes.write_lock as cell:
-                new = await go(pd.read_pickle, unrealized_changes_path)
+                new = await spawn_blocking(pd.read_pickle, unrealized_changes_path)
                 cell.data = new
             async with aiofiles.open(scribbles_path, "rb") as file:
                 content = await file.read()
