@@ -184,8 +184,7 @@ class Simulator:
     async def display_lines(self, periodic=False, frequent=False):
         # ■■■■■ start the task ■■■■■
 
-        task_name = "display_simulation_lines"
-
+        task_name = "DISPLAY_SIMULATION_LINES"
         task_id = make_stop_flag(task_name)
 
         # ■■■■■ check drawing mode ■■■■■
@@ -712,7 +711,7 @@ class Simulator:
         await self.calculate(only_visible=True)
 
     async def display_range_information(self):
-        task_id = make_stop_flag("display_simulation_range_information")
+        task_id = make_stop_flag("DISPLAY_SIMULATION_RANGE_INFORMATION")
 
         symbol = self.viewing_symbol
         price_widget = self.window.simulation_graph.price_widget
@@ -721,7 +720,7 @@ class Simulator:
         range_start_timestamp = max(range_start_timestamp, 0.0)
         range_start = datetime.fromtimestamp(range_start_timestamp, tz=timezone.utc)
 
-        if find_stop_flag("display_simulation_range_information", task_id):
+        if find_stop_flag("DISPLAY_SIMULATION_RANGE_INFORMATION", task_id):
             return
 
         range_end_timestamp = price_widget.getAxis("bottom").range[1]
@@ -733,7 +732,7 @@ class Simulator:
             range_end_timestamp = min(range_end_timestamp, 9223339636.0)
         range_end = datetime.fromtimestamp(range_end_timestamp, tz=timezone.utc)
 
-        if find_stop_flag("display_simulation_range_information", task_id):
+        if find_stop_flag("DISPLAY_SIMULATION_RANGE_INFORMATION", task_id):
             return
 
         range_length = range_end - range_start
@@ -741,7 +740,7 @@ class Simulator:
         range_hours, remains = divmod(range_length.seconds, 3600)
         range_minutes, remains = divmod(remains, 60)
 
-        if find_stop_flag("display_simulation_range_information", task_id):
+        if find_stop_flag("DISPLAY_SIMULATION_RANGE_INFORMATION", task_id):
             return
 
         async with self.unrealized_changes.read_lock as cell:
@@ -784,7 +783,7 @@ class Simulator:
         else:
             min_unrealized_change = 0.0
 
-        if find_stop_flag("display_simulation_range_information", task_id):
+        if find_stop_flag("DISPLAY_SIMULATION_RANGE_INFORMATION", task_id):
             return
 
         view_range = price_widget.getAxis("left").range
@@ -818,14 +817,14 @@ class Simulator:
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
 
     async def calculate(self, only_visible=False):
-        task_id = make_stop_flag("calculate_simulation")
+        task_id = make_stop_flag("CALCULATE_SIMULATION")
 
         prepare_step = 0
         calculate_step = 0
 
         async def play_progress_bar():
             while True:
-                if find_stop_flag("calculate_simulation", task_id):
+                if find_stop_flag("CALCULATE_SIMULATION", task_id):
                     self.window.progressBar_4.setValue(0)
                     self.window.progressBar.setValue(0)
                     return
@@ -1419,7 +1418,7 @@ class Simulator:
         graph_to.setXRange(range_start, range_end, padding=0)  # type:ignore
 
     async def stop_calculation(self):
-        make_stop_flag("calculate_simulation")
+        make_stop_flag("CALCULATE_SIMULATION")
 
     async def analyze_unrealized_peaks(self):
         async with self.unrealized_changes.read_lock as cell:

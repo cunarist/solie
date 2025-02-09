@@ -16,7 +16,7 @@ from solie.utility import (
     ApiRequester,
     BoardLockOptions,
     ManagementSettings,
-    get_task_duration,
+    get_task_durations,
     internet_connected,
     save_datapath,
 )
@@ -178,7 +178,7 @@ class Manager:
             self.window.label_35.setText(text)
 
             texts = []
-            task_durations = get_task_duration()
+            task_durations = get_task_durations()
             for data_name, deque_data in task_durations.items():
                 if len(deque_data) > 0:
                     text = data_name

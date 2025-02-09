@@ -645,7 +645,7 @@ class Transactor:
         await self.save_transaction_settings()
 
     async def display_range_information(self):
-        task_id = make_stop_flag("display_transaction_range_information")
+        task_id = make_stop_flag("DISPLAY_TRANSACTION_RANGE_INFORMATION")
 
         symbol = self.viewing_symbol
         price_widget = self.window.transaction_graph.price_widget
@@ -654,7 +654,7 @@ class Transactor:
         range_start_timestamp = max(range_start_timestamp, 0.0)
         range_start = datetime.fromtimestamp(range_start_timestamp, tz=timezone.utc)
 
-        if find_stop_flag("display_transaction_range_information", task_id):
+        if find_stop_flag("DISPLAY_TRANSACTION_RANGE_INFORMATION", task_id):
             return
 
         range_end_timestamp = price_widget.getAxis("bottom").range[1]
@@ -666,7 +666,7 @@ class Transactor:
             range_end_timestamp = min(range_end_timestamp, 9223339636.0)
         range_end = datetime.fromtimestamp(range_end_timestamp, tz=timezone.utc)
 
-        if find_stop_flag("display_transaction_range_information", task_id):
+        if find_stop_flag("DISPLAY_TRANSACTION_RANGE_INFORMATION", task_id):
             return
 
         range_length = range_end - range_start
@@ -674,7 +674,7 @@ class Transactor:
         range_hours, remains = divmod(range_length.seconds, 3600)
         range_minutes, remains = divmod(remains, 60)
 
-        if find_stop_flag("display_transaction_range_information", task_id):
+        if find_stop_flag("DISPLAY_TRANSACTION_RANGE_INFORMATION", task_id):
             return
 
         async with self.unrealized_changes.read_lock as cell:
@@ -717,7 +717,7 @@ class Transactor:
         else:
             min_unrealized_change = 0
 
-        if find_stop_flag("display_transaction_range_information", task_id):
+        if find_stop_flag("DISPLAY_TRANSACTION_RANGE_INFORMATION", task_id):
             return
 
         view_range = price_widget.getAxis("left").range
@@ -757,8 +757,7 @@ class Transactor:
     async def display_lines(self, periodic=False, frequent=False):
         # ■■■■■ start the task ■■■■■
 
-        task_name = "display_transaction_lines"
-
+        task_name = "DISPLAY_TRANSACTION_LINES"
         task_id = make_stop_flag(task_name)
 
         # ■■■■■ check drawing mode ■■■■■
@@ -1440,7 +1439,7 @@ class Transactor:
 
         is_cycle_done = True
         duration = time.perf_counter() - start_time
-        add_task_duration("perform_transaction", duration)
+        add_task_duration("PERFORM_TRANSACTION", duration)
 
         # ■■■■■ Place order ■■■■■
 

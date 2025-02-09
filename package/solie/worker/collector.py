@@ -182,7 +182,7 @@ class Collector:
                 cell.data = await spawn_blocking(sort_data_frame, cell.data)
 
         duration = time.perf_counter() - start_time
-        add_task_duration("collector_organize_data", duration)
+        add_task_duration("ORGANIZE_COLLECTOR_DATA", duration)
 
     async def save_candle_data(self):
         # ■■■■■ default values ■■■■■
@@ -442,7 +442,7 @@ class Collector:
 
         # ■■■■■ prepare target tuples for downloading ■■■■■
 
-        task_id = make_stop_flag("download_fill_candle_data")
+        task_id = make_stop_flag("DOWNLOAD_FILL_CANDLE_DATA")
 
         download_presets: list[DownloadPreset] = []
         target_symbols = self.window.data_settings.target_symbols
@@ -520,7 +520,7 @@ class Collector:
 
         async def play_progress_bar():
             while True:
-                if find_stop_flag("download_fill_candle_data", task_id):
+                if find_stop_flag("DOWNLOAD_FILL_CANDLE_DATA", task_id):
                     self.window.progressBar_3.setValue(0)
                     return
                 else:
@@ -564,7 +564,7 @@ class Collector:
                 nonlocal done_steps
                 nonlocal combined_df
 
-                if find_stop_flag("download_fill_candle_data", task_id):
+                if find_stop_flag("DOWNLOAD_FILL_CANDLE_DATA", task_id):
                     return
 
                 returned = await spawn_blocking(download_aggtrade_data, download_preset)
@@ -628,7 +628,7 @@ class Collector:
         self.realtime_data.append(book_ticker)
 
         duration = time.perf_counter() - start_time
-        add_task_duration("add_book_tickers", duration)
+        add_task_duration("ADD_BOOK_TICKERS", duration)
 
     async def add_mark_price(self, received: list[dict[str, Any]]):
         start_time = time.perf_counter()
@@ -645,7 +645,7 @@ class Collector:
                 )
                 self.realtime_data.append(mark_price)
         duration = time.perf_counter() - start_time
-        add_task_duration("add_mark_price", duration)
+        add_task_duration("ADD_MARK_PRICE", duration)
 
     async def add_aggregate_trades(self, received: dict[str, Any]):
         start_time = time.perf_counter()
@@ -663,7 +663,7 @@ class Collector:
         self.aggregate_trades.append(aggregate_trade)
 
         duration = time.perf_counter() - start_time
-        add_task_duration("add_aggregate_trades", duration)
+        add_task_duration("ADD_AGGREGATE_TRADES", duration)
 
     async def clear_aggregate_trades(self):
         self.realtime_data.clear()
@@ -738,10 +738,10 @@ class Collector:
                 cell.data = await spawn_blocking(sort_data_frame, cell.data)
 
         duration = time.perf_counter() - start_time
-        add_task_duration("add_candle_data", duration)
+        add_task_duration("ADD_CANDLE_DATA", duration)
 
     async def stop_filling_candle_data(self):
-        make_stop_flag("download_fill_candle_data")
+        make_stop_flag("DOWNLOAD_FILL_CANDLE_DATA")
 
     async def guide_donation(self):
         await overlay(

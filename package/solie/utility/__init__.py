@@ -62,7 +62,7 @@ from .standardize import (
 from .stop_flag import find_stop_flag, make_stop_flag
 from .syntax_highlighter import SyntaxHighlighter
 from .time_axis_item import TimeAxisItem
-from .timing import add_task_duration, get_task_duration, to_moment
+from .timing import add_task_duration, get_task_durations, to_moment
 from .user_settings import (
     DataSettings,
     read_data_settings,
@@ -120,7 +120,7 @@ __all__ = [
     "fill_holes_with_aggtrades",
     "find_stop_flag",
     "format_numeric",
-    "get_task_duration",
+    "get_task_durations",
     "internet_connected",
     "is_internet_checked",
     "is_left_version_higher",

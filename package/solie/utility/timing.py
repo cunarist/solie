@@ -1,23 +1,40 @@
 from collections import deque
 from datetime import datetime, timedelta
-
-task_durations: dict[str, deque[float]] = {
-    "add_candle_data": deque(maxlen=360),
-    "add_book_tickers": deque(maxlen=1280),
-    "add_mark_price": deque(maxlen=10),
-    "add_aggregate_trades": deque(maxlen=1280),
-    "collector_organize_data": deque(maxlen=60),
-    "perform_transaction": deque(maxlen=360),
-    "display_transaction_lines": deque(maxlen=20),
-}
+from time import time
+from typing import NamedTuple
 
 
-def add_task_duration(task_name, duration):
-    task_durations[task_name].append(duration)
+class DurationRecord(NamedTuple):
+    duration: float
+    written_at: float
 
 
-def get_task_duration() -> dict[str, deque[float]]:
-    return task_durations
+task_durations: dict[str, deque[DurationRecord]] = {}
+
+
+def add_task_duration(task_name: str, duration: float):
+    # Get the deque.
+    record_deque = task_durations.get(task_name)
+    if record_deque is None:
+        record_deque = deque[DurationRecord](maxlen=1024)
+        task_durations[task_name] = record_deque
+
+    # Add the record.
+    duration_record = DurationRecord(
+        duration=duration,
+        written_at=time(),
+    )
+    record_deque.append(duration_record)
+
+    # Remove items that are more than a minute old.
+    preserve_from = time() - 60.0
+    while record_deque and record_deque[0][1] < preserve_from:
+        record_deque.popleft()
+
+
+def get_task_durations() -> dict[str, list[float]]:
+    dict_durations = {k: [r[0] for r in d] for k, d in task_durations.items()}
+    return dict_durations
 
 
 def to_moment(exact_time: datetime) -> datetime:
