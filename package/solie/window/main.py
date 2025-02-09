@@ -456,19 +456,19 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.horizontalLayout_16.addWidget(self.plot_widget_4)
         self.horizontalLayout_28.addWidget(self.plot_widget_6)
 
-        plot_item: pyqtgraph.PlotItem = self.plot_widget.plotItem  # type:ignore
+        plot_item = self.plot_widget.plotItem
         plot_item_1 = self.plot_widget_1.plotItem
         plot_item_4 = self.plot_widget_4.plotItem
         plot_item_6 = self.plot_widget_6.plotItem
 
-        if plot_item is None:
-            raise ValueError("Plot item was none")
-        if plot_item_1 is None:
-            raise ValueError("Plot item was none")
-        if plot_item_4 is None:
-            raise ValueError("Plot item was none")
-        if plot_item_6 is None:
-            raise ValueError("Plot item was none")
+        if not isinstance(plot_item, pyqtgraph.PlotItem):
+            raise ValueError("Plot item is invalid")
+        if not isinstance(plot_item_1, pyqtgraph.PlotItem):
+            raise ValueError("Plot item is invalid")
+        if not isinstance(plot_item_4, pyqtgraph.PlotItem):
+            raise ValueError("Plot item is invalid")
+        if not isinstance(plot_item_6, pyqtgraph.PlotItem):
+            raise ValueError("Plot item is invalid")
 
         plot_item.vb.setLimits(xMin=0, yMin=0)  # type:ignore
         plot_item_1.vb.setLimits(xMin=0, yMin=0)  # type:ignore
@@ -687,14 +687,14 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         plot_item_5 = self.plot_widget_5.plotItem
         plot_item_7 = self.plot_widget_7.plotItem
 
-        if plot_item_2 is None:
-            raise ValueError("Plot item was none")
-        if plot_item_3 is None:
-            raise ValueError("Plot item was none")
-        if plot_item_5 is None:
-            raise ValueError("Plot item was none")
-        if plot_item_7 is None:
-            raise ValueError("Plot item was none")
+        if not isinstance(plot_item_2, pyqtgraph.PlotItem):
+            raise ValueError("Plot item is invalid")
+        if not isinstance(plot_item_3, pyqtgraph.PlotItem):
+            raise ValueError("Plot item is invalid")
+        if not isinstance(plot_item_5, pyqtgraph.PlotItem):
+            raise ValueError("Plot item is invalid")
+        if not isinstance(plot_item_7, pyqtgraph.PlotItem):
+            raise ValueError("Plot item is invalid")
 
         plot_item_2.vb.setLimits(xMin=0, yMin=0)  # type:ignore
         plot_item_3.vb.setLimits(xMin=0, yMin=0)  # type:ignore
