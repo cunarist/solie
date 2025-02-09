@@ -5,9 +5,6 @@ from typing_extensions import override
 
 
 class PercentAxisItem(AxisItem):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     @override
     def tickValues(self, minVal: float, maxVal: float, size: float):  # noqa
         min_value = minVal

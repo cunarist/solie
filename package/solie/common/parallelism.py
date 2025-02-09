@@ -47,10 +47,6 @@ async def go(callable: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
     event_loop = asyncio.get_event_loop()
     result = await event_loop.run_in_executor(
         process_pool,
-        functools.partial(
-            callable,
-            *args,
-            **kwargs,
-        ),
+        functools.partial(callable, *args, **kwargs),
     )
     return result
