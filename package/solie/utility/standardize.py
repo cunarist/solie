@@ -12,7 +12,7 @@ def create_empty_candle_data(target_symbols: list[str]):
         columns=pd.MultiIndex.from_product(
             [
                 target_symbols,
-                ("Open", "High", "Low", "Close", "Volume"),
+                ("OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"),
             ]
         ),
         dtype=np.float32,
@@ -40,14 +40,14 @@ def create_empty_account_state(target_symbols: list[str]) -> AccountState:
 def create_empty_asset_record():
     return pd.DataFrame(
         columns=[
-            "Cause",
-            "Symbol",
-            "Side",
-            "Fill Price",
-            "Role",
-            "Margin Ratio",
-            "Order ID",
-            "Result Asset",
+            "CAUSE",
+            "SYMBOL",
+            "SIDE",
+            "FILL_PRICE",
+            "ROLE",
+            "MARGIN_RATIO",
+            "ORDER_ID",
+            "RESULT_ASSET",
         ],
         index=pd.DatetimeIndex([], tz="UTC"),
     )

@@ -137,8 +137,8 @@ class SimulationError(Exception):
 
 
 class OrderRole(Enum):
-    MAKER = "maker"
-    TAKER = "taker"
+    MAKER = "MAKER"
+    TAKER = "TAKER"
 
 
 class CalculationInput(NamedTuple):
@@ -223,8 +223,8 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
         for symbol in target_symbols:
             # ■■■■■ basic variables ■■■■■
 
-            open_price = candle_data_ar[cycle][str((symbol, "Open"))]
-            close_price = candle_data_ar[cycle][str((symbol, "Close"))]
+            open_price = candle_data_ar[cycle][str((symbol, "OPEN"))]
+            close_price = candle_data_ar[cycle][str((symbol, "CLOSE"))]
             if math.isnan(open_price) or math.isnan(close_price):
                 continue
 
@@ -292,8 +292,8 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
                 ]
                 boundary = placement.boundary
 
-                wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
-                wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
+                wobble_high = candle_data_ar[cycle][str((symbol, "HIGH"))]
+                wobble_low = candle_data_ar[cycle][str((symbol, "LOW"))]
                 did_cross = wobble_low < boundary < wobble_high
 
                 if did_cross:
@@ -309,8 +309,8 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
                 ]
                 boundary = placement.boundary
 
-                wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
-                wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
+                wobble_high = candle_data_ar[cycle][str((symbol, "HIGH"))]
+                wobble_low = candle_data_ar[cycle][str((symbol, "LOW"))]
                 did_cross = wobble_low < boundary < wobble_high
 
                 if did_cross:
@@ -328,8 +328,8 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
                 ]
                 boundary = placement.boundary
 
-                wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
-                wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
+                wobble_high = candle_data_ar[cycle][str((symbol, "HIGH"))]
+                wobble_low = candle_data_ar[cycle][str((symbol, "LOW"))]
                 did_cross = wobble_low < boundary < wobble_high
 
                 if did_cross:
@@ -350,8 +350,8 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
                 ]
                 boundary = placement.boundary
 
-                wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
-                wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
+                wobble_high = candle_data_ar[cycle][str((symbol, "HIGH"))]
+                wobble_low = candle_data_ar[cycle][str((symbol, "LOW"))]
                 did_cross = wobble_low < boundary < wobble_high
 
                 if did_cross:
@@ -372,8 +372,8 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
                 ]
                 boundary = placement.boundary
 
-                wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
-                wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
+                wobble_high = candle_data_ar[cycle][str((symbol, "HIGH"))]
+                wobble_low = candle_data_ar[cycle][str((symbol, "LOW"))]
                 did_cross = wobble_low < boundary < wobble_high
 
                 if did_cross:
@@ -394,8 +394,8 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
                 ]
                 boundary = placement.boundary
 
-                wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
-                wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
+                wobble_high = candle_data_ar[cycle][str((symbol, "HIGH"))]
+                wobble_low = candle_data_ar[cycle][str((symbol, "LOW"))]
                 did_cross = wobble_low < boundary < wobble_high
 
                 if did_cross:
@@ -416,8 +416,8 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
                 placement = chunk_virtual_state.placements[symbol][OrderType.BOOK_BUY]
                 boundary = placement.boundary
 
-                wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
-                wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
+                wobble_high = candle_data_ar[cycle][str((symbol, "HIGH"))]
+                wobble_low = candle_data_ar[cycle][str((symbol, "LOW"))]
                 did_cross = wobble_low < boundary < wobble_high
 
                 if did_cross:
@@ -436,8 +436,8 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
                 placement = chunk_virtual_state.placements[symbol][OrderType.BOOK_SELL]
                 boundary = placement.boundary
 
-                wobble_high = candle_data_ar[cycle][str((symbol, "High"))]
-                wobble_low = candle_data_ar[cycle][str((symbol, "Low"))]
+                wobble_high = candle_data_ar[cycle][str((symbol, "HIGH"))]
+                wobble_low = candle_data_ar[cycle][str((symbol, "LOW"))]
                 did_cross = wobble_low < boundary < wobble_high
 
                 if did_cross:
@@ -575,7 +575,7 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
                 for symbol_key, location in chunk_virtual_state.positions.items():
                     if location.amount == 0:
                         continue
-                    column_key = str((symbol_key, "Close"))
+                    column_key = str((symbol_key, "CLOSE"))
                     symbol_price = candle_data_ar[cycle][column_key]
                     if math.isnan(symbol_price):
                         continue
@@ -598,14 +598,14 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
                 original_size = asset_record_ar.shape[0]
                 asset_record_ar.resize(original_size + 1)
                 asset_record_ar[-1]["index"] = fill_time
-                asset_record_ar[-1]["Cause"] = "auto_trade"
-                asset_record_ar[-1]["Symbol"] = symbol
-                asset_record_ar[-1]["Side"] = "buy" if amount_shift > 0.0 else "sell"
-                asset_record_ar[-1]["Fill Price"] = fill_price
-                asset_record_ar[-1]["Role"] = role.value
-                asset_record_ar[-1]["Margin Ratio"] = margin_ratio
-                asset_record_ar[-1]["Order ID"] = order_id
-                asset_record_ar[-1]["Result Asset"] = wallet_balance
+                asset_record_ar[-1]["CAUSE"] = "AUTO_TRADE"
+                asset_record_ar[-1]["SYMBOL"] = symbol
+                asset_record_ar[-1]["SIDE"] = "BUY" if amount_shift > 0.0 else "SELL"
+                asset_record_ar[-1]["FILL_PRICE"] = fill_price
+                asset_record_ar[-1]["ROLE"] = role.value
+                asset_record_ar[-1]["MARGIN_RATIO"] = margin_ratio
+                asset_record_ar[-1]["ORDER_ID"] = order_id
+                asset_record_ar[-1]["RESULT_ASSET"] = wallet_balance
 
                 update_time = fill_time.astype(datetime).replace(tzinfo=timezone.utc)
                 chunk_account_state.positions[symbol].update_time = update_time
@@ -617,21 +617,21 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
         for symbol_key, location in chunk_virtual_state.positions.items():
             if location.amount == 0:
                 continue
-            symbol_price = candle_data_ar[cycle][str((symbol_key, "Close"))]
+            symbol_price = candle_data_ar[cycle][str((symbol_key, "CLOSE"))]
             if math.isnan(symbol_price):
                 continue
             current_margin = abs(location.amount) * location.entry_price
             wallet_balance += current_margin
             # assume that mark price doesn't wobble more than 5%
-            key_open_price = candle_data_ar[cycle][str((symbol_key, "Open"))]
-            key_close_price = candle_data_ar[cycle][str((symbol_key, "Close"))]
+            key_open_price = candle_data_ar[cycle][str((symbol_key, "OPEN"))]
+            key_close_price = candle_data_ar[cycle][str((symbol_key, "CLOSE"))]
             if location.amount < 0:
                 basic_price = max(key_open_price, key_close_price) * 1.05
-                key_high_price = candle_data_ar[cycle][str((symbol_key, "High"))]
+                key_high_price = candle_data_ar[cycle][str((symbol_key, "HIGH"))]
                 extreme_price = min(basic_price, key_high_price)
             else:
                 basic_price = min(key_open_price, key_close_price) * 0.95
-                key_low_price = candle_data_ar[cycle][str((symbol_key, "Low"))]
+                key_low_price = candle_data_ar[cycle][str((symbol_key, "LOW"))]
                 extreme_price = max(basic_price, key_low_price)
             price_difference = extreme_price - location.entry_price
             unrealized_profit += price_difference * location.amount

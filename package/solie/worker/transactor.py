@@ -91,8 +91,8 @@ class Transactor:
         self.auto_order_record = RWLock(
             pd.DataFrame(
                 columns=[
-                    "Symbol",
-                    "Order ID",
+                    "SYMBOL",
+                    "ORDER_ID",
                 ],
                 index=pd.DatetimeIndex([], tz="UTC"),
             )
@@ -541,46 +541,46 @@ class Transactor:
                 added_margin_ratio = added_margin / wallet_balance
 
                 async with self.auto_order_record.read_lock as cell:
-                    symbol_df = cell.data[cell.data["Symbol"] == symbol]
-                    unique_order_ids = symbol_df["Order ID"].unique()
+                    symbol_df = cell.data[cell.data["SYMBOL"] == symbol]
+                    unique_order_ids = symbol_df["ORDER_ID"].unique()
 
                 async with self.asset_record.write_lock as cell:
-                    symbol_df = cell.data[cell.data["Symbol"] == symbol]
-                    recorded_id_list = symbol_df["Order ID"].tolist()
+                    symbol_df = cell.data[cell.data["SYMBOL"] == symbol]
+                    recorded_id_list = symbol_df["ORDER_ID"].tolist()
                     does_record_exist = order_id in recorded_id_list
                     last_index = cell.data.index[-1]
                     if does_record_exist:
-                        mask_sr = symbol_df["Order ID"] == order_id
+                        mask_sr = symbol_df["ORDER_ID"] == order_id
                         rec_time = symbol_df.index[mask_sr][0]
-                        rec_value = float(symbol_df.loc[rec_time, "Margin Ratio"])  # type:ignore
+                        rec_value = float(symbol_df.loc[rec_time, "MARGIN_RATIO"])  # type:ignore
                         new_value = rec_value + added_margin_ratio
-                        cell.data.loc[rec_time, "Margin Ratio"] = new_value
-                        last_asset = float(cell.data.loc[last_index, "Result Asset"])  # type:ignore
+                        cell.data.loc[rec_time, "MARGIN_RATIO"] = new_value
+                        last_asset = float(cell.data.loc[last_index, "RESULT_ASSET"])  # type:ignore
                         new_value = last_asset + added_revenue
-                        cell.data.loc[last_index, "Result Asset"] = new_value
+                        cell.data.loc[last_index, "RESULT_ASSET"] = new_value
                     else:
                         record_time = event_time
                         while record_time in cell.data.index:
                             record_time += timedelta(milliseconds=1)
                         new_value = symbol
-                        cell.data.loc[record_time, "Symbol"] = new_value
-                        new_value = "sell" if side == "SELL" else "buy"
-                        cell.data.loc[record_time, "Side"] = new_value
+                        cell.data.loc[record_time, "SYMBOL"] = new_value
+                        new_value = "SELL" if side == "SELL" else "BUY"
+                        cell.data.loc[record_time, "SIDE"] = new_value
                         new_value = last_filled_price
-                        cell.data.loc[record_time, "Fill Price"] = new_value
-                        new_value = "maker" if is_maker else "taker"
-                        cell.data.loc[record_time, "Role"] = new_value
+                        cell.data.loc[record_time, "FILL_PRICE"] = new_value
+                        new_value = "MAKER" if is_maker else "TAKER"
+                        cell.data.loc[record_time, "ROLE"] = new_value
                         new_value = added_margin_ratio
-                        cell.data.loc[record_time, "Margin Ratio"] = new_value
+                        cell.data.loc[record_time, "MARGIN_RATIO"] = new_value
                         new_value = order_id
-                        cell.data.loc[record_time, "Order ID"] = new_value
-                        last_asset = float(cell.data.loc[last_index, "Result Asset"])  # type:ignore
+                        cell.data.loc[record_time, "ORDER_ID"] = new_value
+                        last_asset = float(cell.data.loc[last_index, "RESULT_ASSET"])  # type:ignore
                         new_value = last_asset + added_revenue
-                        cell.data.loc[record_time, "Result Asset"] = new_value
+                        cell.data.loc[record_time, "RESULT_ASSET"] = new_value
                         if order_id in unique_order_ids:
-                            cell.data.loc[record_time, "Cause"] = "auto_trade"
+                            cell.data.loc[record_time, "CAUSE"] = "AUTO_TRADE"
                         else:
-                            cell.data.loc[record_time, "Cause"] = "manual_trade"
+                            cell.data.loc[record_time, "CAUSE"] = "MANUAL_TRADE"
                     if not cell.data.index.is_monotonic_increasing:
                         cell.data = await spawn_blocking(sort_data_frame, cell.data)
 
@@ -681,22 +681,22 @@ class Transactor:
         async with self.asset_record.read_lock as cell:
             asset_record = cell.data[range_start:range_end].copy()
 
-        auto_trade_mask = asset_record["Cause"] == "auto_trade"
-        asset_changes = asset_record["Result Asset"].pct_change() + 1
+        auto_trade_mask = asset_record["CAUSE"] == "AUTO_TRADE"
+        asset_changes = asset_record["RESULT_ASSET"].pct_change() + 1
         asset_record = asset_record[auto_trade_mask]
         asset_changes = asset_changes.reindex(asset_record.index).fillna(value=1)
-        symbol_mask = asset_record["Symbol"] == symbol
+        symbol_mask = asset_record["SYMBOL"] == symbol
 
         # trade count
         total_change_count = len(asset_changes)
         symbol_change_count = len(asset_changes[symbol_mask])
         # trade volume
         if len(asset_record) > 0:
-            total_margin_ratio = asset_record["Margin Ratio"].sum()
+            total_margin_ratio = asset_record["MARGIN_RATIO"].sum()
         else:
             total_margin_ratio = 0
         if len(asset_record[symbol_mask]) > 0:
-            symbol_margin_ratio = asset_record[symbol_mask]["Margin Ratio"].sum()
+            symbol_margin_ratio = asset_record[symbol_mask]["MARGIN_RATIO"].sum()
         else:
             symbol_margin_ratio = 0
         # asset changes
@@ -905,12 +905,12 @@ class Transactor:
             unrealized_changes = cell.data.copy()
         async with self.asset_record.read_lock as cell:
             if len(cell.data) > 0:
-                last_asset = cell.data.iloc[-1]["Result Asset"]
+                last_asset = cell.data.iloc[-1]["RESULT_ASSET"]
             else:
                 last_asset = None
             before_record = cell.data[:slice_from]
             if len(before_record) > 0:
-                before_asset = before_record.iloc[-1]["Result Asset"]
+                before_asset = before_record.iloc[-1]["RESULT_ASSET"]
             else:
                 before_asset = None
             asset_record = cell.data[slice_from:].copy()
@@ -931,8 +931,8 @@ class Transactor:
             observed_until = self.account_state.observed_until
             if len(asset_record) == 0 or asset_record.index[-1] < observed_until:  # type:ignore
                 if slice_from < observed_until:
-                    asset_record.loc[observed_until, "Cause"] = "other"
-                    asset_record.loc[observed_until, "Result Asset"] = last_asset
+                    asset_record.loc[observed_until, "CAUSE"] = "OTHER"
+                    asset_record.loc[observed_until, "RESULT_ASSET"] = last_asset
                     if not asset_record.index.is_monotonic_increasing:
                         asset_record = await spawn_blocking(
                             sort_data_frame, asset_record
@@ -941,8 +941,8 @@ class Transactor:
         # add the left end
 
         if before_asset is not None:
-            asset_record.loc[slice_from, "Cause"] = "other"
-            asset_record.loc[slice_from, "Result Asset"] = before_asset
+            asset_record.loc[slice_from, "CAUSE"] = "OTHER"
+            asset_record.loc[slice_from, "RESULT_ASSET"] = before_asset
             if not asset_record.index.is_monotonic_increasing:
                 asset_record = await spawn_blocking(sort_data_frame, asset_record)
 
@@ -950,10 +950,10 @@ class Transactor:
 
         # price movement
         index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
-        open_ar = candle_data[(symbol, "Open")].to_numpy()
-        close_ar = candle_data[(symbol, "Close")].to_numpy()
-        high_ar = candle_data[(symbol, "High")].to_numpy()
-        low_ar = candle_data[(symbol, "Low")].to_numpy()
+        open_ar = candle_data[(symbol, "OPEN")].to_numpy()
+        close_ar = candle_data[(symbol, "CLOSE")].to_numpy()
+        high_ar = candle_data[(symbol, "HIGH")].to_numpy()
+        low_ar = candle_data[(symbol, "LOW")].to_numpy()
         rise_ar = close_ar > open_ar
         fall_ar = close_ar < open_ar
         stay_ar = close_ar == open_ar
@@ -1064,7 +1064,7 @@ class Transactor:
         await asyncio.sleep(0)
 
         # wobbles
-        sr = candle_data[(symbol, "High")]
+        sr = candle_data[(symbol, "HIGH")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = self.window.transaction_lines["wobbles"][0]
@@ -1073,7 +1073,7 @@ class Transactor:
             return
         await asyncio.sleep(0)
 
-        sr = candle_data[(symbol, "Low")]
+        sr = candle_data[(symbol, "LOW")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = self.window.transaction_lines["wobbles"][1]
@@ -1083,7 +1083,7 @@ class Transactor:
         await asyncio.sleep(0)
 
         # trade volume
-        sr = candle_data[(symbol, "Volume")]
+        sr = candle_data[(symbol, "VOLUME")]
         sr = sr.fillna(value=0)
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
@@ -1094,8 +1094,8 @@ class Transactor:
         await asyncio.sleep(0)
 
         # asset
-        data_x = asset_record["Result Asset"].index.to_numpy(dtype=np.int64) / 10**9
-        data_y = asset_record["Result Asset"].to_numpy(dtype=np.float32)
+        data_x = asset_record["RESULT_ASSET"].index.to_numpy(dtype=np.int64) / 10**9
+        data_y = asset_record["RESULT_ASSET"].to_numpy(dtype=np.float32)
         widget = self.window.transaction_lines["asset"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
@@ -1103,7 +1103,7 @@ class Transactor:
         await asyncio.sleep(0)
 
         # asset with unrealized profit
-        sr = asset_record["Result Asset"]
+        sr = asset_record["RESULT_ASSET"]
         if len(sr) >= 2:
             sr = sr.resample("10S").ffill()
         unrealized_changes_sr = unrealized_changes.reindex(sr.index)
@@ -1117,9 +1117,9 @@ class Transactor:
         await asyncio.sleep(0)
 
         # buy and sell
-        df = asset_record.loc[asset_record["Symbol"] == symbol]
-        df = df[df["Side"] == "sell"]
-        sr = df["Fill Price"]
+        df = asset_record.loc[asset_record["SYMBOL"] == symbol]
+        df = df[df["SIDE"] == "SELL"]
+        sr = df["FILL_PRICE"]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = self.window.transaction_lines["sell"][0]
@@ -1128,9 +1128,9 @@ class Transactor:
             return
         await asyncio.sleep(0)
 
-        df = asset_record.loc[asset_record["Symbol"] == symbol]
-        df = df[df["Side"] == "buy"]
-        sr = df["Fill Price"]
+        df = asset_record.loc[asset_record["SYMBOL"] == symbol]
+        df = df[df["SIDE"] == "BUY"]
+        sr = df["FILL_PRICE"]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = self.window.transaction_lines["buy"][0]
@@ -1761,8 +1761,8 @@ class Transactor:
             if len(cell.data) == 0:
                 wallet_balance = float(about_asset["walletBalance"])
                 current_time = datetime.now(timezone.utc)
-                cell.data.loc[current_time, "Cause"] = "other"
-                cell.data.loc[current_time, "Result Asset"] = wallet_balance
+                cell.data.loc[current_time, "CAUSE"] = "OTHER"
+                cell.data.loc[current_time, "RESULT_ASSET"] = wallet_balance
 
         # ■■■■■ When the wallet balance changed for no good reason ■■■■■
 
@@ -1770,7 +1770,7 @@ class Transactor:
 
         async with self.asset_record.read_lock as cell:
             last_index = cell.data.index[-1]
-            last_asset: float = cell.data.loc[last_index, "Result Asset"]  # type:ignore
+            last_asset: float = cell.data.loc[last_index, "RESULT_ASSET"]  # type:ignore
 
         if wallet_balance == 0:
             pass
@@ -1779,15 +1779,15 @@ class Transactor:
             # referal fee, funding fee, wallet transfer, etc..
             async with self.asset_record.write_lock as cell:
                 current_time = datetime.now(timezone.utc)
-                cell.data.loc[current_time, "Cause"] = "other"
-                cell.data.loc[current_time, "Result Asset"] = wallet_balance
+                cell.data.loc[current_time, "CAUSE"] = "OTHER"
+                cell.data.loc[current_time, "RESULT_ASSET"] = wallet_balance
                 if not cell.data.index.is_monotonic_increasing:
                     cell.data = await spawn_blocking(sort_data_frame, cell.data)
         else:
             # when the difference is small enough to consider as an numeric error
             async with self.asset_record.write_lock as cell:
                 last_index = cell.data.index[-1]
-                cell.data.loc[last_index, "Result Asset"] = wallet_balance
+                cell.data.loc[last_index, "RESULT_ASSET"] = wallet_balance
 
         # ■■■■■ Correct mode of the account market if automation is turned on ■■■■■
 
@@ -1936,8 +1936,8 @@ class Transactor:
             async with self.auto_order_record.write_lock as cell:
                 while update_time in cell.data.index:
                     update_time += timedelta(milliseconds=1)
-                cell.data.loc[update_time, "Symbol"] = order_symbol
-                cell.data.loc[update_time, "Order ID"] = order_id
+                cell.data.loc[update_time, "SYMBOL"] = order_symbol
+                cell.data.loc[update_time, "ORDER_ID"] = order_id
                 if not cell.data.index.is_monotonic_increasing:
                     cell.data = await spawn_blocking(sort_data_frame, cell.data)
 

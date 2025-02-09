@@ -7,7 +7,7 @@ wallet_balance = account_state.wallet_balance
 
 for symbol in target_symbols:
 
-    current_price = current_candle_data[str((symbol, "Close"))]
+    current_price = current_candle_data[str((symbol, "CLOSE"))]
 
     indicator_key = str((symbol, "PRICE", "SMA One (#00BBFF)"))
     price_sma_one = current_indicators[indicator_key]

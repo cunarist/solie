@@ -714,7 +714,7 @@ class Collector:
                 sum_volume = sum([t.volume for t in symbol_aggregate_trades])
             else:
                 async with self.candle_data.read_lock as cell:
-                    inspect_sr = cell.data.iloc[-60:][(symbol, "Close")].copy()
+                    inspect_sr = cell.data.iloc[-60:][(symbol, "CLOSE")].copy()
                 inspect_sr = inspect_sr.dropna()
                 if len(inspect_sr) == 0:
                     return
@@ -725,11 +725,11 @@ class Collector:
                 close_price = last_price
                 sum_volume = 0.0
 
-            new_values[(symbol, "Open")] = open_price
-            new_values[(symbol, "High")] = high_price
-            new_values[(symbol, "Low")] = low_price
-            new_values[(symbol, "Close")] = close_price
-            new_values[(symbol, "Volume")] = sum_volume
+            new_values[(symbol, "OPEN")] = open_price
+            new_values[(symbol, "HIGH")] = high_price
+            new_values[(symbol, "LOW")] = low_price
+            new_values[(symbol, "CLOSE")] = close_price
+            new_values[(symbol, "VOLUME")] = sum_volume
 
         async with self.candle_data.write_lock as cell:
             for column_name, new_data_value in new_values.items():

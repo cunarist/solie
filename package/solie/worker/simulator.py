@@ -352,12 +352,12 @@ class Simulator:
             unrealized_changes = cell.data.copy()
         async with self.asset_record.read_lock as cell:
             if len(cell.data) > 0:
-                last_asset = cell.data.iloc[-1]["Result Asset"]
+                last_asset = cell.data.iloc[-1]["RESULT_ASSET"]
             else:
                 last_asset = None
             before_record = cell.data[:slice_from]
             if len(before_record) > 0:
-                before_asset = before_record.iloc[-1]["Result Asset"]
+                before_asset = before_record.iloc[-1]["RESULT_ASSET"]
             else:
                 before_asset = None
             asset_record = cell.data[slice_from:].copy()
@@ -378,8 +378,8 @@ class Simulator:
             observed_until = self.account_state.observed_until
             if len(asset_record) == 0 or asset_record.index[-1] < observed_until:  # type:ignore
                 if slice_from < observed_until:
-                    asset_record.loc[observed_until, "Cause"] = "other"
-                    asset_record.loc[observed_until, "Result Asset"] = last_asset
+                    asset_record.loc[observed_until, "CAUSE"] = "OTHER"
+                    asset_record.loc[observed_until, "RESULT_ASSET"] = last_asset
                     if not asset_record.index.is_monotonic_increasing:
                         asset_record = await spawn_blocking(
                             sort_data_frame, asset_record
@@ -388,8 +388,8 @@ class Simulator:
         # add the left end
 
         if before_asset is not None:
-            asset_record.loc[slice_from, "Cause"] = "other"
-            asset_record.loc[slice_from, "Result Asset"] = before_asset
+            asset_record.loc[slice_from, "CAUSE"] = "OTHER"
+            asset_record.loc[slice_from, "RESULT_ASSET"] = before_asset
             if not asset_record.index.is_monotonic_increasing:
                 asset_record = await spawn_blocking(sort_data_frame, asset_record)
 
@@ -397,10 +397,10 @@ class Simulator:
 
         # price movement
         index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
-        open_ar = candle_data[(symbol, "Open")].to_numpy()
-        close_ar = candle_data[(symbol, "Close")].to_numpy()
-        high_ar = candle_data[(symbol, "High")].to_numpy()
-        low_ar = candle_data[(symbol, "Low")].to_numpy()
+        open_ar = candle_data[(symbol, "OPEN")].to_numpy()
+        close_ar = candle_data[(symbol, "CLOSE")].to_numpy()
+        high_ar = candle_data[(symbol, "HIGH")].to_numpy()
+        low_ar = candle_data[(symbol, "LOW")].to_numpy()
         rise_ar = close_ar > open_ar
         fall_ar = close_ar < open_ar
         stay_ar = close_ar == open_ar
@@ -511,7 +511,7 @@ class Simulator:
         await asyncio.sleep(0)
 
         # wobbles
-        sr = candle_data[(symbol, "High")]
+        sr = candle_data[(symbol, "HIGH")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = self.window.simulation_lines["wobbles"][0]
@@ -520,7 +520,7 @@ class Simulator:
             return
         await asyncio.sleep(0)
 
-        sr = candle_data[(symbol, "Low")]
+        sr = candle_data[(symbol, "LOW")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = self.window.simulation_lines["wobbles"][1]
@@ -530,7 +530,7 @@ class Simulator:
         await asyncio.sleep(0)
 
         # trade volume
-        sr = candle_data[(symbol, "Volume")]
+        sr = candle_data[(symbol, "VOLUME")]
         sr = sr.fillna(value=0)
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
@@ -541,8 +541,8 @@ class Simulator:
         await asyncio.sleep(0)
 
         # asset
-        data_x = asset_record["Result Asset"].index.to_numpy(dtype=np.int64) / 10**9
-        data_y = asset_record["Result Asset"].to_numpy(dtype=np.float32)
+        data_x = asset_record["RESULT_ASSET"].index.to_numpy(dtype=np.int64) / 10**9
+        data_y = asset_record["RESULT_ASSET"].to_numpy(dtype=np.float32)
         widget = self.window.simulation_lines["asset"][0]
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
@@ -550,7 +550,7 @@ class Simulator:
         await asyncio.sleep(0)
 
         # asset with unrealized profit
-        sr = asset_record["Result Asset"]
+        sr = asset_record["RESULT_ASSET"]
         if len(sr) >= 2:
             sr = sr.resample("10S").ffill()
         unrealized_changes_sr = unrealized_changes.reindex(sr.index)
@@ -564,9 +564,9 @@ class Simulator:
         await asyncio.sleep(0)
 
         # buy and sell
-        df = asset_record.loc[asset_record["Symbol"] == symbol]
-        df = df[df["Side"] == "sell"]
-        sr = df["Fill Price"]
+        df = asset_record.loc[asset_record["SYMBOL"] == symbol]
+        df = df[df["SIDE"] == "SELL"]
+        sr = df["FILL_PRICE"]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = self.window.simulation_lines["sell"][0]
@@ -575,9 +575,9 @@ class Simulator:
             return
         await asyncio.sleep(0)
 
-        df = asset_record.loc[asset_record["Symbol"] == symbol]
-        df = df[df["Side"] == "buy"]
-        sr = df["Fill Price"]
+        df = asset_record.loc[asset_record["SYMBOL"] == symbol]
+        df = df[df["SIDE"] == "BUY"]
+        sr = df["FILL_PRICE"]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = self.window.simulation_lines["buy"][0]
@@ -748,22 +748,22 @@ class Simulator:
         async with self.asset_record.read_lock as cell:
             asset_record = cell.data[range_start:range_end].copy()
 
-        auto_trade_mask = asset_record["Cause"] == "auto_trade"
-        asset_changes = asset_record["Result Asset"].pct_change() + 1
+        auto_trade_mask = asset_record["CAUSE"] == "AUTO_TRADE"
+        asset_changes = asset_record["RESULT_ASSET"].pct_change() + 1
         asset_record = asset_record[auto_trade_mask]
         asset_changes = asset_changes.reindex(asset_record.index).fillna(value=1)
-        symbol_mask = asset_record["Symbol"] == symbol
+        symbol_mask = asset_record["SYMBOL"] == symbol
 
         # trade count
         total_change_count = len(asset_changes)
         symbol_change_count = len(asset_changes[symbol_mask])
         # trade volume
         if len(asset_record) > 0:
-            total_margin_ratio = asset_record["Margin Ratio"].sum()
+            total_margin_ratio = asset_record["MARGIN_RATIO"].sum()
         else:
             total_margin_ratio = 0
         if len(asset_record[symbol_mask]) > 0:
-            symbol_margin_ratio = asset_record[symbol_mask]["Margin Ratio"].sum()
+            symbol_margin_ratio = asset_record[symbol_mask]["MARGIN_RATIO"].sum()
         else:
             symbol_margin_ratio = 0
         # asset changes
@@ -980,8 +980,8 @@ class Simulator:
 
         should_calculate = calculate_from < calculate_until
         if len(previous_asset_record) == 0:
-            previous_asset_record.loc[calculate_from, "Cause"] = "other"
-            previous_asset_record.loc[calculate_from, "Result Asset"] = 1.0
+            previous_asset_record.loc[calculate_from, "CAUSE"] = "OTHER"
+            previous_asset_record.loc[calculate_from, "RESULT_ASSET"] = 1.0
 
         prepare_step = 5
 
@@ -1211,7 +1211,7 @@ class Simulator:
         for turn in range(chunk_count):
             chunk_asset_record = chunk_asset_record_list[turn]
             # leverage
-            chunk_result_asset_sr = chunk_asset_record["Result Asset"]
+            chunk_result_asset_sr = chunk_asset_record["RESULT_ASSET"]
             chunk_asset_shifts = chunk_result_asset_sr.diff()
             if len(chunk_asset_shifts) > 0:
                 chunk_asset_shifts.iloc[0] = 0.0
@@ -1222,11 +1222,11 @@ class Simulator:
                 1 + chunk_asset_shifts / lazy_chunk_result_asset * leverage
             )
             # fee
-            chunk_fees = chunk_asset_record["Role"].copy()
-            chunk_fees[chunk_fees == "maker"] = maker_fee
-            chunk_fees[chunk_fees == "taker"] = taker_fee
+            chunk_fees = chunk_asset_record["ROLE"].copy()
+            chunk_fees[chunk_fees == "MAKER"] = maker_fee
+            chunk_fees[chunk_fees == "TAKER"] = taker_fee
             chunk_fees = chunk_fees.astype(np.float32)
-            chunk_margin_ratios = chunk_asset_record["Margin Ratio"]
+            chunk_margin_ratios = chunk_asset_record["MARGIN_RATIO"]
             chunk_asset_changes_by_fee = (
                 1 - (chunk_fees / 100) * chunk_margin_ratios * leverage
             )
@@ -1249,7 +1249,7 @@ class Simulator:
                     sort_series, year_asset_changes
                 )
         asset_record = asset_record.reindex(year_asset_changes.index)
-        asset_record["Result Asset"] = year_asset_changes.cumprod()
+        asset_record["RESULT_ASSET"] = year_asset_changes.cumprod()
 
         presentation_asset_record = asset_record.copy()
         presentation_unrealized_changes = unrealized_changes.copy()
