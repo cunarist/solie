@@ -1,5 +1,3 @@
-from dataclasses import replace
-
 import aiofiles
 import aiofiles.os
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -54,7 +52,7 @@ class Strategiest:
         filepath = self.workerpath / "strategies.json"
         if await aiofiles.os.path.isfile(filepath):
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
-                self.strategies = Strategies.from_json(await file.read())
+                self.strategies = Strategies.model_validate_json(await file.read())
         else:
             first_strategy = Strategy(
                 code_name="SLIESS",
@@ -75,7 +73,7 @@ class Strategiest:
     async def save_strategies(self):
         filepath = self.workerpath / "strategies.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-            await file.write(self.strategies.to_json(indent=2))
+            await file.write(self.strategies.model_dump_json(indent=2))
 
     async def display_strategies(self):
         self.window.comboBox_2.clear()
@@ -175,10 +173,8 @@ class Strategiest:
 
             async def job_dp(strategy=strategy):
                 await self.remember_strategy_selections()
-                duplicated = replace(
-                    strategy,
-                    code_name=create_strategy_code_name(),
-                )
+                duplicated = strategy.model_copy(deep=True)
+                duplicated.code_name = create_strategy_code_name()
                 self.strategies.all.append(duplicated)
                 spawn(self.display_strategies())
                 spawn(self.save_strategies())

@@ -6,6 +6,7 @@ import time
 import webbrowser
 from collections import deque
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 import aiofiles.os
 import numpy as np
@@ -21,6 +22,7 @@ from solie.utility import (
     ApiStreamer,
     BookTicker,
     DownloadPreset,
+    DownloadUnitSize,
     MarkPrice,
     RWLock,
     add_task_duration,
@@ -286,7 +288,7 @@ class Collector:
                 moment_to_fill_from: datetime = nan_index[0]  # type:ignore
 
                 # request historical aggtrade data
-                aggtrades = {}
+                aggtrades: dict[int, AggregateTrade] = {}
                 last_fetched_time = moment_to_fill_from
                 while last_fetched_time < moment_to_fill_from + timedelta(seconds=10):
                     # intend to fill at least one 10 second candle bar
@@ -304,12 +306,18 @@ class Collector:
                     if len(response) == 0:
                         self.markets_gone.add(symbol)
                         break
-                    for aggtrade in response:
-                        aggtrade_id = int(aggtrade["a"])
+                    for about_aggtrade in response:
+                        aggtrade_id = int(about_aggtrade["a"])
+                        aggtrade = AggregateTrade(
+                            timestamp=about_aggtrade["T"],
+                            symbol=symbol,
+                            price=about_aggtrade["p"],
+                            volume=about_aggtrade["q"],
+                        )
                         aggtrades[aggtrade_id] = aggtrade
                     last_fetched_id = max(aggtrades.keys())
                     last_fetched_time = datetime.fromtimestamp(
-                        aggtrades[last_fetched_id]["T"] / 1000, tz=timezone.utc
+                        aggtrades[last_fetched_id].timestamp / 1000, tz=timezone.utc
                     )
 
                 recent_candle_data = await spawn_blocking(
@@ -445,10 +453,10 @@ class Collector:
                     for symbol in target_symbols:
                         download_presets.append(
                             DownloadPreset(
-                                symbol,
-                                "monthly",
-                                year,
-                                month,
+                                symbol=symbol,
+                                unit_size=DownloadUnitSize.MONTHLY,
+                                year=year,
+                                month=month,
                             )
                         )
         elif filling_type == 1:
@@ -458,10 +466,10 @@ class Collector:
                 for symbol in target_symbols:
                     download_presets.append(
                         DownloadPreset(
-                            symbol,
-                            "monthly",
-                            current_year,
-                            month,
+                            symbol=symbol,
+                            unit_size=DownloadUnitSize.MONTHLY,
+                            year=current_year,
+                            month=month,
                         )
                     )
         elif filling_type == 2:
@@ -472,11 +480,11 @@ class Collector:
                 for symbol in target_symbols:
                     download_presets.append(
                         DownloadPreset(
-                            symbol,
-                            "daily",
-                            current_year,
-                            current_month,
-                            target_day,
+                            symbol=symbol,
+                            unit_size=DownloadUnitSize.DAILY,
+                            year=current_year,
+                            month=current_month,
+                            day=target_day,
                         )
                     )
         elif filling_type == 3:
@@ -486,20 +494,20 @@ class Collector:
             for symbol in target_symbols:
                 download_presets.append(
                     DownloadPreset(
-                        symbol,
-                        "daily",
-                        day_before_yesterday.year,
-                        day_before_yesterday.month,
-                        day_before_yesterday.day,
+                        symbol=symbol,
+                        unit_size=DownloadUnitSize.DAILY,
+                        year=day_before_yesterday.year,
+                        month=day_before_yesterday.month,
+                        day=day_before_yesterday.day,
                     ),
                 )
                 download_presets.append(
                     DownloadPreset(
-                        symbol,
-                        "daily",
-                        yesterday.year,
-                        yesterday.month,
-                        yesterday.day,
+                        symbol=symbol,
+                        unit_size=DownloadUnitSize.DAILY,
+                        year=yesterday.year,
+                        month=yesterday.month,
+                        day=yesterday.day,
                     ),
                 )
 
@@ -604,7 +612,7 @@ class Collector:
         spawn(team.simulator.display_lines())
         spawn(team.simulator.display_available_years())
 
-    async def add_book_tickers(self, received: dict):
+    async def add_book_tickers(self, received: dict[str, Any]):
         start_time = time.perf_counter()
         symbol = received["s"]
         best_bid = float(received["b"])
@@ -622,7 +630,7 @@ class Collector:
         duration = time.perf_counter() - start_time
         add_task_duration("add_book_tickers", duration)
 
-    async def add_mark_price(self, received: list):
+    async def add_mark_price(self, received: list[dict[str, Any]]):
         start_time = time.perf_counter()
         target_symbols = self.window.data_settings.target_symbols
         event_time = received[0]["E"]  # In milliseconds
@@ -639,7 +647,7 @@ class Collector:
         duration = time.perf_counter() - start_time
         add_task_duration("add_mark_price", duration)
 
-    async def add_aggregate_trades(self, received: dict):
+    async def add_aggregate_trades(self, received: dict[str, Any]):
         start_time = time.perf_counter()
         symbol = received["s"]
         price = float(received["p"])

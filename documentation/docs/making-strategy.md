@@ -314,8 +314,6 @@ sma_value = current_indicators[str(("BTCUSDT", "Price", "SMA"))]
 
 There are 12 possible order commands, each corresponding to a specific order type on Binance. Simplified commands for easy and intuitive strategy development are used equally for automatic transaction and simulation.
 
-> Numbers do not have to be in `float` type. Other similar types, such as `numpy.float64`, also work well.
-
 Order type `CANCEL_ALL` cancels all open orders of the symbol market.
 
 ```python

@@ -19,8 +19,30 @@ from .check_internet import (
 )
 from .compare_versions import is_left_version_higher
 from .convert import list_to_dict, slice_deque
+from .data_models import (
+    AccountState,
+    AggregateTrade,
+    BoardLockOptions,
+    BookTicker,
+    Decision,
+    ManagementSettings,
+    MarkPrice,
+    OpenOrder,
+    OrderType,
+    Position,
+    PositionDirection,
+    SimulationSettings,
+    SimulationSummary,
+    Strategies,
+    Strategy,
+    TransactionSettings,
+    VirtualPlacement,
+    VirtualPosition,
+    VirtualState,
+)
 from .download_from_binance import (
     DownloadPreset,
+    DownloadUnitSize,
     download_aggtrade_data,
     fill_holes_with_aggtrades,
 )
@@ -38,24 +60,6 @@ from .standardize import (
     create_strategy_code_name,
 )
 from .stop_flag import find_stop_flag, make_stop_flag
-from .structs import (
-    AccountState,
-    AggregateTrade,
-    BoardLockOptions,
-    BookTicker,
-    Decision,
-    ManagementSettings,
-    MarkPrice,
-    OpenOrder,
-    OrderType,
-    Position,
-    PositionDirection,
-    SimulationSettings,
-    SimulationSummary,
-    Strategies,
-    Strategy,
-    TransactionSettings,
-)
 from .syntax_highlighter import SyntaxHighlighter
 from .time_axis_item import TimeAxisItem
 from .timing import add_task_duration, get_task_duration, to_moment
@@ -80,6 +84,7 @@ __all__ = [
     "DataSettings",
     "Decision",
     "DownloadPreset",
+    "DownloadUnitSize",
     "LogHandler",
     "ManagementSettings",
     "MarkPrice",
@@ -97,6 +102,9 @@ __all__ = [
     "SyntaxHighlighter",
     "TimeAxisItem",
     "TransactionSettings",
+    "VirtualPlacement",
+    "VirtualPosition",
+    "VirtualState",
     "add_task_duration",
     "ball_ceil",
     "ball_floor",

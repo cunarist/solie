@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
 
-from .structs import AccountState, Position, PositionDirection
+from .data_models import AccountState, Position, PositionDirection
 
 
 def create_empty_candle_data(target_symbols: list[str]):

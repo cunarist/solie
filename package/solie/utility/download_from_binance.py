@@ -1,28 +1,34 @@
 import io
-from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from enum import Enum
 from urllib.request import urlopen
 
 import numpy as np
 import pandas as pd
+from pydantic import BaseModel
 
+from .data_models import AggregateTrade
 from .timing import to_moment
 
 
-@dataclass
-class DownloadPreset:
+class DownloadUnitSize(Enum):
+    DAILY = 0
+    MONTHLY = 1
+
+
+class DownloadPreset(BaseModel):
     symbol: str
-    unit_size: str  # "daily" or "monthly"
+    unit_size: DownloadUnitSize
     year: int
     month: int
-    day: int = 0  # Valid only when `unit_size` is "daily"
+    day: int = 0  # Valid only when `unit_size` is `DAILY`
 
 
 def download_aggtrade_data(download_target: DownloadPreset) -> pd.DataFrame | None:
     symbol = download_target.symbol
     unit_size = download_target.unit_size
 
-    if unit_size == "daily":
+    if unit_size == DownloadUnitSize.DAILY:
         year_string = format(download_target.year, "04")
         month_string = format(download_target.month, "02")
         day_string = format(download_target.day, "02")
@@ -31,7 +37,7 @@ def download_aggtrade_data(download_target: DownloadPreset) -> pd.DataFrame | No
             + f"/{symbol}/{symbol}-aggTrades"
             + f"-{year_string}-{month_string}-{day_string}.zip"
         )
-    elif unit_size == "monthly":
+    elif unit_size == DownloadUnitSize.MONTHLY:
         year_string = format(download_target.year, "04")
         month_string = format(download_target.month, "02")
         url = (
@@ -141,7 +147,7 @@ def download_aggtrade_data(download_target: DownloadPreset) -> pd.DataFrame | No
 def fill_holes_with_aggtrades(
     symbol: str,
     recent_candle_data: pd.DataFrame,
-    aggtrades: dict,
+    aggtrades: dict[int, AggregateTrade],
     moment_to_fill_from: datetime,
     last_fetched_time: datetime,
 ) -> pd.DataFrame:
@@ -157,11 +163,11 @@ def fill_holes_with_aggtrades(
         for _, aggtrade in sorted(aggtrades.items()):
             # sorted by time
             aggtrade_time = datetime.fromtimestamp(
-                int(aggtrade["T"]) / 1000, tz=timezone.utc
+                aggtrade.timestamp / 1000, tz=timezone.utc
             )
             if block_start <= aggtrade_time < block_end:
-                aggtrade_prices.append(float(aggtrade["p"]))
-                aggtrade_volumes.append(float(aggtrade["q"]))
+                aggtrade_prices.append(aggtrade.price)
+                aggtrade_volumes.append(aggtrade.volume)
 
         can_write = True
 

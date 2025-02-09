@@ -2,7 +2,7 @@ import hashlib
 import hmac
 import json
 from datetime import datetime, timezone
-from typing import ClassVar
+from typing import Any, ClassVar
 from urllib.parse import urlencode
 
 from aiohttp import ClientSession
@@ -35,7 +35,11 @@ class ApiRequester:
         self._binance_api_secret = binance_api_secret
 
     async def binance(
-        self, http_method: str, path: str, payload: dict = {}, server="futures"
+        self,
+        http_method: str,
+        path: str,
+        payload: dict[str, Any] = {},
+        server="futures",
     ):
         query_string = urlencode(payload)
         # replace single quote to double quote

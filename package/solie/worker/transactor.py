@@ -6,6 +6,7 @@ import re
 import time
 import webbrowser
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 import aiofiles
 import aiofiles.os
@@ -232,7 +233,7 @@ class Transactor:
         filepath = self.workerpath / "transaction_settings.json"
         if await aiofiles.os.path.isfile(filepath):
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
-                read_data = TransactionSettings.from_json(await file.read())
+                read_data = TransactionSettings.model_validate_json(await file.read())
             self.transaction_settings = read_data
             state = read_data.should_transact
             self.window.checkBox.setChecked(state)
@@ -366,7 +367,7 @@ class Transactor:
             self.listen_to_account,
         )
 
-    async def listen_to_account(self, received: dict):
+    async def listen_to_account(self, received: dict[str, Any]):
         # ■■■■■ default values ■■■■■
 
         event_type = str(received["e"])
@@ -609,7 +610,7 @@ class Transactor:
     async def save_transaction_settings(self):
         filepath = self.workerpath / "transaction_settings.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-            await file.write(self.transaction_settings.to_json(indent=2))
+            await file.write(self.transaction_settings.model_dump_json(indent=2))
 
     async def update_keys(self):
         binance_api_key = self.window.lineEdit_4.text()
@@ -1417,7 +1418,7 @@ class Transactor:
         current_indicators: np.record = indicators.to_records()[-1]
         decision_script = strategy.decision_script
 
-        decisions, scribbles = await spawn_blocking(
+        decision_pack = await spawn_blocking(
             decide,
             target_symbols=target_symbols,
             current_moment=current_moment,
@@ -1427,7 +1428,8 @@ class Transactor:
             scribbles=self.scribbles,
             decision_script=decision_script,
         )
-        self.scribbles = scribbles
+        decisions = decision_pack.decisions
+        self.scribbles = decision_pack.scribbles
 
         # ■■■■■ Record task duration ■■■■■
 
@@ -1993,7 +1995,7 @@ class Transactor:
 
             if OrderType.NOW_BUY in decisions[symbol]:
                 decision = decisions[symbol][OrderType.NOW_BUY]
-                notional = max(minimum_notional, float(decision.margin) * leverage)
+                notional = max(minimum_notional, decision.margin * leverage)
                 quantity = min(maximum_quantity, notional / current_price)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2007,7 +2009,7 @@ class Transactor:
 
             if OrderType.NOW_SELL in decisions[symbol]:
                 decision = decisions[symbol][OrderType.NOW_SELL]
-                notional = max(minimum_notional, float(decision.margin) * leverage)
+                notional = max(minimum_notional, decision.margin * leverage)
                 quantity = min(maximum_quantity, notional / current_price)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2039,8 +2041,8 @@ class Transactor:
 
             if OrderType.BOOK_BUY in decisions[symbol]:
                 decision = decisions[symbol][OrderType.BOOK_BUY]
-                notional = max(minimum_notional, float(decision.margin) * leverage)
-                boundary = float(decision.boundary)
+                notional = max(minimum_notional, decision.margin * leverage)
+                boundary = decision.boundary
                 quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2055,8 +2057,8 @@ class Transactor:
 
             if OrderType.BOOK_SELL in decisions[symbol]:
                 decision = decisions[symbol][OrderType.BOOK_SELL]
-                notional = max(minimum_notional, float(decision.margin) * leverage)
-                boundary = float(decision.boundary)
+                notional = max(minimum_notional, decision.margin * leverage)
+                boundary = decision.boundary
                 quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2119,7 +2121,7 @@ class Transactor:
                         "symbol": symbol,
                         "type": order_type,
                         "side": order_side,
-                        "stopPrice": round(float(decision.boundary), price_precision),
+                        "stopPrice": round(decision.boundary, price_precision),
                         "closePosition": True,
                     }
                     later_orders.append(new_order)
@@ -2141,7 +2143,7 @@ class Transactor:
                         "symbol": symbol,
                         "type": order_type,
                         "side": order_side,
-                        "stopPrice": round(float(decision.boundary), price_precision),
+                        "stopPrice": round(decision.boundary, price_precision),
                         "closePosition": True,
                     }
                     later_orders.append(new_order)
@@ -2151,8 +2153,8 @@ class Transactor:
 
             if OrderType.LATER_UP_BUY in decisions[symbol]:
                 decision = decisions[symbol][OrderType.LATER_UP_BUY]
-                notional = max(minimum_notional, float(decision.margin) * leverage)
-                boundary = float(decision.boundary)
+                notional = max(minimum_notional, decision.margin * leverage)
+                boundary = decision.boundary
                 quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2166,8 +2168,8 @@ class Transactor:
 
             if OrderType.LATER_DOWN_BUY in decisions[symbol]:
                 decision = decisions[symbol][OrderType.LATER_DOWN_BUY]
-                notional = max(minimum_notional, float(decision.margin) * leverage)
-                boundary = float(decision.boundary)
+                notional = max(minimum_notional, decision.margin * leverage)
+                boundary = decision.boundary
                 quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2181,8 +2183,8 @@ class Transactor:
 
             if OrderType.LATER_UP_SELL in decisions[symbol]:
                 decision = decisions[symbol][OrderType.LATER_UP_SELL]
-                notional = max(minimum_notional, float(decision.margin) * leverage)
-                boundary = float(decision.boundary)
+                notional = max(minimum_notional, decision.margin * leverage)
+                boundary = decision.boundary
                 quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2196,8 +2198,8 @@ class Transactor:
 
             if OrderType.LATER_DOWN_SELL in decisions[symbol]:
                 decision = decisions[symbol][OrderType.LATER_DOWN_SELL]
-                notional = max(minimum_notional, float(decision.margin) * leverage)
-                boundary = float(decision.boundary)
+                notional = max(minimum_notional, decision.margin * leverage)
+                boundary = decision.boundary
                 quantity = min(maximum_quantity, notional / boundary)
                 new_order = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -2287,7 +2289,7 @@ class Transactor:
         text += f"At UTC {time_text}"
 
         text += "\n\n"
-        text += self.account_state.to_json(indent=2, default=str)
+        text += self.account_state.model_dump_json(indent=2)
 
         await overlay(
             "This is the raw account state object",

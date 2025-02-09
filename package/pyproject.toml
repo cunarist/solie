@@ -23,10 +23,10 @@ dependencies = [
     "pandas-ta==0.3.14b",
     "time-machine~=2.13.0",
     "xdialog~=1.1.1",
-    "dataclasses-json~=0.6.4",
     "setuptools~=75.6.0",
     "typing-extensions~=4.12.2",
     "qasync~=0.27.1",
+    "pydantic~=2.10.6",
 ]
 
 [build-system]

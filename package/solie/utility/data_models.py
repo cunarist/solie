@@ -1,12 +1,10 @@
-from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 
-from dataclasses_json import DataClassJsonMixin
+from pydantic import BaseModel
 
 
-@dataclass
-class Strategy(DataClassJsonMixin):
+class Strategy(BaseModel):
     code_name: str
     readable_name: str = "A New Blank Strategy"
     version: str = "1.0"
@@ -18,13 +16,11 @@ class Strategy(DataClassJsonMixin):
     decision_script: str = "pass"
 
 
-@dataclass
-class Strategies(DataClassJsonMixin):
+class Strategies(BaseModel):
     all: list[Strategy]
 
 
-@dataclass
-class TransactionSettings(DataClassJsonMixin):
+class TransactionSettings(BaseModel):
     strategy_index: int = 0
     should_transact: bool = False
     desired_leverage: int = 1
@@ -32,8 +28,7 @@ class TransactionSettings(DataClassJsonMixin):
     binance_api_secret: str = ""
 
 
-@dataclass
-class SimulationSettings:
+class SimulationSettings(BaseModel):
     year: int
     strategy_index: int = 0
     maker_fee: float = 0.02
@@ -41,8 +36,7 @@ class SimulationSettings:
     leverage: int = 1
 
 
-@dataclass
-class SimulationSummary:
+class SimulationSummary(BaseModel):
     year: int
     strategy_code_name: str
     strategy_version: str
@@ -56,28 +50,24 @@ class BoardLockOptions(Enum):
     HOUR_1 = 4
 
 
-@dataclass
-class ManagementSettings(DataClassJsonMixin):
+class ManagementSettings(BaseModel):
     lock_board: BoardLockOptions = BoardLockOptions.NEVER
 
 
-@dataclass
-class BookTicker:
+class BookTicker(BaseModel):
     timestamp: int  # In milliseconds
     symbol: str
     best_bid_price: float
     best_ask_price: float
 
 
-@dataclass
-class MarkPrice:
+class MarkPrice(BaseModel):
     timestamp: int  # In milliseconds
     symbol: str
     mark_price: float
 
 
-@dataclass
-class AggregateTrade:
+class AggregateTrade(BaseModel):
     timestamp: int  # In milliseconds
     symbol: str
     price: float
@@ -129,14 +119,12 @@ class PositionDirection(Enum):
     LONG = 1
 
 
-@dataclass
-class Decision(DataClassJsonMixin):
+class Decision(BaseModel):
     boundary: float = 0.0
     margin: float = 0.0
 
 
-@dataclass
-class OpenOrder(DataClassJsonMixin):
+class OpenOrder(BaseModel):
     order_type: OrderType
     boundary: float
     """The price where this order gains effect"""
@@ -144,8 +132,7 @@ class OpenOrder(DataClassJsonMixin):
     """Amount of the asset to be invested, in dollars"""
 
 
-@dataclass
-class Position(DataClassJsonMixin):
+class Position(BaseModel):
     margin: float
     direction: PositionDirection
     entry_price: float
@@ -153,11 +140,40 @@ class Position(DataClassJsonMixin):
     """Time of the last trade in this position"""
 
 
-@dataclass
-class AccountState(DataClassJsonMixin):
+class AccountState(BaseModel):
     observed_until: datetime
     wallet_balance: float
     """Total assets, in dollars"""
     positions: dict[str, Position]
     """Current position direction of a specific symbol"""
     open_orders: dict[str, dict[int, OpenOrder]]
+
+
+class VirtualPosition(BaseModel):
+    """Virtual position inside simulation"""
+
+    amount: float
+    entry_price: float
+
+
+class VirtualPlacement(BaseModel):
+    """Virtual order that has been placed during simulation"""
+
+    boundary: float
+    """The price where this order gains effect"""
+    margin: float
+    """Amount of the asset to be invested, in dollars"""
+    order_id: int
+
+
+class VirtualState(BaseModel):
+    """Virtual account state used in simulation"""
+
+    available_balance: float
+    positions: dict[str, VirtualPosition]
+    placements: dict[str, dict[OrderType, VirtualPlacement]]
+
+
+class DataSettings(BaseModel):
+    asset_token: str
+    target_symbols: list[str]

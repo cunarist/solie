@@ -2,7 +2,6 @@ import asyncio
 import math
 import pickle
 import re
-from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 import aiofiles
@@ -22,6 +21,8 @@ from solie.utility import (
     RWLock,
     SimulationSettings,
     SimulationSummary,
+    VirtualPosition,
+    VirtualState,
     create_empty_account_state,
     create_empty_asset_record,
     create_empty_unrealized_changes,
@@ -910,17 +911,17 @@ class Simulator:
         blank_account_state = create_empty_account_state(
             self.window.data_settings.target_symbols
         )
-        blank_virtual_state = {
-            "available_balance": 1,
-            "locations": {},
-            "placements": {},
-        }
+        blank_virtual_state = VirtualState(
+            available_balance=1,
+            positions={},
+            placements={},
+        )
         for symbol in target_symbols:
-            blank_virtual_state["locations"][symbol] = {
-                "amount": 0,
-                "entry_price": 0,
-            }
-            blank_virtual_state["placements"][symbol] = {}
+            blank_virtual_state.positions[symbol] = VirtualPosition(
+                amount=0.0,
+                entry_price=0.0,
+            )
+            blank_virtual_state.placements[symbol] = {}
 
         prepare_step = 4
 
@@ -930,8 +931,8 @@ class Simulator:
             previous_asset_record = blank_asset_record.copy()
             previous_unrealized_changes = blank_unrealized_changes.copy()
             previous_scribbles = blank_scribbles.copy()
-            previous_account_state = replace(blank_account_state)
-            previous_virtual_state = blank_virtual_state.copy()
+            previous_account_state = blank_account_state.model_copy(deep=True)
+            previous_virtual_state = blank_virtual_state.model_copy(deep=True)
 
             view_range = self.window.plot_widget_2.getAxis("bottom").range
             view_start = datetime.fromtimestamp(view_range[0], tz=timezone.utc)
@@ -963,7 +964,7 @@ class Simulator:
                     previous_account_state: AccountState = pickle.loads(content)
                 async with aiofiles.open(virtual_state_path, "rb") as file:
                     content = await file.read()
-                    previous_virtual_state = pickle.loads(content)
+                    previous_virtual_state: VirtualState = pickle.loads(content)
 
                 calculate_from = previous_account_state.observed_until
                 calculate_until = slice_until
@@ -971,8 +972,8 @@ class Simulator:
                 previous_asset_record = blank_asset_record.copy()
                 previous_unrealized_changes = blank_unrealized_changes.copy()
                 previous_scribbles = blank_scribbles.copy()
-                previous_account_state = replace(blank_account_state)
-                previous_virtual_state = blank_virtual_state.copy()
+                previous_account_state = blank_account_state.model_copy(deep=True)
+                previous_virtual_state = blank_virtual_state.model_copy(deep=True)
 
                 calculate_from = slice_from
                 calculate_until = slice_until
@@ -980,7 +981,7 @@ class Simulator:
         should_calculate = calculate_from < calculate_until
         if len(previous_asset_record) == 0:
             previous_asset_record.loc[calculate_from, "Cause"] = "other"
-            previous_asset_record.loc[calculate_from, "Result Asset"] = float(1)
+            previous_asset_record.loc[calculate_from, "Result Asset"] = 1.0
 
         prepare_step = 5
 
@@ -1180,7 +1181,7 @@ class Simulator:
             unrealized_changes = cell.data.copy()
 
         scribbles = self.raw_scribbles.copy()
-        account_state = replace(self.raw_account_state)
+        account_state = self.raw_account_state.model_copy(deep=True)
 
         # ■■■■■ get strategy details ■■■■
 
@@ -1242,7 +1243,7 @@ class Simulator:
 
         if len(asset_record) > 0:
             start_point = asset_record.index[0]
-            year_asset_changes[start_point] = float(1)
+            year_asset_changes[start_point] = 1.0
             if not year_asset_changes.index.is_monotonic_increasing:
                 year_asset_changes = await spawn_blocking(
                     sort_series, year_asset_changes
@@ -1253,7 +1254,7 @@ class Simulator:
         presentation_asset_record = asset_record.copy()
         presentation_unrealized_changes = unrealized_changes.copy()
         presentation_scribbles = scribbles.copy()
-        presentation_account_state = replace(account_state)
+        presentation_account_state = account_state.model_copy(deep=True)
 
         # ■■■■■ remember ■■■■■
 

@@ -106,8 +106,9 @@ class Manager:
         filepath = self.workerpath / "management_settings.json"
         if await aiofiles.os.path.isfile(filepath):
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
-                content = await file.read()
-                self.management_settings = ManagementSettings.from_json(content)
+                self.management_settings = ManagementSettings.model_validate_json(
+                    await file.read()
+                )
         board_lock_index = self.management_settings.lock_board.value
         self.window.comboBox_3.setCurrentIndex(board_lock_index)
 
@@ -126,7 +127,7 @@ class Manager:
 
         filepath = self.workerpath / "management_settings.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-            await file.write(self.management_settings.to_json(indent=2))
+            await file.write(self.management_settings.model_dump_json(indent=2))
 
     async def open_datapath(self):
         if os.name == "nt":
