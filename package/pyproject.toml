@@ -24,6 +24,7 @@ dependencies = [
     "xdialog~=1.1.1",
     "dataclasses-json~=0.6.4",
     "setuptools~=75.6.0",
+    "typing-extensions~=4.12.2",
 ]
 
 [build-system]

@@ -10,6 +10,7 @@ import aiofiles.os
 import pandas as pd
 import pyqtgraph
 from PySide6 import QtCore, QtGui, QtWidgets
+from typing_extensions import override
 
 from solie.common import PACKAGE_PATH, PACKAGE_VERSION
 from solie.overlay import CoinSelection, DatapathInput, TokenSelection
@@ -72,6 +73,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.should_confirm_closing = False
 
+    @override
     def closeEvent(self, event):
         event.ignore()
 
@@ -100,6 +102,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         asyncio.create_task(job_close())
 
+    @override
     def mouseReleaseEvent(self, event):
         self.last_interaction = datetime.now(timezone.utc)
 

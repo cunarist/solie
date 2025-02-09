@@ -798,7 +798,7 @@ class Simulator:
         text += f"Total realized profit {symbol_yield:+.4f}({total_yield:+.4f})%"
         text += "  ⦁  "
         text += "Lowest unrealized profit"
-        text += f" {min_unrealized_change*100:+.4f}%"  # type:ignore
+        text += f" {min_unrealized_change * 100:+.4f}%"  # type:ignore
         self.window.label_13.setText(text)
 
     async def set_minimum_view_range(self):

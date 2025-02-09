@@ -3,6 +3,7 @@ import asyncio
 from typing import TypeVar
 
 from PySide6 import QtCore, QtGui, QtWidgets
+from typing_extensions import override
 
 from solie.common import outsource
 
@@ -34,11 +35,13 @@ async def overlay(title: str, widget: W, close_button=True) -> W:
 class OverlayPopup(QtWidgets.QWidget):
     installed_window: QtWidgets.QMainWindow
 
+    @override
     def showEvent(self, event):
         # needed for filling the window when resized
         parent: QtWidgets.QMainWindow = self.parent()  # type:ignore
         self.setGeometry(parent.rect())
 
+    @override
     def eventFilter(self, watched, event):
         if not isinstance(watched, QtWidgets.QWidget):
             raise NotImplementedError

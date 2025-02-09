@@ -1,8 +1,10 @@
 from pygments import lex, lexers
 from PySide6 import QtGui
+from typing_extensions import override
 
 
 class SyntaxHighlighter(QtGui.QSyntaxHighlighter):
+    @override
     def highlightBlock(self, text):
         current_position = 0
 

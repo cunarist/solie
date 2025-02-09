@@ -1,4 +1,5 @@
 from PySide6 import QtCore, QtGui, QtWidgets
+from typing_extensions import override
 from yapf.yapflib.errors import YapfError
 from yapf.yapflib.yapf_api import FormatCode
 
@@ -13,6 +14,7 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
         self.setLineWrapMode(ScriptEditor.LineWrapMode.NoWrap)
         SyntaxHighlighter(parent).setDocument(self.document())
 
+    @override
     def keyPressEvent(self, e):
         event = e
         should_indent = event.key() == QtCore.Qt.Key.Key_Tab
@@ -56,6 +58,7 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
             return
         return super().keyPressEvent(event)
 
+    @override
     def focusOutEvent(self, e):
         event = e
         # apply formatter style

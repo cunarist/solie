@@ -1,6 +1,7 @@
 import asyncio
 
 from PySide6 import QtCore, QtGui, QtWidgets
+from typing_extensions import override
 
 from solie.common import outsource
 
@@ -24,17 +25,19 @@ class AskPopup(QtWidgets.QWidget):
     done_event = asyncio.Event()
     installed_window: QtWidgets.QMainWindow
 
+    @override
     def showEvent(self, event):
         # needed for filling the window when resized
         parent: QtWidgets.QMainWindow = self.parent()  # type:ignore
         self.setGeometry(parent.rect())
 
+    @override
     def eventFilter(self, watched, event):
         if not isinstance(watched, QtWidgets.QWidget):
             raise NotImplementedError
         # needed for filling the window when resized
         if event.type() == event.Type.Resize:
-            self.setGeometry(watched.rect())  
+            self.setGeometry(watched.rect())
         return super().eventFilter(watched, event)
 
     @classmethod

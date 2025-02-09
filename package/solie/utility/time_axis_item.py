@@ -2,6 +2,7 @@ import math
 from datetime import datetime, timedelta, timezone
 
 from pyqtgraph import AxisItem
+from typing_extensions import override
 
 # not using pyqtgraph's default DateAxisItem
 # because it doesn't show values in UTC time
@@ -11,7 +12,8 @@ class TimeAxisItem(AxisItem):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def tickValues(self, minVal: float, maxVal: float, size: float):
+    @override
+    def tickValues(self, minVal: float, maxVal: float, size: float):  # noqa
         min_value = minVal
         max_value = maxVal
         if min_value <= 0:  # use standard implementation from parent
@@ -87,7 +89,8 @@ class TimeAxisItem(AxisItem):
 
         return [(distance.total_seconds(), majticks)]
 
-    def tickStrings(self, values:list[float], scale:float, spacing:float):
+    @override
+    def tickStrings(self, values: list[float], scale: float, spacing: float):
         """Reimplemented from PlotItem to adjust to the range"""
 
         count = len(values)

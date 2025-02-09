@@ -1,13 +1,15 @@
 import math
 
 from pyqtgraph import AxisItem
+from typing_extensions import override
 
 
 class PercentAxisItem(AxisItem):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def tickValues(self, minVal: float, maxVal: float, size: float):
+    @override
+    def tickValues(self, minVal: float, maxVal: float, size: float):  # noqa
         min_value = minVal
         max_value = maxVal
         min_value = max(0.001 * max_value, min_value)
@@ -30,6 +32,7 @@ class PercentAxisItem(AxisItem):
             (max_value - min_value, minor_ticks),
         ]
 
+    @override
     def tickStrings(self, values: list[float], scale: float, spacing: float):
         optimal_count = max(2, math.ceil(self.size().height() / 20))
         distance = spacing / optimal_count
@@ -48,9 +51,7 @@ class PercentAxisItem(AxisItem):
 
         return strings
 
-    def format_fixed_float(
-        self, number: float, width=4, positive_sign=False
-    ) -> str:
+    def format_fixed_float(self, number: float, width=4, positive_sign=False) -> str:
         if width < 4:
             width = 4
 
