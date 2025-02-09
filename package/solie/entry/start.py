@@ -1,5 +1,5 @@
-import asyncio
 import sys
+from asyncio import set_event_loop
 
 from PySide6 import QtWidgets
 from qasync import QEventLoop
@@ -14,7 +14,7 @@ def bring_to_life():
 
     app = QtWidgets.QApplication()
     event_loop = QEventLoop(app)
-    asyncio.set_event_loop(event_loop)
+    set_event_loop(event_loop)
 
     with event_loop:
         event_loop.run_until_complete(live(app))

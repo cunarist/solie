@@ -1,5 +1,12 @@
-import asyncio
-from asyncio import AbstractEventLoop, Future, Task
+from asyncio import (
+    AbstractEventLoop,
+    CancelledError,
+    Future,
+    Task,
+    current_task,
+    get_running_loop,
+    sleep,
+)
 from collections import deque
 from typing import Generic, TypeVar
 
@@ -38,15 +45,15 @@ class RWLockCore:
     async def _yield_after_acquire(self, lock_type: int):
         if self._do_yield:
             try:
-                await asyncio.sleep(0.0)
-            except asyncio.CancelledError:
+                await sleep(0.0)
+            except CancelledError:
                 self._release(lock_type)
                 self._wake_up()
                 raise
 
     # Acquire the lock in read mode.
     async def acquire_read(self) -> bool:
-        me = asyncio.current_task()
+        me = current_task()
         assert me is not None  # nosec
 
         if (me, self._RL) in self._owning or (me, self._WL) in self._owning:
@@ -68,7 +75,7 @@ class RWLockCore:
             self._owning.append((me, self._RL))
             return True
 
-        except asyncio.CancelledError:
+        except CancelledError:
             self._r_state -= 1
             self._wake_up()
             raise
@@ -79,7 +86,7 @@ class RWLockCore:
     # Acquire the lock in write mode.  A 'waiting' count is maintained,
     # ensuring that 'readers' will yield to writers.
     async def acquire_write(self) -> bool:
-        me = asyncio.current_task()
+        me = current_task()
         assert me is not None  # nosec
 
         if (me, self._WL) in self._owning:
@@ -104,7 +111,7 @@ class RWLockCore:
             self._owning.append((me, self._WL))
             return True
 
-        except asyncio.CancelledError:
+        except CancelledError:
             self._w_state -= 1
             self._wake_up()
             raise
@@ -120,7 +127,7 @@ class RWLockCore:
 
     def _release(self, lock_type: int):
         # assert lock_type in (self._RL, self._WL)
-        me = asyncio.current_task(loop=self._loop)
+        me = current_task(loop=self._loop)
         assert me is not None  # nosec
 
         try:
@@ -213,7 +220,7 @@ class RWLock(Generic[T]):
     """
 
     def __init__(self, cell_data: T, fast: bool = True):
-        loop = asyncio.get_running_loop()
+        loop = get_running_loop()
         self._wrapper = Cell(cell_data)
         self._loop = loop
         core = RWLockCore(fast, self._loop)

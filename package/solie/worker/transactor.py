@@ -1,10 +1,10 @@
-import asyncio
 import logging
 import math
 import pickle
 import re
 import time
 import webbrowser
+from asyncio import gather, sleep, wait
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -787,7 +787,7 @@ class Transactor:
                     last_index = cell.data.index[-1]
                     if last_index == before_moment:
                         break
-                await asyncio.sleep(0.1)
+                await sleep(0.1)
 
         # ■■■■■ get ready for task duration measurement ■■■■■
 
@@ -818,7 +818,7 @@ class Transactor:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         # last price and volume
         filtered = [t for t in aggregate_trades if t.symbol == symbol]
@@ -830,7 +830,7 @@ class Transactor:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         index_ar = np.array(timestamps)
         value_ar = np.array([t.volume for t in filtered])
@@ -844,7 +844,7 @@ class Transactor:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         # book tickers
         book_tickers = [
@@ -857,14 +857,14 @@ class Transactor:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         data_y = [d.best_ask_price for d in book_tickers]
         widget = self.window.transaction_graph.book_tickers.line_b
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         # entry price
         entry_price = self.account_state.positions[symbol].entry_price
@@ -882,7 +882,7 @@ class Transactor:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         # ■■■■■ set range of heavy data ■■■■■
 
@@ -993,7 +993,7 @@ class Transactor:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         data_x = np.stack(
             [
@@ -1027,7 +1027,7 @@ class Transactor:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         data_x = np.stack(
             [
@@ -1061,7 +1061,7 @@ class Transactor:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         # wobbles
         sr = candle_data[(symbol, "HIGH")]
@@ -1071,7 +1071,7 @@ class Transactor:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         sr = candle_data[(symbol, "LOW")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
@@ -1080,7 +1080,7 @@ class Transactor:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         # trade volume
         sr = candle_data[(symbol, "VOLUME")]
@@ -1091,7 +1091,7 @@ class Transactor:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         # asset
         data_x = asset_record["RESULT_ASSET"].index.to_numpy(dtype=np.int64) / 10**9
@@ -1100,7 +1100,7 @@ class Transactor:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         # asset with unrealized profit
         sr = asset_record["RESULT_ASSET"]
@@ -1114,7 +1114,7 @@ class Transactor:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         # buy and sell
         df = asset_record.loc[asset_record["SYMBOL"] == symbol]
@@ -1126,7 +1126,7 @@ class Transactor:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         df = asset_record.loc[asset_record["SYMBOL"] == symbol]
         df = df[df["SIDE"] == "BUY"]
@@ -1137,7 +1137,7 @@ class Transactor:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         # ■■■■■ record task duration ■■■■■
 
@@ -1178,7 +1178,7 @@ class Transactor:
                 widget.setData(data_x, data_y)
                 if find_stop_flag(task_name, task_id):
                     return
-                await asyncio.sleep(0)
+                await sleep(0)
             else:
                 if find_stop_flag(task_name, task_id):
                     return
@@ -1203,7 +1203,7 @@ class Transactor:
                 widget.setData(data_x, data_y)
                 if find_stop_flag(task_name, task_id):
                     return
-                await asyncio.sleep(0)
+                await sleep(0)
             else:
                 if find_stop_flag(task_name, task_id):
                     return
@@ -1228,7 +1228,7 @@ class Transactor:
                 widget.setData(data_x, data_y)
                 if find_stop_flag(task_name, task_id):
                     return
-                await asyncio.sleep(0)
+                await sleep(0)
             else:
                 if find_stop_flag(task_name, task_id):
                     return
@@ -1363,7 +1363,7 @@ class Transactor:
                     remaining = 1000 - before_value
                     new_value = before_value + math.ceil(remaining * 0.2)
                 self.window.progressBar_2.setValue(new_value)
-                await asyncio.sleep(0.01)
+                await sleep(0.01)
 
         spawn(play_progress_bar())
 
@@ -1381,7 +1381,7 @@ class Transactor:
                 last_index = cell.data.index[-1]
                 if last_index == before_moment:
                     break
-            await asyncio.sleep(0.1)
+            await sleep(0.1)
 
         # ■■■■■ Get the candle data ■■■■■
 
@@ -1410,8 +1410,8 @@ class Transactor:
                     only_last_index=True,
                 )
             )
-            await asyncio.sleep(0)
-        symbol_indicators = await asyncio.gather(*coroutines)
+            await sleep(0)
+        symbol_indicators = await gather(*coroutines)
         indicators = pd.concat(symbol_indicators, axis="columns")
 
         data_row: np.record = candle_data.tail(1).to_records()[-1]
@@ -1598,7 +1598,7 @@ class Transactor:
             about_open_orders[symbol] = response
 
         tasks = [spawn(job(s)) for s in target_symbols]
-        await asyncio.wait(tasks)
+        await wait(tasks)
 
         # ■■■■■ Update account state ■■■■■
 
@@ -1818,7 +1818,7 @@ class Transactor:
                     )
 
             tasks = [spawn(job_1(s)) for s in target_symbols]
-            await asyncio.wait(tasks)
+            await wait(tasks)
 
             async def job_2(symbol):
                 about_position = about_positions_keyed[symbol]
@@ -1846,7 +1846,7 @@ class Transactor:
                     )
 
             tasks = [spawn(job_2(s)) for s in target_symbols]
-            await asyncio.wait(tasks)
+            await wait(tasks)
 
             try:
                 timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
@@ -1962,7 +1962,7 @@ class Transactor:
 
         if cancel_orders:
             tasks = [spawn(job_cancel_order(o)) for o in cancel_orders]
-            await asyncio.wait(tasks)
+            await wait(tasks)
 
         # ■■■■■ Do now orders ■■■■■
 
@@ -2029,7 +2029,7 @@ class Transactor:
 
         if now_orders:
             tasks = [spawn(job_new_order(o)) for o in now_orders]
-            await asyncio.wait(tasks)
+            await wait(tasks)
 
         # ■■■■■ Do book orders ■■■■■
 
@@ -2079,7 +2079,7 @@ class Transactor:
 
         if book_orders:
             tasks = [spawn(job_new_order(o)) for o in book_orders]
-            await asyncio.wait(tasks)
+            await wait(tasks)
 
         # ■■■■■ Do later orders ■■■■■
 
@@ -2219,7 +2219,7 @@ class Transactor:
 
         if later_orders:
             tasks = [spawn(job_new_order(o)) for o in later_orders]
-            await asyncio.wait(tasks)
+            await wait(tasks)
 
     async def clear_positions_and_open_orders(self):
         decisions: dict[str, dict[OrderType, Decision]] = {}
@@ -2271,7 +2271,7 @@ class Transactor:
 
         if conflicting_order_tuples:
             tasks = [spawn(job(c)) for c in conflicting_order_tuples]
-            await asyncio.wait(tasks)
+            await wait(tasks)
 
     async def pan_view_range(self):
         if not self.should_draw_frequently:

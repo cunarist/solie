@@ -1,7 +1,7 @@
-import asyncio
 import logging
 import math
 import os
+from asyncio import Event, sleep
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 
 
 class Window(QtWidgets.QMainWindow, Ui_MainWindow):
-    def __init__(self, close_event: asyncio.Event):
+    def __init__(self, close_event: Event):
         super().__init__()
 
         self.close_event = close_event
@@ -156,7 +156,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 "Internet connection is necessary for Solie to start up.",
                 ["Retry"],
             )
-            await asyncio.sleep(1)
+            await sleep(1.0)
 
         # ■■■■■ Get datapath ■■■■■
 

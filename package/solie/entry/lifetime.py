@@ -1,5 +1,5 @@
-import asyncio
 import logging
+from asyncio import Event, sleep, wait
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtGui, QtWidgets
@@ -45,7 +45,7 @@ async def live(app: QtWidgets.QApplication):
     app.setStyle("Fusion")
     app.setPalette(dark_palette)
 
-    close_event = asyncio.Event()
+    close_event = Event()
     scheduler = AsyncIOScheduler(timezone="UTC")
 
     window = Window(close_event)
@@ -72,7 +72,7 @@ async def live(app: QtWidgets.QApplication):
         spawn(strategist.load()),
         spawn(manager.load()),
     ]
-    await asyncio.wait(tasks)
+    await wait(tasks)
 
     spawn(collector.get_exchange_information())
     spawn(strategist.display_strategies())
@@ -88,13 +88,13 @@ async def live(app: QtWidgets.QApplication):
     spawn(manager.display_internal_status())
 
     scheduler.start()
-    await asyncio.sleep(1)
+    await sleep(1)
 
     window.reveal()
     await close_event.wait()
 
     scheduler.shutdown()
-    await asyncio.sleep(1)
+    await sleep(1)
 
     tasks = [
         spawn(transactor.save_large_data()),
@@ -102,4 +102,4 @@ async def live(app: QtWidgets.QApplication):
         spawn(strategist.save_strategies()),
         spawn(collector.save_candle_data()),
     ]
-    await asyncio.wait(tasks)
+    await wait(tasks)

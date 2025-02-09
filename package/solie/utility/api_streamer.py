@@ -1,7 +1,7 @@
-import asyncio
 import json
 import logging
-from typing import Callable, Coroutine
+from asyncio import Task, sleep
+from typing import Any, Callable, Coroutine
 
 from aiohttp import ClientError, ClientSession, WSMsgType
 
@@ -20,7 +20,8 @@ class ApiStreamer:
     def __init__(
         self,
         url: str,
-        handler: Callable[[dict], Coroutine] | Callable[[list], Coroutine],
+        handler: Callable[[dict], Coroutine[None, None, Any]]
+        | Callable[[list], Coroutine[None, None, Any]],
     ):
         self._url = url
         self._handler = handler
@@ -40,7 +41,7 @@ class ApiStreamer:
             except ClientError:
                 # This happens when internet is disconnected, etc...
                 pass
-            await asyncio.sleep(5.0)
+            await sleep(5.0)
 
     async def _keep_listening(self):
         async with self._session.ws_connect(self._url, heartbeat=5.0) as websocket:
@@ -53,7 +54,7 @@ class ApiStreamer:
                 else:
                     content = message.json()
 
-                    def done_callback(task: asyncio.Task, content=content):
+                    def done_callback(task: Task[Any], content=content):
                         error = task.exception()
                         if error:
                             raise ApiStreamError(content) from error

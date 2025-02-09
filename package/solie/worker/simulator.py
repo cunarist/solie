@@ -1,7 +1,7 @@
-import asyncio
 import math
 import pickle
 import re
+from asyncio import gather, sleep
 from datetime import datetime, timedelta, timezone
 
 import aiofiles
@@ -213,7 +213,7 @@ class Simulator:
                     last_index = cell.data.index[-1]
                     if last_index == before_moment:
                         break
-                await asyncio.sleep(0.1)
+                await sleep(0.1)
 
         # ■■■■■ get ready for task duration measurement ■■■■■
 
@@ -244,7 +244,7 @@ class Simulator:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         # last price and volume
         filtered = [t for t in aggregate_trades if t.symbol == symbol]
@@ -256,7 +256,7 @@ class Simulator:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         # last trade volume
         index_ar = np.array(timestamps)
@@ -274,7 +274,7 @@ class Simulator:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         # book tickers
         book_tickers = [
@@ -287,14 +287,14 @@ class Simulator:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         data_y = [d.best_ask_price for d in book_tickers]
         widget = self.window.simulation_graph.book_tickers.line_b
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         # entry price
         entry_price = self.account_state.positions[symbol].entry_price
@@ -312,7 +312,7 @@ class Simulator:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         # ■■■■■ record task duration ■■■■■
 
@@ -439,7 +439,7 @@ class Simulator:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         data_x = np.stack(
             [
@@ -473,7 +473,7 @@ class Simulator:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         data_x = np.stack(
             [
@@ -507,7 +507,7 @@ class Simulator:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         # wobbles
         sr = candle_data[(symbol, "HIGH")]
@@ -517,7 +517,7 @@ class Simulator:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         sr = candle_data[(symbol, "LOW")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
@@ -526,7 +526,7 @@ class Simulator:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         # trade volume
         sr = candle_data[(symbol, "VOLUME")]
@@ -537,7 +537,7 @@ class Simulator:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         # asset
         data_x = asset_record["RESULT_ASSET"].index.to_numpy(dtype=np.int64) / 10**9
@@ -546,7 +546,7 @@ class Simulator:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         # asset with unrealized profit
         sr = asset_record["RESULT_ASSET"]
@@ -560,7 +560,7 @@ class Simulator:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         # buy and sell
         df = asset_record.loc[asset_record["SYMBOL"] == symbol]
@@ -572,7 +572,7 @@ class Simulator:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         df = asset_record.loc[asset_record["SYMBOL"] == symbol]
         df = df[df["SIDE"] == "BUY"]
@@ -583,7 +583,7 @@ class Simulator:
         widget.setData(data_x, data_y)
         if find_stop_flag(task_name, task_id):
             return
-        await asyncio.sleep(0)
+        await sleep(0)
 
         # ■■■■■ record task duration ■■■■■
 
@@ -623,7 +623,7 @@ class Simulator:
                 widget.setData(data_x, data_y)
                 if find_stop_flag(task_name, task_id):
                     return
-                await asyncio.sleep(0)
+                await sleep(0)
             else:
                 if find_stop_flag(task_name, task_id):
                     return
@@ -648,7 +648,7 @@ class Simulator:
                 widget.setData(data_x, data_y)
                 if find_stop_flag(task_name, task_id):
                     return
-                await asyncio.sleep(0)
+                await sleep(0)
             else:
                 if find_stop_flag(task_name, task_id):
                     return
@@ -673,7 +673,7 @@ class Simulator:
                 widget.setData(data_x, data_y)
                 if find_stop_flag(task_name, task_id):
                     return
-                await asyncio.sleep(0)
+                await sleep(0)
             else:
                 if find_stop_flag(task_name, task_id):
                     return
@@ -838,7 +838,7 @@ class Simulator:
                         if progressbar_value < 1000:
                             is_progressbar_filled = False
                         if is_progressbar_filled:
-                            await asyncio.sleep(0.1)
+                            await sleep(0.1)
                             self.window.progressBar_4.setValue(0)
                             self.window.progressBar.setValue(0)
                             return
@@ -854,7 +854,7 @@ class Simulator:
                         remaining = calculate_step - before_value
                         new_value = before_value + math.ceil(remaining * 0.2)
                         widget.setValue(new_value)
-                    await asyncio.sleep(0.01)
+                    await sleep(0.01)
 
         spawn(play_progress_bar())
 
@@ -1085,7 +1085,7 @@ class Simulator:
                 spawn_blocking(simulate_chunk, input_data)
                 for input_data in calculation_inputs
             ]
-            gathered = asyncio.gather(*coroutines)
+            gathered = gather(*coroutines)
 
             total_seconds = (calculate_until - calculate_from).total_seconds()
 
@@ -1098,7 +1098,7 @@ class Simulator:
                         return
                     total_progress = sum(progress_list)
                     calculate_step = math.ceil(total_progress * 1000 / total_seconds)
-                    await asyncio.sleep(0.01)
+                    await sleep(0.01)
 
             spawn(update_calculation_step())
 

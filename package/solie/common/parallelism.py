@@ -1,5 +1,5 @@
-import asyncio
 import functools
+from asyncio import get_event_loop
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import Manager, cpu_count
 from multiprocessing.managers import SyncManager
@@ -46,7 +46,7 @@ async def spawn_blocking(
     print(result)  # Output: 30
     ```
     """
-    event_loop = asyncio.get_event_loop()
+    event_loop = get_event_loop()
     result = await event_loop.run_in_executor(
         process_pool,
         functools.partial(callable, *args, **kwargs),

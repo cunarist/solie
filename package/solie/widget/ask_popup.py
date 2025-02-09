@@ -1,4 +1,4 @@
-import asyncio
+from asyncio import Event
 
 from PySide6 import QtCore, QtGui, QtWidgets
 from typing_extensions import override
@@ -22,7 +22,7 @@ async def ask(main_text: str, detail_text: str, options: list[str]) -> int:
 
 
 class AskPopup(QtWidgets.QWidget):
-    done_event = asyncio.Event()
+    done_event = Event()
     installed_window: QtWidgets.QMainWindow
 
     @override

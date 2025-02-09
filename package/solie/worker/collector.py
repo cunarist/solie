@@ -1,9 +1,9 @@
-import asyncio
 import logging
 import math
 import random
 import time
 import webbrowser
+from asyncio import sleep, wait
 from collections import deque
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -527,7 +527,7 @@ class Collector:
                     if done_steps == total_steps:
                         progressbar_value = self.window.progressBar_3.value()
                         if progressbar_value == 1000:
-                            await asyncio.sleep(0.1)
+                            await sleep(0.1)
                             self.window.progressBar_3.setValue(0)
                             return
                     before_value = self.window.progressBar_3.value()
@@ -537,7 +537,7 @@ class Collector:
                         )
                         new_value = before_value + math.ceil(remaining * 0.2)
                         self.window.progressBar_3.setValue(new_value)
-                    await asyncio.sleep(0.01)
+                    await sleep(0.01)
 
         spawn(play_progress_bar())
 
@@ -579,7 +579,7 @@ class Collector:
                 done_steps += 1
 
             tasks = [spawn(download_fill(p)) for p in download_presets]
-            await asyncio.wait(tasks)
+            await wait(tasks)
 
             if preset_year < current_year:
                 # For data of previous years,

@@ -1,6 +1,6 @@
-import asyncio
 import logging
 import time
+from asyncio import Lock
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
@@ -12,7 +12,7 @@ from solie.common import spawn
 
 
 class LogHandler(logging.Handler):
-    file_lock = asyncio.Lock()
+    file_lock = Lock()
 
     def __init__(self, log_path: Path, callback: Callable[[str, str], None]):
         super().__init__()

@@ -1,5 +1,5 @@
 # https://stackoverflow.com/questions/67029993/pyqt-creating-a-popup-in-the-window
-import asyncio
+from asyncio import Event
 from typing import TypeVar
 
 from PySide6 import QtCore, QtGui, QtWidgets
@@ -12,7 +12,7 @@ from .transparent_scroll_area import TransparentScrollArea
 
 
 class BaseOverlay(QtWidgets.QWidget):
-    done_event = asyncio.Event()
+    done_event = Event()
 
     async def confirm_closing(self) -> bool:
         return True

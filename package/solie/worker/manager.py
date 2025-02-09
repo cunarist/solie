@@ -1,8 +1,8 @@
-import asyncio
 import logging
 import os
 import statistics
 import webbrowser
+from asyncio import all_tasks, sleep
 from collections import deque
 from datetime import datetime, timedelta, timezone
 
@@ -145,9 +145,9 @@ class Manager:
     async def display_internal_status(self):
         while True:
             texts = []
-            all_tasks = asyncio.all_tasks()
+            tasks = all_tasks()
             tasks_not_done = 0
-            for task in all_tasks:
+            for task in tasks:
                 if not task.done():
                     tasks_not_done += 1
                     text = task.get_name()
@@ -210,7 +210,7 @@ class Manager:
             text = "\n".join(lines)
             self.window.label_36.setText(text)
 
-            await asyncio.sleep(0.1)
+            await sleep(0.1)
 
     async def run_script(self):
         script_text = self.window.plainTextEdit.toPlainText()
