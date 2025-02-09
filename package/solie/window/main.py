@@ -12,7 +12,7 @@ import pyqtgraph
 from PySide6 import QtCore, QtGui, QtWidgets
 from typing_extensions import override
 
-from solie.common import PACKAGE_PATH, PACKAGE_VERSION
+from solie.common import PACKAGE_PATH, PACKAGE_VERSION, spawn
 from solie.overlay import CoinSelection, DatapathInput, TokenSelection
 from solie.utility import (
     ApiRequester,
@@ -100,7 +100,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.splash_screen.show()
             self.close_event.set()
 
-        asyncio.create_task(job_close())
+        spawn(job_close())
 
     @override
     def mouseReleaseEvent(self, event):
@@ -119,7 +119,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 return
             self.board.setEnabled(True)
 
-        asyncio.create_task(job_ask())
+        spawn(job_ask())
 
     async def boot(self):
         # ■■■■■ Do basic Qt things ■■■■■
@@ -162,7 +162,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # ■■■■■ Request internet connection ■■■■■
 
-        asyncio.create_task(monitor_internet())
+        spawn(monitor_internet())
         await is_internet_checked.wait()
         while not internet_connected():
             await ask(

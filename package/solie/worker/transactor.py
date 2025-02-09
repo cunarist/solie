@@ -15,7 +15,7 @@ import pandas as pd
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtWidgets
 
-from solie.common import go, outsource
+from solie.common import go, outsource, spawn
 from solie.overlay import LongTextView
 from solie.utility import (
     ApiRequester,
@@ -624,7 +624,7 @@ class Transactor:
         strategy_index = self.window.comboBox_2.currentIndex()
         self.transaction_settings.strategy_index = strategy_index
 
-        asyncio.create_task(self.display_lines())
+        spawn(self.display_lines())
 
         # ■■■■■ is automation turned on ■■■■■
 
@@ -728,7 +728,7 @@ class Transactor:
         text += f"Transaction count {symbol_change_count}({total_change_count})"
         text += "  ⦁  "
         text += "Transaction amount"
-        text += f" ×{symbol_margin_ratio:.4f}({total_margin_ratio:.4f})"
+        text += f" *{symbol_margin_ratio:.4f}({total_margin_ratio:.4f})"
         text += "  ⦁  "
         text += f"Total realized profit {symbol_yield:+.4f}({total_yield:+.4f})%"
         text += "  ⦁  "
@@ -1244,9 +1244,9 @@ class Transactor:
         symbol = self.window.alias_to_symbol[alias]
         self.viewing_symbol = symbol
 
-        asyncio.create_task(self.display_lines())
-        asyncio.create_task(self.display_status_information())
-        asyncio.create_task(self.display_range_information())
+        spawn(self.display_lines())
+        spawn(self.display_status_information())
+        spawn(self.display_range_information())
 
     async def display_status_information(self):
         # ■■■■■ Display important things first ■■■■■
@@ -1299,15 +1299,15 @@ class Transactor:
 
         text = ""
         text += "Total asset"
-        text += f" ＄{self.account_state['wallet_balance']:.4f}"
+        text += f" ${self.account_state['wallet_balance']:.4f}"
         text += "  ⦁  "
-        text += f"Investment ＄{position['margin']:.4f}"
+        text += f"Investment ${position['margin']:.4f}"
         text += f"({margin_sum:.4f})"
         text += "  ⦁  "
         text += f"Direction {direction_text}"
         text += "  ⦁  "
         text += "Entry price"
-        text += f" ＄{position['entry_price']:.4f}"
+        text += f" ${position['entry_price']:.4f}"
         text += "  ⦁  "
         text += "Open orders"
         text += f" {open_orders_count}"
@@ -1358,7 +1358,7 @@ class Transactor:
                 self.window.progressBar_2.setValue(new_value)
                 await asyncio.sleep(0.01)
 
-        asyncio.create_task(play_progress_bar())
+        spawn(play_progress_bar())
 
         # ■■■■■ Check if the data exists ■■■■■
 
@@ -1583,7 +1583,7 @@ class Transactor:
             )
             about_open_orders[symbol] = response
 
-        tasks = [asyncio.create_task(job(s)) for s in target_symbols]
+        tasks = [spawn(job(s)) for s in target_symbols]
         await asyncio.wait(tasks)
 
         # ■■■■■ Update account state ■■■■■
@@ -1802,7 +1802,7 @@ class Transactor:
                         payload=payload,
                     )
 
-            tasks = [asyncio.create_task(job_1(s)) for s in target_symbols]
+            tasks = [spawn(job_1(s)) for s in target_symbols]
             await asyncio.wait(tasks)
 
             async def job_2(symbol):
@@ -1834,7 +1834,7 @@ class Transactor:
                         payload=payload,
                     )
 
-            tasks = [asyncio.create_task(job_2(s)) for s in target_symbols]
+            tasks = [spawn(job_2(s)) for s in target_symbols]
             await asyncio.wait(tasks)
 
             try:
@@ -1963,7 +1963,7 @@ class Transactor:
                 cancel_orders.append(cancel_order)
 
         if cancel_orders:
-            tasks = [asyncio.create_task(job_cancel_order(o)) for o in cancel_orders]
+            tasks = [spawn(job_cancel_order(o)) for o in cancel_orders]
             await asyncio.wait(tasks)
 
         # ■■■■■ Do now orders ■■■■■
@@ -2029,7 +2029,7 @@ class Transactor:
                 now_orders.append(new_order)
 
         if now_orders:
-            tasks = [asyncio.create_task(job_new_order(o)) for o in now_orders]
+            tasks = [spawn(job_new_order(o)) for o in now_orders]
             await asyncio.wait(tasks)
 
         # ■■■■■ Do book orders ■■■■■
@@ -2079,7 +2079,7 @@ class Transactor:
                 book_orders.append(new_order)
 
         if book_orders:
-            tasks = [asyncio.create_task(job_new_order(o)) for o in book_orders]
+            tasks = [spawn(job_new_order(o)) for o in book_orders]
             await asyncio.wait(tasks)
 
         # ■■■■■ Do later orders ■■■■■
@@ -2219,7 +2219,7 @@ class Transactor:
                 later_orders.append(new_order)
 
         if later_orders:
-            tasks = [asyncio.create_task(job_new_order(o)) for o in later_orders]
+            tasks = [spawn(job_new_order(o)) for o in later_orders]
             await asyncio.wait(tasks)
 
     async def clear_positions_and_open_orders(self):
@@ -2271,7 +2271,7 @@ class Transactor:
                 pass
 
         if conflicting_order_tuples:
-            tasks = [asyncio.create_task(job(c)) for c in conflicting_order_tuples]
+            tasks = [spawn(job(c)) for c in conflicting_order_tuples]
             await asyncio.wait(tasks)
 
     async def pan_view_range(self):

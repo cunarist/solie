@@ -12,7 +12,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtWidgets
 from scipy.signal import find_peaks
 
-from solie.common import get_sync_manager, go, outsource
+from solie.common import get_sync_manager, go, outsource, spawn
 from solie.utility import (
     BookTicker,
     CalculationInput,
@@ -162,7 +162,7 @@ class Simulator:
         to_year = int(text)
         self.simulation_settings.year = to_year
         if from_year != to_year:
-            asyncio.create_task(self.display_year_range())
+            spawn(self.display_year_range())
 
         index = self.window.comboBox.currentIndex()
         self.simulation_settings.strategy_index = index
@@ -793,7 +793,7 @@ class Simulator:
         text += f"Transaction count {symbol_change_count}({total_change_count})"
         text += "  ⦁  "
         text += "Transaction amount"
-        text += f" ×{symbol_margin_ratio:.4f}({total_margin_ratio:.4f})"
+        text += f" *{symbol_margin_ratio:.4f}({total_margin_ratio:.4f})"
         text += "  ⦁  "
         text += f"Total realized profit {symbol_yield:+.4f}({total_yield:+.4f})%"
         text += "  ⦁  "
@@ -849,7 +849,7 @@ class Simulator:
                         widget.setValue(new_value)
                     await asyncio.sleep(0.01)
 
-        asyncio.create_task(play_progress_bar())
+        spawn(play_progress_bar())
 
         prepare_step = 1
 
@@ -1091,7 +1091,7 @@ class Simulator:
                     calculate_step = math.ceil(total_progress * 1000 / total_seconds)
                     await asyncio.sleep(0.01)
 
-            asyncio.create_task(update_calculation_step())
+            spawn(update_calculation_step())
 
             calculation_output_data = await gathered
 
@@ -1255,8 +1255,8 @@ class Simulator:
 
         # ■■■■■ display ■■■■■
 
-        asyncio.create_task(self.display_lines())
-        asyncio.create_task(self.display_range_information())
+        spawn(self.display_lines())
+        spawn(self.display_range_information())
 
         if self.simulation_summary is None:
             text = "Nothing drawn"

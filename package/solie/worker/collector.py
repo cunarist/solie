@@ -13,7 +13,7 @@ import pandas as pd
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtWidgets
 
-from solie.common import go, outsource
+from solie.common import go, outsource, spawn
 from solie.overlay import DonationGuide, DownloadFillOption
 from solie.utility import (
     AggregateTrade,
@@ -363,7 +363,7 @@ class Collector:
                 text = "Unavailable"
             else:
                 price_precision = price_precisions[symbol]
-                text = f"＄{latest_price:.{price_precision}f}"
+                text = f"${latest_price:.{price_precision}f}"
             self.window.price_labels[symbol].setText(text)
 
         # bottom information
@@ -531,7 +531,7 @@ class Collector:
                         self.window.progressBar_3.setValue(new_value)
                     await asyncio.sleep(0.01)
 
-        asyncio.create_task(play_progress_bar())
+        spawn(play_progress_bar())
 
         # ■■■■■ calculate in parellel ■■■■■
 
@@ -568,7 +568,7 @@ class Collector:
 
                 done_steps += 1
 
-            tasks = [asyncio.create_task(download_fill(p)) for p in download_presets]
+            tasks = [spawn(download_fill(p)) for p in download_presets]
             await asyncio.wait(tasks)
 
             if preset_year < current_year:
@@ -598,9 +598,9 @@ class Collector:
 
         # ■■■■■ display to graphs ■■■■■
 
-        asyncio.create_task(team.transactor.display_lines())
-        asyncio.create_task(team.simulator.display_lines())
-        asyncio.create_task(team.simulator.display_available_years())
+        spawn(team.transactor.display_lines())
+        spawn(team.simulator.display_lines())
+        spawn(team.simulator.display_available_years())
 
     async def add_book_tickers(self, received: dict):
         start_time = time.perf_counter()

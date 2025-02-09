@@ -1,11 +1,13 @@
-import asyncio
 import hashlib
 import hmac
 import json
 from datetime import datetime, timezone
+from typing import ClassVar
 from urllib.parse import urlencode
 
 from aiohttp import ClientSession
+
+from solie.common import spawn
 
 
 class ApiRequestError(Exception):
@@ -18,7 +20,7 @@ class ApiRequestError(Exception):
 
 
 class ApiRequester:
-    used_rates = {}
+    used_rates: ClassVar[dict[str, tuple[str, datetime]]] = {}
 
     def __init__(self):
         self._session = ClientSession()
@@ -26,7 +28,7 @@ class ApiRequester:
         self._binance_api_secret = ""
 
     def __del__(self):
-        asyncio.create_task(self._session.close())
+        spawn(self._session.close())
 
     def update_keys(self, binance_api_key: str, binance_api_secret: str):
         self._binance_api_key = binance_api_key

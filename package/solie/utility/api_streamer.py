@@ -5,6 +5,8 @@ from typing import Callable, Coroutine
 
 from aiohttp import ClientError, ClientSession, WSMsgType
 
+from solie.common import spawn
+
 logger = logging.getLogger(__name__)
 
 
@@ -25,7 +27,7 @@ class ApiStreamer:
         self._session = ClientSession()
         self._is_open = True
 
-        asyncio.create_task(self._keep_connecting())
+        spawn(self._keep_connecting())
 
     @property
     def url(self) -> str:
@@ -56,7 +58,7 @@ class ApiStreamer:
                         if error:
                             raise ApiStreamError(content) from error
 
-                    task = asyncio.create_task(self._handler(content))
+                    task = spawn(self._handler(content))
                     task.add_done_callback(done_callback)
             logger.info(f"Websocket disconnected\n{self._url}")
 

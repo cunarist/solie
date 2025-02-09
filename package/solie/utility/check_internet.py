@@ -4,6 +4,8 @@ from typing import Callable, Coroutine
 
 from aiohttp import ClientSession
 
+from solie.common import spawn
+
 logger = logging.getLogger(__name__)
 
 
@@ -49,11 +51,11 @@ async def monitor_internet():
         # Detect changes
         if was_connected and not is_connected:
             for job in disconnected_functions:
-                asyncio.create_task(job())
+                spawn(job())
             logger.warning("Internet disconnected")
         elif not was_connected and is_connected:
             for job in connected_functions:
-                asyncio.create_task(job())
+                spawn(job())
             logger.info("Internet connected")
 
         # Wait for a while

@@ -8,6 +8,8 @@ from typing import Callable
 import aiofiles
 import aiofiles.os
 
+from solie.common import spawn
+
 
 class LogHandler(logging.Handler):
     file_lock = asyncio.Lock()
@@ -53,7 +55,7 @@ class LogHandler(logging.Handler):
 
         log_content = f"{formatted}\n{log_content}"
 
-        asyncio.create_task(self.add_log_output(summarization, log_content))
+        spawn(self.add_log_output(summarization, log_content))
 
     async def add_log_output(self, summarization: str, log_content: str):
         # add to log list

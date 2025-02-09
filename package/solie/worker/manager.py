@@ -11,7 +11,7 @@ import aiofiles.os
 import time_machine
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from solie.common import PROCESS_COUNT, go, outsource
+from solie.common import PROCESS_COUNT, go, outsource, spawn
 from solie.utility import (
     BOARD_LOCK_OPTIONS,
     ApiRequester,
@@ -237,7 +237,7 @@ class Manager:
             time_difference = (server_time - local_time).total_seconds() - ping / 2
             self.online_status["server_time_differences"].append(time_difference)
 
-        asyncio.create_task(job())
+        spawn(job())
 
     async def display_system_status(self):
         time = datetime.now(timezone.utc)

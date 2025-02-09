@@ -4,7 +4,7 @@ import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtGui, QtWidgets
 
-from solie.common import PACKAGE_NAME, PACKAGE_PATH
+from solie.common import PACKAGE_NAME, PACKAGE_PATH, spawn
 from solie.widget import AskPopup, OverlayPopup
 from solie.window import Window
 from solie.worker import (
@@ -56,7 +56,7 @@ async def live():
     OverlayPopup.install_window(window)
 
     logging.getLogger(PACKAGE_NAME).setLevel("DEBUG")
-    asyncio.create_task(window.process_events())
+    spawn(window.process_events())
     await window.boot()
     logger.info("Started up")
 
@@ -69,26 +69,26 @@ async def live():
     team.unite(collector, transactor, simulator, strategist, manager)
 
     tasks = [
-        asyncio.create_task(collector.load()),
-        asyncio.create_task(transactor.load()),
-        asyncio.create_task(simulator.load()),
-        asyncio.create_task(strategist.load()),
-        asyncio.create_task(manager.load()),
+        spawn(collector.load()),
+        spawn(transactor.load()),
+        spawn(simulator.load()),
+        spawn(strategist.load()),
+        spawn(manager.load()),
     ]
     await asyncio.wait(tasks)
 
-    asyncio.create_task(collector.get_exchange_information())
-    asyncio.create_task(strategist.display_strategies())
-    asyncio.create_task(transactor.display_strategy_index())
-    asyncio.create_task(transactor.watch_binance())
-    asyncio.create_task(transactor.update_user_data_stream())
-    asyncio.create_task(transactor.display_lines())
-    asyncio.create_task(transactor.display_day_range())
-    asyncio.create_task(simulator.display_lines())
-    asyncio.create_task(simulator.display_year_range())
-    asyncio.create_task(simulator.display_available_years())
-    asyncio.create_task(manager.check_binance_limits())
-    asyncio.create_task(manager.display_internal_status())
+    spawn(collector.get_exchange_information())
+    spawn(strategist.display_strategies())
+    spawn(transactor.display_strategy_index())
+    spawn(transactor.watch_binance())
+    spawn(transactor.update_user_data_stream())
+    spawn(transactor.display_lines())
+    spawn(transactor.display_day_range())
+    spawn(simulator.display_lines())
+    spawn(simulator.display_year_range())
+    spawn(simulator.display_available_years())
+    spawn(manager.check_binance_limits())
+    spawn(manager.display_internal_status())
 
     scheduler.start()
     await asyncio.sleep(1)
@@ -100,9 +100,9 @@ async def live():
     await asyncio.sleep(1)
 
     tasks = [
-        asyncio.create_task(transactor.save_large_data()),
-        asyncio.create_task(transactor.save_scribbles()),
-        asyncio.create_task(strategist.save_strategies()),
-        asyncio.create_task(collector.save_candle_data()),
+        spawn(transactor.save_large_data()),
+        spawn(transactor.save_scribbles()),
+        spawn(strategist.save_strategies()),
+        spawn(collector.save_candle_data()),
     ]
     await asyncio.wait(tasks)

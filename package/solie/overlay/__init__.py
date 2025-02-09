@@ -13,9 +13,9 @@ __all__ = [
     "DatapathInput",
     "DonationGuide",
     "DownloadFillOption",
+    "LongTextView",
     "StrategyBasicInput",
     "StrategyDevelopInput",
     "StrategyInfoView",
     "TokenSelection",
-    "LongTextView",
 ]

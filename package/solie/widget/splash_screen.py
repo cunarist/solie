@@ -1,9 +1,7 @@
-import asyncio
-
 import aiofiles
 from PySide6 import QtGui, QtWidgets
 
-from solie.common import PACKAGE_PATH, PACKAGE_VERSION
+from solie.common import PACKAGE_PATH, PACKAGE_VERSION, spawn
 
 from .brand_label import BrandLabel
 
@@ -15,7 +13,7 @@ class SplashScreen(QtWidgets.QFrame):
         self.full_layout = QtWidgets.QHBoxLayout()
         self.setLayout(self.full_layout)
 
-        asyncio.create_task(self.fill())
+        spawn(self.fill())
 
     async def fill(self):
         full_layout = self.full_layout

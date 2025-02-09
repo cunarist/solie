@@ -1,4 +1,3 @@
-import asyncio
 from dataclasses import replace
 
 import aiofiles
@@ -6,7 +5,7 @@ import aiofiles.os
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtGui, QtWidgets
 
-from solie.common import PACKAGE_PATH, outsource
+from solie.common import PACKAGE_PATH, outsource, spawn
 from solie.overlay import StrategyBasicInput, StrategyDevelopInput
 from solie.utility import Strategies, Strategy, create_strategy_code_name
 from solie.widget import ask, overlay
@@ -129,9 +128,9 @@ class Strategiest:
                     "Develop your strategy",
                     StrategyDevelopInput(strategy),
                 )
-                asyncio.create_task(self.display_strategies())
-                asyncio.create_task(self.save_strategies())
-                asyncio.create_task(self.restore_strategy_selections())
+                spawn(self.display_strategies())
+                spawn(self.save_strategies())
+                spawn(self.restore_strategy_selections())
 
             edit_button = QtWidgets.QPushButton("Develop")
             card_layout.addWidget(edit_button)
@@ -143,9 +142,9 @@ class Strategiest:
                     "Edit your strategy's basic information",
                     StrategyBasicInput(strategy),
                 )
-                asyncio.create_task(self.display_strategies())
-                asyncio.create_task(self.save_strategies())
-                asyncio.create_task(self.restore_strategy_selections())
+                spawn(self.display_strategies())
+                spawn(self.save_strategies())
+                spawn(self.restore_strategy_selections())
 
             edit_button = QtWidgets.QPushButton("Edit basic info")
             card_layout.addWidget(edit_button)
@@ -167,9 +166,9 @@ class Strategiest:
                     return
                 await self.remember_strategy_selections()
                 self.strategies.all.remove(strategy)
-                asyncio.create_task(self.display_strategies())
-                asyncio.create_task(self.save_strategies())
-                asyncio.create_task(self.restore_strategy_selections())
+                spawn(self.display_strategies())
+                spawn(self.save_strategies())
+                spawn(self.restore_strategy_selections())
 
             new_action = action_menu.addAction("Remove")
             outsource(new_action.triggered, job_rs)
@@ -181,9 +180,9 @@ class Strategiest:
                     code_name=create_strategy_code_name(),
                 )
                 self.strategies.all.append(duplicated)
-                asyncio.create_task(self.display_strategies())
-                asyncio.create_task(self.save_strategies())
-                asyncio.create_task(self.restore_strategy_selections())
+                spawn(self.display_strategies())
+                spawn(self.save_strategies())
+                spawn(self.restore_strategy_selections())
 
             new_action = action_menu.addAction("Duplicate")
             outsource(new_action.triggered, job_dp)
@@ -194,9 +193,9 @@ class Strategiest:
                 after_index = original_index + 1
                 self.strategies.all.pop(original_index)
                 self.strategies.all.insert(after_index, strategy)
-                asyncio.create_task(self.display_strategies())
-                asyncio.create_task(self.save_strategies())
-                asyncio.create_task(self.restore_strategy_selections())
+                spawn(self.display_strategies())
+                spawn(self.save_strategies())
+                spawn(self.restore_strategy_selections())
 
             edit_button = QtWidgets.QPushButton("▼")
             card_layout.addWidget(edit_button)
@@ -208,9 +207,9 @@ class Strategiest:
                 after_index = original_index - 1
                 self.strategies.all.pop(original_index)
                 self.strategies.all.insert(after_index, strategy)
-                asyncio.create_task(self.display_strategies())
-                asyncio.create_task(self.save_strategies())
-                asyncio.create_task(self.restore_strategy_selections())
+                spawn(self.display_strategies())
+                spawn(self.save_strategies())
+                spawn(self.restore_strategy_selections())
 
             edit_button = QtWidgets.QPushButton("▲")
             card_layout.addWidget(edit_button)

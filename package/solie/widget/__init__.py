@@ -13,6 +13,7 @@ from .vertical_divider import VerticalDivider
 
 __all__ = [
     "AskPopup",
+    "BaseOverlay",
     "BrandLabel",
     "Gauge",
     "HorizontalDivider",
@@ -24,7 +25,6 @@ __all__ = [
     "SymbolBox",
     "TransparentScrollArea",
     "VerticalDivider",
-    "BaseOverlay",
     "ask",
     "overlay",
 ]

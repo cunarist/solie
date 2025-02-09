@@ -1,8 +1,6 @@
-import asyncio
-
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from solie.common import PACKAGE_PATH, outsource
+from solie.common import PACKAGE_PATH, outsource, spawn
 from solie.utility import ApiRequester
 from solie.widget import BaseOverlay, HorizontalDivider, ask
 
@@ -12,7 +10,7 @@ class TokenSelection(BaseOverlay):
         super().__init__()
         self.is_closed = False
 
-        asyncio.create_task(self.fill(self.done_event))
+        spawn(self.fill(self.done_event))
 
     async def fill(self, done_event):
         # ■■■■■ for remembering ■■■■■
@@ -222,4 +220,4 @@ class TokenSelection(BaseOverlay):
 
                 icon_label.setPixmap(pixmap)
 
-        asyncio.create_task(job_dc())
+        spawn(job_dc())
