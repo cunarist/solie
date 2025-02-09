@@ -39,8 +39,8 @@ from .standardize import (
 )
 from .stop_flag import find_stop_flag, make_stop_flag
 from .structs import (
-    BOARD_LOCK_OPTIONS,
     AggregateTrade,
+    BoardLockOptions,
     BookTicker,
     ManagementSettings,
     MarkPrice,
@@ -62,11 +62,11 @@ from .user_settings import (
 )
 
 __all__ = [
-    "BOARD_LOCK_OPTIONS",
     "AggregateTrade",
     "ApiRequestError",
     "ApiRequester",
     "ApiStreamer",
+    "BoardLockOptions",
     "BookTicker",
     "CalculationInput",
     "CalculationOutput",

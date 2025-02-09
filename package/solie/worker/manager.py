@@ -13,8 +13,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from solie.common import PROCESS_COUNT, go, outsource, spawn
 from solie.utility import (
-    BOARD_LOCK_OPTIONS,
     ApiRequester,
+    BoardLockOptions,
     ManagementSettings,
     get_task_duration,
     internet_connected,
@@ -42,10 +42,8 @@ class Manager:
 
         self.api_requester = ApiRequester()
 
-        self.online_status = {
-            "ping": 0,
-            "server_time_differences": deque(maxlen=60),
-        }
+        self.ping = 0
+        self.server_time_differences = deque[float](maxlen=60)
         self.binance_limits = {}
 
         self.management_settings = ManagementSettings()
@@ -110,9 +108,8 @@ class Manager:
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 content = await file.read()
                 self.management_settings = ManagementSettings.from_json(content)
-        self.window.comboBox_3.setCurrentIndex(
-            BOARD_LOCK_OPTIONS.index(self.management_settings.lock_board)
-        )
+        board_lock_index = self.management_settings.lock_board.value
+        self.window.comboBox_3.setCurrentIndex(board_lock_index)
 
         # python script
         filepath = self.workerpath / "python_script.txt"
@@ -125,7 +122,7 @@ class Manager:
 
     async def change_settings(self):
         current_index = self.window.comboBox_3.currentIndex()
-        self.management_settings.lock_board = BOARD_LOCK_OPTIONS[current_index]
+        self.management_settings.lock_board = BoardLockOptions(current_index)
 
         filepath = self.workerpath / "management_settings.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
@@ -236,13 +233,13 @@ class Manager:
             )
             response_time = datetime.now(timezone.utc)
             ping = (response_time - request_time).total_seconds()
-            self.online_status["ping"] = ping
+            self.ping = ping
 
             server_timestamp = response["serverTime"] / 1000
             server_time = datetime.fromtimestamp(server_timestamp, tz=timezone.utc)
             local_time = datetime.now(timezone.utc)
             time_difference = (server_time - local_time).total_seconds() - ping / 2
-            self.online_status["server_time_differences"].append(time_difference)
+            self.server_time_differences.append(time_difference)
 
         spawn(job())
 
@@ -250,10 +247,10 @@ class Manager:
         time = datetime.now(timezone.utc)
         time_text = time.strftime("%Y-%m-%d %H:%M:%S")
         is_internet_connected = internet_connected()
-        ping = self.online_status["ping"]
+        ping = self.ping
         board_enabled = self.window.board.isEnabled()
 
-        deque_data = self.online_status["server_time_differences"]
+        deque_data = self.server_time_differences
         if len(deque_data) > 0:
             mean_difference = sum(deque_data) / len(deque_data)
         else:
@@ -275,7 +272,7 @@ class Manager:
         self.window.gauge.setText(text)
 
     async def correct_time(self):
-        server_time_differences = self.online_status["server_time_differences"]
+        server_time_differences = self.server_time_differences
         if len(server_time_differences) < 30:
             return
         mean_difference = sum(server_time_differences) / len(server_time_differences)
@@ -326,15 +323,15 @@ class Manager:
     async def lock_board(self):
         lock_board = self.management_settings.lock_board
 
-        if lock_board == BOARD_LOCK_OPTIONS[0]:
+        if lock_board == BoardLockOptions.NEVER:
             return
-        elif lock_board == BOARD_LOCK_OPTIONS[1]:
+        elif lock_board == BoardLockOptions.SECONDS_10:
             wait_time = timedelta(seconds=10)
-        elif lock_board == BOARD_LOCK_OPTIONS[2]:
+        elif lock_board == BoardLockOptions.MINUTE_1:
             wait_time = timedelta(minutes=1)
-        elif lock_board == BOARD_LOCK_OPTIONS[3]:
+        elif lock_board == BoardLockOptions.MINUTE_10:
             wait_time = timedelta(minutes=10)
-        elif lock_board == BOARD_LOCK_OPTIONS[4]:
+        elif lock_board == BoardLockOptions.HOUR_1:
             wait_time = timedelta(hours=1)
         else:
             raise ValueError("Invalid duration value for locking the window")

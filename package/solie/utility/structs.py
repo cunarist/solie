@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 
 from dataclasses_json import DataClassJsonMixin
 
@@ -46,18 +47,17 @@ class SimulationSummary:
     strategy_version: str
 
 
-BOARD_LOCK_OPTIONS = (
-    "NEVER",
-    "10_SECOND",
-    "1_MINUTE",
-    "10_MINUTE",
-    "1_HOUR",
-)
+class BoardLockOptions(Enum):
+    NEVER = 0
+    SECONDS_10 = 1
+    MINUTE_1 = 2
+    MINUTE_10 = 3
+    HOUR_1 = 4
 
 
 @dataclass
 class ManagementSettings(DataClassJsonMixin):
-    lock_board: str = "NEVER"  # One of `BOARD_LOCK_OPTIONS`
+    lock_board: BoardLockOptions = BoardLockOptions.NEVER
 
 
 @dataclass
