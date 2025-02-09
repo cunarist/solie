@@ -22,11 +22,11 @@ for symbol in target_symbols:
     if position.direction == PositionDirection.NONE:
         if price_sma_one > price_sma_two:
             decisions[symbol][OrderType.NOW_BUY] = Decision(
-                margin=acquire_ratio * wallet_balance,
+                margin=acquire_ratio * wallet_balance
             )
         elif price_sma_one < price_sma_two:
             decisions[symbol][OrderType.NOW_SELL] = Decision(
-                margin=acquire_ratio * wallet_balance,
+                margin=acquire_ratio * wallet_balance
             )
 
     elif position.direction == PositionDirection.LONG:
