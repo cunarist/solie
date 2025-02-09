@@ -59,7 +59,6 @@ from .standardize import (
     create_empty_unrealized_changes,
     create_strategy_code_name,
 )
-from .stop_flag import find_stop_flag, make_stop_flag
 from .syntax_highlighter import SyntaxHighlighter
 from .time_axis_item import TimeAxisItem
 from .timing import add_task_duration, get_task_durations, to_moment
@@ -118,7 +117,6 @@ __all__ = [
     "download_aggtrade_data",
     "examine_data_files",
     "fill_holes_with_aggtrades",
-    "find_stop_flag",
     "format_numeric",
     "get_task_durations",
     "internet_connected",
@@ -126,7 +124,6 @@ __all__ = [
     "is_left_version_higher",
     "list_to_dict",
     "make_indicators",
-    "make_stop_flag",
     "monitor_internet",
     "monitor_internet",
     "read_data_settings",

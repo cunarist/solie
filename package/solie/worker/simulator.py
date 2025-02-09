@@ -1,7 +1,8 @@
 import math
 import pickle
 import re
-from asyncio import gather, sleep
+import time
+from asyncio import Task, current_task, gather, sleep
 from datetime import datetime, timedelta, timezone
 
 import aiofiles
@@ -23,12 +24,11 @@ from solie.utility import (
     SimulationSummary,
     VirtualPosition,
     VirtualState,
+    add_task_duration,
     create_empty_account_state,
     create_empty_asset_record,
     create_empty_unrealized_changes,
-    find_stop_flag,
     make_indicators,
-    make_stop_flag,
     simulate_chunk,
     slice_deque,
     sort_data_frame,
@@ -50,6 +50,10 @@ class Simulator:
         self.workerpath = window.datapath / "simulator"
 
         # ■■■■■ internal memory ■■■■■
+
+        self.line_display_task: Task[None] | None = None
+        self.range_display_task: Task[None] | None = None
+        self.calculation_task: Task[None] | None = None
 
         # ■■■■■ remember and display ■■■■■
 
@@ -182,10 +186,14 @@ class Simulator:
         await self.present()
 
     async def display_lines(self, periodic=False, frequent=False):
-        # ■■■■■ start the task ■■■■■
+        # ■■■■■ run only one task instance at a time ■■■■■
 
-        task_name = "DISPLAY_SIMULATION_LINES"
-        task_id = make_stop_flag(task_name)
+        if self.line_display_task is not None:
+            self.line_display_task.cancel()
+        this_task = current_task()
+        if this_task is None:
+            raise ValueError
+        self.line_display_task = this_task
 
         # ■■■■■ check drawing mode ■■■■■
 
@@ -207,8 +215,6 @@ class Simulator:
 
         if periodic:
             for _ in range(50):
-                if find_stop_flag(task_name, task_id):
-                    return
                 async with team.collector.candle_data.read_lock as cell:
                     last_index = cell.data.index[-1]
                     if last_index == before_moment:
@@ -217,7 +223,7 @@ class Simulator:
 
         # ■■■■■ get ready for task duration measurement ■■■■■
 
-        pass
+        start_time = time.perf_counter()
 
         # ■■■■■ check things ■■■■■
 
@@ -242,9 +248,7 @@ class Simulator:
         data_x = [d.timestamp / 10**3 for d in mark_prices]
         widget = self.window.simulation_graph.mark_price
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         # last price and volume
         filtered = [t for t in aggregate_trades if t.symbol == symbol]
@@ -254,9 +258,7 @@ class Simulator:
         data_y = [t.price for t in filtered]
         widget = self.window.simulation_graph.last_price
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         # last trade volume
         index_ar = np.array(timestamps)
@@ -272,9 +274,7 @@ class Simulator:
         data_y = np.stack([nan_ar, zero_ar, value_ar], axis=1).reshape(-1)
         widget = self.window.simulation_graph.last_volume
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         # book tickers
         book_tickers = [
@@ -285,16 +285,12 @@ class Simulator:
         data_y = [d.best_bid_price for d in book_tickers]
         widget = self.window.simulation_graph.book_tickers.line_a
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         data_y = [d.best_ask_price for d in book_tickers]
         widget = self.window.simulation_graph.book_tickers.line_b
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         # entry price
         entry_price = self.account_state.positions[symbol].entry_price
@@ -310,13 +306,7 @@ class Simulator:
             data_y = []
         widget = self.window.simulation_graph.entry_price
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
-
-        # ■■■■■ record task duration ■■■■■
-
-        pass
+        await sleep(0.0)
 
         # ■■■■■ set range of heavy data ■■■■■
 
@@ -437,9 +427,7 @@ class Simulator:
         ).reshape(-1)
         widget = self.window.simulation_graph.price_rise
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         data_x = np.stack(
             [
@@ -471,9 +459,7 @@ class Simulator:
         ).reshape(-1)
         widget = self.window.simulation_graph.price_fall
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         data_x = np.stack(
             [
@@ -505,9 +491,7 @@ class Simulator:
         ).reshape(-1)
         widget = self.window.simulation_graph.price_stay
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         # wobbles
         sr = candle_data[(symbol, "HIGH")]
@@ -515,18 +499,14 @@ class Simulator:
         data_y = sr.to_numpy(dtype=np.float32)
         widget = self.window.simulation_graph.wobbles.line_a
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         sr = candle_data[(symbol, "LOW")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = self.window.simulation_graph.wobbles.line_b
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         # trade volume
         sr = candle_data[(symbol, "VOLUME")]
@@ -535,18 +515,14 @@ class Simulator:
         data_y = sr.to_numpy(dtype=np.float32)
         widget = self.window.simulation_graph.volume
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         # asset
         data_x = asset_record["RESULT_ASSET"].index.to_numpy(dtype=np.int64) / 10**9
         data_y = asset_record["RESULT_ASSET"].to_numpy(dtype=np.float32)
         widget = self.window.simulation_graph.asset
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         # asset with unrealized profit
         sr = asset_record["RESULT_ASSET"]
@@ -558,9 +534,7 @@ class Simulator:
         data_y = sr.to_numpy(dtype=np.float32)
         widget = self.window.simulation_graph.asset_with_unrealized_profit
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         # buy and sell
         df = asset_record.loc[asset_record["SYMBOL"] == symbol]
@@ -570,9 +544,7 @@ class Simulator:
         data_y = sr.to_numpy(dtype=np.float32)
         widget = self.window.simulation_graph.sell
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         df = asset_record.loc[asset_record["SYMBOL"] == symbol]
         df = df[df["SIDE"] == "BUY"]
@@ -581,13 +553,7 @@ class Simulator:
         data_y = sr.to_numpy(dtype=np.float32)
         widget = self.window.simulation_graph.buy
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
-
-        # ■■■■■ record task duration ■■■■■
-
-        pass
+        await sleep(0.0)
 
         # ■■■■■ make indicators ■■■■■
 
@@ -621,12 +587,8 @@ class Simulator:
                     color = inside_strings[0]
                 widget.setPen(color)
                 widget.setData(data_x, data_y)
-                if find_stop_flag(task_name, task_id):
-                    return
-                await sleep(0)
+                await sleep(0.0)
             else:
-                if find_stop_flag(task_name, task_id):
-                    return
                 widget.clear()
 
         # trade volume indicators
@@ -646,12 +608,8 @@ class Simulator:
                     color = inside_strings[0]
                 widget.setPen(color)
                 widget.setData(data_x, data_y)
-                if find_stop_flag(task_name, task_id):
-                    return
-                await sleep(0)
+                await sleep(0.0)
             else:
-                if find_stop_flag(task_name, task_id):
-                    return
                 widget.clear()
 
         # abstract indicators
@@ -671,13 +629,14 @@ class Simulator:
                     color = inside_strings[0]
                 widget.setPen(color)
                 widget.setData(data_x, data_y)
-                if find_stop_flag(task_name, task_id):
-                    return
-                await sleep(0)
+                await sleep(0.0)
             else:
-                if find_stop_flag(task_name, task_id):
-                    return
                 widget.clear()
+
+        # ■■■■■ record task duration ■■■■■
+
+        duration = time.perf_counter() - start_time
+        add_task_duration("DISPLAY_SIMULATION_LINES", duration)
 
         # ■■■■■ set minimum view range ■■■■■
 
@@ -711,7 +670,12 @@ class Simulator:
         await self.calculate(only_visible=True)
 
     async def display_range_information(self):
-        task_id = make_stop_flag("DISPLAY_SIMULATION_RANGE_INFORMATION")
+        if self.range_display_task is not None:
+            self.range_display_task.cancel()
+        this_task = current_task()
+        if this_task is None:
+            raise ValueError
+        self.range_display_task = this_task
 
         symbol = self.viewing_symbol
         price_widget = self.window.simulation_graph.price_widget
@@ -719,9 +683,6 @@ class Simulator:
         range_start_timestamp = price_widget.getAxis("bottom").range[0]
         range_start_timestamp = max(range_start_timestamp, 0.0)
         range_start = datetime.fromtimestamp(range_start_timestamp, tz=timezone.utc)
-
-        if find_stop_flag("DISPLAY_SIMULATION_RANGE_INFORMATION", task_id):
-            return
 
         range_end_timestamp = price_widget.getAxis("bottom").range[1]
         if range_end_timestamp < 0:
@@ -732,16 +693,10 @@ class Simulator:
             range_end_timestamp = min(range_end_timestamp, 9223339636.0)
         range_end = datetime.fromtimestamp(range_end_timestamp, tz=timezone.utc)
 
-        if find_stop_flag("DISPLAY_SIMULATION_RANGE_INFORMATION", task_id):
-            return
-
         range_length = range_end - range_start
         range_days = range_length.days
         range_hours, remains = divmod(range_length.seconds, 3600)
         range_minutes, remains = divmod(remains, 60)
-
-        if find_stop_flag("DISPLAY_SIMULATION_RANGE_INFORMATION", task_id):
-            return
 
         async with self.unrealized_changes.read_lock as cell:
             unrealized_changes = cell.data[range_start:range_end].copy()
@@ -783,9 +738,6 @@ class Simulator:
         else:
             min_unrealized_change = 0.0
 
-        if find_stop_flag("DISPLAY_SIMULATION_RANGE_INFORMATION", task_id):
-            return
-
         view_range = price_widget.getAxis("left").range
         range_down = view_range[0]
         range_up = view_range[1]
@@ -817,46 +769,49 @@ class Simulator:
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
 
     async def calculate(self, only_visible=False):
-        task_id = make_stop_flag("CALCULATE_SIMULATION")
+        if self.calculation_task is not None:
+            self.calculation_task.cancel()
+        this_task = current_task()
+        if this_task is None:
+            raise ValueError
+        self.calculation_task = this_task
 
         prepare_step = 0
         calculate_step = 0
 
         async def play_progress_bar():
             while True:
-                if find_stop_flag("CALCULATE_SIMULATION", task_id):
-                    self.window.progressBar_4.setValue(0)
-                    self.window.progressBar.setValue(0)
-                    return
-                else:
-                    if prepare_step == 6 and calculate_step == 1000:
-                        is_progressbar_filled = True
-                        progressbar_value = self.window.progressBar_4.value()
-                        if progressbar_value < 1000:
-                            is_progressbar_filled = False
-                        progressbar_value = self.window.progressBar.value()
-                        if progressbar_value < 1000:
-                            is_progressbar_filled = False
-                        if is_progressbar_filled:
-                            await sleep(0.1)
-                            self.window.progressBar_4.setValue(0)
-                            self.window.progressBar.setValue(0)
-                            return
-                    widget = self.window.progressBar_4
-                    before_value = widget.value()
-                    if before_value < 1000:
-                        remaining = math.ceil(1000 / 6 * prepare_step) - before_value
-                        new_value = before_value + math.ceil(remaining * 0.2)
-                        widget.setValue(new_value)
-                    widget = self.window.progressBar
-                    before_value = widget.value()
-                    if before_value < 1000:
-                        remaining = calculate_step - before_value
-                        new_value = before_value + math.ceil(remaining * 0.2)
-                        widget.setValue(new_value)
-                    await sleep(0.01)
+                if prepare_step == 6 and calculate_step == 1000:
+                    is_progressbar_filled = True
+                    progressbar_value = self.window.progressBar_4.value()
+                    if progressbar_value < 1000:
+                        is_progressbar_filled = False
+                    progressbar_value = self.window.progressBar.value()
+                    if progressbar_value < 1000:
+                        is_progressbar_filled = False
+                    if is_progressbar_filled:
+                        await sleep(0.1)
+                        self.window.progressBar_4.setValue(0)
+                        self.window.progressBar.setValue(0)
+                        return
+                widget = self.window.progressBar_4
+                before_value = widget.value()
+                if before_value < 1000:
+                    remaining = math.ceil(1000 / 6 * prepare_step) - before_value
+                    new_value = before_value + math.ceil(remaining * 0.2)
+                    widget.setValue(new_value)
+                widget = self.window.progressBar
+                before_value = widget.value()
+                if before_value < 1000:
+                    remaining = calculate_step - before_value
+                    new_value = before_value + math.ceil(remaining * 0.2)
+                    widget.setValue(new_value)
+                await sleep(0.01)
 
-        spawn(play_progress_bar())
+        bar_task = spawn(play_progress_bar())
+        bar_task.add_done_callback(lambda _: self.window.progressBar_4.setValue(0))
+        bar_task.add_done_callback(lambda _: self.window.progressBar.setValue(0))
+        this_task.add_done_callback(lambda _: bar_task.cancel())
 
         prepare_step = 1
 
@@ -1092,15 +1047,14 @@ class Simulator:
             async def update_calculation_step():
                 nonlocal calculate_step
                 while True:
-                    if find_stop_flag("calculate_simulation", task_id):
-                        return
                     if gathered.done():
                         return
                     total_progress = sum(progress_list)
                     calculate_step = math.ceil(total_progress * 1000 / total_seconds)
                     await sleep(0.01)
 
-            spawn(update_calculation_step())
+            step_task = spawn(update_calculation_step())
+            this_task.add_done_callback(lambda _: step_task.cancel())
 
             calculation_output_data = await gathered
 
@@ -1418,7 +1372,8 @@ class Simulator:
         graph_to.setXRange(range_start, range_end, padding=0)  # type:ignore
 
     async def stop_calculation(self):
-        make_stop_flag("CALCULATE_SIMULATION")
+        if self.calculation_task is not None:
+            self.calculation_task.cancel()
 
     async def analyze_unrealized_peaks(self):
         async with self.unrealized_changes.read_lock as cell:

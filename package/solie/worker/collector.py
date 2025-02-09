@@ -3,7 +3,7 @@ import math
 import random
 import time
 import webbrowser
-from asyncio import sleep, wait
+from asyncio import Task, current_task, sleep, wait
 from collections import deque
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -30,10 +30,8 @@ from solie.utility import (
     create_empty_candle_data,
     download_aggtrade_data,
     fill_holes_with_aggtrades,
-    find_stop_flag,
     format_numeric,
     internet_connected,
-    make_stop_flag,
     slice_deque,
     sort_data_frame,
     to_moment,
@@ -59,6 +57,8 @@ class Collector:
 
         self.price_precisions: dict[str, int] = {}  # Symbol and decimal places
         self.markets_gone = set[str]()  # Symbols
+
+        self.download_fill_task: Task[None] | None = None
 
         # ■■■■■ remember and display ■■■■■
 
@@ -429,6 +429,15 @@ class Collector:
         await spawn_blocking(webbrowser.open, "https://www.binance.com/en/landing/data")
 
     async def download_fill_candle_data(self):
+        # ■■■■■ run only one task instance at a time ■■■■■
+
+        if self.download_fill_task is not None:
+            self.download_fill_task.cancel()
+        this_task = current_task()
+        if this_task is None:
+            raise ValueError
+        self.download_fill_task = this_task
+
         # ■■■■■ ask filling type ■■■■■
 
         overlay_widget = await overlay(
@@ -441,8 +450,6 @@ class Collector:
             return
 
         # ■■■■■ prepare target tuples for downloading ■■■■■
-
-        task_id = make_stop_flag("DOWNLOAD_FILL_CANDLE_DATA")
 
         download_presets: list[DownloadPreset] = []
         target_symbols = self.window.data_settings.target_symbols
@@ -520,26 +527,24 @@ class Collector:
 
         async def play_progress_bar():
             while True:
-                if find_stop_flag("DOWNLOAD_FILL_CANDLE_DATA", task_id):
-                    self.window.progressBar_3.setValue(0)
-                    return
-                else:
-                    if done_steps == total_steps:
-                        progressbar_value = self.window.progressBar_3.value()
-                        if progressbar_value == 1000:
-                            await sleep(0.1)
-                            self.window.progressBar_3.setValue(0)
-                            return
-                    before_value = self.window.progressBar_3.value()
-                    if before_value < 1000:
-                        remaining = (
-                            math.ceil(1000 / total_steps * done_steps) - before_value
-                        )
-                        new_value = before_value + math.ceil(remaining * 0.2)
-                        self.window.progressBar_3.setValue(new_value)
-                    await sleep(0.01)
+                if done_steps == total_steps:
+                    progressbar_value = self.window.progressBar_3.value()
+                    if progressbar_value == 1000:
+                        await sleep(0.1)
+                        self.window.progressBar_3.setValue(0)
+                        return
+                before_value = self.window.progressBar_3.value()
+                if before_value < 1000:
+                    remaining = (
+                        math.ceil(1000 / total_steps * done_steps) - before_value
+                    )
+                    new_value = before_value + math.ceil(remaining * 0.2)
+                    self.window.progressBar_3.setValue(new_value)
+                await sleep(0.01)
 
-        spawn(play_progress_bar())
+        bar_task = spawn(play_progress_bar())
+        bar_task.add_done_callback(lambda _: self.window.progressBar_3.setValue(0))
+        this_task.add_done_callback(lambda _: bar_task.cancel())
 
         # ■■■■■ calculate in parellel ■■■■■
 
@@ -564,9 +569,6 @@ class Collector:
                 nonlocal done_steps
                 nonlocal combined_df
 
-                if find_stop_flag("DOWNLOAD_FILL_CANDLE_DATA", task_id):
-                    return
-
                 returned = await spawn_blocking(download_aggtrade_data, download_preset)
                 if returned is not None:
                     new_df = returned
@@ -578,8 +580,9 @@ class Collector:
 
                 done_steps += 1
 
-            tasks = [spawn(download_fill(p)) for p in download_presets]
-            await wait(tasks)
+            fill_tasks = [spawn(download_fill(p)) for p in download_presets]
+            this_task.add_done_callback(lambda _: (t.cancel() for t in fill_tasks))
+            await wait(fill_tasks)
 
             if preset_year < current_year:
                 # For data of previous years,
@@ -741,7 +744,8 @@ class Collector:
         add_task_duration("ADD_CANDLE_DATA", duration)
 
     async def stop_filling_candle_data(self):
-        make_stop_flag("DOWNLOAD_FILL_CANDLE_DATA")
+        if self.download_fill_task is not None:
+            self.download_fill_task.cancel()
 
     async def guide_donation(self):
         await overlay(

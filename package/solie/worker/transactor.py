@@ -4,7 +4,7 @@ import pickle
 import re
 import time
 import webbrowser
-from asyncio import gather, sleep, wait
+from asyncio import Task, current_task, gather, sleep, wait
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -35,11 +35,9 @@ from solie.utility import (
     create_empty_asset_record,
     create_empty_unrealized_changes,
     decide,
-    find_stop_flag,
     internet_connected,
     list_to_dict,
     make_indicators,
-    make_stop_flag,
     slice_deque,
     sort_data_frame,
     sort_series,
@@ -64,6 +62,9 @@ class Transactor:
         self.workerpath = window.datapath / "transactor"
 
         # ■■■■■ internal memory ■■■■■
+
+        self.line_display_task: Task[None] | None = None
+        self.range_display_task: Task[None] | None = None
 
         self.maximum_quantities: dict[str, float] = {}  # Symbol and value
         self.minimum_notionals: dict[str, float] = {}  # Symbol and value
@@ -645,7 +646,12 @@ class Transactor:
         await self.save_transaction_settings()
 
     async def display_range_information(self):
-        task_id = make_stop_flag("DISPLAY_TRANSACTION_RANGE_INFORMATION")
+        if self.range_display_task is not None:
+            self.range_display_task.cancel()
+        this_task = current_task()
+        if this_task is None:
+            raise ValueError
+        self.range_display_task = this_task
 
         symbol = self.viewing_symbol
         price_widget = self.window.transaction_graph.price_widget
@@ -653,9 +659,6 @@ class Transactor:
         range_start_timestamp = price_widget.getAxis("bottom").range[0]
         range_start_timestamp = max(range_start_timestamp, 0.0)
         range_start = datetime.fromtimestamp(range_start_timestamp, tz=timezone.utc)
-
-        if find_stop_flag("DISPLAY_TRANSACTION_RANGE_INFORMATION", task_id):
-            return
 
         range_end_timestamp = price_widget.getAxis("bottom").range[1]
         if range_end_timestamp < 0.0:
@@ -666,16 +669,10 @@ class Transactor:
             range_end_timestamp = min(range_end_timestamp, 9223339636.0)
         range_end = datetime.fromtimestamp(range_end_timestamp, tz=timezone.utc)
 
-        if find_stop_flag("DISPLAY_TRANSACTION_RANGE_INFORMATION", task_id):
-            return
-
         range_length = range_end - range_start
         range_days = range_length.days
         range_hours, remains = divmod(range_length.seconds, 3600)
         range_minutes, remains = divmod(remains, 60)
-
-        if find_stop_flag("DISPLAY_TRANSACTION_RANGE_INFORMATION", task_id):
-            return
 
         async with self.unrealized_changes.read_lock as cell:
             unrealized_changes = cell.data[range_start:range_end].copy()
@@ -717,9 +714,6 @@ class Transactor:
         else:
             min_unrealized_change = 0
 
-        if find_stop_flag("DISPLAY_TRANSACTION_RANGE_INFORMATION", task_id):
-            return
-
         view_range = price_widget.getAxis("left").range
         range_down = view_range[0]
         range_up = view_range[1]
@@ -755,10 +749,14 @@ class Transactor:
         self.window.comboBox_2.setCurrentIndex(strategy_index)
 
     async def display_lines(self, periodic=False, frequent=False):
-        # ■■■■■ start the task ■■■■■
+        # ■■■■■ run only one task instance at a time ■■■■■
 
-        task_name = "DISPLAY_TRANSACTION_LINES"
-        task_id = make_stop_flag(task_name)
+        if self.line_display_task is not None:
+            self.line_display_task.cancel()
+        this_task = current_task()
+        if this_task is None:
+            raise ValueError
+        self.line_display_task = this_task
 
         # ■■■■■ check drawing mode ■■■■■
 
@@ -781,8 +779,6 @@ class Transactor:
 
         if periodic:
             for _ in range(50):
-                if find_stop_flag(task_name, task_id):
-                    return
                 async with team.collector.candle_data.read_lock as cell:
                     last_index = cell.data.index[-1]
                     if last_index == before_moment:
@@ -816,9 +812,7 @@ class Transactor:
         data_x = [d.timestamp / 10**3 for d in mark_prices]
         widget = self.window.transaction_graph.mark_price
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         # last price and volume
         filtered = [t for t in aggregate_trades if t.symbol == symbol]
@@ -828,9 +822,7 @@ class Transactor:
         data_y = [t.price for t in filtered]
         widget = self.window.transaction_graph.last_price
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         index_ar = np.array(timestamps)
         value_ar = np.array([t.volume for t in filtered])
@@ -842,9 +834,7 @@ class Transactor:
         data_y = np.stack([nan_ar, zero_ar, value_ar], axis=1).reshape(-1)
         widget = self.window.transaction_graph.last_volume
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         # book tickers
         book_tickers = [
@@ -855,16 +845,12 @@ class Transactor:
         data_y = [d.best_bid_price for d in book_tickers]
         widget = self.window.transaction_graph.book_tickers.line_a
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         data_y = [d.best_ask_price for d in book_tickers]
         widget = self.window.transaction_graph.book_tickers.line_b
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         # entry price
         entry_price = self.account_state.positions[symbol].entry_price
@@ -880,9 +866,7 @@ class Transactor:
             data_y = []
         widget = self.window.transaction_graph.entry_price
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         # ■■■■■ set range of heavy data ■■■■■
 
@@ -991,9 +975,7 @@ class Transactor:
         ).reshape(-1)
         widget = self.window.transaction_graph.price_rise
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         data_x = np.stack(
             [
@@ -1025,9 +1007,7 @@ class Transactor:
         ).reshape(-1)
         widget = self.window.transaction_graph.price_fall
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         data_x = np.stack(
             [
@@ -1059,9 +1039,7 @@ class Transactor:
         ).reshape(-1)
         widget = self.window.transaction_graph.price_stay
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         # wobbles
         sr = candle_data[(symbol, "HIGH")]
@@ -1069,18 +1047,14 @@ class Transactor:
         data_y = sr.to_numpy(dtype=np.float32)
         widget = self.window.transaction_graph.wobbles.line_a
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         sr = candle_data[(symbol, "LOW")]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         widget = self.window.transaction_graph.wobbles.line_b
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         # trade volume
         sr = candle_data[(symbol, "VOLUME")]
@@ -1089,18 +1063,14 @@ class Transactor:
         data_y = sr.to_numpy(dtype=np.float32)
         widget = self.window.transaction_graph.volume
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         # asset
         data_x = asset_record["RESULT_ASSET"].index.to_numpy(dtype=np.int64) / 10**9
         data_y = asset_record["RESULT_ASSET"].to_numpy(dtype=np.float32)
         widget = self.window.transaction_graph.asset
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         # asset with unrealized profit
         sr = asset_record["RESULT_ASSET"]
@@ -1112,9 +1082,7 @@ class Transactor:
         data_y = sr.to_numpy(dtype=np.float32)
         widget = self.window.transaction_graph.asset_with_unrealized_profit
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         # buy and sell
         df = asset_record.loc[asset_record["SYMBOL"] == symbol]
@@ -1124,9 +1092,7 @@ class Transactor:
         data_y = sr.to_numpy(dtype=np.float32)
         widget = self.window.transaction_graph.sell
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
+        await sleep(0.0)
 
         df = asset_record.loc[asset_record["SYMBOL"] == symbol]
         df = df[df["SIDE"] == "BUY"]
@@ -1135,14 +1101,7 @@ class Transactor:
         data_y = sr.to_numpy(dtype=np.float32)
         widget = self.window.transaction_graph.buy
         widget.setData(data_x, data_y)
-        if find_stop_flag(task_name, task_id):
-            return
-        await sleep(0)
-
-        # ■■■■■ record task duration ■■■■■
-
-        duration = time.perf_counter() - start_time
-        add_task_duration(task_name, duration)
+        await sleep(0.0)
 
         # ■■■■■ make indicators ■■■■■
 
@@ -1176,12 +1135,8 @@ class Transactor:
                     color = inside_strings[0]
                 widget.setPen(color)
                 widget.setData(data_x, data_y)
-                if find_stop_flag(task_name, task_id):
-                    return
-                await sleep(0)
+                await sleep(0.0)
             else:
-                if find_stop_flag(task_name, task_id):
-                    return
                 widget.clear()
 
         # trade volume indicators
@@ -1201,12 +1156,8 @@ class Transactor:
                     color = inside_strings[0]
                 widget.setPen(color)
                 widget.setData(data_x, data_y)
-                if find_stop_flag(task_name, task_id):
-                    return
-                await sleep(0)
+                await sleep(0.0)
             else:
-                if find_stop_flag(task_name, task_id):
-                    return
                 widget.clear()
 
         # abstract indicators
@@ -1226,13 +1177,14 @@ class Transactor:
                     color = inside_strings[0]
                 widget.setPen(color)
                 widget.setData(data_x, data_y)
-                if find_stop_flag(task_name, task_id):
-                    return
-                await sleep(0)
+                await sleep(0.0)
             else:
-                if find_stop_flag(task_name, task_id):
-                    return
                 widget.clear()
+
+        # ■■■■■ record task duration ■■■■■
+
+        duration = time.perf_counter() - start_time
+        add_task_duration("DISPLAY_TRANSACTION_LINES", duration)
 
         # ■■■■■ set minimum view range ■■■■■
 
@@ -1410,7 +1362,7 @@ class Transactor:
                     only_last_index=True,
                 )
             )
-            await sleep(0)
+            await sleep(0.0)
         symbol_indicators = await gather(*coroutines)
         indicators = pd.concat(symbol_indicators, axis="columns")
 
