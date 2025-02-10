@@ -8,7 +8,7 @@ from asyncio import (
     sleep,
 )
 from collections import deque
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 
 # The internal lock object managing the RWLock state.
@@ -24,7 +24,7 @@ class RWLockCore:
         self._r_state: int = 0
         self._w_state: int = 0
         # tasks will be few, so a list is not inefficient
-        self._owning: list[tuple[Task, int]] = []
+        self._owning: list[tuple[Task[Any], int]] = []
 
     @property
     def r_state(self) -> int:
