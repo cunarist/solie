@@ -80,7 +80,12 @@ class ApiRequester:
 
         return response
 
-    async def coingecko(self, http_method: str, path: str, payload: dict = {}):
+    async def coingecko(
+        self,
+        http_method: str,
+        path: str,
+        payload: dict[str, Any] = {},
+    ):
         query_string = urlencode(payload)
         # replace single quote to double quote
         query_string = query_string.replace("%27", "%22")

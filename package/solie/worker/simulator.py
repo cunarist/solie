@@ -3,6 +3,7 @@ import pickle
 import re
 from asyncio import Task, current_task, gather, sleep
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 import aiofiles
 import aiofiles.os
@@ -67,14 +68,14 @@ class Simulator:
         self.raw_account_state = create_empty_account_state(
             self.window.data_settings.target_symbols
         )
-        self.raw_scribbles = {}
+        self.raw_scribbles: dict[Any, Any] = {}
         self.raw_asset_record = RWLock(create_empty_asset_record())
         self.raw_unrealized_changes = RWLock(create_empty_unrealized_changes())
 
         self.account_state = create_empty_account_state(
             self.window.data_settings.target_symbols
         )
-        self.scribbles = {}
+        self.scribbles: dict[Any, Any] = {}
         self.asset_record = RWLock(create_empty_asset_record())
         self.unrealized_changes = RWLock(create_empty_unrealized_changes())
 
