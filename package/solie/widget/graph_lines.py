@@ -1,5 +1,8 @@
+from asyncio import sleep
+from datetime import datetime, timedelta
 from typing import NamedTuple
 
+import numpy as np
 from pyqtgraph import (
     AxisItem,
     PlotDataItem,
@@ -11,6 +14,9 @@ from pyqtgraph import (
 from PySide6.QtGui import QFont
 
 from solie.utility import (
+    AggregateTrade,
+    BookTicker,
+    MarkPrice,
     PercentAxisItem,
     TimeAxisItem,
 )
@@ -144,10 +150,10 @@ class GraphLines:
         )
 
         # Configure UX.
-        self.configure_widgets()
-        self.configure_plots()
+        self._configure_widgets()
+        self._configure_plots()
 
-    def configure_widgets(self):
+    def _configure_widgets(self):
         self.price_widget.setBackground("#252525")
         self.volume_widget.setBackground("#252525")
         self.abstract_widget.setBackground("#252525")
@@ -167,7 +173,7 @@ class GraphLines:
         self.abstract_widget.setXLink(self.volume_widget)
         self.asset_widget.setXLink(self.abstract_widget)
 
-    def configure_plots(self):
+    def _configure_plots(self):
         self.price_plot.vb.setLimits(xMin=0, yMin=0)  # type:ignore
         self.volume_plot.vb.setLimits(xMin=0, yMin=0)  # type:ignore
         self.abstract_plot.vb.setLimits(xMin=0)  # type:ignore
@@ -253,3 +259,65 @@ class GraphLines:
         self.volume_plot.showGrid(x=True, y=True, alpha=0.1)
         self.abstract_plot.showGrid(x=True, y=True, alpha=0.1)
         self.asset_plot.showGrid(x=True, y=True, alpha=0.1)
+
+    async def update_light_price_lines(
+        self,
+        mark_prices: list[MarkPrice],
+        aggregate_trades: list[AggregateTrade],
+        book_tickers: list[BookTicker],
+        entry_price: float | None,
+        observed_until: datetime,
+    ):
+        # mark price
+        data_y = [d.mark_price for d in mark_prices]
+        data_x = [d.timestamp / 10**3 for d in mark_prices]
+        self.mark_price.setData(data_x, data_y)
+        await sleep(0.0)
+
+        # last price
+        timestamps = [t.timestamp / 10**3 for t in aggregate_trades]
+
+        data_x = timestamps.copy()
+        data_y = [t.price for t in aggregate_trades]
+        self.last_price.setData(data_x, data_y)
+        await sleep(0.0)
+
+        # last trade volume
+        index_ar = np.array(timestamps)
+        value_ar = np.array([t.volume for t in aggregate_trades])
+        length = len(index_ar)
+        zero_ar = np.zeros(length)
+        nan_ar = np.empty(length)
+        nan_ar[:] = np.nan
+        data_x = np.repeat(index_ar, 3)
+        data_y = np.stack([nan_ar, zero_ar, value_ar], axis=1).reshape(-1)
+        self.last_volume.setData(data_x, data_y)
+        await sleep(0.0)
+
+        # book tickers
+        data_x = [d.timestamp / 10**3 for d in book_tickers]
+        data_y = [d.best_bid_price for d in book_tickers]
+        self.book_tickers.line_a.setData(data_x, data_y)
+        data_y = [d.best_ask_price for d in book_tickers]
+        self.book_tickers.line_b.setData(data_x, data_y)
+        await sleep(0.0)
+
+        # entry price
+        first_moment = observed_until - timedelta(hours=12)
+        last_moment = observed_until + timedelta(hours=12)
+        if entry_price is None:
+            data_x = []
+            data_y = []
+        else:
+            data_x = np.linspace(
+                first_moment.timestamp(),
+                last_moment.timestamp(),
+                num=1000,
+            )
+            data_y = np.linspace(
+                entry_price,
+                entry_price,
+                num=1000,
+            )
+        self.entry_price.setData(data_x, data_y)
+        await sleep(0.0)

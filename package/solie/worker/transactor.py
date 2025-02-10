@@ -794,78 +794,32 @@ class Transactor:
         strategy_index = self.transaction_settings.strategy_index
         strategy = team.strategist.strategies.all[strategy_index]
 
-        # ■■■■■ get light data ■■■■■
+        # ■■■■■ draw light lines ■■■■■
 
         realtime_data = slice_deque(team.collector.realtime_data, 2 ** (10 + 6))
         aggregate_trades = slice_deque(team.collector.aggregate_trades, 2 ** (10 + 6))
 
-        # ■■■■■ draw light lines ■■■■■
+        mark_prices: list[MarkPrice] = []
+        book_tickers: list[BookTicker] = []
+        for realtime_record in realtime_data:
+            if isinstance(realtime_record, MarkPrice):
+                mark_prices.append(realtime_record)
+            else:
+                book_tickers.append(realtime_record)
 
-        # mark price
-        mark_prices = [
-            d
-            for d in realtime_data
-            if isinstance(d, MarkPrice) and d.symbol == symbol and d.mark_price > 0.0
-        ]
-        data_y = [d.mark_price for d in mark_prices]
-        data_x = [d.timestamp / 10**3 for d in mark_prices]
-        widget = self.window.transaction_graph.mark_price
-        widget.setData(data_x, data_y)
-        await sleep(0.0)
-
-        # last price and volume
-        filtered = [t for t in aggregate_trades if t.symbol == symbol]
-        timestamps = [t.timestamp / 10**3 for t in filtered]
-
-        data_x = timestamps.copy()
-        data_y = [t.price for t in filtered]
-        widget = self.window.transaction_graph.last_price
-        widget.setData(data_x, data_y)
-        await sleep(0.0)
-
-        index_ar = np.array(timestamps)
-        value_ar = np.array([t.volume for t in filtered])
-        length = len(index_ar)
-        zero_ar = np.zeros(length)
-        nan_ar = np.empty(length)
-        nan_ar[:] = np.nan
-        data_x = np.repeat(index_ar, 3)
-        data_y = np.stack([nan_ar, zero_ar, value_ar], axis=1).reshape(-1)
-        widget = self.window.transaction_graph.last_volume
-        widget.setData(data_x, data_y)
-        await sleep(0.0)
-
-        # book tickers
-        book_tickers = [
-            d for d in realtime_data if isinstance(d, BookTicker) and d.symbol == symbol
-        ]
-        data_x = [d.timestamp / 10**3 for d in book_tickers]
-
-        data_y = [d.best_bid_price for d in book_tickers]
-        widget = self.window.transaction_graph.book_tickers.line_a
-        widget.setData(data_x, data_y)
-        await sleep(0.0)
-
-        data_y = [d.best_ask_price for d in book_tickers]
-        widget = self.window.transaction_graph.book_tickers.line_b
-        widget.setData(data_x, data_y)
-        await sleep(0.0)
-
-        # entry price
-        entry_price = self.account_state.positions[symbol].entry_price
-        first_moment = self.account_state.observed_until - timedelta(hours=12)
-        last_moment = self.account_state.observed_until + timedelta(hours=12)
-        if entry_price != 0:
-            data_x = np.linspace(
-                first_moment.timestamp(), last_moment.timestamp(), num=1000
-            )
-            data_y = np.linspace(entry_price, entry_price, num=1000)
+        position = self.account_state.positions[symbol]
+        if position.direction == PositionDirection.NONE:
+            entry_price = None
         else:
-            data_x = []
-            data_y = []
-        widget = self.window.transaction_graph.entry_price
-        widget.setData(data_x, data_y)
-        await sleep(0.0)
+            entry_price = position.entry_price
+
+        await self.window.transaction_graph.update_light_price_lines(
+            mark_prices=mark_prices,
+            aggregate_trades=aggregate_trades,
+            book_tickers=book_tickers,
+            entry_price=entry_price,
+            observed_until=self.account_state.observed_until,
+        )
 
         # ■■■■■ set range of heavy data ■■■■■
 
