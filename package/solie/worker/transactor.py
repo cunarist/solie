@@ -797,15 +797,19 @@ class Transactor:
         # ■■■■■ draw light lines ■■■■■
 
         realtime_data = slice_deque(team.collector.realtime_data, 2 ** (10 + 6))
-        aggregate_trades = slice_deque(team.collector.aggregate_trades, 2 ** (10 + 6))
-
         mark_prices: list[MarkPrice] = []
         book_tickers: list[BookTicker] = []
         for realtime_record in realtime_data:
-            if isinstance(realtime_record, MarkPrice):
-                mark_prices.append(realtime_record)
+            if isinstance(realtime_record, BookTicker):
+                if realtime_record.symbol == symbol:
+                    book_tickers.append(realtime_record)
             else:
-                book_tickers.append(realtime_record)
+                is_valid = realtime_record.mark_price > 0.0
+                if is_valid and realtime_record.symbol == symbol:
+                    mark_prices.append(realtime_record)
+
+        aggregate_trades = slice_deque(team.collector.aggregate_trades, 2 ** (10 + 6))
+        aggregate_trades = [a for a in aggregate_trades if a.symbol == symbol]
 
         position = self.account_state.positions[symbol]
         if position.direction == PositionDirection.NONE:
