@@ -1,11 +1,11 @@
 import io
 from datetime import datetime, timedelta, timezone
 from enum import Enum
+from typing import NamedTuple
 from urllib.request import urlopen
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel
 
 from .data_models import AggregateTrade
 from .timing import to_moment
@@ -16,7 +16,7 @@ class DownloadUnitSize(Enum):
     MONTHLY = 1
 
 
-class DownloadPreset(BaseModel):
+class DownloadPreset(NamedTuple):
     symbol: str
     unit_size: DownloadUnitSize
     year: int

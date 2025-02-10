@@ -9,7 +9,6 @@ from typing import Any, NamedTuple
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel
 
 from .data_models import (
     AccountState,
@@ -86,7 +85,7 @@ def make_indicators(
         return indicators
 
 
-class DecisionPack(BaseModel):
+class DecisionPack(NamedTuple):
     decisions: dict[str, dict[OrderType, Decision]]
     scribbles: dict[Any, Any]
 

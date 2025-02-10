@@ -309,8 +309,8 @@ class Collector:
                         aggtrade = AggregateTrade(
                             timestamp=about_aggtrade["T"],
                             symbol=symbol,
-                            price=about_aggtrade["p"],
-                            volume=about_aggtrade["q"],
+                            price=float(about_aggtrade["p"]),
+                            volume=float(about_aggtrade["q"]),
                         )
                         aggtrades[aggtrade_id] = aggtrade
                     last_fetched_id = max(aggtrades.keys())

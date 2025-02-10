@@ -1,7 +1,16 @@
 from datetime import datetime
 from enum import Enum
+from typing import NamedTuple
 
 from pydantic import BaseModel
+
+# We use `BaseModel` when parsing, validation, or mutability is needed.
+# Otherwise, `NamedTuple` is preferred because it's more performant.
+
+
+class DataSettings(BaseModel):
+    asset_token: str
+    target_symbols: list[str]
 
 
 class Strategy(BaseModel):
@@ -54,20 +63,20 @@ class ManagementSettings(BaseModel):
     lock_board: BoardLockOptions = BoardLockOptions.NEVER
 
 
-class BookTicker(BaseModel):
+class BookTicker(NamedTuple):
     timestamp: int  # In milliseconds
     symbol: str
     best_bid_price: float
     best_ask_price: float
 
 
-class MarkPrice(BaseModel):
+class MarkPrice(NamedTuple):
     timestamp: int  # In milliseconds
     symbol: str
     mark_price: float
 
 
-class AggregateTrade(BaseModel):
+class AggregateTrade(NamedTuple):
     timestamp: int  # In milliseconds
     symbol: str
     price: float
@@ -172,8 +181,3 @@ class VirtualState(BaseModel):
     available_balance: float
     positions: dict[str, VirtualPosition]
     placements: dict[str, dict[OrderType, VirtualPlacement]]
-
-
-class DataSettings(BaseModel):
-    asset_token: str
-    target_symbols: list[str]
