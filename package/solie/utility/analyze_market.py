@@ -587,13 +587,13 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
                 order_id = random.randint(ORDER_ID_MIN, ORDER_ID_MAX)
 
                 if amount_shift == 0.0:
-                    raise ValueError("Amount of asset shift cannot be 0")
+                    raise ValueError("Amount of asset shift cannot be zero")
 
                 if role is None:
                     raise ValueError("No trade role was specified")
 
-                if fill_price == 0:
-                    raise ValueError("The fill price cannot be zero")
+                if fill_price <= 0:
+                    raise ValueError("The fill price should be bigger than zero")
 
                 original_size = asset_record_ar.shape[0]
                 asset_record_ar.resize(original_size + 1)
