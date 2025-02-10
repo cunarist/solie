@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class ApiStreamError(Exception):
-    def __init__(self, received: dict | list):
+    def __init__(self, received: Any):
         formatted = json.dumps(received, indent=2)
         super().__init__(formatted)
 
@@ -20,8 +20,7 @@ class ApiStreamer:
     def __init__(
         self,
         url: str,
-        handler: Callable[[dict], Coroutine[None, None, Any]]
-        | Callable[[list], Coroutine[None, None, Any]],
+        handler: Callable[[Any], Coroutine[None, None, Any]],
     ):
         self._url = url
         self._handler = handler
