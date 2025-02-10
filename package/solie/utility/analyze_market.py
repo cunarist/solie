@@ -85,11 +85,6 @@ def make_indicators(
         return indicators
 
 
-class DecisionPack(NamedTuple):
-    decisions: dict[str, dict[OrderType, Decision]]
-    scribbles: dict[Any, Any]
-
-
 def decide(
     target_symbols: list[str],
     current_moment: datetime,
@@ -98,7 +93,7 @@ def decide(
     account_state: AccountState,
     scribbles: dict[Any, Any],
     decision_script: str | CodeType,
-) -> DecisionPack:
+) -> dict[str, dict[OrderType, Decision]]:
     # ■■■■■ decision template ■■■■■
 
     decisions: dict[str, dict[OrderType, Decision]] = {}
@@ -128,7 +123,7 @@ def decide(
     for blank_symbol in blank_symbols:
         decisions.pop(blank_symbol)
 
-    return DecisionPack(decisions=decisions, scribbles=scribbles)
+    return decisions
 
 
 class SimulationError(Exception):
@@ -657,7 +652,7 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
         data_keys = data_row.dtype.names or ()
         current_indicators = {k: data_row[k] for k in data_keys}
 
-        decision_pack = decide(
+        decisions = decide(
             target_symbols=target_symbols,
             current_moment=current_moment,
             current_candle_data=current_candle_data,
@@ -666,8 +661,6 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
             scribbles=chunk_scribbles,
             decision_script=decision_script_compiled,
         )
-        decisions = decision_pack.decisions
-        chunk_scribbles = decision_pack.scribbles
 
         for symbol_key, symbol_decisions in decisions.items():
             for order_type, decision in symbol_decisions.items():

@@ -1102,8 +1102,7 @@ class Transactor:
         current_indicators = {k: data_row[k] for k in data_keys}
 
         decision_script = strategy.decision_script
-        decision_pack = await spawn_blocking(
-            decide,
+        decisions = decide(
             target_symbols=target_symbols,
             current_moment=current_moment,
             current_candle_data=current_candle_data,
@@ -1112,8 +1111,6 @@ class Transactor:
             scribbles=self.scribbles,
             decision_script=decision_script,
         )
-        decisions = decision_pack.decisions
-        self.scribbles = decision_pack.scribbles
 
         # ■■■■■ Record task duration ■■■■■
 
