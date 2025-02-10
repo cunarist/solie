@@ -1,7 +1,6 @@
 import logging
 import math
 import pickle
-import re
 import webbrowser
 from asyncio import Task, current_task, gather, sleep, wait
 from datetime import datetime, timedelta, timezone
@@ -907,70 +906,9 @@ class Transactor:
 
         indicators = indicators[slice_from:slice_until]
 
-        # ■■■■■ draw strategy lines ■■■■■
+        # ■■■■■ draw custom lines ■■■■■
 
-        # price indicators
-        df: pd.DataFrame = indicators[symbol]["PRICE"]
-        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-        data_x += 5
-        line_list = self.window.transaction_graph.price_indicators
-        for turn, widget in enumerate(line_list):
-            if turn < len(df.columns):
-                column_name = str(df.columns[turn])
-                sr = df[column_name]
-                data_y = sr.to_numpy(dtype=np.float32)
-                inside_strings = re.findall(r"\(([^)]+)", column_name)
-                if len(inside_strings) == 0:
-                    color = "#AAAAAA"
-                else:
-                    color = inside_strings[0]
-                widget.setPen(color)
-                widget.setData(data_x, data_y)
-                await sleep(0.0)
-            else:
-                widget.clear()
-
-        # trade volume indicators
-        df: pd.DataFrame = indicators[symbol]["VOLUME"]
-        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-        data_x += 5
-        line_list = self.window.transaction_graph.volume_indicators
-        for turn, widget in enumerate(line_list):
-            if turn < len(df.columns):
-                column_name = str(df.columns[turn])
-                sr = df[column_name]
-                data_y = sr.to_numpy(dtype=np.float32)
-                inside_strings = re.findall(r"\(([^)]+)", column_name)
-                if len(inside_strings) == 0:
-                    color = "#AAAAAA"
-                else:
-                    color = inside_strings[0]
-                widget.setPen(color)
-                widget.setData(data_x, data_y)
-                await sleep(0.0)
-            else:
-                widget.clear()
-
-        # abstract indicators
-        df: pd.DataFrame = indicators[symbol]["ABSTRACT"]
-        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-        data_x += 5
-        line_list = self.window.transaction_graph.abstract_indicators
-        for turn, widget in enumerate(line_list):
-            if turn < len(df.columns):
-                column_name = str(df.columns[turn])
-                sr = df[column_name]
-                data_y = sr.to_numpy(dtype=np.float32)
-                inside_strings = re.findall(r"\(([^)]+)", column_name)
-                if len(inside_strings) == 0:
-                    color = "#AAAAAA"
-                else:
-                    color = inside_strings[0]
-                widget.setPen(color)
-                widget.setData(data_x, data_y)
-                await sleep(0.0)
-            else:
-                widget.clear()
+        await self.window.transaction_graph.update_custom_lines(symbol, indicators)
 
         # ■■■■■ record task duration ■■■■■
 
