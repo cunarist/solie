@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from typing import NamedTuple
 
 import numpy as np
+import pandas as pd
 from pyqtgraph import (
     AxisItem,
     PlotDataItem,
@@ -260,7 +261,7 @@ class GraphLines:
         self.abstract_plot.showGrid(x=True, y=True, alpha=0.1)
         self.asset_plot.showGrid(x=True, y=True, alpha=0.1)
 
-    async def update_light_price_lines(
+    async def update_light_lines(
         self,
         mark_prices: list[MarkPrice],
         aggregate_trades: list[AggregateTrade],
@@ -320,4 +321,172 @@ class GraphLines:
                 num=1000,
             )
         self.entry_price.setData(data_x, data_y)
+        await sleep(0.0)
+
+    async def update_heavy_lines(
+        self,
+        symbol: str,
+        candle_data: pd.DataFrame,
+        asset_record: pd.DataFrame,
+        unrealized_changes: pd.Series,
+    ):
+        # price movement
+        index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
+        open_ar = candle_data[(symbol, "OPEN")].to_numpy()
+        close_ar = candle_data[(symbol, "CLOSE")].to_numpy()
+        high_ar = candle_data[(symbol, "HIGH")].to_numpy()
+        low_ar = candle_data[(symbol, "LOW")].to_numpy()
+        rise_ar = close_ar > open_ar
+        fall_ar = close_ar < open_ar
+        stay_ar = close_ar == open_ar
+        length = len(index_ar)
+        nan_ar = np.empty(length)
+        nan_ar[:] = np.nan
+
+        data_x = np.stack(
+            [
+                index_ar[rise_ar] + 2,
+                index_ar[rise_ar] + 5,
+                index_ar[rise_ar],
+                index_ar[rise_ar] + 5,
+                index_ar[rise_ar] + 8,
+                index_ar[rise_ar],
+                index_ar[rise_ar] + 5,
+                index_ar[rise_ar] + 5,
+                index_ar[rise_ar],
+            ],
+            axis=1,
+        ).reshape(-1)
+        data_y = np.stack(
+            [
+                open_ar[rise_ar],
+                open_ar[rise_ar],
+                nan_ar[rise_ar],
+                close_ar[rise_ar],
+                close_ar[rise_ar],
+                nan_ar[rise_ar],
+                high_ar[rise_ar],
+                low_ar[rise_ar],
+                nan_ar[rise_ar],
+            ],
+            axis=1,
+        ).reshape(-1)
+        self.price_rise.setData(data_x, data_y)
+        await sleep(0.0)
+
+        data_x = np.stack(
+            [
+                index_ar[fall_ar] + 2,
+                index_ar[fall_ar] + 5,
+                index_ar[fall_ar],
+                index_ar[fall_ar] + 5,
+                index_ar[fall_ar] + 8,
+                index_ar[fall_ar],
+                index_ar[fall_ar] + 5,
+                index_ar[fall_ar] + 5,
+                index_ar[fall_ar],
+            ],
+            axis=1,
+        ).reshape(-1)
+        data_y = np.stack(
+            [
+                open_ar[fall_ar],
+                open_ar[fall_ar],
+                nan_ar[fall_ar],
+                close_ar[fall_ar],
+                close_ar[fall_ar],
+                nan_ar[fall_ar],
+                high_ar[fall_ar],
+                low_ar[fall_ar],
+                nan_ar[fall_ar],
+            ],
+            axis=1,
+        ).reshape(-1)
+        self.price_fall.setData(data_x, data_y)
+        await sleep(0.0)
+
+        data_x = np.stack(
+            [
+                index_ar[stay_ar] + 2,
+                index_ar[stay_ar] + 5,
+                index_ar[stay_ar],
+                index_ar[stay_ar] + 5,
+                index_ar[stay_ar] + 8,
+                index_ar[stay_ar],
+                index_ar[stay_ar] + 5,
+                index_ar[stay_ar] + 5,
+                index_ar[stay_ar],
+            ],
+            axis=1,
+        ).reshape(-1)
+        data_y = np.stack(
+            [
+                open_ar[stay_ar],
+                open_ar[stay_ar],
+                nan_ar[stay_ar],
+                close_ar[stay_ar],
+                close_ar[stay_ar],
+                nan_ar[stay_ar],
+                high_ar[stay_ar],
+                low_ar[stay_ar],
+                nan_ar[stay_ar],
+            ],
+            axis=1,
+        ).reshape(-1)
+        self.price_stay.setData(data_x, data_y)
+        await sleep(0.0)
+
+        # wobbles
+        sr = candle_data[(symbol, "HIGH")]
+        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
+        data_y = sr.to_numpy(dtype=np.float32)
+        self.wobbles.line_a.setData(data_x, data_y)
+        await sleep(0.0)
+
+        sr = candle_data[(symbol, "LOW")]
+        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
+        data_y = sr.to_numpy(dtype=np.float32)
+        self.wobbles.line_b.setData(data_x, data_y)
+        await sleep(0.0)
+
+        # trade volume
+        sr = candle_data[(symbol, "VOLUME")]
+        sr = sr.fillna(value=0)
+        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
+        data_y = sr.to_numpy(dtype=np.float32)
+        self.volume.setData(data_x, data_y)
+        await sleep(0.0)
+
+        # asset
+        data_x = asset_record["RESULT_ASSET"].index.to_numpy(dtype=np.int64) / 10**9
+        data_y = asset_record["RESULT_ASSET"].to_numpy(dtype=np.float32)
+        self.asset.setData(data_x, data_y)
+        await sleep(0.0)
+
+        # asset with unrealized profit
+        sr = asset_record["RESULT_ASSET"]
+        if len(sr) >= 2:
+            sr = sr.resample("10S").ffill()
+        unrealized_changes_sr = unrealized_changes.reindex(sr.index)
+        sr = sr * (1 + unrealized_changes_sr)
+        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9 + 5
+        data_y = sr.to_numpy(dtype=np.float32)
+        self.asset_with_unrealized_profit.setData(data_x, data_y)
+        await sleep(0.0)
+
+        # buy and sell
+        df = asset_record.loc[asset_record["SYMBOL"] == symbol]
+        df = df[df["SIDE"] == "SELL"]
+        sr = df["FILL_PRICE"]
+        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
+        data_y = sr.to_numpy(dtype=np.float32)
+        self.sell.setData(data_x, data_y)
+        await sleep(0.0)
+
+        df = asset_record.loc[asset_record["SYMBOL"] == symbol]
+        df = df[df["SIDE"] == "BUY"]
+        sr = df["FILL_PRICE"]
+        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
+        data_y = sr.to_numpy(dtype=np.float32)
+        self.buy.setData(data_x, data_y)
         await sleep(0.0)

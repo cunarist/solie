@@ -251,7 +251,7 @@ class Simulator:
         else:
             entry_price = position.entry_price
 
-        await self.window.simulation_graph.update_light_price_lines(
+        await self.window.simulation_graph.update_light_lines(
             mark_prices=mark_prices,
             aggregate_trades=aggregate_trades,
             book_tickers=book_tickers,
@@ -307,7 +307,6 @@ class Simulator:
         # ■■■■■ maniuplate heavy data ■■■■■
 
         # add the right end
-
         if len(candle_data) > 0:
             last_written_moment = candle_data.index[-1]
             new_moment = last_written_moment + timedelta(seconds=10)  # type:ignore
@@ -326,7 +325,6 @@ class Simulator:
                         )
 
         # add the left end
-
         if before_asset is not None:
             asset_record.loc[slice_from, "CAUSE"] = "OTHER"
             asset_record.loc[slice_from, "RESULT_ASSET"] = before_asset
@@ -335,176 +333,12 @@ class Simulator:
 
         # ■■■■■ draw heavy lines ■■■■■
 
-        # price movement
-        index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
-        open_ar = candle_data[(symbol, "OPEN")].to_numpy()
-        close_ar = candle_data[(symbol, "CLOSE")].to_numpy()
-        high_ar = candle_data[(symbol, "HIGH")].to_numpy()
-        low_ar = candle_data[(symbol, "LOW")].to_numpy()
-        rise_ar = close_ar > open_ar
-        fall_ar = close_ar < open_ar
-        stay_ar = close_ar == open_ar
-        length = len(index_ar)
-        nan_ar = np.empty(length)
-        nan_ar[:] = np.nan
-
-        data_x = np.stack(
-            [
-                index_ar[rise_ar] + 2,
-                index_ar[rise_ar] + 5,
-                index_ar[rise_ar],
-                index_ar[rise_ar] + 5,
-                index_ar[rise_ar] + 8,
-                index_ar[rise_ar],
-                index_ar[rise_ar] + 5,
-                index_ar[rise_ar] + 5,
-                index_ar[rise_ar],
-            ],
-            axis=1,
-        ).reshape(-1)
-        data_y = np.stack(
-            [
-                open_ar[rise_ar],
-                open_ar[rise_ar],
-                nan_ar[rise_ar],
-                close_ar[rise_ar],
-                close_ar[rise_ar],
-                nan_ar[rise_ar],
-                high_ar[rise_ar],
-                low_ar[rise_ar],
-                nan_ar[rise_ar],
-            ],
-            axis=1,
-        ).reshape(-1)
-        widget = self.window.simulation_graph.price_rise
-        widget.setData(data_x, data_y)
-        await sleep(0.0)
-
-        data_x = np.stack(
-            [
-                index_ar[fall_ar] + 2,
-                index_ar[fall_ar] + 5,
-                index_ar[fall_ar],
-                index_ar[fall_ar] + 5,
-                index_ar[fall_ar] + 8,
-                index_ar[fall_ar],
-                index_ar[fall_ar] + 5,
-                index_ar[fall_ar] + 5,
-                index_ar[fall_ar],
-            ],
-            axis=1,
-        ).reshape(-1)
-        data_y = np.stack(
-            [
-                open_ar[fall_ar],
-                open_ar[fall_ar],
-                nan_ar[fall_ar],
-                close_ar[fall_ar],
-                close_ar[fall_ar],
-                nan_ar[fall_ar],
-                high_ar[fall_ar],
-                low_ar[fall_ar],
-                nan_ar[fall_ar],
-            ],
-            axis=1,
-        ).reshape(-1)
-        widget = self.window.simulation_graph.price_fall
-        widget.setData(data_x, data_y)
-        await sleep(0.0)
-
-        data_x = np.stack(
-            [
-                index_ar[stay_ar] + 2,
-                index_ar[stay_ar] + 5,
-                index_ar[stay_ar],
-                index_ar[stay_ar] + 5,
-                index_ar[stay_ar] + 8,
-                index_ar[stay_ar],
-                index_ar[stay_ar] + 5,
-                index_ar[stay_ar] + 5,
-                index_ar[stay_ar],
-            ],
-            axis=1,
-        ).reshape(-1)
-        data_y = np.stack(
-            [
-                open_ar[stay_ar],
-                open_ar[stay_ar],
-                nan_ar[stay_ar],
-                close_ar[stay_ar],
-                close_ar[stay_ar],
-                nan_ar[stay_ar],
-                high_ar[stay_ar],
-                low_ar[stay_ar],
-                nan_ar[stay_ar],
-            ],
-            axis=1,
-        ).reshape(-1)
-        widget = self.window.simulation_graph.price_stay
-        widget.setData(data_x, data_y)
-        await sleep(0.0)
-
-        # wobbles
-        sr = candle_data[(symbol, "HIGH")]
-        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
-        data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.window.simulation_graph.wobbles.line_a
-        widget.setData(data_x, data_y)
-        await sleep(0.0)
-
-        sr = candle_data[(symbol, "LOW")]
-        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
-        data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.window.simulation_graph.wobbles.line_b
-        widget.setData(data_x, data_y)
-        await sleep(0.0)
-
-        # trade volume
-        sr = candle_data[(symbol, "VOLUME")]
-        sr = sr.fillna(value=0)
-        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
-        data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.window.simulation_graph.volume
-        widget.setData(data_x, data_y)
-        await sleep(0.0)
-
-        # asset
-        data_x = asset_record["RESULT_ASSET"].index.to_numpy(dtype=np.int64) / 10**9
-        data_y = asset_record["RESULT_ASSET"].to_numpy(dtype=np.float32)
-        widget = self.window.simulation_graph.asset
-        widget.setData(data_x, data_y)
-        await sleep(0.0)
-
-        # asset with unrealized profit
-        sr = asset_record["RESULT_ASSET"]
-        if len(sr) >= 2:
-            sr = sr.resample("10S").ffill()
-        unrealized_changes_sr = unrealized_changes.reindex(sr.index)
-        sr = sr * (1 + unrealized_changes_sr)
-        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9 + 5
-        data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.window.simulation_graph.asset_with_unrealized_profit
-        widget.setData(data_x, data_y)
-        await sleep(0.0)
-
-        # buy and sell
-        df = asset_record.loc[asset_record["SYMBOL"] == symbol]
-        df = df[df["SIDE"] == "SELL"]
-        sr = df["FILL_PRICE"]
-        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
-        data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.window.simulation_graph.sell
-        widget.setData(data_x, data_y)
-        await sleep(0.0)
-
-        df = asset_record.loc[asset_record["SYMBOL"] == symbol]
-        df = df[df["SIDE"] == "BUY"]
-        sr = df["FILL_PRICE"]
-        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
-        data_y = sr.to_numpy(dtype=np.float32)
-        widget = self.window.simulation_graph.buy
-        widget.setData(data_x, data_y)
-        await sleep(0.0)
+        await self.window.simulation_graph.update_heavy_lines(
+            symbol=symbol,
+            candle_data=candle_data,
+            asset_record=asset_record,
+            unrealized_changes=unrealized_changes,
+        )
 
         # ■■■■■ make indicators ■■■■■
 
