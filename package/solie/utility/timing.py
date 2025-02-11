@@ -1,7 +1,7 @@
 from collections import deque
 from datetime import datetime, timedelta
 from time import perf_counter
-from typing import NamedTuple
+from typing import ClassVar, NamedTuple
 
 
 class DurationRecord(NamedTuple):
@@ -9,10 +9,9 @@ class DurationRecord(NamedTuple):
     written_at: float
 
 
-task_durations: dict[str, deque[DurationRecord]] = {}
-
-
 class DurationRecorder:
+    task_durations: ClassVar[dict[str, deque[DurationRecord]]] = {}
+
     def __init__(self, task_name: str):
         self._task_name = task_name
         self._start_time = perf_counter()
@@ -29,10 +28,10 @@ class DurationRecorder:
         now_time = perf_counter()
 
         # Get the deque.
-        record_deque = task_durations.get(task_name)
+        record_deque = self.task_durations.get(task_name)
         if record_deque is None:
             record_deque = deque[DurationRecord](maxlen=1024)
-            task_durations[task_name] = record_deque
+            self.task_durations[task_name] = record_deque
 
         # Add the record.
         duration_record = DurationRecord(
@@ -45,11 +44,6 @@ class DurationRecorder:
         preserve_from = now_time - 60.0
         while record_deque and record_deque[0][1] < preserve_from:
             record_deque.popleft()
-
-
-def get_task_durations() -> dict[str, list[float]]:
-    dict_durations = {k: [r[0] for r in d] for k, d in task_durations.items()}
-    return dict_durations
 
 
 def to_moment(exact_time: datetime) -> datetime:

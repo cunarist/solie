@@ -61,7 +61,7 @@ from .standardize import (
 )
 from .syntax_highlighter import SyntaxHighlighter
 from .time_axis_item import TimeAxisItem
-from .timing import DurationRecorder, get_task_durations, to_moment
+from .timing import DurationRecorder, to_moment
 from .user_settings import (
     DataSettings,
     read_data_settings,
@@ -118,7 +118,6 @@ __all__ = [
     "examine_data_files",
     "fill_holes_with_aggtrades",
     "format_numeric",
-    "get_task_durations",
     "internet_connected",
     "is_internet_checked",
     "is_left_version_higher",

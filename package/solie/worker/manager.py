@@ -15,8 +15,8 @@ from solie.common import PROCESS_COUNT, outsource, spawn, spawn_blocking
 from solie.utility import (
     ApiRequester,
     BoardLockOptions,
+    DurationRecorder,
     ManagementSettings,
-    get_task_durations,
     internet_connected,
     save_datapath,
 )
@@ -178,19 +178,19 @@ class Manager:
             self.window.label_35.setText(text)
 
             texts = []
-            task_durations = get_task_durations()
+            task_durations = DurationRecorder.task_durations
             for data_name, deque_data in task_durations.items():
                 if len(deque_data) > 0:
                     text = data_name
                     text += "\n"
-                    data_value = sum(deque_data) / len(deque_data)
+                    data_value = sum(d.duration for d in deque_data) / len(deque_data)
                     text += f"Mean {data_value:.6f}s "
-                    data_value = statistics.median(deque_data)
+                    data_value = statistics.median(d.duration for d in deque_data)
                     text += f"Median {data_value:.6f}s "
                     text += "\n"
-                    data_value = min(deque_data)
+                    data_value = min(deque_data).duration
                     text += f"Minimum {data_value:.6f}s "
-                    data_value = max(deque_data)
+                    data_value = max(deque_data).duration
                     text += f"Maximum {data_value:.6f}s "
                     texts.append(text)
             text = "\n\n".join(texts)
