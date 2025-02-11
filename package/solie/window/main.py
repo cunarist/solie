@@ -218,9 +218,9 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             },
         )
 
-        coin_names = {}
-        coin_icon_urls = {}
-        coin_ranks = {}
+        coin_names: dict[str, str] = {}
+        coin_icon_urls: dict[str, str] = {}
+        coin_ranks: dict[str, int] = {}
 
         for about_coin in response:
             coin_symbol = about_coin["symbol"].upper()
