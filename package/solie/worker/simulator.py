@@ -221,6 +221,24 @@ class Simulator:
 
         duration_recorder = DurationRecorder("DISPLAY_SIMULATION_LINES")
 
+        # ■■■■■ set the slicing range ■■■■■
+
+        if should_draw_all_years:
+            years = await team.collector.check_saved_years()
+            slice_from = datetime.fromtimestamp(0, tz=timezone.utc)
+            slice_until = datetime.now(timezone.utc)
+            slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
+        else:
+            year = self.simulation_settings.year
+            years = [year]
+            slice_from = datetime(year, 1, 1, tzinfo=timezone.utc)
+            if year == datetime.now(timezone.utc).year:
+                slice_until = datetime.now(timezone.utc)
+                slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
+            else:
+                slice_until = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+        slice_until -= timedelta(seconds=1)
+
         # ■■■■■ draw light lines ■■■■■
 
         position = self.account_state.positions[symbol]
@@ -238,22 +256,6 @@ class Simulator:
         )
 
         # ■■■■■ draw heavy lines ■■■■■
-
-        if should_draw_all_years:
-            years = await team.collector.check_saved_years()
-            slice_from = datetime.fromtimestamp(0, tz=timezone.utc)
-            slice_until = datetime.now(timezone.utc)
-            slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
-        else:
-            year = self.simulation_settings.year
-            years = [year]
-            slice_from = datetime(year, 1, 1, tzinfo=timezone.utc)
-            if year == datetime.now(timezone.utc).year:
-                slice_until = datetime.now(timezone.utc)
-                slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
-            else:
-                slice_until = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
-        slice_until -= timedelta(seconds=1)
 
         divided_datas: list[pd.DataFrame] = []
         for year in years:

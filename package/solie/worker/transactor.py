@@ -787,6 +787,19 @@ class Transactor:
 
         duration_recorder = DurationRecorder("DISPLAY_TRANSACTION_LINES")
 
+        # ■■■■■ set the slicing range ■■■■■
+
+        if should_draw_frequently:
+            get_from = datetime.now(timezone.utc) - timedelta(days=28)
+            slice_from = datetime.now(timezone.utc) - timedelta(hours=24)
+            slice_until = datetime.now(timezone.utc)
+        else:
+            current_year = datetime.now(timezone.utc).year
+            get_from = datetime(current_year, 1, 1, tzinfo=timezone.utc)
+            slice_from = datetime(current_year, 1, 1, tzinfo=timezone.utc)
+            slice_until = datetime.now(timezone.utc)
+        slice_until -= timedelta(seconds=1)
+
         # ■■■■■ draw light lines ■■■■■
 
         realtime_data = slice_deque(team.collector.realtime_data, 2 ** (10 + 6))
@@ -819,17 +832,6 @@ class Transactor:
         )
 
         # ■■■■■ draw heavy lines ■■■■■
-
-        if should_draw_frequently:
-            get_from = datetime.now(timezone.utc) - timedelta(days=28)
-            slice_from = datetime.now(timezone.utc) - timedelta(hours=24)
-            slice_until = datetime.now(timezone.utc)
-        else:
-            current_year = datetime.now(timezone.utc).year
-            get_from = datetime(current_year, 1, 1, tzinfo=timezone.utc)
-            slice_from = datetime(current_year, 1, 1, tzinfo=timezone.utc)
-            slice_until = datetime.now(timezone.utc)
-        slice_until -= timedelta(seconds=1)
 
         async with team.collector.candle_data.read_lock as cell:
             candle_data_original = cell.data[get_from:slice_until][[symbol]].copy()
