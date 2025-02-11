@@ -756,21 +756,21 @@ class Transactor:
             raise ValueError
         self.line_display_task = this_task
 
-        # ■■■■■ check drawing mode ■■■■■
+        # ■■■■■ get basic information ■■■■■
+
+        symbol = self.viewing_symbol
+        strategy_index = self.transaction_settings.strategy_index
+        strategy = team.strategist.strategies.all[strategy_index]
 
         should_draw_frequently = self.should_draw_frequently
+        if frequent and not should_draw_frequently:
+            return
 
-        if frequent:
-            if not should_draw_frequently:
-                return
-
-        # ■■■■■ check if the data exists ■■■■■
+        # ■■■■■ ensure that the latest data was added ■■■■■
 
         async with team.collector.candle_data.read_lock as cell:
             if len(cell.data) == 0:
                 return
-
-        # ■■■■■ wait for the latest data to be added ■■■■■
 
         current_moment = to_moment(datetime.now(timezone.utc))
         before_moment = current_moment - timedelta(seconds=10)
@@ -786,12 +786,6 @@ class Transactor:
         # ■■■■■ get ready for task duration measurement ■■■■■
 
         duration_recorder = DurationRecorder("DISPLAY_TRANSACTION_LINES")
-
-        # ■■■■■ check things ■■■■■
-
-        symbol = self.viewing_symbol
-        strategy_index = self.transaction_settings.strategy_index
-        strategy = team.strategist.strategies.all[strategy_index]
 
         # ■■■■■ draw light lines ■■■■■
 
@@ -824,7 +818,7 @@ class Transactor:
             observed_until=self.account_state.observed_until,
         )
 
-        # ■■■■■ set range of heavy data ■■■■■
+        # ■■■■■ draw heavy lines ■■■■■
 
         if should_draw_frequently:
             get_from = datetime.now(timezone.utc) - timedelta(days=28)
@@ -836,8 +830,6 @@ class Transactor:
             slice_from = datetime(current_year, 1, 1, tzinfo=timezone.utc)
             slice_until = datetime.now(timezone.utc)
         slice_until -= timedelta(seconds=1)
-
-        # ■■■■■ get heavy data ■■■■■
 
         async with team.collector.candle_data.read_lock as cell:
             candle_data_original = cell.data[get_from:slice_until][[symbol]].copy()
@@ -856,8 +848,6 @@ class Transactor:
             asset_record = cell.data[slice_from:].copy()
 
         candle_data = candle_data_original[slice_from:]
-
-        # ■■■■■ maniuplate heavy data ■■■■■
 
         # add the right end
         if len(candle_data) > 0:
@@ -884,8 +874,6 @@ class Transactor:
             if not asset_record.index.is_monotonic_increasing:
                 asset_record = await spawn_blocking(sort_data_frame, asset_record)
 
-        # ■■■■■ draw heavy lines ■■■■■
-
         await self.window.transaction_graph.update_heavy_lines(
             symbol=symbol,
             candle_data=candle_data,
@@ -893,7 +881,7 @@ class Transactor:
             unrealized_changes=unrealized_changes,
         )
 
-        # ■■■■■ make indicators ■■■■■
+        # ■■■■■ draw custom lines ■■■■■
 
         indicators_script = strategy.indicators_script
 
@@ -905,8 +893,6 @@ class Transactor:
         )
 
         indicators = indicators[slice_from:slice_until]
-
-        # ■■■■■ draw custom lines ■■■■■
 
         await self.window.transaction_graph.update_custom_lines(symbol, indicators)
 

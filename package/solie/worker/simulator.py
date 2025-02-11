@@ -185,7 +185,7 @@ class Simulator:
         self.simulation_settings.maker_fee = input_value
         await self.present()
 
-    async def display_lines(self, periodic=False, frequent=False):
+    async def display_lines(self, periodic=False):
         # ■■■■■ run only one task instance at a time ■■■■■
 
         if self.line_display_task is not None:
@@ -195,20 +195,19 @@ class Simulator:
             raise ValueError
         self.line_display_task = this_task
 
-        # ■■■■■ check drawing mode ■■■■■
+        # ■■■■■ get basic information ■■■■■
+
+        symbol = self.viewing_symbol
+        strategy_index = self.simulation_settings.strategy_index
+        strategy = team.strategist.strategies.all[strategy_index]
 
         should_draw_all_years = self.should_draw_all_years
 
-        if frequent:
-            pass
-
-        # ■■■■■ check if the data exists ■■■■■
+        # ■■■■■ ensure that the latest data was added ■■■■■
 
         async with team.collector.candle_data.read_lock as cell:
             if len(cell.data) == 0:
                 return
-
-        # ■■■■■ wait for the latest data to be added ■■■■■
 
         current_moment = to_moment(datetime.now(timezone.utc))
         before_moment = current_moment - timedelta(seconds=10)
@@ -224,12 +223,6 @@ class Simulator:
         # ■■■■■ get ready for task duration measurement ■■■■■
 
         duration_recorder = DurationRecorder("DISPLAY_SIMULATION_LINES")
-
-        # ■■■■■ check things ■■■■■
-
-        symbol = self.viewing_symbol
-        strategy_index = self.simulation_settings.strategy_index
-        strategy = team.strategist.strategies.all[strategy_index]
 
         # ■■■■■ draw light lines ■■■■■
 
@@ -262,7 +255,7 @@ class Simulator:
             observed_until=self.account_state.observed_until,
         )
 
-        # ■■■■■ set range of heavy data ■■■■■
+        # ■■■■■ draw heavy lines ■■■■■
 
         if should_draw_all_years:
             years = await team.collector.check_saved_years()
@@ -279,8 +272,6 @@ class Simulator:
             else:
                 slice_until = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
         slice_until -= timedelta(seconds=1)
-
-        # ■■■■■ get heavy data ■■■■■
 
         divided_datas: list[pd.DataFrame] = []
         for year in years:
@@ -307,8 +298,6 @@ class Simulator:
 
         candle_data = candle_data_original[slice_from:]
 
-        # ■■■■■ maniuplate heavy data ■■■■■
-
         # add the right end
         if len(candle_data) > 0:
             last_written_moment = candle_data.index[-1]
@@ -334,8 +323,6 @@ class Simulator:
             if not asset_record.index.is_monotonic_increasing:
                 asset_record = await spawn_blocking(sort_data_frame, asset_record)
 
-        # ■■■■■ draw heavy lines ■■■■■
-
         await self.window.simulation_graph.update_heavy_lines(
             symbol=symbol,
             candle_data=candle_data,
@@ -343,7 +330,7 @@ class Simulator:
             unrealized_changes=unrealized_changes,
         )
 
-        # ■■■■■ make indicators ■■■■■
+        # ■■■■■ draw custom lines ■■■■■
 
         indicators_script = strategy.indicators_script
 
@@ -355,8 +342,6 @@ class Simulator:
         )
 
         indicators = indicators[slice_from:slice_until]
-
-        # ■■■■■ draw custom lines ■■■■■
 
         await self.window.simulation_graph.update_custom_lines(symbol, indicators)
 
