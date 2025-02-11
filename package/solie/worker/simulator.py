@@ -15,10 +15,8 @@ from scipy.signal import find_peaks
 from solie.common import get_sync_manager, outsource, spawn, spawn_blocking
 from solie.utility import (
     AccountState,
-    BookTicker,
     CalculationInput,
     DurationRecorder,
-    MarkPrice,
     PositionDirection,
     RWLock,
     SimulationSettings,
@@ -30,7 +28,6 @@ from solie.utility import (
     create_empty_unrealized_changes,
     make_indicators,
     simulate_chunk,
-    slice_deque,
     sort_data_frame,
     sort_series,
     to_moment,
@@ -226,21 +223,6 @@ class Simulator:
 
         # ■■■■■ draw light lines ■■■■■
 
-        realtime_data = slice_deque(team.collector.realtime_data, 2 ** (10 + 6))
-        mark_prices: list[MarkPrice] = []
-        book_tickers: list[BookTicker] = []
-        for realtime_record in realtime_data:
-            if isinstance(realtime_record, BookTicker):
-                if realtime_record.symbol == symbol:
-                    book_tickers.append(realtime_record)
-            else:
-                is_valid = realtime_record.mark_price > 0.0
-                if is_valid and realtime_record.symbol == symbol:
-                    mark_prices.append(realtime_record)
-
-        aggregate_trades = slice_deque(team.collector.aggregate_trades, 2 ** (10 + 6))
-        aggregate_trades = [a for a in aggregate_trades if a.symbol == symbol]
-
         position = self.account_state.positions[symbol]
         if position.direction == PositionDirection.NONE:
             entry_price = None
@@ -248,9 +230,9 @@ class Simulator:
             entry_price = position.entry_price
 
         await self.window.simulation_graph.update_light_lines(
-            mark_prices=mark_prices,
-            aggregate_trades=aggregate_trades,
-            book_tickers=book_tickers,
+            mark_prices=[],
+            aggregate_trades=[],
+            book_tickers=[],
             entry_price=entry_price,
             observed_until=self.account_state.observed_until,
         )
