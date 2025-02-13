@@ -264,9 +264,11 @@ class Collector:
                 from_moment = current_moment - timedelta(hours=24)
                 until_moment = current_moment - timedelta(minutes=1)
 
-                inspect_df: pd.DataFrame = recent_candle_data[symbol][
+                columns = [str(s) for s in recent_candle_data.columns]
+                chosen_columns = [s for s in columns if s.startswith(symbol)]
+                inspect_df: pd.DataFrame = recent_candle_data[chosen_columns][
                     from_moment:until_moment
-                ]  # type:ignore
+                ]
                 base_index = inspect_df.dropna().index
                 temp_sr = pd.Series(0, index=base_index)
                 written_moments = len(temp_sr)
@@ -716,7 +718,7 @@ class Collector:
                 sum_volume = sum([t.volume for t in symbol_aggregate_trades])
             else:
                 async with self.candle_data.read_lock as cell:
-                    inspect_sr = cell.data.iloc[-60:][(symbol, "CLOSE")].copy()
+                    inspect_sr = cell.data.iloc[-60:][f"{symbol}/CLOSE"].copy()
                 inspect_sr = inspect_sr.dropna()
                 if len(inspect_sr) == 0:
                     return
@@ -727,11 +729,11 @@ class Collector:
                 close_price = last_price
                 sum_volume = 0.0
 
-            new_values[(symbol, "OPEN")] = open_price
-            new_values[(symbol, "HIGH")] = high_price
-            new_values[(symbol, "LOW")] = low_price
-            new_values[(symbol, "CLOSE")] = close_price
-            new_values[(symbol, "VOLUME")] = sum_volume
+            new_values[f"{symbol}/OPEN"] = open_price
+            new_values[f"{symbol}/HIGH"] = high_price
+            new_values[f"{symbol}/LOW"] = low_price
+            new_values[f"{symbol}/CLOSE"] = close_price
+            new_values[f"{symbol}/VOLUME"] = sum_volume
 
         async with self.candle_data.write_lock as cell:
             for column_name, new_data_value in new_values.items():

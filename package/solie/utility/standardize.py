@@ -1,5 +1,6 @@
 import random
 from datetime import datetime, timezone
+from itertools import product
 
 import numpy as np
 import pandas as pd
@@ -8,13 +9,12 @@ from .data_models import AccountState, Position, PositionDirection
 
 
 def create_empty_candle_data(target_symbols: list[str]):
+    column_pairs = product(
+        target_symbols,
+        ("OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"),
+    )
     return pd.DataFrame(
-        columns=pd.MultiIndex.from_product(
-            [
-                target_symbols,
-                ("OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"),
-            ]
-        ),
+        columns=["/".join(p) for p in column_pairs],
         dtype=np.float32,
         index=pd.DatetimeIndex([], tz="UTC"),
     )

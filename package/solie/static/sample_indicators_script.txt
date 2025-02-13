@@ -8,8 +8,8 @@ long_period = 720
 for symbol in target_symbols:
 
     # Get candle data
-    close_sr = candle_data[(symbol, "CLOSE")]
-    volume_sr = candle_data[(symbol, "VOLUME")]
+    close_sr = candle_data[f"{symbol}/CLOSE"]
+    volume_sr = candle_data[f"{symbol}/VOLUME"]
 
     # Price scale indicators
     price_sma_one = ta.sma(close_sr, short_period)

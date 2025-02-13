@@ -834,7 +834,11 @@ class Transactor:
         # ■■■■■ draw heavy lines ■■■■■
 
         async with team.collector.candle_data.read_lock as cell:
-            candle_data_original = cell.data[get_from:slice_until][[symbol]].copy()
+            columns = [str(s) for s in cell.data.columns]
+            chosen_columns = [s for s in columns if s.startswith(symbol)]
+            candle_data_original = cell.data[chosen_columns][
+                get_from:slice_until
+            ].copy()
         async with self.unrealized_changes.read_lock as cell:
             unrealized_changes = cell.data.copy()
         async with self.asset_record.read_lock as cell:
@@ -1067,13 +1071,15 @@ class Transactor:
         indicators_script = strategy.indicators_script
 
         # Split the candle data by symbol before calculation to reduct UI lags
+        columns = [str(s) for s in cell.data.columns]
         coroutines = []
         for symbol in target_symbols:
+            chosen_columns = [s for s in columns if s.startswith(symbol)]
             coroutines.append(
                 spawn_blocking(
                     make_indicators,
                     target_symbols=[symbol],
-                    candle_data=candle_data[[symbol]],
+                    candle_data=candle_data[chosen_columns],
                     indicators_script=indicators_script,
                     only_last_index=True,
                 )

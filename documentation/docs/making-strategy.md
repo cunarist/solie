@@ -82,11 +82,11 @@ You can extract partial `pandas.Series` data from `candle_data`.
 import pandas as pd
 
 for symbol in target_symbols:
-    open_sr: pd.Series = candle_data[(symbol, "OPEN")]
-    high_sr: pd.Series = candle_data[(symbol, "HIGH")]
-    low_sr: pd.Series = candle_data[(symbol, "LOW")]
-    close_sr: pd.Series = candle_data[(symbol, "CLOSE")]
-    volume_sr: pd.Series = candle_data[(symbol, "VOLUME")]
+    open_sr: pd.Series = candle_data[f"{symbol}/OPEN"]
+    high_sr: pd.Series = candle_data[f"{symbol}/HIGH"]
+    low_sr: pd.Series = candle_data[f"{symbol}/LOW"]
+    close_sr: pd.Series = candle_data[f"{symbol}/CLOSE"]
+    volume_sr: pd.Series = candle_data[f"{symbol}/VOLUME"]
 ```
 
 The `pandas.Series` object has the following form. A one-dimensional array containing values ​​over time.
@@ -120,7 +120,7 @@ Solie uses the `pandas-ta` package. Creation of dozens of basic indicators is av
 import pandas_ta as ta
 
 for symbol in target_symbols:
-    close_sr = candle_data[(symbol, "CLOSE")]
+    close_sr = candle_data[f"{symbol}/CLOSE"]
     sma_sr: pd.Series = ta.sma(close_sr, 60)
     # 60 candles represent 600 seconds(10 minutes)
 ```
@@ -131,7 +131,7 @@ Once you have created the indicators, simply put them in a `dict` object called 
 import pandas_ta as ta
 
 for symbol in target_symbols:
-    close_sr = candle_data[(symbol, "CLOSE")]
+    close_sr = candle_data[f"{symbol}/CLOSE"]
     sma_sr = ta.sma(close_sr, 60)
     # Here, the tuple key is `(symbol, "PRICE", "SMA")`
     new_indicators[(symbol, "PRICE", "SMA")] = sma_sr
@@ -156,7 +156,7 @@ You can set the color drawn on the graph as you wish. Just put parentheses next 
 import pandas_ta as ta
 
 for symbol in target_symbols:
-    close_sr = candle_data[(symbol, "CLOSE")]
+    close_sr = candle_data[f"{symbol}/CLOSE"]
     sma_sr = ta.sma(close_sr, 60)
     new_indicators[(symbol, "PRICE", "SMA (#649CFF)")] = sma_sr  # Blue
 ```
@@ -170,7 +170,7 @@ Below is the code that creates the average of two different moving averages.
 import pandas_ta as ta
 
 for symbol in target_symbols:
-    close_sr = candle_data[(symbol, "CLOSE")]
+    close_sr = candle_data[f"{symbol}/CLOSE"]
     sma_one = ta.sma(close_sr, 60)
     sma_two = ta.sma(close_sr, 360)
 
@@ -184,7 +184,7 @@ Below is the code that creates a market overheating indicator with two different
 import pandas_ta as ta
 
 for symbol in target_symbols:
-    volume_sr = candle_data[(symbol, "VOLUME")]
+    volume_sr = candle_data[f"{symbol}/VOLUME"]
     sma_one = ta.sma(volume_sr, 360)
     sma_two = ta.sma(volume_sr, 2160)
 
@@ -199,7 +199,7 @@ Below is the code that simply creates an indicator that delays the closing price
 
 ```python
 for symbol in target_symbols:
-    close_sr = candle_data[(symbol, "CLOSE")]
+    close_sr = candle_data[f"{symbol}/CLOSE"]
     shifted_sr = close_sr.shift(60) # `pandas.Series` method
     new_indicators[(symbol, "PRICE", "Shifted")] = shifted_sr
 ```
@@ -339,7 +339,7 @@ Order type `LATER_UP_CLOSE` puts an order that will close the position when the 
 
 ```python
 from solie.utility import Decision, OrderType
-current_price = current_candle_data[str((symbol, "CLOSE"))]
+current_price = current_candle_data[f"{symbol}/CLOSE"]
 decisions[symbol][OrderType.LATER_UP_CLOSE] = Decision(
     boundary=current_price * 1.05,
 )
@@ -349,7 +349,7 @@ Order type `LATER_DOWN_CLOSE` puts an order that will close the position when th
 
 ```python
 from solie.utility import Decision, OrderType
-current_price = current_candle_data[str((symbol, "CLOSE"))]
+current_price = current_candle_data[f"{symbol}/CLOSE"]
 decisions[symbol][OrderType.LATER_DOWN_CLOSE] = Decision(
     boundary=current_price * 0.95,
 )
@@ -359,7 +359,7 @@ Order type `LATER_UP_BUY` puts an order to buy when the price goes up to that bo
 
 ```python
 from solie.utility import Decision, OrderType
-current_price = current_candle_data[str((symbol, "CLOSE"))]
+current_price = current_candle_data[f"{symbol}/CLOSE"]
 wallet_balance = account_state.wallet_balance
 decisions[symbol][OrderType.LATER_UP_BUY] = Decision(
     boundary=current_price * 1.05,
@@ -371,7 +371,7 @@ Order type `LATER_DOWN_BUY` puts an order to buy when the price goes down to tha
 
 ```python
 from solie.utility import Decision, OrderType
-current_price = current_candle_data[str((symbol, "CLOSE"))]
+current_price = current_candle_data[f"{symbol}/CLOSE"]
 wallet_balance = account_state.wallet_balance
 decisions[symbol][OrderType.LATER_DOWN_BUY] = Decision(
     boundary=current_price * 0.95,
@@ -383,7 +383,7 @@ Order type `LATER_UP_SELL` puts an order to buy sell when the price goes up to t
 
 ```python
 from solie.utility import Decision, OrderType
-current_price = current_candle_data[str((symbol, "CLOSE"))]
+current_price = current_candle_data[f"{symbol}/CLOSE"]
 wallet_balance = account_state.wallet_balance
 decisions[symbol][OrderType.LATER_UP_SELL] = Decision(
     boundary=current_price * 1.05,
@@ -395,7 +395,7 @@ Order type `LATER_DOWN_SELL` puts an order to sell when the price goes down to t
 
 ```python
 from solie.utility import Decision, OrderType
-current_price = current_candle_data[str((symbol, "CLOSE"))]
+current_price = current_candle_data[f"{symbol}/CLOSE"]
 wallet_balance = account_state.wallet_balance
 decisions[symbol][OrderType.LATER_DOWN_SELL] = Decision(
     boundary=current_price * 0.95,
@@ -407,7 +407,7 @@ Order type `BOOK_BUY` puts a limit buy order that is added to the order book. Co
 
 ```python
 from solie.utility import Decision, OrderType
-current_price = current_candle_data[str((symbol, "CLOSE"))]
+current_price = current_candle_data[f"{symbol}/CLOSE"]
 wallet_balance = account_state.wallet_balance
 decisions[symbol][OrderType.BOOK_BUY] = Decision(
     boundary=current_price * 0.95,
@@ -418,7 +418,7 @@ decisions[symbol][OrderType.BOOK_BUY] = Decision(
 Order type `BOOK_SELL` puts a limit sell order that is added to the order book. Corresponds to Binance order `Limit Sell`.
 
 ```python
-current_price = current_candle_data[str((symbol, "CLOSE"))]
+current_price = current_candle_data[f"{symbol}/CLOSE"]
 wallet_balance = account_state.wallet_balance
 decisions[symbol][OrderType.BOOK_SELL] = Decision(
     boundary=current_price * 1.05,

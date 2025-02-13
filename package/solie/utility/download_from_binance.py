@@ -110,31 +110,31 @@ def download_aggtrade_data(download_target: DownloadPreset) -> pd.DataFrame | No
     close_sr = close_sr.reindex(valid_index)
     close_sr = close_sr.ffill()
     close_sr = close_sr.astype(np.float32)
-    close_sr.name = (symbol, "CLOSE")
+    close_sr.name = f"{symbol}/CLOSE"
 
     open_sr: pd.Series = df[1].resample("10s").agg("first")  # type:ignore
     open_sr = open_sr.reindex(valid_index)
     open_sr = open_sr.fillna(value=close_sr)
     open_sr = open_sr.astype(np.float32)
-    open_sr.name = (symbol, "OPEN")
+    open_sr.name = f"{symbol}/OPEN"
 
     high_sr: pd.Series = df[1].resample("10s").agg("max")  # type:ignore
     high_sr = high_sr.reindex(valid_index)
     high_sr = high_sr.fillna(value=close_sr)
     high_sr = high_sr.astype(np.float32)
-    high_sr.name = (symbol, "HIGH")
+    high_sr.name = f"{symbol}/HIGH"
 
     low_sr: pd.Series = df[1].resample("10s").agg("min")  # type:ignore
     low_sr = low_sr.reindex(valid_index)
     low_sr = low_sr.fillna(value=close_sr)
     low_sr = low_sr.astype(np.float32)
-    low_sr.name = (symbol, "LOW")
+    low_sr.name = f"{symbol}/LOW"
 
     volume_sr: pd.Series = df[2].resample("10s").agg("sum")  # type:ignore
     volume_sr = volume_sr.reindex(valid_index)
     volume_sr = volume_sr.fillna(value=0)
     volume_sr = volume_sr.astype(np.float32)
-    volume_sr.name = (symbol, "VOLUME")
+    volume_sr.name = f"{symbol}/VOLUME"
 
     del df
 
@@ -173,7 +173,7 @@ def fill_holes_with_aggtrades(
 
         if len(aggtrade_prices) == 0:
             # when there are no trades
-            inspect_sr = recent_candle_data[(symbol, "CLOSE")]
+            inspect_sr = recent_candle_data[f"{symbol}/CLOSE"]
             inspect_sr = inspect_sr.sort_index()
             last_prices = inspect_sr[:fill_moment].dropna()
             if len(last_prices) == 0:
@@ -196,15 +196,15 @@ def fill_holes_with_aggtrades(
             sum_volume = sum(aggtrade_volumes)
 
         if can_write:
-            column = (symbol, "OPEN")
+            column = f"{symbol}/OPEN"
             recent_candle_data.loc[fill_moment, column] = open_price
-            column = (symbol, "HIGH")
+            column = f"{symbol}/HIGH"
             recent_candle_data.loc[fill_moment, column] = high_price
-            column = (symbol, "LOW")
+            column = f"{symbol}/LOW"
             recent_candle_data.loc[fill_moment, column] = low_price
-            column = (symbol, "CLOSE")
+            column = f"{symbol}/CLOSE"
             recent_candle_data.loc[fill_moment, column] = close_price
-            column = (symbol, "VOLUME")
+            column = f"{symbol}/VOLUME"
             recent_candle_data.loc[fill_moment, column] = sum_volume
 
         fill_moment += timedelta(seconds=10)

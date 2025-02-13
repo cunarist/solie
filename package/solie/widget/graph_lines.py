@@ -333,10 +333,10 @@ class GraphLines:
     ):
         # price movement
         index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
-        open_ar = candle_data[(symbol, "OPEN")].to_numpy()
-        close_ar = candle_data[(symbol, "CLOSE")].to_numpy()
-        high_ar = candle_data[(symbol, "HIGH")].to_numpy()
-        low_ar = candle_data[(symbol, "LOW")].to_numpy()
+        open_ar = candle_data[f"{symbol}/OPEN"].to_numpy()
+        close_ar = candle_data[f"{symbol}/CLOSE"].to_numpy()
+        high_ar = candle_data[f"{symbol}/HIGH"].to_numpy()
+        low_ar = candle_data[f"{symbol}/LOW"].to_numpy()
         rise_ar = close_ar > open_ar
         fall_ar = close_ar < open_ar
         stay_ar = close_ar == open_ar
@@ -438,20 +438,20 @@ class GraphLines:
         await sleep(0.0)
 
         # wobbles
-        sr = candle_data[(symbol, "HIGH")]
+        sr = candle_data[f"{symbol}/HIGH"]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         self.wobbles.line_a.setData(data_x, data_y)
         await sleep(0.0)
 
-        sr = candle_data[(symbol, "LOW")]
+        sr = candle_data[f"{symbol}/LOW"]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         self.wobbles.line_b.setData(data_x, data_y)
         await sleep(0.0)
 
         # trade volume
-        sr = candle_data[(symbol, "VOLUME")]
+        sr = candle_data[f"{symbol}/VOLUME"]
         sr = sr.fillna(value=0)
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
