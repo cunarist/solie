@@ -493,8 +493,11 @@ class GraphLines:
         await sleep(0.0)
 
     async def update_custom_lines(self, symbol: str, indicators: pd.DataFrame):
+        columns = [str(n) for n in indicators.columns]
+
         # price indicators
-        df: pd.DataFrame = indicators[symbol]["PRICE"]
+        chosen_columns = [n for n in columns if n.startswith(f"{symbol}/PRICE")]
+        df = indicators[chosen_columns]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         data_x += 5
         for turn, widget in enumerate(self.price_indicators):
@@ -514,7 +517,8 @@ class GraphLines:
                 widget.clear()
 
         # trade volume indicators
-        df: pd.DataFrame = indicators[symbol]["VOLUME"]
+        chosen_columns = [n for n in columns if n.startswith(f"{symbol}/VOLUME")]
+        df = indicators[chosen_columns]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         data_x += 5
         for turn, widget in enumerate(self.volume_indicators):
@@ -534,7 +538,8 @@ class GraphLines:
                 widget.clear()
 
         # abstract indicators
-        df: pd.DataFrame = indicators[symbol]["ABSTRACT"]
+        chosen_columns = [n for n in columns if n.startswith(f"{symbol}/ABSTRACT")]
+        df = indicators[chosen_columns]
         data_x = df.index.to_numpy(dtype=np.int64) / 10**9
         data_x += 5
         for turn, widget in enumerate(self.abstract_indicators):

@@ -21,6 +21,8 @@ from .data_models import (
     VirtualState,
 )
 
+INDICATOR_CATEGORIES = ["PRICE", "VOLUME", "ABSTRACT"]
+
 
 def make_indicators(
     target_symbols: list[str],
@@ -48,7 +50,7 @@ def make_indicators(
         ("PRICE", "VOLUME", "ABSTRACT"),
         ("Blank",),
     )
-    new_indicators: dict[tuple, pd.Series] = {}
+    new_indicators: dict[tuple[str, str, str], pd.Series] = {}
     base_index = candle_data.index
     for blank_column in blank_columns:
         new_indicators[blank_column] = pd.Series(
@@ -65,12 +67,24 @@ def make_indicators(
         "new_indicators": new_indicators,
     }
     exec(indicators_script, namespace)
-    new_indicators = {k: v for k, v in new_indicators.items() if v is not None}
+    new_indicators = {
+        k: v for k, v in new_indicators.items() if isinstance(v, pd.Series)
+    }
 
     # ■■■■■ concatenate individual indicators into one ■■■■■
 
     for column_name, new_indicator in new_indicators.items():
-        new_indicator.name = column_name
+        # Validate the name format.
+        if not isinstance(column_name, tuple) or not len(column_name) == 3:
+            continue
+        if not all(isinstance(s, str) for s in column_name):
+            continue
+        symbol, category, _ = column_name
+        if symbol not in target_symbols or category not in INDICATOR_CATEGORIES:
+            continue
+        # Convert each element into strings and make it into a name.
+        indicator_name = "/".join(str(s) for s in column_name)
+        new_indicator.name = indicator_name
 
     indicators = pd.concat(new_indicators.values(), axis="columns")
     indicators = indicators.astype(np.float32)
@@ -89,7 +103,7 @@ def decide(
     target_symbols: list[str],
     current_moment: datetime,
     current_candle_data: dict[str, float],
-    current_indicators: dict[str, float],
+    current_indicators: dict[tuple[str, str, str], float],
     account_state: AccountState,
     scribbles: dict[Any, Any],
     decision_script: str | CodeType,
@@ -650,7 +664,13 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
         current_candle_data = {k: data_row[k] for k in data_keys}
         data_row: np.record = indicators_ar[cycle]
         data_keys = data_row.dtype.names or ()
-        current_indicators = {k: data_row[k] for k in data_keys}
+        current_indicators: dict[tuple[str, str, str], float] = {}
+        for data_key in data_keys:
+            if data_key == "index":
+                continue
+            splitted = data_key.split("/")
+            tuple_key = (splitted[0], splitted[1], splitted[2])
+            current_indicators[tuple_key] = data_row[data_key]
 
         decisions = decide(
             target_symbols=target_symbols,

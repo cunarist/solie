@@ -1087,7 +1087,13 @@ class Transactor:
         current_candle_data = {k: data_row[k] for k in data_keys}
         data_row: np.record = indicators.to_records()[-1]
         data_keys = data_row.dtype.names or ()
-        current_indicators = {k: data_row[k] for k in data_keys}
+        current_indicators: dict[tuple[str, str, str], float] = {}
+        for data_key in data_keys:
+            if data_key == "index":
+                continue
+            splitted = data_key.split("/")
+            tuple_key = (splitted[0], splitted[1], splitted[2])
+            current_indicators[tuple_key] = data_row[data_key]
 
         decision_script = strategy.decision_script
         decisions = decide(
