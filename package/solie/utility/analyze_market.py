@@ -1,8 +1,8 @@
-import itertools
 import math
 import random
 from datetime import datetime, timedelta, timezone
 from enum import Enum
+from itertools import product
 from multiprocessing.managers import ListProxy
 from types import CodeType
 from typing import Any, NamedTuple
@@ -45,7 +45,7 @@ def make_indicators(
 
     # ■■■■■ basic values ■■■■■
 
-    blank_columns = itertools.product(
+    blank_columns = product(
         target_symbols,
         ("PRICE", "VOLUME", "ABSTRACT"),
         ("Blank",),

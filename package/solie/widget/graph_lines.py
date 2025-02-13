@@ -493,67 +493,61 @@ class GraphLines:
         await sleep(0.0)
 
     async def update_custom_lines(self, symbol: str, indicators: pd.DataFrame):
+        # common data
         columns = [str(n) for n in indicators.columns]
+        data_x = indicators.index.to_numpy(dtype=np.int64) / 10**9
+        data_x += 5
 
         # price indicators
         chosen_columns = [n for n in columns if n.startswith(f"{symbol}/PRICE")]
-        df = indicators[chosen_columns]
-        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-        data_x += 5
-        for turn, widget in enumerate(self.price_indicators):
-            if turn < len(df.columns):
-                column_name = str(df.columns[turn])
-                sr = df[column_name]
-                data_y = sr.to_numpy(dtype=np.float32)
-                inside_strings = re.findall(r"\(([^)]+)", column_name)
-                if len(inside_strings) == 0:
-                    color = "#AAAAAA"
-                else:
-                    color = inside_strings[0]
-                widget.setPen(color)
-                widget.setData(data_x, data_y)
-                await sleep(0.0)
-            else:
+        for index, widget in enumerate(self.price_indicators):
+            if index >= len(chosen_columns):
                 widget.clear()
+                continue
+            column = chosen_columns[index]
+            sr = indicators[column]
+            data_y = sr.to_numpy(dtype=np.float32)
+            inside_strings = re.findall(r"\(([^)]+)", column)
+            if len(inside_strings) == 0:
+                color = "#AAAAAA"
+            else:
+                color = inside_strings[0]
+            widget.setPen(color)
+            widget.setData(data_x, data_y)
+            await sleep(0.0)
 
         # trade volume indicators
         chosen_columns = [n for n in columns if n.startswith(f"{symbol}/VOLUME")]
-        df = indicators[chosen_columns]
-        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-        data_x += 5
-        for turn, widget in enumerate(self.volume_indicators):
-            if turn < len(df.columns):
-                column_name = str(df.columns[turn])
-                sr = df[column_name]
-                data_y = sr.to_numpy(dtype=np.float32)
-                inside_strings = re.findall(r"\(([^)]+)", column_name)
-                if len(inside_strings) == 0:
-                    color = "#AAAAAA"
-                else:
-                    color = inside_strings[0]
-                widget.setPen(color)
-                widget.setData(data_x, data_y)
-                await sleep(0.0)
-            else:
+        for index, widget in enumerate(self.volume_indicators):
+            if index >= len(chosen_columns):
                 widget.clear()
+                continue
+            column = chosen_columns[index]
+            sr = indicators[column]
+            data_y = sr.to_numpy(dtype=np.float32)
+            inside_strings = re.findall(r"\(([^)]+)", column)
+            if len(inside_strings) == 0:
+                color = "#AAAAAA"
+            else:
+                color = inside_strings[0]
+            widget.setPen(color)
+            widget.setData(data_x, data_y)
+            await sleep(0.0)
 
         # abstract indicators
         chosen_columns = [n for n in columns if n.startswith(f"{symbol}/ABSTRACT")]
-        df = indicators[chosen_columns]
-        data_x = df.index.to_numpy(dtype=np.int64) / 10**9
-        data_x += 5
-        for turn, widget in enumerate(self.abstract_indicators):
-            if turn < len(df.columns):
-                column_name = str(df.columns[turn])
-                sr = df[column_name]
-                data_y = sr.to_numpy(dtype=np.float32)
-                inside_strings = re.findall(r"\(([^)]+)", column_name)
-                if len(inside_strings) == 0:
-                    color = "#AAAAAA"
-                else:
-                    color = inside_strings[0]
-                widget.setPen(color)
-                widget.setData(data_x, data_y)
-                await sleep(0.0)
-            else:
+        for index, widget in enumerate(self.abstract_indicators):
+            if index >= len(chosen_columns):
                 widget.clear()
+                continue
+            column = chosen_columns[index]
+            sr = indicators[column]
+            data_y = sr.to_numpy(dtype=np.float32)
+            inside_strings = re.findall(r"\(([^)]+)", column)
+            if len(inside_strings) == 0:
+                color = "#AAAAAA"
+            else:
+                color = inside_strings[0]
+            widget.setPen(color)
+            widget.setData(data_x, data_y)
+            await sleep(0.0)
