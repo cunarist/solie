@@ -1898,7 +1898,7 @@ class Transactor:
         if not self.transaction_settings.should_transact:
             return
 
-        conflicting_order_tuples = []
+        conflicting_order_tuples: list[tuple[str, int]] = []
         for symbol in self.window.data_settings.target_symbols:
             symbol_open_orders = self.account_state.open_orders[symbol]
             grouped_open_orders: dict[OrderType, list[int]] = {}
