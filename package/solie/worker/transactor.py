@@ -1088,12 +1088,18 @@ class Transactor:
         symbol_indicators = await gather(*coroutines)
         indicators = pd.concat(symbol_indicators, axis="columns")
 
-        data_row: np.record = candle_data.tail(1).to_records()[-1]
-        data_keys = data_row.dtype.names or ()
-        current_candle_data = {k: data_row[k] for k in data_keys}
-        data_row: np.record = indicators.to_records()[-1]
-        data_keys = data_row.dtype.names or ()
-        current_indicators = {k: data_row[k] for k in data_keys}
+        record_row: np.record = candle_data.tail(1).to_records()[-1]
+        current_candle_data = {
+            k: float(record_row[k])
+            for k in record_row.dtype.names or ()
+            if k != "index"
+        }
+        record_row: np.record = indicators.to_records()[-1]
+        current_indicators = {
+            k: float(record_row[k])
+            for k in record_row.dtype.names or ()
+            if k != "index"
+        }
 
         decision_script = strategy.decision_script
         decisions = decide(

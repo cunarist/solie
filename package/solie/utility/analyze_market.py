@@ -52,7 +52,7 @@ def make_indicators(
     )
     new_indicators: dict[str, pd.Series] = {}
     base_index = candle_data.index
-    for blank_column in ("\n".join(t) for t in blank_column_trios):
+    for blank_column in ("/".join(t) for t in blank_column_trios):
         new_indicators[blank_column] = pd.Series(
             np.nan,
             index=base_index,
@@ -656,12 +656,18 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
 
         # ■■■■■ make decision and place order ■■■■■
 
-        data_row: np.record = candle_data_ar[cycle]
-        data_keys = data_row.dtype.names or ()
-        current_candle_data = {k: data_row[k] for k in data_keys}
-        data_row: np.record = indicators_ar[cycle]
-        data_keys = data_row.dtype.names or ()
-        current_indicators = {k: data_row[k] for k in data_keys}
+        record_row: np.record = candle_data_ar[cycle]
+        current_candle_data = {
+            k: float(record_row[k])
+            for k in record_row.dtype.names or ()
+            if k != "index"
+        }
+        record_row: np.record = indicators_ar[cycle]
+        current_indicators = {
+            k: float(record_row[k])
+            for k in record_row.dtype.names or ()
+            if k != "index"
+        }
 
         decisions = decide(
             target_symbols=target_symbols,
