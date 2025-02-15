@@ -6,15 +6,14 @@ acquire_ratio = 0.8 / len(target_symbols)  # Split asset by symbol count
 wallet_balance = account_state.wallet_balance
 
 for symbol in target_symbols:
-
     current_price = current_candle_data[f"{symbol}/CLOSE"]
-    price_sma_one = current_indicators[(symbol, "PRICE", "SMA One (#00BBFF)")]
-    price_sma_two = current_indicators[(symbol, "PRICE", "SMA Two (#FF6666)")]
+    price_sma_one = current_indicators[f"{symbol}/PRICE/SMA_ONE(#00BBFF)"]
+    price_sma_two = current_indicators[f"{symbol}/PRICE/SMA_TWO(#FF6666)"]
 
     position = account_state.positions[symbol]
 
-    scribbles["remember_data"] = True  # Remember something
-    remember_data = scribbles.get("remember_data", False)  # Get it later
+    scribbles["MY_KEY"] = True  # Remember something
+    MY_KEY = scribbles.get("MY_KEY", False)  # Get it later
 
     if position.direction == PositionDirection.NONE:
         if price_sma_one > price_sma_two:

@@ -6,7 +6,6 @@ short_period = 180
 long_period = 720
 
 for symbol in target_symbols:
-
     # Get candle data
     close_sr = candle_data[f"{symbol}/CLOSE"]
     volume_sr = candle_data[f"{symbol}/VOLUME"]
@@ -14,16 +13,16 @@ for symbol in target_symbols:
     # Price scale indicators
     price_sma_one = ta.sma(close_sr, short_period)
     price_sma_two = ta.sma(close_sr, long_period)
-    new_indicators[(symbol, "PRICE", "SMA One (#00BBFF)")] = price_sma_one
-    new_indicators[(symbol, "PRICE", "SMA Two (#FF6666)")] = price_sma_two
+    new_indicators[f"{symbol}/PRICE/SMA_ONE(#00BBFF)"] = price_sma_one
+    new_indicators[f"{symbol}/PRICE/SMA_TWO(#FF6666)"] = price_sma_two
 
     # Volume scale indicators
     volume_sma_one = ta.sma(volume_sr, short_period * 2)
     volume_sma_two = ta.sma(volume_sr, long_period * 2)
-    new_indicators[(symbol, "VOLUME", "SMA One")] = volume_sma_one
-    new_indicators[(symbol, "VOLUME", "SMA Two")] = volume_sma_two
+    new_indicators[f"{symbol}/VOLUME/SMA_ONE"] = volume_sma_one
+    new_indicators[f"{symbol}/VOLUME/SMA_TWO"] = volume_sma_two
 
     # Abstract scale indicators
     wildness = volume_sma_one / volume_sma_two
     wildness[wildness > 1.5] = 1.5
-    new_indicators[(symbol, "ABSTRACT", "Wildness")] = wildness
+    new_indicators[f"{symbol}/ABSTRACT/WILDNESS"] = wildness

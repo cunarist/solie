@@ -44,7 +44,7 @@ Variables provided by default are as follows. You can use these without any impo
 
 - `target_symbols`(`list[str]`): The symbols being observed.
 - `candle_data`(`pandas.DataFrame`): Candle data. Extra 28 days of data before desired calculation range is included.
-- `new_indicators`(`dict[tuple[str, str, str], pandas.Series]`): An object that holds newly created indicators.
+- `new_indicators`(`dict[str, pandas.Series]`): An object that holds newly created indicators.
 
 ### Basic Syntax
 
@@ -125,7 +125,7 @@ for symbol in target_symbols:
     # 60 candles represent 600 seconds(10 minutes)
 ```
 
-Once you have created the indicators, simply put them in a `dict` object called `new_indicators` as appropriate tuple keys. After that, multiple `pandas.Series` objects inside this object are merged into a single indicators object. After writing this and saving it, you will see the indicator in the graph view. It can also be used in strategic decisions.
+Once you have created the indicators, simply put them in a `dict` object called `new_indicators`. After that, multiple `pandas.Series` objects inside this object are merged into a single indicators object. After writing this and saving it, you will see the indicator in the graph view. It can also be used in strategic decisions.
 
 ```python
 import pandas_ta as ta
@@ -133,13 +133,12 @@ import pandas_ta as ta
 for symbol in target_symbols:
     close_sr = candle_data[f"{symbol}/CLOSE"]
     sma_sr = ta.sma(close_sr, 60)
-    # Here, the tuple key is `(symbol, "PRICE", "SMA")`
-    new_indicators[(symbol, "PRICE", "SMA")] = sma_sr
+    new_indicators[f"{symbol}/PRICE/SMA"] = sma_sr
 ```
 
 ![](assets/example_011.png)
 
-The tuple key has 3 values. The first value represents a symbol and the third value would be any name you want. The second value determines which scale graph to draw on. It should be one of `PRICE`, `VOLUME`, or `ABSTRACT`.
+The string key consists of 3 values. The first value represents a symbol and the third value would be any name you want. The second value determines which scale graph to draw on. It should be one of `PRICE`, `VOLUME`, or `ABSTRACT`.
 
 - Graph 1: `PRICE` indicators
 - Graph 2: `VOLUME` indcators
@@ -148,7 +147,7 @@ The tuple key has 3 values. The first value represents a symbol and the third va
 
 ![](assets/example_010.png)
 
-> Taking the `BTCUSDT` symbol as an example, prices move in tens of thousands of dollars, volume moves in tens, and abstract indicators move in single digit units. Of course, you can't show these three different scales in one graph. That's why we let you choose the graph to be drawn with the second value of the tuple key.
+> Taking the `BTCUSDT` symbol as an example, prices move in tens of thousands of dollars, volume moves in tens, and abstract indicators move in single digit units. Of course, you can't show these three different scales in one graph. That's why we let you choose the graph to be drawn with the second value of the string key.
 
 You can set the color drawn on the graph as you wish. Just put parentheses next to the name and color code it. Color codes can be chosen on a color combination site[🔗](https://htmlcolorcodes.com/).
 
@@ -158,7 +157,7 @@ import pandas_ta as ta
 for symbol in target_symbols:
     close_sr = candle_data[f"{symbol}/CLOSE"]
     sma_sr = ta.sma(close_sr, 60)
-    new_indicators[(symbol, "PRICE", "SMA (#649CFF)")] = sma_sr  # Blue
+    new_indicators[f"{symbol}/PRICE/SMA(#649CFF)"] = sma_sr  # Blue
 ```
 
 ![](assets/example_012.png)
@@ -175,7 +174,7 @@ for symbol in target_symbols:
     sma_two = ta.sma(close_sr, 360)
 
     average_sma = (sma_one + sma_two) / 2
-    new_indicators[(symbol, "PRICE", "Average SMA")] = average_sma
+    new_indicators[f"{symbol}/PRICE/AVERAGE_SMA"] = average_sma
 ```
 
 Below is the code that creates a market overheating indicator with two different moving averages and limits the value to not exceed 0.8. In the picture, you can see that everything above 0.8 is cut off.
@@ -190,7 +189,7 @@ for symbol in target_symbols:
 
     wildness = sma_one / sma_two  # Division operation
     wildness[wildness > 0.8] = 0.8  # Set the limit
-    new_indicators[(symbol, "ABSTRACT", "Wildness")] = wildness
+    new_indicators[f"{symbol}/ABSTRACT/WILDNESS"] = wildness
 ```
 
 ![](assets/example_013.png)
@@ -201,7 +200,7 @@ Below is the code that simply creates an indicator that delays the closing price
 for symbol in target_symbols:
     close_sr = candle_data[f"{symbol}/CLOSE"]
     shifted_sr = close_sr.shift(60) # `pandas.Series` method
-    new_indicators[(symbol, "PRICE", "Shifted")] = shifted_sr
+    new_indicators[f"{symbol}/ABSTRACT/SHIFTED"] = shifted_sr
 ```
 
 ![](assets/example_014.png) As demonstrated, many variations are possible for indicators generation through coding.
@@ -219,7 +218,7 @@ Variables provided by default are as follows. You can use these without any impo
 
 - `current_candle_data`(`dict[str, float]`): Only the most recent row is truncated from the observation data recorded up to the current time. Contains price and volume information from the market.
 
-- `current_indicators`(`dict[tuple[str, str, str], float]`): Only the most recent row up to the current time is provided. It contains different indicator information depending on the indicators script.
+- `current_indicators`(`dict[str, float]`): Only the most recent row up to the current time is provided. It contains different indicator information depending on the indicators script.
 
 - `account_state`(`AccountState`): Contains current account status information. An object for reading. Writing something inside has no effect.
 
@@ -282,19 +281,21 @@ class AccountState:
 
 ```python
 # When adding a data, simply assign it.
-scribbles["did_i_do_something"] = True
+# The value can be of any type.
+scribbles["WAS_SOMETHING_DONE"] = True
 ```
 
 ```python
-# When retrieving, it is recommended to use the `get` method of `dict` in case it is not already stored.
-did_i_do_it_before = scribbles.get("did_i_do_something", False)
+# When retrieving, it is recommended to use the
+# `dict.get` method in case the value is not already stored.
+did_i_do_it_before = scribbles.get("WAS_SOMETHING_DONE", False)
 ```
 
-You can check the indicator's current value with stringified tuple key.
+You can check the indicator's current value with a string key expressed by three values divided by "/".
 
 ```python
-# Creating an indicator named SMA in the Price category with the indicators script
-sma_value = current_indicators[str(("BTCUSDT", "PRICE", "SMA"))]
+# Create an indicator named SMA in the PRICE category.
+sma_value = current_indicators["BTCUSDT/PRICE/SMA"]
 ```
 
 ### Decision Types
