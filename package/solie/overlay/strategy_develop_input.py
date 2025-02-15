@@ -4,12 +4,12 @@ import aiofiles
 from PySide6 import QtCore, QtWidgets
 
 from solie.common import PACKAGE_PATH, outsource, spawn_blocking
-from solie.utility import Strategy
+from solie.utility import SavedStrategy
 from solie.widget import BaseOverlay, ScriptEditor, VerticalDivider, ask
 
 
 class StrategyDevelopInput(BaseOverlay):
-    def __init__(self, strategy: Strategy):
+    def __init__(self, strategy: SavedStrategy):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
@@ -35,10 +35,10 @@ class StrategyDevelopInput(BaseOverlay):
         column_layout.addWidget(detail_text)
 
         # input
-        indicators_script_input = ScriptEditor(self)
-        indicators_script_input.setPlainText(strategy.indicators_script)
-        column_layout.addWidget(indicators_script_input)
-        self.indicators_script_input = indicators_script_input
+        indicator_script_input = ScriptEditor(self)
+        indicator_script_input.setPlainText(strategy.indicator_script)
+        column_layout.addWidget(indicator_script_input)
+        self.indicator_script_input = indicator_script_input
 
         # column layout
         column_layout = QtWidgets.QVBoxLayout()
@@ -74,7 +74,7 @@ class StrategyDevelopInput(BaseOverlay):
 
         # confirm button
         async def job_ss():
-            strategy.indicators_script = indicators_script_input.toPlainText()
+            strategy.indicator_script = indicator_script_input.toPlainText()
             strategy.decision_script = decision_script_input.toPlainText()
             self.done_event.set()
 
@@ -100,11 +100,11 @@ class StrategyDevelopInput(BaseOverlay):
         # sample script button
         async def job_as():
             # indicators script
-            filepath = PACKAGE_PATH / "static" / "sample_indicators_script.txt"
+            filepath = PACKAGE_PATH / "static" / "sample_indicator_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 script = await file.read()
 
-            indicators_script_input.setPlainText(script)
+            indicator_script_input.setPlainText(script)
 
             # decision script
             filepath = PACKAGE_PATH / "static" / "sample_decision_script.txt"
@@ -161,9 +161,9 @@ class StrategyDevelopInput(BaseOverlay):
 
         written_decision = self.decision_script_input.toPlainText()
         is_decision_script_saved = written_decision == strategy.decision_script
-        written_indicators = self.indicators_script_input.toPlainText()
-        is_indicators_script_saved = written_indicators == strategy.indicators_script
-        if is_decision_script_saved and is_indicators_script_saved:
+        written_indicators = self.indicator_script_input.toPlainText()
+        is_indicator_script_saved = written_indicators == strategy.indicator_script
+        if is_decision_script_saved and is_indicator_script_saved:
             return True
 
         should_close = False

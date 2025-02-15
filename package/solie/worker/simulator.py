@@ -316,13 +316,11 @@ class Simulator:
 
         # ■■■■■ draw custom lines ■■■■■
 
-        indicators_script = strategy.indicators_script
-
         indicators = await spawn_blocking(
             make_indicators,
+            strategy=strategy,
             target_symbols=[self.viewing_symbol],
             candle_data=candle_data_original,
-            indicators_script=indicators_script,
         )
 
         indicators = indicators[slice_from:slice_until]
@@ -644,16 +642,13 @@ class Simulator:
         progress_list = sync_manager.list([0])
 
         if should_calculate:
-            decision_script = strategy.decision_script
-            indicators_script = strategy.indicators_script
-
             # a little more data for generation
             provide_from = calculate_from - timedelta(days=28)
             year_indicators = await spawn_blocking(
                 make_indicators,
+                strategy=strategy,
                 target_symbols=target_symbols,
                 candle_data=year_candle_data[provide_from:calculate_until],
-                indicators_script=indicators_script,
             )
 
             # range cut
@@ -692,6 +687,7 @@ class Simulator:
                         chunk_virtual_state = blank_virtual_state
 
                     calculation_input = CalculationInput(
+                        strategy=strategy,
                         progress_list=progress_list,
                         target_progress=turn,
                         target_symbols=target_symbols,
@@ -703,12 +699,12 @@ class Simulator:
                         chunk_scribbles=chunk_scribbles,
                         chunk_account_state=chunk_account_state,
                         chunk_virtual_state=chunk_virtual_state,
-                        decision_script=decision_script,
                     )
                     calculation_inputs.append(calculation_input)
 
             else:
                 calculation_input = CalculationInput(
+                    strategy=strategy,
                     progress_list=progress_list,
                     target_progress=0,
                     target_symbols=target_symbols,
@@ -720,7 +716,6 @@ class Simulator:
                     chunk_scribbles=previous_scribbles,
                     chunk_account_state=previous_account_state,
                     chunk_virtual_state=previous_virtual_state,
-                    decision_script=decision_script,
                 )
                 calculation_inputs.append(calculation_input)
 

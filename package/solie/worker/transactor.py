@@ -32,9 +32,9 @@ from solie.utility import (
     create_empty_account_state,
     create_empty_asset_record,
     create_empty_unrealized_changes,
-    decide,
     internet_connected,
     list_to_dict,
+    make_decisions,
     make_indicators,
     slice_deque,
     sort_data_frame,
@@ -889,13 +889,11 @@ class Transactor:
 
         # ■■■■■ draw custom lines ■■■■■
 
-        indicators_script = strategy.indicators_script
-
         indicators = await spawn_blocking(
             make_indicators,
+            strategy=strategy,
             target_symbols=[self.viewing_symbol],
             candle_data=candle_data_original,
-            indicators_script=indicators_script,
         )
 
         indicators = indicators[slice_from:slice_until]
@@ -1068,8 +1066,6 @@ class Transactor:
         strategy_index = self.transaction_settings.strategy_index
         strategy = team.strategist.strategies[strategy_index]
 
-        indicators_script = strategy.indicators_script
-
         # Split the candle data by symbol before calculation to reduct UI lags
         columns = [str(s) for s in cell.data.columns]
         coroutines = []
@@ -1078,10 +1074,9 @@ class Transactor:
             coroutines.append(
                 spawn_blocking(
                     make_indicators,
+                    strategy=strategy,
                     target_symbols=[symbol],
                     candle_data=candle_data[chosen_columns],
-                    indicators_script=indicators_script,
-                    only_last_index=True,
                 )
             )
             await sleep(0.0)
@@ -1101,15 +1096,14 @@ class Transactor:
             if k != "index"
         }
 
-        decision_script = strategy.decision_script
-        decisions = decide(
+        decisions = make_decisions(
+            strategy=strategy,
             target_symbols=target_symbols,
             current_moment=current_moment,
             current_candle_data=current_candle_data,
             current_indicators=current_indicators,
             account_state=self.account_state,
             scribbles=self.scribbles,
-            decision_script=decision_script,
         )
 
         # ■■■■■ Record task duration ■■■■■

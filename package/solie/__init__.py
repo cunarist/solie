@@ -2,7 +2,6 @@ from .entry import bring_to_life
 from .utility import (
     AccountState,
     Decision,
-    FixedStrategy,
     OrderType,
     PositionDirection,
     SolieConfig,
@@ -12,7 +11,6 @@ from .utility import (
 __all__ = [
     "AccountState",
     "Decision",
-    "FixedStrategy",
     "OrderType",
     "PositionDirection",
     "SolieConfig",

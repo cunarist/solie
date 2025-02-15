@@ -1,10 +1,12 @@
-from abc import abstractmethod
+from datetime import datetime
 from pathlib import Path
+from types import CodeType
 from typing import Any
 
 import aiofiles
 import aiofiles.os
 import pandas as pd
+from pydantic import BaseModel
 
 from solie.common import PACKAGE_PATH
 
@@ -55,32 +57,66 @@ async def save_data_settings(data_settings: DataSettings, datapath: Path):
         await file.write(data_settings.model_dump_json(indent=2))
 
 
-class FixedStrategy(Strategy):
-    @abstractmethod
+class SavedStrategy(Strategy):
+    indicator_script: str = "pass"
+    decision_script: str = "pass"
+
     def create_indicators(
         self,
         target_symbols: list[str],
         candle_data: pd.DataFrame,
         new_indicators: dict[str, pd.Series],
     ):
-        pass
+        code_field = "_compiled_indicator_script"
+        try:
+            code: CodeType = getattr(self, code_field)
+        except AttributeError:
+            code = compile(self.indicator_script, "<string>", "exec")
+            setattr(self, code_field, code)
 
-    @abstractmethod
+        namespace = {
+            "target_symbols": target_symbols,
+            "candle_data": candle_data,
+            "new_indicators": new_indicators,
+        }
+        exec(code, namespace)
+
     def create_decisions(
         self,
         target_symbols: list[str],
         account_state: AccountState,
+        current_moment: datetime,
         current_candle_data: dict[str, float],
         current_indicators: dict[str, float],
         scribbles: dict[Any, Any],
         new_decisions: dict[str, dict[OrderType, Decision]],
     ):
-        pass
+        code_field = "_compiled_decision_script"
+        try:
+            code: CodeType = getattr(self, code_field)
+        except AttributeError:
+            code = compile(self.decision_script, "<string>", "exec")
+            setattr(self, code_field, code)
+
+        namespace = {
+            "target_symbols": target_symbols,
+            "current_moment": current_moment,
+            "current_candle_data": current_candle_data,
+            "current_indicators": current_indicators,
+            "account_state": account_state,
+            "scribbles": scribbles,
+            "decisions": new_decisions,
+        }
+        exec(code, namespace)
+
+
+class SavedStrategies(BaseModel):
+    all: list[SavedStrategy]
 
 
 class SolieConfig:
     def __init__(self):
-        self.fixed_strategies: list[FixedStrategy] = []
+        self.strategies: list[Strategy] = []
 
-    def add_strategy(self, strategy: FixedStrategy):
-        self.fixed_strategies.append(strategy)
+    def add_strategy(self, strategy: Strategy):
+        self.strategies.append(strategy)

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 import pandas as pd
@@ -5,13 +6,13 @@ import pandas_ta as ta
 from solie import (
     AccountState,
     Decision,
-    FixedStrategy,
     OrderType,
     PositionDirection,
+    Strategy,
 )
 
 
-class SilentStrategy(FixedStrategy):
+class SilentStrategy(Strategy):
     def create_indicators(
         self,
         target_symbols: list[str],
@@ -24,6 +25,7 @@ class SilentStrategy(FixedStrategy):
         self,
         target_symbols: list[str],
         account_state: AccountState,
+        current_moment: datetime,
         current_candle_data: dict[str, float],
         current_indicators: dict[str, float],
         scribbles: dict[Any, Any],
@@ -32,15 +34,15 @@ class SilentStrategy(FixedStrategy):
         pass
 
 
-class ExampleStrategy(FixedStrategy):
+class ExampleStrategy(Strategy):
     def create_indicators(
         self,
         target_symbols: list[str],
         candle_data: pd.DataFrame,
         new_indicators: dict[str, pd.Series],
     ):
-        short_period = 180
-        long_period = 720
+        short_period = 90
+        long_period = 360
 
         for symbol in target_symbols:
             # Get candle data
@@ -50,8 +52,8 @@ class ExampleStrategy(FixedStrategy):
             # Price scale indicators
             price_sma_one: pd.Series = ta.sma(close_sr, short_period)  # type:ignore
             price_sma_two: pd.Series = ta.sma(close_sr, long_period)  # type:ignore
-            new_indicators[f"{symbol}/PRICE/SMA_ONE(#00BBFF)"] = price_sma_one
-            new_indicators[f"{symbol}/PRICE/SMA_TWO(#FF6666)"] = price_sma_two
+            new_indicators[f"{symbol}/PRICE/SMA_ONE(#00FFA6)"] = price_sma_one
+            new_indicators[f"{symbol}/PRICE/SMA_TWO(#C261FF)"] = price_sma_two
 
             # Volume scale indicators
             volume_sma_one: pd.Series = ta.sma(volume_sr, short_period * 2)  # type:ignore
@@ -68,6 +70,7 @@ class ExampleStrategy(FixedStrategy):
         self,
         target_symbols: list[str],
         account_state: AccountState,
+        current_moment: datetime,
         current_candle_data: dict[str, float],
         current_indicators: dict[str, float],
         scribbles: dict[Any, Any],
@@ -78,8 +81,8 @@ class ExampleStrategy(FixedStrategy):
 
         for symbol in target_symbols:
             _current_price = current_candle_data[f"{symbol}/CLOSE"]
-            price_sma_one = current_indicators[f"{symbol}/PRICE/SMA_ONE(#00BBFF)"]
-            price_sma_two = current_indicators[f"{symbol}/PRICE/SMA_TWO(#FF6666)"]
+            price_sma_one = current_indicators[f"{symbol}/PRICE/SMA_ONE(#00FFA6)"]
+            price_sma_two = current_indicators[f"{symbol}/PRICE/SMA_TWO(#C261FF)"]
 
             position = account_state.positions[symbol]
 
@@ -109,6 +112,3 @@ class ExampleStrategy(FixedStrategy):
                     new_decisions[symbol][OrderType.NOW_BUY] = Decision(
                         margin=position.margin + acquire_ratio * wallet_balance
                     )
-
-
-__all__ = ["FixedStrategy", "SilentStrategy"]

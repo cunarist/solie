@@ -6,9 +6,9 @@ from PySide6 import QtGui, QtWidgets
 from solie.common import PACKAGE_PATH, outsource, spawn
 from solie.overlay import StrategyBasicInput, StrategyDevelopInput
 from solie.utility import (
-    FixedStrategy,
     RiskLevel,
-    Strategies,
+    SavedStrategies,
+    SavedStrategy,
     Strategy,
     create_strategy_code_name,
 )
@@ -28,11 +28,11 @@ class Strategiest:
 
         # ■■■■■ remember and display ■■■■■
 
-        self.soft_strategies: Strategies
-        self.strategies: list[Strategy | FixedStrategy] = []
+        self.saved_strategies: SavedStrategies
+        self.strategies: list[Strategy] = []
         self.strategy_cards: list[QtWidgets.QGroupBox] = []
 
-        self.before_selections: dict[str, Strategy | FixedStrategy] = {}
+        self.before_selections: dict[str, Strategy] = {}
 
         iconpath = PACKAGE_PATH / "static" / "icon"
         self.red_pixmap = QtGui.QPixmap()
@@ -59,35 +59,37 @@ class Strategiest:
         filepath = self.workerpath / "soft_strategies.json"
         if await aiofiles.os.path.isfile(filepath):
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
-                self.soft_strategies = Strategies.model_validate_json(await file.read())
+                self.saved_strategies = SavedStrategies.model_validate_json(
+                    await file.read()
+                )
         else:
-            first_strategy = Strategy(
+            first_strategy = SavedStrategy(
                 code_name="SLIESS",
                 readable_name="Sample Strategy",
                 description="Not for real investment."
                 + " This strategy is only for demonstration purposes.",
             )
-            filepath = PACKAGE_PATH / "static" / "sample_indicators_script.txt"
+            filepath = PACKAGE_PATH / "static" / "sample_indicator_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 read_data = await file.read()
-                first_strategy.indicators_script = read_data
+                first_strategy.indicator_script = read_data
             filepath = PACKAGE_PATH / "static" / "sample_decision_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 read_data = await file.read()
                 first_strategy.decision_script = read_data
-            self.soft_strategies = Strategies(all=[first_strategy])
+            self.saved_strategies = SavedStrategies(all=[first_strategy])
 
         self._combine_strategies()
 
     def _combine_strategies(self):
-        soft_strategies = self.soft_strategies.all
-        fixed_strategies = self.window.config.fixed_strategies
+        soft_strategies = self.saved_strategies.all
+        fixed_strategies = self.window.config.strategies
         self.strategies = fixed_strategies + soft_strategies
 
     async def save_strategies(self):
         filepath = self.workerpath / "soft_strategies.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-            await file.write(self.soft_strategies.model_dump_json(indent=2))
+            await file.write(self.saved_strategies.model_dump_json(indent=2))
 
     async def display_strategies(self):
         self.window.comboBox_2.clear()
@@ -137,7 +139,7 @@ class Strategiest:
             card_layout.addItem(spacer)
 
             # Allow editing only when this is not a fixed strategy.
-            if isinstance(strategy, FixedStrategy):
+            if not isinstance(strategy, SavedStrategy):
                 fixed_button = QtWidgets.QPushButton("Fixed")
                 fixed_button.setEnabled(False)
                 card_layout.addWidget(fixed_button)
@@ -186,7 +188,7 @@ class Strategiest:
                 if answer == 0:
                     return
                 await self.remember_strategy_selections()
-                self.soft_strategies.all.remove(strategy)
+                self.saved_strategies.all.remove(strategy)
                 self._combine_strategies()
                 spawn(self.display_strategies())
                 spawn(self.save_strategies())
@@ -199,7 +201,7 @@ class Strategiest:
                 await self.remember_strategy_selections()
                 duplicated = strategy.model_copy(deep=True)
                 duplicated.code_name = create_strategy_code_name()
-                self.soft_strategies.all.append(duplicated)
+                self.saved_strategies.all.append(duplicated)
                 self._combine_strategies()
                 spawn(self.display_strategies())
                 spawn(self.save_strategies())
@@ -210,10 +212,10 @@ class Strategiest:
 
             async def job_ss(strategy=strategy):
                 await self.remember_strategy_selections()
-                original_index = self.soft_strategies.all.index(strategy)
+                original_index = self.saved_strategies.all.index(strategy)
                 after_index = original_index + 1
-                self.soft_strategies.all.pop(original_index)
-                self.soft_strategies.all.insert(after_index, strategy)
+                self.saved_strategies.all.pop(original_index)
+                self.saved_strategies.all.insert(after_index, strategy)
                 self._combine_strategies()
                 spawn(self.display_strategies())
                 spawn(self.save_strategies())
@@ -225,10 +227,10 @@ class Strategiest:
 
             async def job_us(strategy=strategy):
                 await self.remember_strategy_selections()
-                original_index = self.soft_strategies.all.index(strategy)
+                original_index = self.saved_strategies.all.index(strategy)
                 after_index = original_index - 1
-                self.soft_strategies.all.pop(original_index)
-                self.soft_strategies.all.insert(after_index, strategy)
+                self.saved_strategies.all.pop(original_index)
+                self.saved_strategies.all.insert(after_index, strategy)
                 self._combine_strategies()
                 spawn(self.display_strategies())
                 spawn(self.save_strategies())
@@ -240,8 +242,8 @@ class Strategiest:
 
     async def add_blank_strategy(self):
         await self.remember_strategy_selections()
-        new_strategy = Strategy(code_name=create_strategy_code_name())
-        self.soft_strategies.all.append(new_strategy)
+        new_strategy = SavedStrategy(code_name=create_strategy_code_name())
+        self.saved_strategies.all.append(new_strategy)
         self._combine_strategies()
         await self.display_strategies()
         await self.restore_strategy_selections()
