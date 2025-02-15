@@ -467,7 +467,7 @@ class GraphLines:
         # asset with unrealized profit
         sr = asset_record["RESULT_ASSET"]
         if len(sr) >= 2:
-            sr = sr.resample("10S").ffill()
+            sr = sr.resample("10s").ffill()
         unrealized_changes_sr = unrealized_changes.reindex(sr.index)
         sr = sr * (1 + unrealized_changes_sr)
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9 + 5

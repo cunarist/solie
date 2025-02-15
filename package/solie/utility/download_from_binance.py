@@ -197,15 +197,15 @@ def fill_holes_with_aggtrades(
 
         if can_write:
             column = f"{symbol}/OPEN"
-            recent_candle_data.loc[fill_moment, column] = open_price
+            recent_candle_data.loc[fill_moment, column] = np.float32(open_price)  # type:ignore
             column = f"{symbol}/HIGH"
-            recent_candle_data.loc[fill_moment, column] = high_price
+            recent_candle_data.loc[fill_moment, column] = np.float32(high_price)  # type:ignore
             column = f"{symbol}/LOW"
-            recent_candle_data.loc[fill_moment, column] = low_price
+            recent_candle_data.loc[fill_moment, column] = np.float32(low_price)  # type:ignore
             column = f"{symbol}/CLOSE"
-            recent_candle_data.loc[fill_moment, column] = close_price
+            recent_candle_data.loc[fill_moment, column] = np.float32(close_price)  # type:ignore
             column = f"{symbol}/VOLUME"
-            recent_candle_data.loc[fill_moment, column] = sum_volume
+            recent_candle_data.loc[fill_moment, column] = np.float32(sum_volume)  # type:ignore
 
         fill_moment += timedelta(seconds=10)
 

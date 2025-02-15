@@ -32,12 +32,12 @@ def make_indicators(
 ) -> pd.DataFrame:
     # ■■■■■ interpolate nans ■■■■■
 
-    candle_data = candle_data.interpolate()  # type:ignore
+    candle_data = candle_data.interpolate()
 
     # ■■■■■ make dummy row to avoid ta error with all nan series ■■■■■
 
     if len(candle_data) > 0:
-        dummy_index = candle_data.index[-1] + timedelta(seconds=1)  # type:ignore
+        dummy_index = candle_data.index[-1] + timedelta(seconds=1)
     else:
         dummy_index = datetime.fromtimestamp(0, tz=timezone.utc)
 

@@ -8,7 +8,7 @@ import pandas as pd
 from .data_models import AccountState, Position, PositionDirection
 
 
-def create_empty_candle_data(target_symbols: list[str]):
+def create_empty_candle_data(target_symbols: list[str]) -> pd.DataFrame:
     column_pairs = product(
         target_symbols,
         ("OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"),
@@ -53,7 +53,7 @@ def create_empty_asset_record():
     )
 
 
-def create_empty_unrealized_changes():
+def create_empty_unrealized_changes() -> pd.Series:
     return pd.Series(index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32)
 
 

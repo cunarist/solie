@@ -285,13 +285,13 @@ class Simulator:
         # add the right end
         if len(candle_data) > 0:
             last_written_moment = candle_data.index[-1]
-            new_moment = last_written_moment + timedelta(seconds=10)  # type:ignore
+            new_moment = last_written_moment + timedelta(seconds=10)
             new_index = candle_data.index.union([new_moment])
             candle_data = candle_data.reindex(new_index)
 
         if last_asset is not None:
             observed_until = self.account_state.observed_until
-            if len(asset_record) == 0 or asset_record.index[-1] < observed_until:  # type:ignore
+            if len(asset_record) == 0 or asset_record.index[-1] < observed_until:
                 if slice_from < observed_until:
                     asset_record.loc[observed_until, "CAUSE"] = "OTHER"
                     asset_record.loc[observed_until, "RESULT_ASSET"] = last_asset
@@ -399,9 +399,9 @@ class Simulator:
             asset_record = cell.data[range_start:range_end].copy()
 
         auto_trade_mask = asset_record["CAUSE"] == "AUTO_TRADE"
-        asset_changes = asset_record["RESULT_ASSET"].pct_change() + 1
+        asset_changes = asset_record["RESULT_ASSET"].pct_change(fill_method=None) + 1  # type:ignore
         asset_record = asset_record[auto_trade_mask]
-        asset_changes = asset_changes.reindex(asset_record.index).fillna(value=1)
+        asset_changes = asset_changes.reindex(asset_record.index, fill_value=1.0)
         symbol_mask = asset_record["SYMBOL"] == symbol
 
         # trade count
@@ -652,12 +652,12 @@ class Simulator:
             year_indicators = await spawn_blocking(
                 make_indicators,
                 target_symbols=target_symbols,
-                candle_data=year_candle_data[provide_from:calculate_until],  # type:ignore
+                candle_data=year_candle_data[provide_from:calculate_until],
                 indicators_script=indicators_script,
             )
 
             # range cut
-            needed_candle_data = year_candle_data[calculate_from:calculate_until]  # type:ignore
+            needed_candle_data = year_candle_data[calculate_from:calculate_until]
             needed_index: pd.DatetimeIndex = needed_candle_data.index  # type:ignore
             needed_indicators = year_indicators.reindex(needed_index)
 
@@ -862,7 +862,7 @@ class Simulator:
             chunk_asset_record = chunk_asset_record_list[turn]
             # leverage
             chunk_result_asset_sr = chunk_asset_record["RESULT_ASSET"]
-            chunk_asset_shifts = chunk_result_asset_sr.diff()
+            chunk_asset_shifts: pd.Series = chunk_result_asset_sr.diff()
             if len(chunk_asset_shifts) > 0:
                 chunk_asset_shifts.iloc[0] = 0.0
             lazy_chunk_result_asset = chunk_result_asset_sr.shift(periods=1)

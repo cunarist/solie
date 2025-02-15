@@ -176,7 +176,7 @@ class Collector:
             original_index = cell.data.index
             if not cell.data.index.is_unique:
                 unique_index = original_index.drop_duplicates()
-                cell.data = cell.data.reindex(unique_index)  # type:ignore
+                cell.data = cell.data.reindex(unique_index)
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await spawn_blocking(sort_data_frame, cell.data)
 
@@ -282,7 +282,7 @@ class Collector:
                     temp_sr[from_moment] = np.nan
                 if until_moment not in temp_sr.index:
                     temp_sr[until_moment] = np.nan
-                temp_sr = await spawn_blocking(temp_sr.asfreq, "10S")
+                temp_sr = await spawn_blocking(temp_sr.asfreq, "10s")
                 isnan_sr = await spawn_blocking(temp_sr.isna)
                 nan_index = isnan_sr[isnan_sr == 1].index
                 moment_to_fill_from: datetime = nan_index[0]  # type:ignore
@@ -703,7 +703,7 @@ class Collector:
             if collect_from < t.timestamp < collect_to
         ]
 
-        new_values = {}
+        new_values: dict[str, float] = {}
         for symbol in self.window.data_settings.target_symbols:
             symbol_aggregate_trades = [
                 t for t in collected_aggregate_trades if t.symbol == symbol
@@ -737,7 +737,7 @@ class Collector:
 
         async with self.candle_data.write_lock as cell:
             for column_name, new_data_value in new_values.items():
-                cell.data.loc[before_moment, column_name] = new_data_value
+                cell.data.loc[before_moment, column_name] = np.float32(new_data_value)  # type:ignore
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await spawn_blocking(sort_data_frame, cell.data)
 

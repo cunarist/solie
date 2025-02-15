@@ -7,6 +7,6 @@ def combine_candle_data(
 ) -> pd.DataFrame:
     df = prior_df.combine_first(secondary_df)
     df = df.sort_index()
-    df = df.asfreq("10S")
+    df = df.asfreq("10s")
     df = df.astype(np.float32)
     return df
