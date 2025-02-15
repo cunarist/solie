@@ -217,7 +217,7 @@ Variables provided by default are as follows. You can use these without any impo
 - `target_symbols`(`list[str]`): The symbols being observed.
 - `current_moment`(`datetime.datetime`): The current time rounded down to the base time. For example, if the current exact time is 14:03:22.335 on January 3, 2022, then `current_moment` appears as 14:03:20 on January 3, 2022 in the 10-second interval.
 
-- `current_candle_data`(`dict[tuple[str, str], float]`): Only the most recent row is truncated from the observation data recorded up to the current time. Contains price and volume information from the market.
+- `current_candle_data`(`str, float]`): Only the most recent row is truncated from the observation data recorded up to the current time. Contains price and volume information from the market.
 
 - `current_indicators`(`dict[tuple[str, str, str], float]`): Only the most recent row up to the current time is provided. It contains different indicator information depending on the indicators script.
 
