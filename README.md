@@ -19,13 +19,7 @@ Solie connects to Binance, retrieves real-time market and account data, saves it
 
 ### Preparation
 
-First, install [Python](https://www.python.org/). Don't forget to add `python` command to PATH during the installation. You can check that Python is ready with the terminal command below.
-
-```bash
-python --version
-```
-
-Then, install Solie.
+You can install Solie via `pip`. It is recommended to use [`uv`](https://docs.astral.sh/uv/) for modern Python package management and virtual environments.
 
 ```bash
 pip install solie
@@ -33,7 +27,7 @@ pip install solie
 
 ### Running With a Script File
 
-Make a Python script file that has the extension `.py`. Just copy and paste the content below in the file.
+Make a Python script file that has the extension `.py`. Just copy and paste the content below in the file. Solie will start working once you execute the Python script file.
 
 ```python
 import solie
@@ -42,9 +36,9 @@ if __name__ == "__main__":
     solie.bring_to_life()
 ```
 
-Solie will be brought to life once you execute the Python script file.
+For advanced usage, see the `example` folder in the repository.
 
-Note that on Windows, giving the extension `.pyw` to the file allows you to hide the terminal window and only leave the GUI.
+> Note that on Windows, giving the extension `.pyw` to the file allows you to hide the terminal window and only leave the GUI.
 
 ## 🖥️ Available Platforms
 
