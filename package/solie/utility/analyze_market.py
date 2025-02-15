@@ -75,11 +75,15 @@ def make_indicators(
         if not isinstance(column_name, str):
             continue
         column_trio = column_name.split("/")
+        if len(column_trio) != 3:
+            continue
         symbol, category, _ = column_trio
         if symbol not in target_symbols or category not in GRAPH_TYPES:
             continue
         # Validate the indicator format.
         if not isinstance(new_indicator, pd.Series):
+            continue
+        if not pd.api.types.is_numeric_dtype(new_indicator):
             continue
         # Convert each element into strings and make it into a name.
         new_indicator.name = column_name
