@@ -1,8 +1,13 @@
-[tool.uv.sources]
-solie = { workspace = true }
+[project]
+name = "solie-workspace"
+version = "0.1.0"
+dependencies = ["pyright~=1.1.392", "ruff~=0.9.3", "solie"]
 
 [tool.uv.workspace]
-members = ["documentation", "package", "runner"]
+members = ["documentation", "package", "example"]
+
+[tool.uv.sources]
+solie = { workspace = true }
 
 [tool.pyright]
 typeCheckingMode = "standard"

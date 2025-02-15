@@ -1,7 +1,9 @@
+from abc import abstractmethod
 from datetime import datetime
 from enum import Enum
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
+import pandas as pd
 from pydantic import BaseModel
 
 # We use `BaseModel` when parsing, validation, or mutability is needed.
@@ -11,22 +13,6 @@ from pydantic import BaseModel
 class DataSettings(BaseModel):
     asset_token: str
     target_symbols: list[str]
-
-
-class Strategy(BaseModel):
-    code_name: str
-    readable_name: str = "A New Blank Strategy"
-    version: str = "1.0"
-    description: str = "A blank strategy template before being written"
-    risk_level: int = 2  # 2 means high, 1 means middle, 0 means low
-    parallelized_simulation: bool = False
-    chunk_division: int = 30
-    indicators_script: str = "pass"
-    decision_script: str = "pass"
-
-
-class Strategies(BaseModel):
-    all: list[Strategy]
 
 
 class TransactionSettings(BaseModel):
@@ -181,3 +167,41 @@ class VirtualState(BaseModel):
     available_balance: float
     positions: dict[str, VirtualPosition]
     placements: dict[str, dict[OrderType, VirtualPlacement]]
+
+
+class RiskLevel(Enum):
+    LOW = 0
+    MIDDLE = 1
+    HIGH = 2
+
+
+class Strategy(BaseModel):
+    code_name: str
+    readable_name: str = "New Blank Strategy"
+    version: str = "1.0"
+    description: str = "A blank strategy template before being written"
+    risk_level: RiskLevel = RiskLevel.HIGH
+    parallelized_simulation: bool = False
+    chunk_division: int = 30
+
+    @abstractmethod
+    def create_indicators(
+        self,
+        target_symbols: list[str],
+        candle_data: pd.DataFrame,
+        new_indicators: dict[str, pd.Series],
+    ):
+        pass
+
+    @abstractmethod
+    def create_decisions(
+        self,
+        target_symbols: list[str],
+        account_state: AccountState,
+        current_moment: datetime,
+        current_candle_data: dict[str, float],
+        current_indicators: dict[str, float],
+        scribbles: dict[Any, Any],
+        new_decisions: dict[str, dict[OrderType, Decision]],
+    ):
+        pass

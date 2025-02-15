@@ -2,13 +2,12 @@ from .analyze_market import (
     CalculationInput,
     CalculationOutput,
     SimulationError,
-    decide,
+    make_decisions,
     make_indicators,
     simulate_chunk,
 )
 from .api_requester import ApiRequester, ApiRequestError
 from .api_streamer import ApiStreamer
-from .backward_compatibility import examine_data_files
 from .ball import ball_ceil, ball_floor
 from .check_internet import (
     internet_connected,
@@ -31,9 +30,9 @@ from .data_models import (
     OrderType,
     Position,
     PositionDirection,
+    RiskLevel,
     SimulationSettings,
     SimulationSummary,
-    Strategies,
     Strategy,
     TransactionSettings,
     VirtualPlacement,
@@ -64,6 +63,9 @@ from .time_axis_item import TimeAxisItem
 from .timing import DurationRecorder, to_moment
 from .user_settings import (
     DataSettings,
+    SavedStrategies,
+    SavedStrategy,
+    SolieConfig,
     read_data_settings,
     read_datapath,
     save_data_settings,
@@ -94,10 +96,13 @@ __all__ = [
     "Position",
     "PositionDirection",
     "RWLock",
+    "RiskLevel",
+    "SavedStrategies",
+    "SavedStrategy",
     "SimulationError",
     "SimulationSettings",
     "SimulationSummary",
-    "Strategies",
+    "SolieConfig",
     "Strategy",
     "SyntaxHighlighter",
     "TimeAxisItem",
@@ -113,15 +118,14 @@ __all__ = [
     "create_empty_candle_data",
     "create_empty_unrealized_changes",
     "create_strategy_code_name",
-    "decide",
     "download_aggtrade_data",
-    "examine_data_files",
     "fill_holes_with_aggtrades",
     "format_numeric",
     "internet_connected",
     "is_internet_checked",
     "is_left_version_higher",
     "list_to_dict",
+    "make_decisions",
     "make_indicators",
     "monitor_internet",
     "monitor_internet",

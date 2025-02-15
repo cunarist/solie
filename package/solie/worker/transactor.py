@@ -32,9 +32,9 @@ from solie.utility import (
     create_empty_account_state,
     create_empty_asset_record,
     create_empty_unrealized_changes,
-    decide,
     internet_connected,
     list_to_dict,
+    make_decisions,
     make_indicators,
     slice_deque,
     sort_data_frame,
@@ -89,10 +89,7 @@ class Transactor:
         self.asset_record = RWLock(create_empty_asset_record())
         self.auto_order_record = RWLock(
             pd.DataFrame(
-                columns=[
-                    "SYMBOL",
-                    "ORDER_ID",
-                ],
+                columns=["SYMBOL", "ORDER_ID"],
                 index=pd.DatetimeIndex([], tz="UTC"),
             )
         )
@@ -760,7 +757,7 @@ class Transactor:
 
         symbol = self.viewing_symbol
         strategy_index = self.transaction_settings.strategy_index
-        strategy = team.strategist.strategies.all[strategy_index]
+        strategy = team.strategist.strategies[strategy_index]
 
         should_draw_frequently = self.should_draw_frequently
         if frequent and not should_draw_frequently:
@@ -889,13 +886,11 @@ class Transactor:
 
         # ■■■■■ draw custom lines ■■■■■
 
-        indicators_script = strategy.indicators_script
-
         indicators = await spawn_blocking(
             make_indicators,
+            strategy=strategy,
             target_symbols=[self.viewing_symbol],
             candle_data=candle_data_original,
-            indicators_script=indicators_script,
         )
 
         indicators = indicators[slice_from:slice_until]
@@ -1066,9 +1061,7 @@ class Transactor:
         target_symbols = self.window.data_settings.target_symbols
 
         strategy_index = self.transaction_settings.strategy_index
-        strategy = team.strategist.strategies.all[strategy_index]
-
-        indicators_script = strategy.indicators_script
+        strategy = team.strategist.strategies[strategy_index]
 
         # Split the candle data by symbol before calculation to reduct UI lags
         columns = [str(s) for s in cell.data.columns]
@@ -1078,10 +1071,9 @@ class Transactor:
             coroutines.append(
                 spawn_blocking(
                     make_indicators,
+                    strategy=strategy,
                     target_symbols=[symbol],
                     candle_data=candle_data[chosen_columns],
-                    indicators_script=indicators_script,
-                    only_last_index=True,
                 )
             )
             await sleep(0.0)
@@ -1101,15 +1093,14 @@ class Transactor:
             if k != "index"
         }
 
-        decision_script = strategy.decision_script
-        decisions = decide(
+        decisions = make_decisions(
+            strategy=strategy,
             target_symbols=target_symbols,
             current_moment=current_moment,
             current_candle_data=current_candle_data,
             current_indicators=current_indicators,
             account_state=self.account_state,
             scribbles=self.scribbles,
-            decision_script=decision_script,
         )
 
         # ■■■■■ Record task duration ■■■■■

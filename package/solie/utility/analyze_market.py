@@ -4,7 +4,6 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 from itertools import product
 from multiprocessing.managers import ListProxy
-from types import CodeType
 from typing import Any, NamedTuple
 
 import numpy as np
@@ -17,6 +16,7 @@ from .data_models import (
     OrderType,
     Position,
     PositionDirection,
+    Strategy,
     VirtualPlacement,
     VirtualState,
 )
@@ -25,9 +25,9 @@ GRAPH_TYPES = ["PRICE", "VOLUME", "ABSTRACT"]
 
 
 def make_indicators(
+    strategy: Strategy,
     target_symbols: list[str],
     candle_data: pd.DataFrame,
-    indicators_script: str | CodeType,
     only_last_index: bool = False,
 ) -> pd.DataFrame:
     # ■■■■■ interpolate nans ■■■■■
@@ -61,12 +61,11 @@ def make_indicators(
 
     # ■■■■■ make individual indicators ■■■■■
 
-    namespace = {
-        "target_symbols": target_symbols,
-        "candle_data": candle_data,
-        "new_indicators": new_indicators,
-    }
-    exec(indicators_script, namespace)
+    strategy.create_indicators(
+        target_symbols=target_symbols,
+        candle_data=candle_data,
+        new_indicators=new_indicators,
+    )
 
     # ■■■■■ concatenate individual indicators into one ■■■■■
 
@@ -101,45 +100,43 @@ def make_indicators(
         return indicators
 
 
-def decide(
+def make_decisions(
+    strategy: Strategy,
     target_symbols: list[str],
     current_moment: datetime,
     current_candle_data: dict[str, float],
     current_indicators: dict[str, float],
     account_state: AccountState,
     scribbles: dict[Any, Any],
-    decision_script: str | CodeType,
 ) -> dict[str, dict[OrderType, Decision]]:
     # ■■■■■ decision template ■■■■■
 
-    decisions: dict[str, dict[OrderType, Decision]] = {}
+    new_decisions: dict[str, dict[OrderType, Decision]] = {}
     for symbol in target_symbols:
-        decisions[symbol] = {}
+        new_decisions[symbol] = {}
 
     # ■■■■■ write decisions ■■■■■
 
-    namespace = {
-        "target_symbols": target_symbols,
-        "current_moment": current_moment,
-        "current_candle_data": current_candle_data,
-        "current_indicators": current_indicators,
-        "account_state": account_state,
-        "scribbles": scribbles,
-        "decisions": decisions,
-    }
-
-    exec(decision_script, namespace)
+    strategy.create_decisions(
+        target_symbols=target_symbols,
+        account_state=account_state,
+        current_moment=current_moment,
+        current_candle_data=current_candle_data,
+        current_indicators=current_indicators,
+        scribbles=scribbles,
+        new_decisions=new_decisions,
+    )
 
     # ■■■■■ return decision ■■■■■
 
     blank_symbols: list[str] = []
-    for symbol, symbol_decisions in decisions.items():
+    for symbol, symbol_decisions in new_decisions.items():
         if len(symbol_decisions) == 0:
             blank_symbols.append(symbol)
     for blank_symbol in blank_symbols:
-        decisions.pop(blank_symbol)
+        new_decisions.pop(blank_symbol)
 
-    return decisions
+    return new_decisions
 
 
 class SimulationError(Exception):
@@ -152,6 +149,7 @@ class OrderRole(Enum):
 
 
 class CalculationInput(NamedTuple):
+    strategy: Strategy
     progress_list: ListProxy
     target_progress: int
     target_symbols: list[str]
@@ -163,7 +161,6 @@ class CalculationInput(NamedTuple):
     chunk_scribbles: dict[Any, Any]
     chunk_account_state: AccountState
     chunk_virtual_state: VirtualState
-    decision_script: str
 
 
 class CalculationOutput(NamedTuple):
@@ -183,6 +180,7 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
 
     # ■■■■■ get data ■■■■■
 
+    strategy = calculation_input.strategy
     progress_list = calculation_input.progress_list
     target_progress = calculation_input.target_progress
     target_symbols = calculation_input.target_symbols
@@ -194,7 +192,6 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
     chunk_scribbles = calculation_input.chunk_scribbles
     chunk_account_state = calculation_input.chunk_account_state
     chunk_virtual_state = calculation_input.chunk_virtual_state
-    decision_script = calculation_input.decision_script
 
     # ■■■■■ basic values ■■■■■
 
@@ -223,7 +220,6 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
     # ■■■■■ actual loop calculation ■■■■■
 
     calculation_index_length = len(calculation_index_ar)
-    decision_script_compiled = compile(decision_script, "<string>", "exec")
     first_calculation_moment = calculation_index_ar[0]
 
     for cycle in range(calculation_index_length):
@@ -673,14 +669,14 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
             if k != "index"
         }
 
-        decisions = decide(
+        decisions = make_decisions(
+            strategy=strategy,
             target_symbols=target_symbols,
             current_moment=current_moment,
             current_candle_data=current_candle_data,
             current_indicators=current_indicators,
             account_state=chunk_account_state.model_copy(deep=True),
             scribbles=chunk_scribbles,
-            decision_script=decision_script_compiled,
         )
 
         for symbol_key, symbol_decisions in decisions.items():

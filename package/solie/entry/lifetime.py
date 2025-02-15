@@ -5,6 +5,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtGui, QtWidgets
 
 from solie.common import PACKAGE_NAME, PACKAGE_PATH, spawn
+from solie.utility import SolieConfig
 from solie.widget import AskPopup, OverlayPopup
 from solie.window import Window
 from solie.worker import (
@@ -19,7 +20,7 @@ from solie.worker import (
 logger = logging.getLogger(__name__)
 
 
-async def live(app: QtWidgets.QApplication):
+async def live(app: QtWidgets.QApplication, config: SolieConfig):
     staticpath = PACKAGE_PATH / "static"
     QtGui.QFontDatabase.addApplicationFont(str(staticpath / "source_code_pro.ttf"))
     QtGui.QFontDatabase.addApplicationFont(str(staticpath / "notosans_regular.ttf"))
@@ -48,7 +49,7 @@ async def live(app: QtWidgets.QApplication):
     close_event = Event()
     scheduler = AsyncIOScheduler(timezone="UTC")
 
-    window = Window(close_event)
+    window = Window(close_event, config)
     window.setPalette(dark_palette)
     AskPopup.install_window(window)
     OverlayPopup.install_window(window)

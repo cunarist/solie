@@ -13,7 +13,7 @@ for symbol in target_symbols:
     position = account_state.positions[symbol]
 
     scribbles["MY_KEY"] = True  # Remember something
-    MY_KEY = scribbles.get("MY_KEY", False)  # Get it later
+    my_value = scribbles.get("MY_KEY", False)  # Get it later
 
     if position.direction == PositionDirection.NONE:
         if price_sma_one > price_sma_two:
