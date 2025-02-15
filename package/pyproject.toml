@@ -4,7 +4,7 @@ version = "8.8.0"
 description = "GUI trading bot designed for targeting the futures markets of Binance"
 authors = [{ name = "Cunarist", email = "cunarist@gmail.com" }]
 readme = "README.md"
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.10,<4.0"
 dependencies = [
     "numpy~=1.26.2",
     "pandas~=2.2.3",
