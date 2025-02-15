@@ -1,30 +1,10 @@
-from solie import RiskLevel, SolieConfig, bring_to_life
+from solie import bring_to_life
 
-from usage import ExampleStrategy, SilentStrategy
+from usage import create_solie_config
 
 if __name__ == "__main__":
     # Optionally provide configuration.
-    config = SolieConfig()
-
-    # Add a strategy.
-    strategy = SilentStrategy(
-        code_name="SILENT",
-        readable_name="Silent Strategy",
-        version="0.1",
-        description="A silent strategy that does nothing",
-        risk_level=RiskLevel.LOW,
-    )
-    config.add_strategy(strategy)
-
-    # Add a strategy.
-    strategy = ExampleStrategy(
-        code_name="EXAMPL",
-        readable_name="Fixed Strategy",
-        version="1.2",
-        description="A fixed strategy for demonstration",
-        risk_level=RiskLevel.HIGH,
-    )
-    config.add_strategy(strategy)
+    config = create_solie_config()
 
     # Run Solie and show the window.
     bring_to_life(config)

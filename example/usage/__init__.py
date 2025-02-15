@@ -8,6 +8,8 @@ from solie import (
     Decision,
     OrderType,
     PositionDirection,
+    RiskLevel,
+    SolieConfig,
     Strategy,
 )
 
@@ -112,3 +114,27 @@ class ExampleStrategy(Strategy):
                     new_decisions[symbol][OrderType.NOW_BUY] = Decision(
                         margin=position.margin + acquire_ratio * wallet_balance
                     )
+
+
+def create_solie_config() -> SolieConfig:
+    config = SolieConfig()
+
+    strategy = SilentStrategy(
+        code_name="SILENT",
+        readable_name="Silent Strategy",
+        version="0.1",
+        description="A silent strategy that does nothing",
+        risk_level=RiskLevel.LOW,
+    )
+    config.add_strategy(strategy)
+
+    strategy = ExampleStrategy(
+        code_name="EXAMPL",
+        readable_name="Fixed Strategy",
+        version="1.2",
+        description="A fixed strategy for demonstration",
+        risk_level=RiskLevel.HIGH,
+    )
+    config.add_strategy(strategy)
+
+    return config
