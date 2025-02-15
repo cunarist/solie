@@ -67,9 +67,6 @@ def make_indicators(
         "new_indicators": new_indicators,
     }
     exec(indicators_script, namespace)
-    new_indicators = {
-        k: v for k, v in new_indicators.items() if isinstance(v, pd.Series)
-    }
 
     # ■■■■■ concatenate individual indicators into one ■■■■■
 
@@ -81,6 +78,9 @@ def make_indicators(
             continue
         symbol, category, _ = column_name
         if symbol not in target_symbols or category not in INDICATOR_CATEGORIES:
+            continue
+        # Validate the indicator format.
+        if not isinstance(new_indicator, pd.Series):
             continue
         # Convert each element into strings and make it into a name.
         indicator_name = "/".join(str(s) for s in column_name)
