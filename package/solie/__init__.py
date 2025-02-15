@@ -4,6 +4,7 @@ from .utility import (
     Decision,
     OrderType,
     PositionDirection,
+    RiskLevel,
     SolieConfig,
     Strategy,
 )
@@ -13,6 +14,7 @@ __all__ = [
     "Decision",
     "OrderType",
     "PositionDirection",
+    "RiskLevel",
     "SolieConfig",
     "Strategy",
     "bring_to_life",
