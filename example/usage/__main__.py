@@ -21,7 +21,7 @@ if __name__ == "__main__":
         code_name="EXAMPL",
         readable_name="Fixed Strategy",
         version="1.1",
-        description="A Fixed Strategy for Demonstration",
+        description="A fixed strategy for demonstration",
         risk_level=RiskLevel.HIGH,
     )
     config.add_strategy(strategy)
