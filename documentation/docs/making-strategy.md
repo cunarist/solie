@@ -232,11 +232,11 @@ Variables provided by default are as follows. You can use these without any impo
 You can extract a `Series` column from the candle `DataFrame` like this.
 
 ```python
-open_price = current_candle_data[str(("BTCUSDT", "OPEN"))]
-high_price = current_candle_data[str(("BTCUSDT", "HIGH"))]
-low_price = current_candle_data[str(("BTCUSDT", "LOW"))]
-close_price = current_candle_data[str(("BTCUSDT", "CLOSE"))]
-sum_volume = current_candle_data[str(("BTCUSDT", "VOLUME"))]
+open_price = current_candle_data[("BTCUSDT/OPEN")]
+high_price = current_candle_data[("BTCUSDT/HIGH")]
+low_price = current_candle_data[("BTCUSDT/LOW")]
+close_price = current_candle_data[("BTCUSDT/CLOSE")]
+sum_volume = current_candle_data[("BTCUSDT/VOLUME")]
 ```
 
 `AccountState` object provided by the API has a structure like below.
