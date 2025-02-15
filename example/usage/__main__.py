@@ -26,5 +26,5 @@ if __name__ == "__main__":
     )
     config.add_strategy(strategy)
 
-    # Run Solie and bring out the window.
+    # Run Solie and show the window.
     bring_to_life(config)
