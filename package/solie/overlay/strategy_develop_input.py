@@ -30,7 +30,7 @@ class StrategyDevelopInput(BaseOverlay):
 
         # title
         detail_text = QtWidgets.QLabel()
-        detail_text.setText("Indicators script")
+        detail_text.setText("Indicator script")
         detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         column_layout.addWidget(detail_text)
 
@@ -99,7 +99,7 @@ class StrategyDevelopInput(BaseOverlay):
 
         # sample script button
         async def job_as():
-            # indicators script
+            # indicator script
             filepath = PACKAGE_PATH / "static" / "sample_indicator_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 script = await file.read()

@@ -2,14 +2,22 @@
 
 Python, known for its straightforward syntax and widespread popularity, is used for creating customized strategies.
 
+!!! info
+
+    Some variable types in this guide come from specific libraries, including both standard and external ones.
+
+    - `solie`: `AccountState`, `Decision`, `Position`, `PositionDirection`, `OrderType`, `OpenOrder`,
+    - `pandas`: `Series`, `DataFrame`
+    - `datetime`: `datetime`
+
 ## 📚 Basic Knowledge
 
-`Symbol` refers to a market symbol that binds trading targets. A representative example is `BTCUSDT`.
+"Symbol" refers to a market symbol that binds trading targets. A representative example is `BTCUSDT`.
 ![](assets/example_020.png)
 
 ### Creating Your Own Strategy
 
-You can create your own strategy in the `Strategize` tab. Set strategy properties by clicking `Edit basic info` button.
+You can create your own strategy in the "Strategize" tab. Set strategy properties by clicking "Edit basic info" button.
 ![](assets/example_001.png)
 
 ### Script Editor
@@ -21,7 +29,7 @@ If writing a script from scratch is burdensome, it`s a good idea to start with a
 You can indent or outdent multiple lines at once while writing a script. Select all the lines you want and press `Tab` or `Shift+Tab`.
 ![](assets/example_021.png)
 
-If the script contains some broken code, a function that is executed periodically, such as graph update, repeatedly generates an error. In this case, the graph may not be updated or the simulation calculation may stop quickly. In that case, find out the cause in the `Logs` inside the `Manage` tab.
+If the script contains some broken code, a function that is executed periodically, such as graph update, repeatedly generates an error. In this case, the graph may not be updated or the simulation calculation may stop quickly. In that case, find out the cause in the "Logs" inside the "Manage" tab.
 
 ### Strategy's Basic Info
 
@@ -34,25 +42,25 @@ It is recommended to set the `Chunk division` of parallel computation appropriat
 Basic simulation calculations cover the entire year, which is a slow operation that takes minutes to tens of minutes. If you want to experiment with that strategy a little faster, try performing a temporary calculation on the visible range.
 ![](assets/example_030.png)
 
-## 📊 Writing the Indicators Script
+## 📊 Writing the Indicator Script
 
-Indicators script is used to create indicators used for graph display and decision.
+Indicator script is used to create indicators used for graph display and decision.
 
 ### API
 
 Variables provided by default are as follows. You can use these without any import statements.
 
 - `target_symbols`(`list[str]`): The symbols being observed.
-- `candle_data`(`pandas.DataFrame`): Candle data. Extra 28 days of data before desired calculation range is included.
-- `new_indicators`(`dict[str, pandas.Series]`): An object that holds newly created indicators.
+- `candle_data`(`DataFrame`): Candle data. Extra 28 days of data before desired calculation range is included.
+- `new_indicators`(`dict[str, Series]`): An object that holds newly created indicators.
 
 ### Basic Syntax
 
-Candle data exists internally in the form of a tabular `pandas.DataFrame`.
+Candle data exists internally in the form of a tabular `DataFrame`.
 
 ```
                           MATICUSDT                        LTCUSDT
-                          Close High  Low   Open  Volume   Close  High   Low    Open   Volume
+                          CLOSE HIGH  LOW   OPEN  VOLUME   CLOSE  HIGH   LOW    OPEN   VOLUME
 2022-02-24 15:28:30+00:00 1.339 1.339 1.338 1.339 31966.0  96.98  96.99  96.85  96.93  669.532
 2022-02-24 15:28:40+00:00 1.338 1.339 1.337 1.339 47233.0  96.89  97.00  96.85  96.99  395.509
 2022-02-24 15:28:50+00:00 1.339 1.340 1.338 1.338 49107.0  96.97  96.99  96.88  96.89  803.709
@@ -76,7 +84,7 @@ Candle data exists internally in the form of a tabular `pandas.DataFrame`.
 2022-02-26 01:29:10+00:00 1.572 1.573 1.572 1.573 3848.0   112.73 112.76 112.72 112.76 67.306
 ```
 
-You can extract partial `pandas.Series` data from `candle_data`.
+You can extract partial `Series` from `candle_data` which is a `DataFrame`.
 
 ```python
 import pandas as pd
@@ -89,7 +97,7 @@ for symbol in target_symbols:
     volume_sr: pd.Series = candle_data[f"{symbol}/VOLUME"]
 ```
 
-The `pandas.Series` object has the following form. A one-dimensional array containing values ​​over time.
+The `Series` object has the following form. A one-dimensional array containing values ​​over time.
 
 ```
 2020-01-01 00:00:00+00:00 129.11
@@ -125,7 +133,7 @@ for symbol in target_symbols:
     # 60 candles represent 600 seconds(10 minutes)
 ```
 
-Once you have created the indicators, simply put them in a `dict` object called `new_indicators`. After that, multiple `pandas.Series` objects inside this object are merged into a single indicators object. After writing this and saving it, you will see the indicator in the graph view. It can also be used in strategic decisions.
+Once you have created the indicators, simply put them in a `dict[str, Series]` object called `new_indicators`. After that, multiple `Series` objects inside this object are merged into a single indicators object. After writing this and saving it, you will see the indicator in the graph view. It can also be used in strategic decisions.
 
 ```python
 import pandas_ta as ta
@@ -161,7 +169,7 @@ for symbol in target_symbols:
 ```
 
 ![](assets/example_012.png)
-Up to this point, indicators generation has been completed using the `pandas.Series` object and the `ta` module. However, the flexibility of the way metrics are generated by means of coding comes from now on. The `pandas.Series` object can be manipulated in a variety of ways, including addition, subtraction, division, and conditional transformations. The `pandas` official documentation[🔗](https://pandas.pydata.org/docs/) has a more detailed explanation.
+Up to this point, indicators generation has been completed using the `Series` object and the `pandas-ta` module. However, the flexibility of the way metrics are generated by means of coding comes from now on. The `Series` object can be manipulated in a variety of ways, including addition, subtraction, division, and conditional transformations. The `pandas` official documentation[🔗](https://pandas.pydata.org/docs/) has a more detailed explanation.
 
 Below is the code that creates the average of two different moving averages.
 
@@ -199,7 +207,7 @@ Below is the code that simply creates an indicator that delays the closing price
 ```python
 for symbol in target_symbols:
     close_sr = candle_data[f"{symbol}/CLOSE"]
-    shifted_sr = close_sr.shift(60) # `pandas.Series` method
+    shifted_sr = close_sr.shift(60) # `Series.shift` method
     new_indicators[f"{symbol}/ABSTRACT/SHIFTED"] = shifted_sr
 ```
 
@@ -214,11 +222,11 @@ The decision script is executed repeatedly every 10 seconds, which is the time l
 Variables provided by default are as follows. You can use these without any import statements.
 
 - `target_symbols`(`list[str]`): The symbols being observed.
-- `current_moment`(`datetime.datetime`): The current time rounded down to the base time. For example, if the current exact time is 14:03:22.335 on January 3, 2022, then `current_moment` appears as 14:03:20 on January 3, 2022 in the 10-second interval.
+- `current_moment`(`datetime`): The current time rounded down to the base time. For example, if the current exact time is 14:03:22.335 on January 3, 2022, then `current_moment` appears as 14:03:20 on January 3, 2022 in the 10-second interval.
 
 - `current_candle_data`(`dict[str, float]`): Only the most recent row is truncated from the observation data recorded up to the current time. Contains price and volume information from the market.
 
-- `current_indicators`(`dict[str, float]`): Only the most recent row up to the current time is provided. It contains different indicator information depending on the indicators script.
+- `current_indicators`(`dict[str, float]`): Only the most recent row up to the current time is provided. It contains different indicator information depending on the indicator script.
 
 - `account_state`(`AccountState`): Contains current account status information. An object for reading. Writing something inside has no effect.
 
@@ -305,21 +313,21 @@ There are 12 possible order commands, each corresponding to a specific order typ
 Order type `CANCEL_ALL` cancels all open orders of the symbol market.
 
 ```python
-from solie.utility import Decision, OrderType
+from solie import Decision, OrderType
 decisions[symbol][OrderType.CANCEL_ALL] = Decision()
 ```
 
 Order type `NOW_CLOSE` closes the position immediately. Corresponds to `Market Buy` or `Market Sell` orders on Binance with the maximum quantity and `Reduce Only`.
 
 ```python
-from solie.utility import Decision, OrderType
+from solie import Decision, OrderType
 decisions[symbol][OrderType.NOW_CLOSE] = Decision()
 ```
 
 Order type `NOW_BUY` buys directly at market price. Corresponds to Binance order `Market Buy`.
 
 ```python
-from solie.utility import Decision, OrderType
+from solie import Decision, OrderType
 wallet_balance = account_state.wallet_balance
 decisions[symbol][OrderType.NOW_BUY] = Decision(
     margin=wallet_balance * 0.08,
@@ -329,7 +337,7 @@ decisions[symbol][OrderType.NOW_BUY] = Decision(
 Order type `NOW_SELL` sells directly at market price. Corresponds to Binance order `Market Sell`.
 
 ```python
-from solie.utility import Decision, OrderType
+from solie import Decision, OrderType
 wallet_balance = account_state.wallet_balance
 decisions[symbol][OrderType.NOW_SELL] = Decision(
     margin=wallet_balance * 0.08,
@@ -339,7 +347,7 @@ decisions[symbol][OrderType.NOW_SELL] = Decision(
 Order type `LATER_UP_CLOSE` puts an order that will close the position when the price goes up to that boundary. Corresponds to Binance order `Stop Market Buy` or `Take Profit Market Sell` with `Close Position` enabled.
 
 ```python
-from solie.utility import Decision, OrderType
+from solie import Decision, OrderType
 current_price = current_candle_data[f"{symbol}/CLOSE"]
 decisions[symbol][OrderType.LATER_UP_CLOSE] = Decision(
     boundary=current_price * 1.05,
@@ -349,7 +357,7 @@ decisions[symbol][OrderType.LATER_UP_CLOSE] = Decision(
 Order type `LATER_DOWN_CLOSE` puts an order that will close the position when the price goes down to that boundary. Corresponds to Binance order `Stop Market Sell` or `Take Profit Market Buy` with `Close Position` enabled.
 
 ```python
-from solie.utility import Decision, OrderType
+from solie import Decision, OrderType
 current_price = current_candle_data[f"{symbol}/CLOSE"]
 decisions[symbol][OrderType.LATER_DOWN_CLOSE] = Decision(
     boundary=current_price * 0.95,
@@ -359,7 +367,7 @@ decisions[symbol][OrderType.LATER_DOWN_CLOSE] = Decision(
 Order type `LATER_UP_BUY` puts an order to buy when the price goes up to that boundary. Corresponds to Binance order `Stop Market Buy`.
 
 ```python
-from solie.utility import Decision, OrderType
+from solie import Decision, OrderType
 current_price = current_candle_data[f"{symbol}/CLOSE"]
 wallet_balance = account_state.wallet_balance
 decisions[symbol][OrderType.LATER_UP_BUY] = Decision(
@@ -371,7 +379,7 @@ decisions[symbol][OrderType.LATER_UP_BUY] = Decision(
 Order type `LATER_DOWN_BUY` puts an order to buy when the price goes down to that boundary. Corresponds to Binance order `Take Profit Market Buy`.
 
 ```python
-from solie.utility import Decision, OrderType
+from solie import Decision, OrderType
 current_price = current_candle_data[f"{symbol}/CLOSE"]
 wallet_balance = account_state.wallet_balance
 decisions[symbol][OrderType.LATER_DOWN_BUY] = Decision(
@@ -383,7 +391,7 @@ decisions[symbol][OrderType.LATER_DOWN_BUY] = Decision(
 Order type `LATER_UP_SELL` puts an order to buy sell when the price goes up to that boundary. Corresponds to Binance order `Take Profit Market Sell`.
 
 ```python
-from solie.utility import Decision, OrderType
+from solie import Decision, OrderType
 current_price = current_candle_data[f"{symbol}/CLOSE"]
 wallet_balance = account_state.wallet_balance
 decisions[symbol][OrderType.LATER_UP_SELL] = Decision(
@@ -395,7 +403,7 @@ decisions[symbol][OrderType.LATER_UP_SELL] = Decision(
 Order type `LATER_DOWN_SELL` puts an order to sell when the price goes down to that boundary.Corresponds to Binance order `Stop Market Sell`.
 
 ```python
-from solie.utility import Decision, OrderType
+from solie import Decision, OrderType
 current_price = current_candle_data[f"{symbol}/CLOSE"]
 wallet_balance = account_state.wallet_balance
 decisions[symbol][OrderType.LATER_DOWN_SELL] = Decision(
@@ -407,7 +415,7 @@ decisions[symbol][OrderType.LATER_DOWN_SELL] = Decision(
 Order type `BOOK_BUY` puts a limit buy order that is added to the order book. Corresponds to Binance order `Limit Buy`.
 
 ```python
-from solie.utility import Decision, OrderType
+from solie import Decision, OrderType
 current_price = current_candle_data[f"{symbol}/CLOSE"]
 wallet_balance = account_state.wallet_balance
 decisions[symbol][OrderType.BOOK_BUY] = Decision(
@@ -427,7 +435,7 @@ decisions[symbol][OrderType.BOOK_SELL] = Decision(
 )
 ```
 
-> In automatic ordering and simulation, all prices are based on `Last Price`. `Mark Price` is not used in the calculation.
+> In automatic ordering and simulation, all prices are based on "last price". "mark price" is not used in the calculation.
 
 ### Side Note
 
