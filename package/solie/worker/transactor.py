@@ -89,10 +89,7 @@ class Transactor:
         self.asset_record = RWLock(create_empty_asset_record())
         self.auto_order_record = RWLock(
             pd.DataFrame(
-                columns=[
-                    "SYMBOL",
-                    "ORDER_ID",
-                ],
+                columns=["SYMBOL", "ORDER_ID"],
                 index=pd.DatetimeIndex([], tz="UTC"),
             )
         )
