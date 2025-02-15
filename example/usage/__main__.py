@@ -10,7 +10,7 @@ if __name__ == "__main__":
     strategy = SilentStrategy(
         code_name="SILENT",
         readable_name="Silent Strategy",
-        version="1.0",
+        version="0.1",
         description="A silent strategy that does nothing",
         risk_level=RiskLevel.LOW,
     )
@@ -20,7 +20,7 @@ if __name__ == "__main__":
     strategy = ExampleStrategy(
         code_name="EXAMPL",
         readable_name="Fixed Strategy",
-        version="1.1",
+        version="1.2",
         description="A fixed strategy for demonstration",
         risk_level=RiskLevel.HIGH,
     )

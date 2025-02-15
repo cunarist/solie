@@ -178,7 +178,7 @@ class RiskLevel(Enum):
 class Strategy(BaseModel):
     code_name: str
     readable_name: str = "New Blank Strategy"
-    version: str = "1.0"
+    version: str = "0.1"
     description: str = "A blank strategy template before being written"
     risk_level: RiskLevel = RiskLevel.HIGH
     parallelized_simulation: bool = False
