@@ -8,7 +8,6 @@ from .analyze_market import (
 )
 from .api_requester import ApiRequester, ApiRequestError
 from .api_streamer import ApiStreamer
-from .backward_compatibility import examine_data_files
 from .ball import ball_ceil, ball_floor
 from .check_internet import (
     internet_connected,
@@ -120,7 +119,6 @@ __all__ = [
     "create_empty_unrealized_changes",
     "create_strategy_code_name",
     "download_aggtrade_data",
-    "examine_data_files",
     "fill_holes_with_aggtrades",
     "format_numeric",
     "internet_connected",

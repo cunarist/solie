@@ -19,7 +19,6 @@ from solie.utility import (
     DataSettings,
     LogHandler,
     SolieConfig,
-    examine_data_files,
     internet_connected,
     is_internet_checked,
     monitor_internet,
@@ -207,10 +206,6 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         asset_token = data_settings.asset_token
         target_symbols = data_settings.target_symbols
-
-        # ■■■■■ Check the status of data files ■■■■■
-
-        await examine_data_files(datapath)
 
         # ■■■■■ Get information about target symbols ■■■■■
 
