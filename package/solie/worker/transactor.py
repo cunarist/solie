@@ -760,7 +760,7 @@ class Transactor:
 
         symbol = self.viewing_symbol
         strategy_index = self.transaction_settings.strategy_index
-        strategy = team.strategist.strategies.all[strategy_index]
+        strategy = team.strategist.strategies[strategy_index]
 
         should_draw_frequently = self.should_draw_frequently
         if frequent and not should_draw_frequently:
@@ -1066,7 +1066,7 @@ class Transactor:
         target_symbols = self.window.data_settings.target_symbols
 
         strategy_index = self.transaction_settings.strategy_index
-        strategy = team.strategist.strategies.all[strategy_index]
+        strategy = team.strategist.strategies[strategy_index]
 
         indicators_script = strategy.indicators_script
 

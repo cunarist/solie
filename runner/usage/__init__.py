@@ -11,7 +11,28 @@ from solie import (
 )
 
 
-class MyStrategy(FixedStrategy):
+class SilentStrategy(FixedStrategy):
+    def create_indicators(
+        self,
+        target_symbols: list[str],
+        candle_data: pd.DataFrame,
+        new_indicators: dict[str, pd.Series],
+    ):
+        pass
+
+    def create_decisions(
+        self,
+        target_symbols: list[str],
+        account_state: AccountState,
+        current_candle_data: dict[str, float],
+        current_indicators: dict[str, float],
+        scribbles: dict[Any, Any],
+        new_decisions: dict[str, dict[OrderType, Decision]],
+    ):
+        pass
+
+
+class ExampleStrategy(FixedStrategy):
     def create_indicators(
         self,
         target_symbols: list[str],
@@ -90,4 +111,4 @@ class MyStrategy(FixedStrategy):
                     )
 
 
-__all__ = ["MyStrategy"]
+__all__ = ["FixedStrategy", "SilentStrategy"]

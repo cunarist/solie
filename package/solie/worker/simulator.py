@@ -196,7 +196,7 @@ class Simulator:
 
         symbol = self.viewing_symbol
         strategy_index = self.simulation_settings.strategy_index
-        strategy = team.strategist.strategies.all[strategy_index]
+        strategy = team.strategist.strategies[strategy_index]
 
         should_draw_all_years = self.should_draw_all_years
 
@@ -515,7 +515,7 @@ class Simulator:
         year = self.simulation_settings.year
         strategy_index = self.simulation_settings.strategy_index
 
-        strategy = team.strategist.strategies.all[strategy_index]
+        strategy = team.strategist.strategies[strategy_index]
         strategy_code_name = strategy.code_name
         strategy_version = strategy.version
         should_parallelize = strategy.parallelized_simulation
@@ -840,7 +840,7 @@ class Simulator:
             chunk_length = 0
         else:
             strategy_index = self.simulation_settings.strategy_index
-            strategy = team.strategist.strategies.all[strategy_index]
+            strategy = team.strategist.strategies[strategy_index]
             should_parallelize = strategy.parallelized_simulation
             chunk_length = strategy.chunk_division
 
@@ -957,7 +957,7 @@ class Simulator:
         year = self.simulation_settings.year
         strategy_index = self.simulation_settings.strategy_index
 
-        strategy = team.strategist.strategies.all[strategy_index]
+        strategy = team.strategist.strategies[strategy_index]
         strategy_code_name = strategy.code_name
         strategy_version = strategy.version
 
@@ -1019,7 +1019,7 @@ class Simulator:
         year = self.simulation_settings.year
         strategy_index = self.simulation_settings.strategy_index
 
-        strategy = team.strategist.strategies.all[strategy_index]
+        strategy = team.strategist.strategies[strategy_index]
         strategy_code_name = strategy.code_name
         strategy_version = strategy.version
 
