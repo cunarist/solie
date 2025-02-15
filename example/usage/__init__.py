@@ -1,11 +1,9 @@
-from datetime import datetime
-from typing import Any
-
 import pandas as pd
 import pandas_ta as ta
 from solie import (
-    AccountState,
     Decision,
+    DecisionInput,
+    IndicatorInput,
     OrderType,
     PositionDirection,
     RiskLevel,
@@ -15,34 +13,19 @@ from solie import (
 
 
 class SilentStrategy(Strategy):
-    def create_indicators(
-        self,
-        target_symbols: list[str],
-        candle_data: pd.DataFrame,
-        new_indicators: dict[str, pd.Series],
-    ):
+    def create_indicators(self, given: IndicatorInput):
         pass
 
-    def create_decisions(
-        self,
-        target_symbols: list[str],
-        account_state: AccountState,
-        current_moment: datetime,
-        current_candle_data: dict[str, float],
-        current_indicators: dict[str, float],
-        scribbles: dict[Any, Any],
-        new_decisions: dict[str, dict[OrderType, Decision]],
-    ):
+    def create_decisions(self, given: DecisionInput):
         pass
 
 
 class ExampleStrategy(Strategy):
-    def create_indicators(
-        self,
-        target_symbols: list[str],
-        candle_data: pd.DataFrame,
-        new_indicators: dict[str, pd.Series],
-    ):
+    def create_indicators(self, given: IndicatorInput):
+        target_symbols = given.target_symbols
+        candle_data = given.candle_data
+        new_indicators = given.new_indicators
+
         short_period = 90
         long_period = 360
 
@@ -68,16 +51,14 @@ class ExampleStrategy(Strategy):
             wildness[wildness > 1.5] = 1.5
             new_indicators[f"{symbol}/ABSTRACT/WILDNESS"] = wildness
 
-    def create_decisions(
-        self,
-        target_symbols: list[str],
-        account_state: AccountState,
-        current_moment: datetime,
-        current_candle_data: dict[str, float],
-        current_indicators: dict[str, float],
-        scribbles: dict[Any, Any],
-        new_decisions: dict[str, dict[OrderType, Decision]],
-    ):
+    def create_decisions(self, given: DecisionInput):
+        target_symbols = given.target_symbols
+        account_state = given.account_state
+        current_candle_data = given.current_candle_data
+        current_indicators = given.current_indicators
+        scribbles = given.scribbles
+        new_decisions = given.new_decisions
+
         acquire_ratio = 0.8 / len(target_symbols)  # Split asset by symbol count
         wallet_balance = account_state.wallet_balance
 

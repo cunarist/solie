@@ -1,20 +1,16 @@
-from datetime import datetime
 from pathlib import Path
 from types import CodeType
-from typing import Any
 
 import aiofiles
 import aiofiles.os
-import pandas as pd
 from pydantic import BaseModel
 
 from solie.common import PACKAGE_PATH
 
 from .data_models import (
-    AccountState,
     DataSettings,
-    Decision,
-    OrderType,
+    DecisionInput,
+    IndicatorInput,
     Strategy,
 )
 
@@ -61,12 +57,11 @@ class SavedStrategy(Strategy):
     indicator_script: str = "pass"
     decision_script: str = "pass"
 
-    def create_indicators(
-        self,
-        target_symbols: list[str],
-        candle_data: pd.DataFrame,
-        new_indicators: dict[str, pd.Series],
-    ):
+    def create_indicators(self, given: IndicatorInput):
+        target_symbols = given.target_symbols
+        candle_data = given.candle_data
+        new_indicators = given.new_indicators
+
         code_field = "_compiled_indicator_script"
         try:
             code: CodeType = getattr(self, code_field)
@@ -81,16 +76,15 @@ class SavedStrategy(Strategy):
         }
         exec(code, namespace)
 
-    def create_decisions(
-        self,
-        target_symbols: list[str],
-        account_state: AccountState,
-        current_moment: datetime,
-        current_candle_data: dict[str, float],
-        current_indicators: dict[str, float],
-        scribbles: dict[Any, Any],
-        new_decisions: dict[str, dict[OrderType, Decision]],
-    ):
+    def create_decisions(self, given: DecisionInput):
+        target_symbols = given.target_symbols
+        account_state = given.account_state
+        current_moment = given.current_moment
+        current_candle_data = given.current_candle_data
+        current_indicators = given.current_indicators
+        scribbles = given.scribbles
+        new_decisions = given.new_decisions
+
         code_field = "_compiled_decision_script"
         try:
             code: CodeType = getattr(self, code_field)

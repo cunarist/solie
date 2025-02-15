@@ -12,6 +12,8 @@ import pandas as pd
 from .data_models import (
     AccountState,
     Decision,
+    DecisionInput,
+    IndicatorInput,
     OpenOrder,
     OrderType,
     Position,
@@ -61,11 +63,12 @@ def make_indicators(
 
     # ■■■■■ make individual indicators ■■■■■
 
-    strategy.create_indicators(
+    input = IndicatorInput(
         target_symbols=target_symbols,
         candle_data=candle_data,
         new_indicators=new_indicators,
     )
+    strategy.create_indicators(input)
 
     # ■■■■■ concatenate individual indicators into one ■■■■■
 
@@ -117,7 +120,7 @@ def make_decisions(
 
     # ■■■■■ write decisions ■■■■■
 
-    strategy.create_decisions(
+    input = DecisionInput(
         target_symbols=target_symbols,
         account_state=account_state,
         current_moment=current_moment,
@@ -126,6 +129,7 @@ def make_decisions(
         scribbles=scribbles,
         new_decisions=new_decisions,
     )
+    strategy.create_decisions(input)
 
     # ■■■■■ return decision ■■■■■
 

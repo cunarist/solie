@@ -2,6 +2,8 @@ from .entry import bring_to_life
 from .utility import (
     AccountState,
     Decision,
+    DecisionInput,
+    IndicatorInput,
     OpenOrder,
     OrderType,
     Position,
@@ -14,6 +16,8 @@ from .utility import (
 __all__ = [
     "AccountState",
     "Decision",
+    "DecisionInput",
+    "IndicatorInput",
     "OpenOrder",
     "OrderType",
     "Position",

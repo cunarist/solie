@@ -175,6 +175,22 @@ class RiskLevel(Enum):
     HIGH = 2
 
 
+class IndicatorInput(NamedTuple):
+    target_symbols: list[str]
+    candle_data: pd.DataFrame
+    new_indicators: dict[str, pd.Series]
+
+
+class DecisionInput(NamedTuple):
+    target_symbols: list[str]
+    account_state: AccountState
+    current_moment: datetime
+    current_candle_data: dict[str, float]
+    current_indicators: dict[str, float]
+    scribbles: dict[Any, Any]
+    new_decisions: dict[str, dict[OrderType, Decision]]
+
+
 class Strategy(BaseModel):
     code_name: str
     readable_name: str = "New Blank Strategy"
@@ -185,23 +201,9 @@ class Strategy(BaseModel):
     chunk_division: int = 30
 
     @abstractmethod
-    def create_indicators(
-        self,
-        target_symbols: list[str],
-        candle_data: pd.DataFrame,
-        new_indicators: dict[str, pd.Series],
-    ):
+    def create_indicators(self, given: IndicatorInput):
         pass
 
     @abstractmethod
-    def create_decisions(
-        self,
-        target_symbols: list[str],
-        account_state: AccountState,
-        current_moment: datetime,
-        current_candle_data: dict[str, float],
-        current_indicators: dict[str, float],
-        scribbles: dict[Any, Any],
-        new_decisions: dict[str, dict[OrderType, Decision]],
-    ):
+    def create_decisions(self, given: DecisionInput):
         pass
