@@ -2,7 +2,7 @@
 solie = { workspace = true }
 
 [tool.uv.workspace]
-members = ["documentation", "package", "runner"]
+members = ["documentation", "package", "example"]
 
 [tool.pyright]
 typeCheckingMode = "standard"
