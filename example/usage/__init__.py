@@ -1,10 +1,14 @@
+from typing import Any
+
 import pandas as pd
 import pandas_ta as ta
 from solie import (
+    AccountState,
     Decision,
     DecisionInput,
     IndicatorInput,
     OrderType,
+    Position,
     PositionDirection,
     RiskLevel,
     SolieConfig,
@@ -22,17 +26,17 @@ class SilentStrategy(Strategy):
 
 class ExampleStrategy(Strategy):
     def create_indicators(self, given: IndicatorInput):
-        target_symbols = given.target_symbols
-        candle_data = given.candle_data
-        new_indicators = given.new_indicators
+        target_symbols: list[str] = given.target_symbols
+        candle_data: pd.DataFrame = given.candle_data
+        new_indicators: dict[str, pd.Series] = given.new_indicators
 
         short_period = 90
         long_period = 360
 
         for symbol in target_symbols:
             # Get candle data
-            close_sr = candle_data[f"{symbol}/CLOSE"]
-            volume_sr = candle_data[f"{symbol}/VOLUME"]
+            close_sr: pd.Series = candle_data[f"{symbol}/CLOSE"]
+            volume_sr: pd.Series = candle_data[f"{symbol}/VOLUME"]
 
             # Price scale indicators
             price_sma_one: pd.Series = ta.sma(close_sr, short_period)  # type:ignore
@@ -52,12 +56,12 @@ class ExampleStrategy(Strategy):
             new_indicators[f"{symbol}/ABSTRACT/WILDNESS"] = wildness
 
     def create_decisions(self, given: DecisionInput):
-        target_symbols = given.target_symbols
-        account_state = given.account_state
-        current_candle_data = given.current_candle_data
-        current_indicators = given.current_indicators
-        scribbles = given.scribbles
-        new_decisions = given.new_decisions
+        target_symbols: list[str] = given.target_symbols
+        account_state: AccountState = given.account_state
+        current_candle_data: dict[str, float] = given.current_candle_data
+        current_indicators: dict[str, float] = given.current_indicators
+        scribbles: dict[Any, Any] = given.scribbles
+        new_decisions: dict[str, dict[OrderType, Decision]] = given.new_decisions
 
         acquire_ratio = 0.8 / len(target_symbols)  # Split asset by symbol count
         wallet_balance = account_state.wallet_balance
@@ -67,7 +71,7 @@ class ExampleStrategy(Strategy):
             price_sma_one = current_indicators[f"{symbol}/PRICE/SMA_ONE(#00FFA6)"]
             price_sma_two = current_indicators[f"{symbol}/PRICE/SMA_TWO(#C261FF)"]
 
-            position = account_state.positions[symbol]
+            position: Position = account_state.positions[symbol]
 
             scribbles["MY_KEY"] = True  # Remember something
             _my_value = scribbles.get("MY_KEY", False)  # Get it later
