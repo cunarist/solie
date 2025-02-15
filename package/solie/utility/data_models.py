@@ -13,12 +13,18 @@ class DataSettings(BaseModel):
     target_symbols: list[str]
 
 
+class RiskLevel(Enum):
+    LOW = 0
+    MIDDLE = 1
+    HIGH = 2
+
+
 class Strategy(BaseModel):
     code_name: str
     readable_name: str = "A New Blank Strategy"
     version: str = "1.0"
     description: str = "A blank strategy template before being written"
-    risk_level: int = 2  # 2 means high, 1 means middle, 0 means low
+    risk_level: RiskLevel = RiskLevel.HIGH
     parallelized_simulation: bool = False
     chunk_division: int = 30
     indicators_script: str = "pass"

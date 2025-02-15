@@ -18,6 +18,7 @@ from solie.utility import (
     ApiRequester,
     DataSettings,
     LogHandler,
+    SolieConfig,
     examine_data_files,
     internet_connected,
     is_internet_checked,
@@ -45,15 +46,16 @@ logger = logging.getLogger(__name__)
 
 
 class Window(QtWidgets.QMainWindow, Ui_MainWindow):
-    def __init__(self, close_event: Event):
+    def __init__(self, close_event: Event, config: SolieConfig):
         super().__init__()
 
         self.close_event = close_event
-        self.last_interaction = datetime.now(timezone.utc)
+        self.config = config
 
         self.datapath: Path
         self.data_settings: DataSettings
 
+        self.last_interaction = datetime.now(timezone.utc)
         self.splash_screen: SplashScreen
         self.price_labels: dict[str, QtWidgets.QLabel] = {}
 
@@ -124,7 +126,10 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.gauge.hide()
         self.board.hide()
         self.splash_screen = SplashScreen()
-        self.centralWidget().layout().addWidget(self.splash_screen)
+        central_layout = self.centralWidget().layout()
+        if central_layout is None:
+            raise ValueError("There's no central layout")
+        central_layout.addWidget(self.splash_screen)
 
         # ■■■■■ Show the window ■■■■■
         self.show()

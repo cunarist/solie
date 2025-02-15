@@ -3,7 +3,7 @@ import re
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from solie.common import PACKAGE_PATH, outsource
-from solie.utility import Strategy, is_left_version_higher
+from solie.utility import RiskLevel, Strategy, is_left_version_higher
 from solie.widget import BaseOverlay, HorizontalDivider, ask
 
 
@@ -90,7 +90,7 @@ class StrategyBasicInput(BaseOverlay):
         risk_level_input.addItem(green_pixmap, "Low")
         risk_level_input.addItem(yellow_pixmap, "Middle")
         risk_level_input.addItem(red_pixmap, "High")
-        risk_level_input.setCurrentIndex(strategy.risk_level)
+        risk_level_input.setCurrentIndex(strategy.risk_level.value)
         this_layout.addRow("Risk level", risk_level_input)
 
         # ■■■■■ a card ■■■■■
@@ -154,16 +154,6 @@ class StrategyBasicInput(BaseOverlay):
 
         # function
         async def job():
-            code_name = code_name_input.text()
-            if re.fullmatch(r"[A-Z]{6}", code_name):
-                strategy.code_name = code_name
-            else:
-                await ask(
-                    "Code name format is wrong.",
-                    "You should make the code name with 6 capital letters.",
-                    ["Okay"],
-                )
-                return
             strategy.readable_name = readable_name_input.text()
             version = version_input.text()
             if re.fullmatch(r"[0-9]+\.[0-9]+", version):
@@ -186,7 +176,7 @@ class StrategyBasicInput(BaseOverlay):
                 )
                 return
             strategy.description = description_input.toPlainText()
-            strategy.risk_level = risk_level_input.currentIndex()
+            strategy.risk_level = RiskLevel(risk_level_input.currentIndex())
             strategy.parallelized_simulation = parallelized_input.isChecked()
             strategy.chunk_division = chunk_division_input.value()
             self.done_event.set()

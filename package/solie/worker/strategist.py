@@ -22,6 +22,7 @@ class Strategiest:
 
         # ■■■■■ remember and display ■■■■■
 
+        self.fixed_strategies = window.config.fixed_strategies
         self.strategies: Strategies
         self.strategy_cards: list[QtWidgets.QGroupBox] = []
 

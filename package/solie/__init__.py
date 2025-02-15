@@ -1,4 +1,21 @@
 from .entry import bring_to_life
-from .utility import Decision, OrderType, PositionDirection
+from .utility import (
+    AccountState,
+    Decision,
+    FixedStrategy,
+    OrderType,
+    PositionDirection,
+    SolieConfig,
+    Strategy,
+)
 
-__all__ = ["Decision", "OrderType", "PositionDirection", "bring_to_life"]
+__all__ = [
+    "AccountState",
+    "Decision",
+    "FixedStrategy",
+    "OrderType",
+    "PositionDirection",
+    "SolieConfig",
+    "Strategy",
+    "bring_to_life",
+]
