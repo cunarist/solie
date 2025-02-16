@@ -1,13 +1,14 @@
 [project]
-name = "solie-workspace"
+name = "workspace"
 version = "0.1.0"
-dependencies = ["pyright~=1.1.392", "ruff~=0.9.3", "solie"]
+dependencies = ["pyright~=1.1.392", "ruff~=0.9.3", "solie", "usage"]
 
 [tool.uv.workspace]
 members = ["documentation", "package", "example"]
 
 [tool.uv.sources]
 solie = { workspace = true }
+usage = { workspace = true }
 
 [tool.pyright]
 typeCheckingMode = "standard"

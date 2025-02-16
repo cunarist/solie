@@ -11,7 +11,6 @@ You need to install some components on your system first. Begin by installing th
 Execute the runner code inside its virtual environment.
 
 ```shell
-cd example
 uv run -m usage
 ```
 
