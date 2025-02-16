@@ -4,12 +4,12 @@ In order to preview and build this documentation, you need to have [uv](https://
 
 Activate test server during development.
 
-```bash
+```shell
 uv run mkdocs serve
 ```
 
 Generate the static documentation files for publication on the web.
 
-```bash
+```shell
 uv run mkdocs build
 ```

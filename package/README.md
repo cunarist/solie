@@ -21,7 +21,7 @@ Solie connects to Binance, retrieves real-time market and account data, saves it
 
 You can install Solie via `pip`. It is recommended to use [`uv`](https://docs.astral.sh/uv/) for modern Python package management and virtual environments.
 
-```bash
+```shell
 pip install solie
 ```
 

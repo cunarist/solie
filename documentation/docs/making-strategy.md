@@ -35,9 +35,9 @@ If the script contains some broken code, a function that is executed periodicall
 
 If parallel calculation is used, the entire period is cut by a certain length during simulation calculation, calculated separately, and then combined. This has the advantage of speeding up simulation calculations, but also has the disadvantage that it does not result in continuous asset calculations. For example, if you divide by 7 days, the asset and position status will return to the origin every 7 days.
 
-In the internal calculation, the asset status is returned to the origin for each split length, but the final graph and result display show the corrected values ​​as if they were calculated continuously as if they were all added together. Since this calibration process refers to the input value of `Chunk division`, changing the `Chunk division` in the state that there is already calculated data may cause the graph and result display to be very strange.
+In the internal calculation, the asset status is returned to the origin for each split length, but the final graph and result display show the corrected values ​​as if they were calculated continuously as if they were all added together. Since this calibration process refers to the input value of "Chunk division", changing the "Chunk division" in the state that there is already calculated data may cause the graph and result display to be very strange.
 
-It is recommended to set the `Chunk division` of parallel computation appropriately. Splitting by more than the number of child processes visible in the `Status` of the `Manage` tab does not contribute to the speedup. Be careful not to make the chunk division too short so that the asset's state doesn't change to origin too often.
+It is recommended to set the "Chunk division" of parallel computation appropriately. Splitting by more than the number of child processes visible in the "Status" of the "Manage" tab does not contribute to the speedup. Be careful not to make the chunk division too short so that the asset's state doesn't change to origin too often.
 
 Basic simulation calculations cover the entire year, which is a slow operation that takes minutes to tens of minutes. If you want to experiment with that strategy a little faster, try performing a temporary calculation on the visible range.
 ![](assets/example_030.png)

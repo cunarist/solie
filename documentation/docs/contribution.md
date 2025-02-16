@@ -10,20 +10,20 @@ You need to install some components on your system first. Begin by installing th
 
 Execute the runner code inside its virtual environment.
 
-```bash
-cd runner
-uv run usage
+```shell
+cd example
+uv run -m usage
 ```
 
 ## 🧰 Debugging
 
-If there is Python code that you want to run, you can run it in the `Logs` of the `Manage` tab. After writing the code in the `Python script` input field, you can press `Run script` button to get the result. The `print` function won't help you because it prints to the terminal rather than the log list.
+If there is Python code that you want to run, you can run it in the "Logs" of the "Manage" tab. After writing the code in the "Python script" input field, you can press "Run script" button to get the result. The `print` function won't help you because it prints to the terminal rather than the log list.
 
 Note that what you're running here is a real Python code. Therefore, you can import various modules including `solie` from the script.
 
 ![](assets/example_005.png)
 
-To output something as a log, you can use the default `logger`. When you run this code, you will see a new record being added to the log list in the `debugger`. `logger` can show anything of any type.
+To output something as a log, you can use the default `logger`. When you run this code, you will see a new record being added to the log list in the debugger. `logger` can show anything of any type.
 
 ```python
 logger.debug("Something you want to know about")
@@ -41,12 +41,12 @@ logger.info(my_dictionary)
 You can also access workers. Direct modification of internal data is possible.
 
 ```python
-from solie.worker import team
+from solie import team
 
 logger.debug(team.transactor.account_state)
 ```
 
-If the type of the variable you want to output is `list` or `dict`, you can log it with better readability using the `json` standard library.
+If the type of the variable you want to output is `list[T]` or `dict[T, V]`, you can log it with better readability using the `json` standard library.
 
 ```python
 import json
@@ -61,24 +61,29 @@ logger.debug(log_data)
 
 ![](assets/example_034.png)
 
-In the `Log output`, all logs that occur during execution are stacked. If an error occurs, it is also logged. If you're writing a strategy script and something doesn't work, visit here to figure out the cause.
+In the "Log output", all logs that occur during execution are stacked. If an error occurs, it is also logged. If you're writing a strategy script and something doesn't work, visit here to figure out the cause.
 
 ## 🕹️ User Interface
 
 The user interface can be modified by editing the `./craft/window.ui` file with `Qt Designer`. Run the designer app with the terminal command below.
 
-```bash
-cd package
+```shell
 uv run pyside6-designer
 ```
 
 After editing the UI file, you should compile it into a Python module.
 
-```bash
+```shell
 pyside6-uic craft/window.ui -o package/solie/window/compiled.py
 ```
 
 ## 🚦 Rules
+
+```shell
+uv sync
+uv run ruff check
+uv run pyright
+```
 
 - Solie is written entirely in Python and utilizes [uv](https://docs.astral.sh/uv/) as the primary tool for managing packages.
 - Use the Ruff formatter for organizing code and identifying issues.
