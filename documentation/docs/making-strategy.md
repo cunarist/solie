@@ -317,14 +317,14 @@ from solie import Decision, OrderType
 decisions[symbol][OrderType.CANCEL_ALL] = Decision()
 ```
 
-Order type `NOW_CLOSE` closes the position immediately. Corresponds to `Market Buy` or `Market Sell` orders on Binance with the maximum quantity and `Reduce Only`.
+Order type `NOW_CLOSE` closes the position immediately. Corresponds to "Market Buy" or "Market Sell" orders on Binance with the maximum quantity and `Reduce Only`.
 
 ```python
 from solie import Decision, OrderType
 decisions[symbol][OrderType.NOW_CLOSE] = Decision()
 ```
 
-Order type `NOW_BUY` buys directly at market price. Corresponds to Binance order `Market Buy`.
+Order type `NOW_BUY` buys directly at market price. Corresponds to Binance order "Market Buy".
 
 ```python
 from solie import Decision, OrderType
@@ -334,7 +334,7 @@ decisions[symbol][OrderType.NOW_BUY] = Decision(
 )
 ```
 
-Order type `NOW_SELL` sells directly at market price. Corresponds to Binance order `Market Sell`.
+Order type `NOW_SELL` sells directly at market price. Corresponds to Binance order "Market Sell".
 
 ```python
 from solie import Decision, OrderType
@@ -344,7 +344,7 @@ decisions[symbol][OrderType.NOW_SELL] = Decision(
 )
 ```
 
-Order type `LATER_UP_CLOSE` puts an order that will close the position when the price goes up to that boundary. Corresponds to Binance order `Stop Market Buy` or `Take Profit Market Sell` with `Close Position` enabled.
+Order type `LATER_UP_CLOSE` puts an order that will close the position when the price goes up to that boundary. Corresponds to Binance order "Stop Market Buy" or "Take Profit Market Sell" with "Close Position" enabled.
 
 ```python
 from solie import Decision, OrderType
@@ -354,7 +354,7 @@ decisions[symbol][OrderType.LATER_UP_CLOSE] = Decision(
 )
 ```
 
-Order type `LATER_DOWN_CLOSE` puts an order that will close the position when the price goes down to that boundary. Corresponds to Binance order `Stop Market Sell` or `Take Profit Market Buy` with `Close Position` enabled.
+Order type `LATER_DOWN_CLOSE` puts an order that will close the position when the price goes down to that boundary. Corresponds to Binance order "Stop Market Sell" or "Take Profit Market Buy" with "Close Position" enabled.
 
 ```python
 from solie import Decision, OrderType
@@ -364,7 +364,7 @@ decisions[symbol][OrderType.LATER_DOWN_CLOSE] = Decision(
 )
 ```
 
-Order type `LATER_UP_BUY` puts an order to buy when the price goes up to that boundary. Corresponds to Binance order `Stop Market Buy`.
+Order type `LATER_UP_BUY` puts an order to buy when the price goes up to that boundary. Corresponds to Binance order "Stop Market Buy".
 
 ```python
 from solie import Decision, OrderType
@@ -376,7 +376,7 @@ decisions[symbol][OrderType.LATER_UP_BUY] = Decision(
 )
 ```
 
-Order type `LATER_DOWN_BUY` puts an order to buy when the price goes down to that boundary. Corresponds to Binance order `Take Profit Market Buy`.
+Order type `LATER_DOWN_BUY` puts an order to buy when the price goes down to that boundary. Corresponds to Binance order "Take Profit Market Buy".
 
 ```python
 from solie import Decision, OrderType
@@ -388,7 +388,7 @@ decisions[symbol][OrderType.LATER_DOWN_BUY] = Decision(
 )
 ```
 
-Order type `LATER_UP_SELL` puts an order to buy sell when the price goes up to that boundary. Corresponds to Binance order `Take Profit Market Sell`.
+Order type `LATER_UP_SELL` puts an order to buy sell when the price goes up to that boundary. Corresponds to Binance order "Take Profit Market Sell".
 
 ```python
 from solie import Decision, OrderType
@@ -400,7 +400,7 @@ decisions[symbol][OrderType.LATER_UP_SELL] = Decision(
 )
 ```
 
-Order type `LATER_DOWN_SELL` puts an order to sell when the price goes down to that boundary.Corresponds to Binance order `Stop Market Sell`.
+Order type `LATER_DOWN_SELL` puts an order to sell when the price goes down to that boundary.Corresponds to Binance order "Stop Market Sell".
 
 ```python
 from solie import Decision, OrderType
@@ -412,7 +412,7 @@ decisions[symbol][OrderType.LATER_DOWN_SELL] = Decision(
 )
 ```
 
-Order type `BOOK_BUY` puts a limit buy order that is added to the order book. Corresponds to Binance order `Limit Buy`.
+Order type `BOOK_BUY` puts a limit buy order that is added to the order book. Corresponds to Binance order "Limit Buy".
 
 ```python
 from solie import Decision, OrderType
@@ -424,7 +424,7 @@ decisions[symbol][OrderType.BOOK_BUY] = Decision(
 )
 ```
 
-Order type `BOOK_SELL` puts a limit sell order that is added to the order book. Corresponds to Binance order `Limit Sell`.
+Order type `BOOK_SELL` puts a limit sell order that is added to the order book. Corresponds to Binance order "Limit Sell".
 
 ```python
 current_price = current_candle_data[f"{symbol}/CLOSE"]
@@ -439,7 +439,7 @@ decisions[symbol][OrderType.BOOK_SELL] = Decision(
 
 ### Side Note
 
-Binance has a minimum order amount. As of February 2022, it is $5. In addition, the decimal precision of the quantity that can be ordered for each symbol is fixed. Therefore, in the actual automatic order, the order is sent with the quantity slightly rounded up from the `margin` determined by the decision. Because of this rounding, the actual amount being orders can have a significant amount of numerical error. Always check your position status before making an order in the decision script.
+Binance has a minimum order amount. As of February 2022, it is $5. In addition, the decimal precision of the quantity that can be ordered for each symbol is fixed. Therefore, in the actual automatic order, the order is sent with the quantity slightly rounded up from the `margin` included in the decision. Because of this rounding, the actual amount being orders can have a significant amount of numerical error. Always check your position status before making an order in the decision script.
 
 Open orders are limited to only one per type. During an actual automatic order, even if multiple open orders of the same type are stacked, all but the most recent one will be lost. This is Solie's own rules for a convenient decision system. For example, there cannot be more than one open order classified as `LATER_UP_BUY` at the same time. However, it is possible to have different kinds of commands open simultaneously. An open spell with `LATER_UP_BUY` and an open spell with `LATER_UP_SELL` can exist at the same time.
 
