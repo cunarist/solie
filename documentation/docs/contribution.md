@@ -86,7 +86,7 @@ uv run pyright
 
 - Solie is written entirely in Python and utilizes [uv](https://docs.astral.sh/uv/) as the primary tool for managing packages.
 - Use the Ruff formatter for organizing code and identifying issues.
-- Employ Pyright in basic mode for type checks. If you're using Visual Studio Code, Pylance extends Pyright’s capabilities.
+- Employ Pyright for type safety. If you're using Visual Studio Code, Pylance extends Pyright’s capabilities.
 - It should be user-friendly, allowing general users to navigate with just a few clicks.
 - Development targets compatibility across Windows, Linux, and macOS without relying on platform-specific packages like `win32api`.
 - UTC timezone information must be included in `datetime.datetime` objects. Also, include UTC timezone information wherever feasible, such as in `pandas.DatetimeIndex`.
