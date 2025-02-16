@@ -1,6 +1,6 @@
 import logging
 from asyncio import Event, sleep
-from typing import Callable, Coroutine
+from typing import Any, Callable, Coroutine
 
 from aiohttp import ClientSession
 
@@ -19,8 +19,8 @@ ATTEMPT_IP = [
 is_connected = False
 is_internet_checked = Event()
 
-connected_functions: list[Callable[[], Coroutine]] = []
-disconnected_functions: list[Callable[[], Coroutine]] = []
+connected_functions: list[Callable[[], Coroutine[None, None, Any]]] = []
+disconnected_functions: list[Callable[[], Coroutine[None, None, Any]]] = []
 
 
 def internet_connected():
@@ -62,11 +62,11 @@ async def monitor_internet():
         await sleep(1)
 
 
-def when_internet_connected(job: Callable[[], Coroutine]):
+def when_internet_connected(job: Callable[[], Coroutine[None, None, Any]]):
     global connected_functions
     connected_functions.append(job)
 
 
-def when_internet_disconnected(job: Callable[[], Coroutine]):
+def when_internet_disconnected(job: Callable[[], Coroutine[None, None, Any]]):
     global disconnected_functions
     disconnected_functions.append(job)

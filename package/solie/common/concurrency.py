@@ -48,7 +48,7 @@ class UniqueTask:
     def __init__(self):
         self._task: Task[Any] | None = None
 
-    def spawn(self, coro: Coroutine):
+    def spawn(self, coro: Coroutine[None, None, Any]):
         """
         Spawns a new task, canceling the previous one if it exists.
         """
@@ -60,7 +60,7 @@ class UniqueTask:
         if self._task is not None and not self._task.done():
             self._task.cancel()
 
-    def add_done_callback(self, callback: Callable[[Task[T]], Any]):
+    def add_done_callback(self, callback: Callable[[Task[Any]], Any]):
         """
         Adds a callback to be called when the current task is done.
         """
