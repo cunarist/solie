@@ -2,38 +2,14 @@
 
 See historical changes of Solie at a glance.
 
-## 8.7
+## 9.0
 
-- Realtime data collection has become more faster and stable.
+![](assets/capture_version_9_0.png)
 
-## 8.6
-
-- Temporary internet disconnections are now handled more gracefully.
-- User data stream is now extended or renewed periodically. A problem with red or blue dots not being recorded on the transaction graphs has been fixed.
-- Several bugs related to listening to user data stream have been fixed.
-
-## 8.5
-
-- Auto transaction with mixed 'now' and 'later' orders was stabilized further.
-- The internal codebase was vastly organized. Specifically, type safety and circular imports were addressed.
-- Now various asset tokens are selectable in a new data folder. Only `USDT` and `BUSD` were possible before.
-
-## 8.4
-
-- A problem with auto transaction was fixed. Now 'now' orders and 'later' orders can be placed together.
-- Fixed many glitches.
-
-## 8.3
-
-- The performance is much better now when you have years of candle data collected. This is because the candle data of previous years are stored in the disk, not memory anymore.
-
-## 8.2
-
-- Improved the strategy development experience.
-
-## 8.1
-
-- Simulation speed has become faster. Its speed is now about 200%~250% of that of before.
+- Released on February 16, 2025
+- Strategies can now be passed as configurations
+- Type safety and internal data structures have been improved
+- Data folders from previous versions are not compatible
 
 ## 8.0
 
