@@ -45,7 +45,7 @@ from solie import team
 logger.debug(team.transactor.account_state)
 ```
 
-If the type of the variable you want to output is `list[T]` or `dict[T, V]`, you can log it with better readability using the `json` standard library.
+If the type of the variable you want to output is `list[T]` or `dict[K, V]`, you can log it with better readability using the `json` standard library.
 
 ```python
 import json

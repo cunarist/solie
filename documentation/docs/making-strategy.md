@@ -6,7 +6,7 @@ Python, known for its straightforward syntax and widespread popularity, is used 
 
     Some variable types in this guide come from specific libraries, including both standard and external ones.
 
-    - `solie`: `AccountState`, `Decision`, `Position`, `PositionDirection`, `OrderType`, `OpenOrder`,
+    - `solie`: `AccountState`, `Decision`, `Position`, `PositionDirection`, `OrderType`, `OpenOrder`
     - `pandas`: `Series`, `DataFrame`
     - `datetime`: `datetime`
 
