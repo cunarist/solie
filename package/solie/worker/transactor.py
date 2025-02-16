@@ -1429,7 +1429,7 @@ class Transactor:
 
         async with self.asset_record.read_lock as cell:
             last_index = cell.data.index[-1]
-            last_asset: float = cell.data.loc[last_index, "RESULT_ASSET"]  # type:ignore
+            last_asset = float(cell.data.loc[last_index, "RESULT_ASSET"])  # type:ignore
 
         if wallet_balance == 0:
             pass
