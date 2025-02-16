@@ -1,6 +1,6 @@
 import math
 import pickle
-from asyncio import Task, current_task, gather, sleep
+from asyncio import gather, sleep
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -12,7 +12,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtWidgets
 from scipy.signal import find_peaks
 
-from solie.common import get_sync_manager, outsource, spawn, spawn_blocking
+from solie.common import UniqueTask, get_sync_manager, outsource, spawn, spawn_blocking
 from solie.utility import (
     AccountState,
     CalculationInput,
@@ -48,9 +48,9 @@ class Simulator:
 
         # ■■■■■ internal memory ■■■■■
 
-        self.line_display_task: Task[None] | None = None
-        self.range_display_task: Task[None] | None = None
-        self.calculation_task: Task[None] | None = None
+        self.line_display_task = UniqueTask()
+        self.range_display_task = UniqueTask()
+        self.calculation_task = UniqueTask()
 
         # ■■■■■ remember and display ■■■■■
 
@@ -183,15 +183,9 @@ class Simulator:
         await self.present()
 
     async def display_lines(self, periodic=False):
-        # ■■■■■ run only one task instance at a time ■■■■■
+        self.line_display_task.spawn(self._display_lines(periodic))
 
-        if self.line_display_task is not None:
-            self.line_display_task.cancel()
-        this_task = current_task()
-        if this_task is None:
-            raise ValueError
-        self.line_display_task = this_task
-
+    async def _display_lines(self, periodic: bool):
         # ■■■■■ get basic information ■■■■■
 
         symbol = self.viewing_symbol
@@ -363,13 +357,9 @@ class Simulator:
         await self.calculate(only_visible=True)
 
     async def display_range_information(self):
-        if self.range_display_task is not None:
-            self.range_display_task.cancel()
-        this_task = current_task()
-        if this_task is None:
-            raise ValueError
-        self.range_display_task = this_task
+        self.range_display_task.spawn(self._display_range_information())
 
+    async def _display_range_information(self):
         symbol = self.viewing_symbol
         price_widget = self.window.simulation_graph.price_widget
 
@@ -462,13 +452,10 @@ class Simulator:
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
 
     async def calculate(self, only_visible=False):
-        if self.calculation_task is not None:
-            self.calculation_task.cancel()
-        this_task = current_task()
-        if this_task is None:
-            raise ValueError
-        self.calculation_task = this_task
+        self.calculation_task.spawn(self._calculate(only_visible))
 
+    async def _calculate(self, only_visible: bool):
+        unique_task = self.calculation_task
         prepare_step = 0
         calculate_step = 0
 
@@ -504,7 +491,7 @@ class Simulator:
         bar_task = spawn(play_progress_bar())
         bar_task.add_done_callback(lambda _: self.window.progressBar_4.setValue(0))
         bar_task.add_done_callback(lambda _: self.window.progressBar.setValue(0))
-        this_task.add_done_callback(lambda _: bar_task.cancel())
+        unique_task.add_done_callback(lambda _: bar_task.cancel())
 
         prepare_step = 1
 
@@ -744,7 +731,7 @@ class Simulator:
                     await sleep(0.01)
 
             step_task = spawn(update_calculation_step())
-            this_task.add_done_callback(lambda _: step_task.cancel())
+            unique_task.add_done_callback(lambda _: step_task.cancel())
 
             calculation_output_data = await gathered
 

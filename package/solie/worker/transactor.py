@@ -2,7 +2,7 @@ import logging
 import math
 import pickle
 import webbrowser
-from asyncio import Task, current_task, gather, sleep, wait
+from asyncio import gather, sleep, wait
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -13,7 +13,7 @@ import pandas as pd
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtWidgets
 
-from solie.common import outsource, spawn, spawn_blocking
+from solie.common import UniqueTask, outsource, spawn, spawn_blocking
 from solie.overlay import LongTextView
 from solie.utility import (
     ApiRequester,
@@ -61,8 +61,8 @@ class Transactor:
 
         # ■■■■■ internal memory ■■■■■
 
-        self.line_display_task: Task[None] | None = None
-        self.range_display_task: Task[None] | None = None
+        self.line_display_task = UniqueTask()
+        self.range_display_task = UniqueTask()
 
         self.maximum_quantities: dict[str, float] = {}  # Symbol and value
         self.minimum_notionals: dict[str, float] = {}  # Symbol and value
@@ -641,13 +641,9 @@ class Transactor:
         await self.save_transaction_settings()
 
     async def display_range_information(self):
-        if self.range_display_task is not None:
-            self.range_display_task.cancel()
-        this_task = current_task()
-        if this_task is None:
-            raise ValueError
-        self.range_display_task = this_task
+        self.range_display_task.spawn(self._display_range_information())
 
+    async def _display_range_information(self):
         symbol = self.viewing_symbol
         price_widget = self.window.transaction_graph.price_widget
 
@@ -744,15 +740,9 @@ class Transactor:
         self.window.comboBox_2.setCurrentIndex(strategy_index)
 
     async def display_lines(self, periodic=False, frequent=False):
-        # ■■■■■ run only one task instance at a time ■■■■■
+        self.line_display_task.spawn(self._display_lines(periodic, frequent))
 
-        if self.line_display_task is not None:
-            self.line_display_task.cancel()
-        this_task = current_task()
-        if this_task is None:
-            raise ValueError
-        self.line_display_task = this_task
-
+    async def _display_lines(self, periodic: bool, frequent: bool):
         # ■■■■■ get basic information ■■■■■
 
         symbol = self.viewing_symbol

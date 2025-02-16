@@ -1,4 +1,4 @@
-from .concurrency import spawn
+from .concurrency import UniqueTask, spawn
 from .connect_event import outsource
 from .info import PACKAGE_NAME, PACKAGE_PATH, PACKAGE_VERSION
 from .parallelism import (
@@ -13,6 +13,7 @@ __all__ = [
     "PACKAGE_PATH",
     "PACKAGE_VERSION",
     "PROCESS_COUNT",
+    "UniqueTask",
     "get_sync_manager",
     "outsource",
     "prepare_process_pool",

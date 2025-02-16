@@ -1,5 +1,5 @@
 from asyncio import Task, create_task
-from typing import Any, Coroutine, TypeVar
+from typing import Any, Callable, Coroutine, TypeVar
 
 T = TypeVar("T")
 
@@ -37,3 +37,32 @@ def spawn(coroutine: Coroutine[None, None, T]) -> Task[T]:
     task.add_done_callback(all_tasks.discard)
 
     return task
+
+
+class UniqueTask:
+    """
+    A class to manage spawning unique async tasks,
+    ensuring only the latest one is running.
+    """
+
+    def __init__(self):
+        self._task: Task[Any] | None = None
+
+    def spawn(self, coro: Coroutine):
+        """
+        Spawns a new task, canceling the previous one if it exists.
+        """
+        self.cancel()
+        self._task = create_task(coro)
+
+    def cancel(self):
+        """Cancels the previous task if it exists."""
+        if self._task is not None and not self._task.done():
+            self._task.cancel()
+
+    def add_done_callback(self, callback: Callable[[Task[T]], Any]):
+        """
+        Adds a callback to be called when the current task is done.
+        """
+        if self._task is not None:
+            self._task.add_done_callback(callback)

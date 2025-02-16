@@ -2,7 +2,7 @@ import logging
 import math
 import random
 import webbrowser
-from asyncio import Task, current_task, sleep, wait
+from asyncio import sleep, wait
 from collections import deque
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -13,7 +13,7 @@ import pandas as pd
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6 import QtWidgets
 
-from solie.common import outsource, spawn, spawn_blocking
+from solie.common import UniqueTask, outsource, spawn, spawn_blocking
 from solie.overlay import DonationGuide, DownloadFillOption
 from solie.utility import (
     AggregateTrade,
@@ -57,7 +57,7 @@ class Collector:
         self.price_precisions: dict[str, int] = {}  # Symbol and decimal places
         self.markets_gone = set[str]()  # Symbols
 
-        self.download_fill_task: Task[None] | None = None
+        self.download_fill_task = UniqueTask()
 
         # ■■■■■ remember and display ■■■■■
 
@@ -429,14 +429,10 @@ class Collector:
         await spawn_blocking(webbrowser.open, "https://www.binance.com/en/landing/data")
 
     async def download_fill_candle_data(self):
-        # ■■■■■ run only one task instance at a time ■■■■■
+        self.download_fill_task.spawn(self._download_fill_candle_data())
 
-        if self.download_fill_task is not None:
-            self.download_fill_task.cancel()
-        this_task = current_task()
-        if this_task is None:
-            raise ValueError
-        self.download_fill_task = this_task
+    async def _download_fill_candle_data(self):
+        unique_task = self.download_fill_task
 
         # ■■■■■ ask filling type ■■■■■
 
@@ -544,7 +540,7 @@ class Collector:
 
         bar_task = spawn(play_progress_bar())
         bar_task.add_done_callback(lambda _: self.window.progressBar_3.setValue(0))
-        this_task.add_done_callback(lambda _: bar_task.cancel())
+        unique_task.add_done_callback(lambda _: bar_task.cancel())
 
         # ■■■■■ calculate in parellel ■■■■■
 
@@ -581,7 +577,7 @@ class Collector:
                 done_steps += 1
 
             fill_tasks = [spawn(download_fill(p)) for p in download_presets]
-            this_task.add_done_callback(lambda _: (t.cancel() for t in fill_tasks))
+            unique_task.add_done_callback(lambda _: (t.cancel() for t in fill_tasks))
             await wait(fill_tasks)
 
             if preset_year < current_year:
@@ -744,8 +740,7 @@ class Collector:
         duration_recorder.record()
 
     async def stop_filling_candle_data(self):
-        if self.download_fill_task is not None:
-            self.download_fill_task.cancel()
+        self.download_fill_task.cancel()
 
     async def guide_donation(self):
         await overlay(
