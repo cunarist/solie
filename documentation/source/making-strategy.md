@@ -2,7 +2,7 @@
 
 Python, known for its straightforward syntax and widespread popularity, is used for creating customized strategies.
 
-```{note} Some admonition
+```{note}
 Some variable types in this guide come from specific libraries, including both standard and external ones.
 
 - `solie`: `AccountState`, `Decision`, `Position`, `PositionDirection`, `OrderType`, `OpenOrder`
