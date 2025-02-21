@@ -1,6 +1,6 @@
 # Basic User Interface
 
-## 📈 How to Read Graph and Range Information
+## How to Read Graph and Range Information
 
 Only one coin can be displayed at a time. In the lower panel you can choose a coin that Solie should draw.
 
@@ -23,7 +23,7 @@ Only the returns of the actually executed trades are reflected in the "Total rea
 
 > Even if it is not an automatic order, if you buy and sell directly, the profit from the purchase is also reflected in this value.
 
-## 🎯 How to Choose a Strategy and Leverage
+## How to Choose a Strategy and Leverage
 
 It is recommended to check the return and risk of the strategy and leverage you want to choose through simulation before the actual automatic ordering.
 
@@ -35,7 +35,7 @@ After the simulation calculation, you can find the points with the lowest unreal
 
 > You do not need to recalculate every time you change the simulation leverage. Just enter the desired number and it will be updated shortly on the graph based on the already
 
-## 🛒 How to Order Automatically
+## How to Order Automatically
 
 Sign in at the Binance [account page](https://accounts.binance.com/).
 
@@ -59,7 +59,7 @@ Deposit in the form of you choose, such as `USDT` or `BUSD` to Binance futures w
 
 If you check "Auto-transact" in Solie, automatic order will be activate. Be sure that you've chosen the right strategy before you do this. Your money matters.calculated data.
 
-## 🧾 Extra Tips
+## Extra Tips
 
 - Solie was developed for Binance-focused automatic ordering and simulation purposes. Other exchanges are not supported.
 - Even if candle data has not been accumulated by turning off Solie for a while, the holes within the last 24 hours are gradually filled automatically.

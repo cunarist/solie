@@ -4,7 +4,7 @@ Guides below will help you dive into the Solie codebase.
 
 When using terminal commands from the following sections, always make sure that your current working directory is the root folder of the cloned repository.
 
-## 🧮 Running Code
+## Running Code
 
 You need to install some components on your system first. Begin by installing the Python package manager, [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
@@ -14,7 +14,7 @@ Execute the runner code inside its virtual environment.
 uv run -m usage
 ```
 
-## 🧰 Debugging
+## Debugging
 
 If there is Python code that you want to run, you can run it in the "Logs" of the "Manage" tab. After writing the code in the "Python script" input field, you can press "Run script" button to get the result. The `print` function won't help you because it prints to the terminal rather than the log list.
 
@@ -62,7 +62,7 @@ logger.debug(log_data)
 
 In the "Log output", all logs that occur during execution are stacked. If an error occurs, it is also logged. If you're writing a strategy script and something doesn't work, visit here to figure out the cause.
 
-## 🕹️ User Interface
+## User Interface
 
 The user interface can be modified by editing the `./craft/window.ui` file with `Qt Designer`. Run the designer app with the terminal command below.
 
@@ -76,7 +76,7 @@ After editing the UI file, you should compile it into a Python module.
 pyside6-uic craft/window.ui -o package/solie/window/compiled.py
 ```
 
-## 🚦 Rules
+## Rules
 
 ```shell
 uv sync

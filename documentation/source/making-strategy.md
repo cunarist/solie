@@ -10,7 +10,7 @@ Some variable types in this guide come from specific libraries, including both s
 - `datetime`: `datetime`
 ```
 
-## 📚 Basic Knowledge
+## Basic Knowledge
 
 "Symbol" refers to a market symbol that binds trading targets. A representative example is `BTCUSDT`.
 ![](_static/example_020.png)
@@ -42,7 +42,7 @@ It is recommended to set the "Chunk division" of parallel computation appropriat
 Basic simulation calculations cover the entire year, which is a slow operation that takes minutes to tens of minutes. If you want to experiment with that strategy a little faster, try performing a temporary calculation on the visible range.
 ![](_static/example_030.png)
 
-## 📊 Writing the Indicator Script
+## Writing the Indicator Script
 
 Indicator script is used to create indicators used for graph display and decision.
 
@@ -213,7 +213,7 @@ for symbol in target_symbols:
 
 ![](_static/example_014.png) As demonstrated, many variations are possible for indicators generation through coding.
 
-## ⚖️ Writing the Decision Script
+## Writing the Decision Script
 
 The decision script is executed repeatedly every 10 seconds, which is the time length of a single candle. It is used to determine whether to place an order or, if so, which order to place.
 
