@@ -4,20 +4,20 @@
 
 Only one coin can be displayed at a time. In the lower panel you can choose a coin that Solie should draw.
 
-![](assets/example_023.png)
+![](_static/example_023.png)
 
 The red dot is where you bought, and the blue dot is where you sold.
 
-![](assets/example_025.png)
+![](_static/example_025.png)
 
 When viewing the range information at the top of the graph, two types of information are provided. The one inside parenthesis is the combined contribution of all target coins, and the one outside the parenthesis is the contribution of only the currently displayed coin.
-![](assets/example_022.png)
+![](_static/example_022.png)
 
 In the price graph and asset graph, each major grid represents 1% and each minor grid represents 0.1%.
-![](assets/example_026.png)
+![](_static/example_026.png)
 
 In the asset graph, the orange line is the realized asset, and the gray line is the asset that even reflects unrealized profit. The gray line is the asset you are holding at the current price of the position you are holding. In the picture below, you can see the orange line sticking to the gray line as soon as you close the position.
-![](assets/example_035.png)
+![](_static/example_035.png)
 
 Only the returns of the actually executed trades are reflected in the "Total realized profit". Other asset changes such as deposits and withdrawals are not reflected in this value. Trading fees on Binance are reflected.
 
@@ -28,10 +28,10 @@ Only the returns of the actually executed trades are reflected in the "Total rea
 It is recommended to check the return and risk of the strategy and leverage you want to choose through simulation before the actual automatic ordering.
 
 To get meaningful results, you need to perform simulation calculations with enough candle data. In the "Collect" tab, you can fill the historical candle data.
-![](assets/example_028.png)
+![](_static/example_028.png)
 
 After the simulation calculation, you can find the points with the lowest unrealized returns. Experiment with varying simulation leverage. You can see when you were closest to a forced liquidation and how dangerous it was. As soon as it approaches -100%, A forced liquidation is made from Binance.
-![](assets/example_029.png)
+![](_static/example_029.png)
 
 > You do not need to recalculate every time you change the simulation leverage. Just enter the desired number and it will be updated shortly on the graph based on the already
 
@@ -48,10 +48,10 @@ On the key issue page[🔗](https://www.binance.com/en/my/settings/api-managemen
 > The secret key is only visible immediately after creation. If you go back later, it will be hidden so that no one can see it. Make a copy of that key right away.
 
 Check "Enable Futures" in the key edit page.
-![](assets/example_008.png)
+![](_static/example_008.png)
 
 Open "Transact" tab in Solie and enter the two issued keys in Solie. Doing so will receive and record your Binance account information.
-![](assets/example_009.png)
+![](_static/example_009.png)
 
 Deposit in the form of you choose, such as `USDT` or `BUSD` to Binance futures wallet as per the official instructions[🔗](https://www.binance.com/en/support/faq/360033773532).
 

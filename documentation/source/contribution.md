@@ -20,7 +20,7 @@ If there is Python code that you want to run, you can run it in the "Logs" of th
 
 Note that what you're running here is a real Python code. Therefore, you can import various modules including `solie` from the script.
 
-![](assets/example_005.png)
+![](_static/example_005.png)
 
 To output something as a log, you can use the default `logger`. When you run this code, you will see a new record being added to the log list in the debugger. `logger` can show anything of any type.
 
@@ -35,7 +35,7 @@ my_dictionary = {"a": "yahoo", "b": "hi"}
 logger.info(my_dictionary)
 ```
 
-![](assets/example_032.png)
+![](_static/example_032.png)
 
 You can also access workers. Direct modification of internal data is possible.
 
@@ -58,7 +58,7 @@ log_data = json.dumps(
 logger.debug(log_data)
 ```
 
-![](assets/example_034.png)
+![](_static/example_034.png)
 
 In the "Log output", all logs that occur during execution are stacked. If an error occurs, it is also logged. If you're writing a strategy script and something doesn't work, visit here to figure out the cause.
 
