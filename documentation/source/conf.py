@@ -15,7 +15,7 @@ release = "9.0.0"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = ["myst_parser"]
-source_suffix = {".rst": "restructuredtext", ".md": "markdown"}
+source_suffix = {".md": "markdown"}
 templates_path = ["_templates"]
 exclude_patterns = []
 
@@ -23,6 +23,8 @@ exclude_patterns = []
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "furo"
+html_title = "Solie"
 html_favicon = "_static/logo.png"
 html_static_path = ["_static"]
 html_show_sphinx = False
+html_show_sourcelink = False
