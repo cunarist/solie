@@ -1,4 +1,5 @@
-from pygments import lex, lexers
+from pygments import lex
+from pygments.lexers import get_lexer_by_name
 from PySide6.QtGui import QBrush, QColor, QSyntaxHighlighter, QTextCharFormat
 from PySide6.QtWidgets import QWidget
 from typing_extensions import override
@@ -23,7 +24,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        self._lexer = lexers.PythonLexer()
+        self._lexer = get_lexer_by_name("python")
         self._mapping: dict[str, QTextCharFormat] = {}
 
         text_type = "Token.Keyword"
