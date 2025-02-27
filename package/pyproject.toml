@@ -1,6 +1,6 @@
 [project]
 name = "solie"
-version = "9.0.1"
+version = "9.0.2"
 description = "GUI trading bot designed for targeting the futures markets of Binance"
 authors = [{ name = "Cunarist", email = "cunarist@gmail.com" }]
 readme = "README.md"
