@@ -10,7 +10,7 @@ import aiofiles.os
 import pandas as pd
 import pyqtgraph
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont, QIcon, QPixmap
+from PySide6.QtGui import QCloseEvent, QFont, QIcon, QMouseEvent, QPixmap
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -70,7 +70,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.should_confirm_closing = False
 
     @override
-    def closeEvent(self, event):
+    def closeEvent(self, event: QCloseEvent):
         event.ignore()
 
         async def job_close():
@@ -99,7 +99,7 @@ class Window(QMainWindow, Ui_MainWindow):
         spawn(job_close())
 
     @override
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event: QMouseEvent):
         self.last_interaction = datetime.now(timezone.utc)
 
         if self.board.isEnabled():
