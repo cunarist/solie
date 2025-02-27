@@ -103,6 +103,12 @@ class SavedStrategy(Strategy):
         }
         exec(code, namespace)
 
+    def __getstate__(self):
+        # We need to exclude
+        # cached `CodeType` objects from pickling to avoid errors.
+        # Strategies are commonly pickled for multiprocessing.
+        return {k: v for k, v in vars(self).items() if not isinstance(v, CodeType)}
+
 
 class SavedStrategies(BaseModel):
     all: list[SavedStrategy]
