@@ -22,6 +22,11 @@ logger = logging.getLogger(__name__)
 
 
 async def keep_processing_events(app: QApplication):
+    """
+    `Qt` does not have proper async support, as it is focused on threads.
+    To use async-based concurrency, we need to periodically process UI events.
+    Third-party polling libraries are not very reliable.
+    """
     interval = 1 / 240
     while True:
         app.processEvents()
