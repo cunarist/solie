@@ -1,6 +1,6 @@
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont, QTextCursor
-from PySide6.QtWidgets import QPlainTextEdit
+from PySide6.QtGui import QFocusEvent, QFont, QKeyEvent, QTextCursor
+from PySide6.QtWidgets import QPlainTextEdit, QWidget
 from typing_extensions import override
 from yapf.yapflib.errors import YapfError
 from yapf.yapflib.yapf_api import FormatCode
@@ -9,7 +9,7 @@ from solie.utility import SyntaxHighlighter
 
 
 class ScriptEditor(QPlainTextEdit):
-    def __init__(self, parent):
+    def __init__(self, parent: QWidget):
         super().__init__(parent)
         self.fixed_width_font = QFont("Source Code Pro", 9)
         self.setFont(self.fixed_width_font)
@@ -17,8 +17,7 @@ class ScriptEditor(QPlainTextEdit):
         SyntaxHighlighter(parent).setDocument(self.document())
 
     @override
-    def keyPressEvent(self, e):
-        event = e
+    def keyPressEvent(self, event: QKeyEvent):
         should_indent = event.key() == Qt.Key.Key_Tab
         should_dedent = event.key() == Qt.Key.Key_Backtab
         if should_indent or should_dedent:
@@ -59,8 +58,7 @@ class ScriptEditor(QPlainTextEdit):
         return super().keyPressEvent(event)
 
     @override
-    def focusOutEvent(self, e):
-        event = e
+    def focusOutEvent(self, event: QFocusEvent):
         # apply formatter style
         scroll_position = self.verticalScrollBar().value()
         text = self.toPlainText()

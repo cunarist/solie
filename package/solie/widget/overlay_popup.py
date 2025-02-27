@@ -2,8 +2,8 @@
 from asyncio import Event
 from typing import TypeVar
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
+from PySide6.QtCore import QEvent, QObject, Qt
+from PySide6.QtGui import QFont, QShowEvent
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -47,13 +47,13 @@ class OverlayPopup(QWidget):
     installed_window: QMainWindow
 
     @override
-    def showEvent(self, event):
+    def showEvent(self, event: QShowEvent):
         # needed for filling the window when resized
         parent: QMainWindow = self.parent()  # type:ignore
         self.setGeometry(parent.rect())
 
     @override
-    def eventFilter(self, watched, event):
+    def eventFilter(self, watched: QObject, event: QEvent):
         if not isinstance(watched, QWidget):
             raise NotImplementedError
         # needed for filling the window when resized

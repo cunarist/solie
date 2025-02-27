@@ -1,11 +1,12 @@
 from pygments import lex, lexers
 from PySide6.QtGui import QBrush, QColor, QSyntaxHighlighter, QTextCharFormat
+from PySide6.QtWidgets import QWidget
 from typing_extensions import override
 
 
 class SyntaxHighlighter(QSyntaxHighlighter):
     @override
-    def highlightBlock(self, text):
+    def highlightBlock(self, text: str):
         current_position = 0
 
         for token, text_block in lex(text, self._lexer):
@@ -19,7 +20,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
                 self.setFormat(current_position, length, text_format)
             current_position += length
 
-    def __init__(self, parent):
+    def __init__(self, parent: QWidget):
         super().__init__(parent)
 
         self._lexer = lexers.PythonLexer()

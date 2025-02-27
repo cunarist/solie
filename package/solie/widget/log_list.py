@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QVBoxLayout,
+    QWidget,
 )
 
 from solie.common import outsource
@@ -32,7 +33,7 @@ class LogOverlay(BaseOverlay):
 
 
 class LogList(QListWidget):
-    def __init__(self, parent):
+    def __init__(self, parent: QWidget):
         super().__init__(parent)
         self.fixed_width_font = QFont("Source Code Pro", 9)
         self.setFont(self.fixed_width_font)
