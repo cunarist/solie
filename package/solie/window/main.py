@@ -232,7 +232,8 @@ class Window(QMainWindow, Ui_MainWindow):
         coin_ranks: dict[str, int] = {}
 
         for about_coin in response:
-            coin_symbol = about_coin["symbol"].upper()
+            raw_symbol: str = about_coin["symbol"]
+            coin_symbol = raw_symbol.upper()
             coin_names[coin_symbol] = about_coin["name"]
             coin_icon_urls[coin_symbol] = about_coin["image"]
             coin_ranks[coin_symbol] = about_coin["market_cap_rank"]
