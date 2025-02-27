@@ -57,17 +57,18 @@ class SavedStrategy(Strategy):
     indicator_script: str = "pass"
     decision_script: str = "pass"
 
+    _compiled_indicator_script: CodeType | None = None
+    _compiled_decision_script: CodeType | None = None
+
     def create_indicators(self, given: IndicatorInput):
         target_symbols = given.target_symbols
         candle_data = given.candle_data
         new_indicators = given.new_indicators
 
-        code_field = "_compiled_indicator_script"
-        try:
-            code: CodeType = getattr(self, code_field)
-        except AttributeError:
-            code = compile(self.indicator_script, "<string>", "exec")
-            setattr(self, code_field, code)
+        if self._compiled_indicator_script is None:
+            code = self.indicator_script
+        else:
+            code = self._compiled_indicator_script
 
         namespace = {
             "target_symbols": target_symbols,
@@ -85,12 +86,10 @@ class SavedStrategy(Strategy):
         scribbles = given.scribbles
         new_decisions = given.new_decisions
 
-        code_field = "_compiled_decision_script"
-        try:
-            code: CodeType = getattr(self, code_field)
-        except AttributeError:
-            code = compile(self.decision_script, "<string>", "exec")
-            setattr(self, code_field, code)
+        if self._compiled_decision_script is None:
+            code = self.decision_script
+        else:
+            code = self._compiled_decision_script
 
         namespace = {
             "target_symbols": target_symbols,
@@ -103,11 +102,19 @@ class SavedStrategy(Strategy):
         }
         exec(code, namespace)
 
-    def __getstate__(self):
-        # We need to exclude
-        # cached `CodeType` objects from pickling to avoid errors.
-        # Strategies are commonly pickled for multiprocessing.
-        return {k: v for k, v in vars(self).items() if not isinstance(v, CodeType)}
+    def compile_code(self):
+        """
+        Enables faster execution of the strategy code
+        by precompiling the text-based script.
+        This is needed for high-performance simulation.
+        After this method is called, the instance becomes unpicklable.
+        """
+        self._compiled_indicator_script = compile(
+            self.indicator_script, "<string>", "exec"
+        )
+        self._compiled_decision_script = compile(
+            self.decision_script, "<string>", "exec"
+        )
 
 
 class SavedStrategies(BaseModel):

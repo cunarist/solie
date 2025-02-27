@@ -22,6 +22,7 @@ from .data_models import (
     VirtualPlacement,
     VirtualState,
 )
+from .user_settings import SavedStrategy
 
 GRAPH_TYPES = ["PRICE", "VOLUME", "ABSTRACT"]
 
@@ -196,6 +197,9 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
     chunk_scribbles = calculation_input.chunk_scribbles
     chunk_account_state = calculation_input.chunk_account_state
     chunk_virtual_state = calculation_input.chunk_virtual_state
+
+    if isinstance(strategy, SavedStrategy):
+        strategy.compile_code()
 
     # ■■■■■ basic values ■■■■■
 
