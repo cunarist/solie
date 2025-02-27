@@ -23,7 +23,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
         super().__init__(parent)
 
         self._lexer = lexers.PythonLexer()
-        self._mapping = {}
+        self._mapping: dict[str, QTextCharFormat] = {}
 
         text_type = "Token.Keyword"
         hex_color = "#d1939e"

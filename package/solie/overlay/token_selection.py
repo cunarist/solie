@@ -60,9 +60,9 @@ class TokenSelection(BaseOverlay):
             },
         )
 
-        coin_names = {}
-        coin_icon_urls = {}
-        coin_ranks = {}
+        coin_names: dict[str, str] = {}
+        coin_icon_urls: dict[str, str] = {}
+        coin_ranks: dict[str, int] = {}
 
         for about_coin in response:
             coin_symbol = about_coin["symbol"].upper()
@@ -130,7 +130,7 @@ class TokenSelection(BaseOverlay):
         card_layout.addWidget(spacing_text)
 
         # input
-        token_icon_labels = {}
+        token_icon_labels: dict[str, QLabel] = {}
         input_layout = QGridLayout()
         blank_coin_pixmap = QPixmap()
         blank_coin_pixmap.load(str(PACKAGE_PATH / "static" / "icon/blank_coin.png"))

@@ -8,7 +8,7 @@ T = TypeVar("T")
 
 
 def list_to_dict(input_list: list[dict[F, K]], key_for_key: F) -> dict[K, dict[F, K]]:
-    new_dict = {}
+    new_dict: dict[K, dict[F, K]] = {}
     for item in input_list:
         if key_for_key in item:
             key = item[key_for_key]

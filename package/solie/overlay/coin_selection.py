@@ -61,9 +61,9 @@ class CoinSelection(BaseOverlay):
             },
         )
 
-        coin_names = {}
-        coin_icon_urls = {}
-        coin_ranks = {}
+        coin_names: dict[str, str] = {}
+        coin_icon_urls: dict[str, str] = {}
+        coin_ranks: dict[str, int] = {}
 
         for about_coin in response:
             raw_symbol: str = about_coin["symbol"]

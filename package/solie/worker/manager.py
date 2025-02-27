@@ -5,6 +5,7 @@ import webbrowser
 from asyncio import all_tasks, sleep
 from collections import deque
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 import aiofiles
 import aiofiles.os
@@ -44,7 +45,7 @@ class Manager:
 
         self.ping = 0
         self.server_time_differences = deque[float](maxlen=60)
-        self.binance_limits = {}
+        self.binance_limits: dict[str, int] = {}
 
         self.management_settings = ManagementSettings()
 
@@ -226,7 +227,7 @@ class Manager:
 
         async def job():
             request_time = datetime.now(timezone.utc)
-            payload = {}
+            payload: dict[str, Any] = {}
             response = await self.api_requester.binance(
                 http_method="GET",
                 path="/fapi/v1/time",
@@ -288,7 +289,7 @@ class Manager:
         if not internet_connected():
             return
 
-        payload = {}
+        payload: dict[str, Any] = {}
         response = await self.api_requester.binance(
             http_method="GET",
             path="/fapi/v1/exchangeInfo",

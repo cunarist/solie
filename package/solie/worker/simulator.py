@@ -543,7 +543,7 @@ class Simulator:
 
         blank_asset_record = create_empty_asset_record()
         blank_unrealized_changes = create_empty_unrealized_changes()
-        blank_scribbles = {}
+        blank_scribbles: dict[Any, Any] = {}
         blank_account_state = create_empty_account_state(
             self.window.data_settings.target_symbols
         )

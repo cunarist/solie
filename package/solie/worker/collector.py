@@ -211,7 +211,7 @@ class Collector:
         if not internet_connected():
             return
 
-        payload = {}
+        payload: dict[str, Any] = {}
         response = await self.api_requester.binance(
             http_method="GET",
             path="/fapi/v1/exchangeInfo",
@@ -222,7 +222,7 @@ class Collector:
         for about_symbol in about_exchange["symbols"]:
             symbol = about_symbol["symbol"]
 
-            about_filter = {}
+            about_filter: dict[str, Any] = {}
             for filter in about_symbol["filters"]:
                 if filter["filterType"] == "PRICE_FILTER":
                     about_filter = filter

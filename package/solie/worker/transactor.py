@@ -83,7 +83,7 @@ class Transactor:
             window.data_settings.target_symbols
         )
 
-        self.scribbles = {}
+        self.scribbles: dict[Any, Any] = {}
         self.transaction_settings = TransactionSettings()
         self.unrealized_changes = RWLock(create_empty_unrealized_changes())
         self.asset_record = RWLock(create_empty_asset_record())
@@ -1123,7 +1123,7 @@ class Transactor:
         # ■■■■■ tell if some symbol's leverage cannot be set as desired ■■■■■
 
         target_symbols = self.window.data_settings.target_symbols
-        target_max_leverages = {}
+        target_max_leverages: dict[str, int] = {}
         for symbol in target_symbols:
             max_leverage = self.maximum_leverages.get(symbol, 125)
             target_max_leverages[symbol] = max_leverage
@@ -1172,7 +1172,7 @@ class Transactor:
 
         # ■■■■■ Request exchange information ■■■■■
 
-        payload = {}
+        payload: dict[str, Any] = {}
         response = await self.api_requester.binance(
             http_method="GET",
             path="/fapi/v1/exchangeInfo",
@@ -1240,7 +1240,7 @@ class Transactor:
             # when the key is not ready
             return
 
-        about_open_orders = {}
+        about_open_orders: dict[str, list[dict[str, Any]]] = {}
 
         async def job(symbol):
             payload = {

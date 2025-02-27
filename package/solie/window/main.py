@@ -259,7 +259,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         is_long = len(target_symbols) > 5
 
-        symbol_pixmaps = {}
+        symbol_pixmaps: dict[str, QPixmap] = {}
         for symbol in target_symbols:
             coin_symbol = symbol.removesuffix(asset_token)
             coin_icon_url = coin_icon_urls.get(coin_symbol, "")
