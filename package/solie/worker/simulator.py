@@ -16,6 +16,7 @@ from solie.common import UniqueTask, get_sync_manager, outsource, spawn, spawn_b
 from solie.utility import (
     AccountState,
     CalculationInput,
+    CalculationOutput,
     DurationRecorder,
     PositionDirection,
     RWLock,
@@ -710,7 +711,7 @@ class Simulator:
 
         # ■■■■■ calculate ■■■■■
 
-        calculation_output_data = []
+        calculation_output_data: list[CalculationOutput] = []
 
         if should_calculate:
             coroutines = [

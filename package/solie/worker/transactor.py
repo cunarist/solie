@@ -4,7 +4,7 @@ import pickle
 import webbrowser
 from asyncio import gather, sleep, wait
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import Any, Coroutine
 
 import aiofiles
 import aiofiles.os
@@ -1055,7 +1055,7 @@ class Transactor:
 
         # Split the candle data by symbol before calculation to reduct UI lags
         columns = [str(s) for s in cell.data.columns]
-        coroutines = []
+        coroutines: list[Coroutine[Any, Any, pd.DataFrame]] = []
         for symbol in target_symbols:
             chosen_columns = [s for s in columns if s.startswith(symbol)]
             coroutines.append(
@@ -1140,7 +1140,7 @@ class Transactor:
                 ["Show details", "Okay"],
             )
             if answer == 1:
-                texts = []
+                texts: list[str] = []
                 for symbol, max_leverage in target_max_leverages.items():
                     texts.append(f"{symbol} {max_leverage}")
                 text = "\n".join(texts)
@@ -1604,14 +1604,14 @@ class Transactor:
 
         # These orders must be executed one after another.
         # For example, some `later_orders` expect a position made from `now_orders`
-        cancel_orders = []
+        cancel_orders: list[dict[str, Any]] = []
 
         for symbol in target_symbols:
             if symbol not in decisions:
                 continue
 
             if OrderType.CANCEL_ALL in decisions[symbol]:
-                cancel_order = {
+                cancel_order: dict[str, Any] = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
                 }
@@ -1623,7 +1623,7 @@ class Transactor:
 
         # ■■■■■ Do now orders ■■■■■
 
-        now_orders = []
+        now_orders: list[dict[str, Any]] = []
 
         for symbol in target_symbols:
             if symbol not in decisions:
@@ -1642,7 +1642,7 @@ class Transactor:
                     order_side = (
                         "SELL" if current_direction == PositionDirection.LONG else "BUY"
                     )
-                    new_order = {
+                    new_order: dict[str, Any] = {
                         "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                         "symbol": symbol,
                         "type": "MARKET",
@@ -1660,7 +1660,7 @@ class Transactor:
                 decision = decisions[symbol][OrderType.NOW_BUY]
                 notional = max(minimum_notional, decision.margin * leverage)
                 quantity = min(maximum_quantity, notional / current_price)
-                new_order = {
+                new_order: dict[str, Any] = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
                     "type": "MARKET",
@@ -1674,7 +1674,7 @@ class Transactor:
                 decision = decisions[symbol][OrderType.NOW_SELL]
                 notional = max(minimum_notional, decision.margin * leverage)
                 quantity = min(maximum_quantity, notional / current_price)
-                new_order = {
+                new_order: dict[str, Any] = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
                     "type": "MARKET",
@@ -1690,7 +1690,7 @@ class Transactor:
 
         # ■■■■■ Do book orders ■■■■■
 
-        book_orders = []
+        book_orders: list[dict[str, Any]] = []
 
         for symbol in target_symbols:
             if symbol not in decisions:
@@ -1707,7 +1707,7 @@ class Transactor:
                 notional = max(minimum_notional, decision.margin * leverage)
                 boundary = decision.boundary
                 quantity = min(maximum_quantity, notional / boundary)
-                new_order = {
+                new_order: dict[str, Any] = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
                     "type": "LIMIT",
@@ -1723,7 +1723,7 @@ class Transactor:
                 notional = max(minimum_notional, decision.margin * leverage)
                 boundary = decision.boundary
                 quantity = min(maximum_quantity, notional / boundary)
-                new_order = {
+                new_order: dict[str, Any] = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
                     "type": "LIMIT",
@@ -1740,7 +1740,7 @@ class Transactor:
 
         # ■■■■■ Do later orders ■■■■■
 
-        later_orders = []
+        later_orders: list[dict[str, Any]] = []
 
         for symbol in target_symbols:
             if symbol not in decisions:
@@ -1779,7 +1779,7 @@ class Transactor:
                     else:
                         order_side = "BUY"
                         order_type = "STOP_MARKET"
-                    new_order = {
+                    new_order: dict[str, Any] = {
                         "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                         "symbol": symbol,
                         "type": order_type,
@@ -1801,7 +1801,7 @@ class Transactor:
                     else:
                         order_side = "BUY"
                         order_type = "TAKE_PROFIT_MARKET"
-                    new_order = {
+                    new_order: dict[str, Any] = {
                         "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                         "symbol": symbol,
                         "type": order_type,
@@ -1819,7 +1819,7 @@ class Transactor:
                 notional = max(minimum_notional, decision.margin * leverage)
                 boundary = decision.boundary
                 quantity = min(maximum_quantity, notional / boundary)
-                new_order = {
+                new_order: dict[str, Any] = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
                     "type": "STOP_MARKET",
@@ -1834,7 +1834,7 @@ class Transactor:
                 notional = max(minimum_notional, decision.margin * leverage)
                 boundary = decision.boundary
                 quantity = min(maximum_quantity, notional / boundary)
-                new_order = {
+                new_order: dict[str, Any] = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
                     "type": "TAKE_PROFIT_MARKET",
@@ -1849,7 +1849,7 @@ class Transactor:
                 notional = max(minimum_notional, decision.margin * leverage)
                 boundary = decision.boundary
                 quantity = min(maximum_quantity, notional / boundary)
-                new_order = {
+                new_order: dict[str, Any] = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
                     "type": "TAKE_PROFIT_MARKET",
@@ -1864,7 +1864,7 @@ class Transactor:
                 notional = max(minimum_notional, decision.margin * leverage)
                 boundary = decision.boundary
                 quantity = min(maximum_quantity, notional / boundary)
-                new_order = {
+                new_order: dict[str, Any] = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                     "symbol": symbol,
                     "type": "STOP_MARKET",

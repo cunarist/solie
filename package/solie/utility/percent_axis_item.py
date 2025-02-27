@@ -16,7 +16,7 @@ class PercentAxisItem(AxisItem):
 
         major_ticks = [1.01**i for i in range(min_power, max_power + 1)]
 
-        minor_ticks = []
+        minor_ticks: list[float] = []
         factors = [1 + i * 0.001 for i in range(1, 10)]
         for power in range(min_power - 1, max_power + 1):
             for factor in factors:
@@ -34,7 +34,7 @@ class PercentAxisItem(AxisItem):
         optimal_count = max(2, math.ceil(self.size().height() / 20))
         distance = spacing / optimal_count
 
-        strings = []
+        strings: list[str] = []
 
         if len(values) > 0:
             next_condition = values[0]

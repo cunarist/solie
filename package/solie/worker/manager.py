@@ -144,7 +144,7 @@ class Manager:
 
     async def display_internal_status(self):
         while True:
-            texts = []
+            texts: list[str] = []
             tasks = all_tasks()
             tasks_not_done = 0
             for task in tasks:
@@ -161,7 +161,7 @@ class Manager:
 
             self.window.label_32.setText(f"Process count: {PROCESS_COUNT}")
 
-            texts = []
+            texts: list[str] = []
             texts.append("Limits")
             for limit_type, limit_value in self.binance_limits.items():
                 text = f"{limit_type}: {limit_value}"
@@ -177,7 +177,7 @@ class Manager:
             text = "\n".join(texts)
             self.window.label_35.setText(text)
 
-            texts = []
+            texts: list[str] = []
             task_durations = DurationRecorder.task_durations
             for data_name, deque_data in task_durations.items():
                 if len(deque_data) > 0:
@@ -196,7 +196,7 @@ class Manager:
             text = "\n\n".join(texts)
             self.window.label_33.setText(text)
 
-            texts = []
+            texts: list[str] = []
             async with team.collector.candle_data.read_lock as cell:
                 candle_data_len = len(cell.data)
             texts.append(f"CANDLE_DATA {candle_data_len}")

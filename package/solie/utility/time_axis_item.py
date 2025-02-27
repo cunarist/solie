@@ -20,7 +20,7 @@ class TimeAxisItem(AxisItem):
         dt2 = datetime.fromtimestamp(max_value, tz=timezone.utc)
 
         box_seconds = (max_value - min_value) / size * 1000
-        majticks = []
+        majticks: list[float] = []
 
         if box_seconds > 3600 * 24 * (365 + 366):  # 2 years (count leap year)
             distance = timedelta(days=366)
@@ -79,7 +79,7 @@ class TimeAxisItem(AxisItem):
 
         elif box_seconds > 2:  # 2s
             distance = timedelta(seconds=1)
-            majticks = range(int(min_value), int(max_value))
+            majticks = list(range(int(min_value), int(max_value)))
 
         else:  # <2s , use standard implementation from parent
             return AxisItem.tickValues(self, min_value, max_value, size)
@@ -95,7 +95,7 @@ class TimeAxisItem(AxisItem):
         if count > 12:
             sample = math.ceil((count / 12))
         offset = math.floor((count % sample) / 2)
-        return_data = []
+        return_data: list[str] = []
 
         if not values:
             return []

@@ -256,7 +256,7 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
 
             # special placements
             if OrderType.CANCEL_ALL in chunk_virtual_state.placements[symbol]:
-                cancel_placement_names = []
+                cancel_placement_names: list[OrderType] = []
                 for order_type in chunk_virtual_state.placements[symbol].keys():
                     if order_type.is_later() or order_type.is_book():
                         cancel_placement_names.append(order_type)

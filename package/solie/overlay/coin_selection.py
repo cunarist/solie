@@ -38,7 +38,7 @@ class CoinSelection(BaseOverlay):
 
         # ■■■■■ get available symbols ■■■■■
 
-        available_symbols = []
+        available_symbols: list[str] = []
 
         response = await api_requester.binance(
             http_method="GET",
