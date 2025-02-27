@@ -1,9 +1,10 @@
 import functools
 from asyncio import get_event_loop
+from collections.abc import Callable
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import Manager, cpu_count
 from multiprocessing.managers import SyncManager
-from typing import Callable, ParamSpec, TypeVar
+from typing import ParamSpec, TypeVar
 
 T = TypeVar("T")
 P = ParamSpec("P")

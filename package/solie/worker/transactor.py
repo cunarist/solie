@@ -3,8 +3,9 @@ import math
 import pickle
 import webbrowser
 from asyncio import gather, sleep, wait
+from collections.abc import Coroutine
 from datetime import datetime, timedelta, timezone
-from typing import Any, Coroutine
+from typing import Any
 
 import aiofiles
 import aiofiles.os

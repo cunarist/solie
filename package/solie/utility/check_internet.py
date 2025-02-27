@@ -1,6 +1,7 @@
 import logging
 from asyncio import Event, sleep
-from typing import Any, Callable, Coroutine
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 from aiohttp import ClientSession
 

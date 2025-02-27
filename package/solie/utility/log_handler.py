@@ -1,9 +1,9 @@
 import logging
 import time
 from asyncio import Lock
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable
 
 import aiofiles
 import aiofiles.os
