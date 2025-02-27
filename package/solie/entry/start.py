@@ -1,9 +1,8 @@
 import sys
-from asyncio import set_event_loop
+from asyncio import run
 from typing import NoReturn
 
-from PySide6 import QtWidgets
-from qasync import QEventLoop
+from PySide6.QtWidgets import QApplication
 
 from solie.common import prepare_process_pool
 from solie.utility import SolieConfig
@@ -17,11 +16,7 @@ def bring_to_life(config: SolieConfig | None = None) -> NoReturn:
     if config is None:
         config = SolieConfig()
 
-    app = QtWidgets.QApplication()
-    event_loop = QEventLoop(app)
-    set_event_loop(event_loop)
-
-    with event_loop:
-        event_loop.run_until_complete(live(app, config))
+    app = QApplication()
+    run(live(app, config))
 
     sys.exit()

@@ -2,7 +2,8 @@ import logging
 from asyncio import Event, sleep, wait
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from PySide6 import QtGui, QtWidgets
+from PySide6.QtGui import QColor, QFont, QFontDatabase, QPalette
+from PySide6.QtWidgets import QApplication
 
 from solie.common import PACKAGE_NAME, PACKAGE_PATH, spawn
 from solie.utility import SolieConfig
@@ -20,29 +21,36 @@ from solie.worker import (
 logger = logging.getLogger(__name__)
 
 
-async def live(app: QtWidgets.QApplication, config: SolieConfig):
+async def keep_processing_events(app: QApplication):
+    interval = 1 / 240
+    while True:
+        app.processEvents()
+        await sleep(interval)
+
+
+async def live(app: QApplication, config: SolieConfig):
     staticpath = PACKAGE_PATH / "static"
-    QtGui.QFontDatabase.addApplicationFont(str(staticpath / "source_code_pro.ttf"))
-    QtGui.QFontDatabase.addApplicationFont(str(staticpath / "notosans_regular.ttf"))
-    QtGui.QFontDatabase.addApplicationFont(str(staticpath / "lexend_bold.ttf"))
-    default_font = QtGui.QFont("Noto Sans", 9)
+    QFontDatabase.addApplicationFont(str(staticpath / "source_code_pro.ttf"))
+    QFontDatabase.addApplicationFont(str(staticpath / "notosans_regular.ttf"))
+    QFontDatabase.addApplicationFont(str(staticpath / "lexend_bold.ttf"))
+    default_font = QFont("Noto Sans", 9)
     app.setFont(default_font)
 
-    dark_palette = QtGui.QPalette()
-    color_role = QtGui.QPalette.ColorRole
-    dark_palette.setColor(color_role.Window, QtGui.QColor(29, 29, 29))
-    dark_palette.setColor(color_role.WindowText, QtGui.QColor(230, 230, 230))
-    dark_palette.setColor(color_role.Base, QtGui.QColor(22, 22, 22))
-    dark_palette.setColor(color_role.AlternateBase, QtGui.QColor(29, 29, 29))
-    dark_palette.setColor(color_role.ToolTipBase, QtGui.QColor(230, 230, 230))
-    dark_palette.setColor(color_role.ToolTipText, QtGui.QColor(230, 230, 230))
-    dark_palette.setColor(color_role.Text, QtGui.QColor(230, 230, 230))
-    dark_palette.setColor(color_role.Button, QtGui.QColor(29, 29, 29))
-    dark_palette.setColor(color_role.ButtonText, QtGui.QColor(230, 230, 230))
-    dark_palette.setColor(color_role.BrightText, QtGui.QColor(255, 180, 0))
-    dark_palette.setColor(color_role.Link, QtGui.QColor(42, 130, 218))
-    dark_palette.setColor(color_role.Highlight, QtGui.QColor(42, 130, 218))
-    dark_palette.setColor(color_role.HighlightedText, QtGui.QColor(0, 0, 0))
+    dark_palette = QPalette()
+    color_role = QPalette.ColorRole
+    dark_palette.setColor(color_role.Window, QColor(29, 29, 29))
+    dark_palette.setColor(color_role.WindowText, QColor(230, 230, 230))
+    dark_palette.setColor(color_role.Base, QColor(22, 22, 22))
+    dark_palette.setColor(color_role.AlternateBase, QColor(29, 29, 29))
+    dark_palette.setColor(color_role.ToolTipBase, QColor(230, 230, 230))
+    dark_palette.setColor(color_role.ToolTipText, QColor(230, 230, 230))
+    dark_palette.setColor(color_role.Text, QColor(230, 230, 230))
+    dark_palette.setColor(color_role.Button, QColor(29, 29, 29))
+    dark_palette.setColor(color_role.ButtonText, QColor(230, 230, 230))
+    dark_palette.setColor(color_role.BrightText, QColor(255, 180, 0))
+    dark_palette.setColor(color_role.Link, QColor(42, 130, 218))
+    dark_palette.setColor(color_role.Highlight, QColor(42, 130, 218))
+    dark_palette.setColor(color_role.HighlightedText, QColor(0, 0, 0))
     app.setStyle("Fusion")
     app.setPalette(dark_palette)
 
@@ -53,6 +61,7 @@ async def live(app: QtWidgets.QApplication, config: SolieConfig):
     window.setPalette(dark_palette)
     AskPopup.install_window(window)
     OverlayPopup.install_window(window)
+    spawn(keep_processing_events(app))
 
     logging.getLogger(PACKAGE_NAME).setLevel("DEBUG")
     await window.boot()
