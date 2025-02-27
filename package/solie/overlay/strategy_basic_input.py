@@ -1,6 +1,22 @@
 import re
 
-from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont, QPixmap
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QFormLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QSizePolicy,
+    QSpacerItem,
+    QSpinBox,
+    QTextEdit,
+    QVBoxLayout,
+)
 
 from solie.common import PACKAGE_PATH, outsource
 from solie.utility import RiskLevel, Strategy, is_left_version_higher
@@ -15,40 +31,40 @@ class StrategyBasicInput(BaseOverlay):
 
         # ■■■■■ full layout ■■■■■
 
-        full_layout = QtWidgets.QHBoxLayout(self)
-        cards_layout = QtWidgets.QVBoxLayout()
+        full_layout = QHBoxLayout(self)
+        cards_layout = QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
         # ■■■■■ spacing ■■■■■
 
         # spacing
-        spacer = QtWidgets.QSpacerItem(
+        spacer = QSpacerItem(
             0,
             0,
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding,
         )
         cards_layout.addItem(spacer)
 
         # ■■■■■ a card ■■■■■
 
         # card structure
-        card = QtWidgets.QGroupBox()
+        card = QGroupBox()
         card.setFixedWidth(720)
-        card_layout = QtWidgets.QVBoxLayout(card)
+        card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
         cards_layout.addWidget(card)
 
         # explanation
-        detail_text = QtWidgets.QLabel()
+        detail_text = QLabel()
         detail_text.setText("About")
-        detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        detail_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
         detail_text.setWordWrap(True)
         card_layout.addWidget(detail_text)
 
         # spacing
-        spacing_text = QtWidgets.QLabel("")
-        spacing_text_font = QtGui.QFont()
+        spacing_text = QLabel("")
+        spacing_text_font = QFont()
         spacing_text_font.setPointSize(3)
         spacing_text.setFont(spacing_text_font)
         card_layout.addWidget(spacing_text)
@@ -58,34 +74,34 @@ class StrategyBasicInput(BaseOverlay):
         card_layout.addWidget(divider)
 
         # spacing
-        spacing_text = QtWidgets.QLabel("")
-        spacing_text_font = QtGui.QFont()
+        spacing_text = QLabel("")
+        spacing_text_font = QFont()
         spacing_text_font.setPointSize(3)
         spacing_text.setFont(spacing_text_font)
         card_layout.addWidget(spacing_text)
 
         # input
-        this_layout = QtWidgets.QFormLayout()
+        this_layout = QFormLayout()
         card_layout.addLayout(this_layout)
-        code_name_input = QtWidgets.QLineEdit()
+        code_name_input = QLineEdit()
         code_name_input.setText(strategy.code_name)
         this_layout.addRow("Code name", code_name_input)
-        readable_name_input = QtWidgets.QLineEdit()
+        readable_name_input = QLineEdit()
         readable_name_input.setText(strategy.readable_name)
         this_layout.addRow("Readable name", readable_name_input)
-        version_input = QtWidgets.QLineEdit()
+        version_input = QLineEdit()
         version_input.setText(strategy.version)
         this_layout.addRow("Version", version_input)
-        description_input = QtWidgets.QTextEdit()
+        description_input = QTextEdit()
         description_input.setPlainText(strategy.description)
         this_layout.addRow("Description", description_input)
-        risk_level_input = QtWidgets.QComboBox()
+        risk_level_input = QComboBox()
         iconpath = PACKAGE_PATH / "static" / "icon"
-        red_pixmap = QtGui.QPixmap()
+        red_pixmap = QPixmap()
         red_pixmap.load(str(iconpath / "traffic_light_red.png"))
-        yellow_pixmap = QtGui.QPixmap()
+        yellow_pixmap = QPixmap()
         yellow_pixmap.load(str(iconpath / "traffic_light_yellow.png"))
-        green_pixmap = QtGui.QPixmap()
+        green_pixmap = QPixmap()
         green_pixmap.load(str(iconpath / "traffic_light_green.png"))
         risk_level_input.addItem(green_pixmap, "Low")
         risk_level_input.addItem(yellow_pixmap, "Middle")
@@ -96,22 +112,22 @@ class StrategyBasicInput(BaseOverlay):
         # ■■■■■ a card ■■■■■
 
         # card structure
-        card = QtWidgets.QGroupBox()
+        card = QGroupBox()
         card.setFixedWidth(720)
-        card_layout = QtWidgets.QVBoxLayout(card)
+        card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
         cards_layout.addWidget(card)
 
         # explanation
-        detail_text = QtWidgets.QLabel()
+        detail_text = QLabel()
         detail_text.setText("Simulation")
-        detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        detail_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
         detail_text.setWordWrap(True)
         card_layout.addWidget(detail_text)
 
         # spacing
-        spacing_text = QtWidgets.QLabel("")
-        spacing_text_font = QtGui.QFont()
+        spacing_text = QLabel("")
+        spacing_text_font = QFont()
         spacing_text_font.setPointSize(3)
         spacing_text.setFont(spacing_text_font)
         card_layout.addWidget(spacing_text)
@@ -121,34 +137,32 @@ class StrategyBasicInput(BaseOverlay):
         card_layout.addWidget(divider)
 
         # spacing
-        spacing_text = QtWidgets.QLabel("")
-        spacing_text_font = QtGui.QFont()
+        spacing_text = QLabel("")
+        spacing_text_font = QFont()
         spacing_text_font.setPointSize(3)
         spacing_text.setFont(spacing_text_font)
         card_layout.addWidget(spacing_text)
 
         # input
-        this_layout = QtWidgets.QFormLayout()
+        this_layout = QFormLayout()
         card_layout.addLayout(this_layout)
-        parallelized_input = QtWidgets.QCheckBox()
+        parallelized_input = QCheckBox()
         parallelized_input.setChecked(strategy.parallelized_simulation)
         this_layout.addRow("Parallelized", parallelized_input)
-        chunk_division_input = QtWidgets.QSpinBox()
+        chunk_division_input = QSpinBox()
         chunk_division_input.setSuffix(" days")
         chunk_division_input.setMinimum(7)
         chunk_division_input.setMaximum(90)
-        chunk_division_input.setButtonSymbols(
-            QtWidgets.QSpinBox.ButtonSymbols.NoButtons
-        )
+        chunk_division_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
         chunk_division_input.setValue(strategy.chunk_division)
         this_layout.addRow("Chunk division", chunk_division_input)
 
         # ■■■■■ a card ■■■■■
 
         # card structure
-        card = QtWidgets.QGroupBox()
+        card = QGroupBox()
         card.setFixedWidth(720)
-        card_layout = QtWidgets.QHBoxLayout(card)
+        card_layout = QHBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
         cards_layout.addWidget(card)
 
@@ -182,21 +196,21 @@ class StrategyBasicInput(BaseOverlay):
             self.done_event.set()
 
         # confirm button
-        confirm_button = QtWidgets.QPushButton("Save and close", card)
+        confirm_button = QPushButton("Save and close", card)
         outsource(confirm_button.clicked, job)
         confirm_button.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed,
+            QSizePolicy.Policy.Fixed,
+            QSizePolicy.Policy.Fixed,
         )
         card_layout.addWidget(confirm_button)
 
         # ■■■■■ spacing ■■■■■
 
         # spacing
-        spacer = QtWidgets.QSpacerItem(
+        spacer = QSpacerItem(
             0,
             0,
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding,
         )
         cards_layout.addItem(spacer)

@@ -1,4 +1,6 @@
-from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont, QTextCursor
+from PySide6.QtWidgets import QPlainTextEdit
 from typing_extensions import override
 from yapf.yapflib.errors import YapfError
 from yapf.yapflib.yapf_api import FormatCode
@@ -6,10 +8,10 @@ from yapf.yapflib.yapf_api import FormatCode
 from solie.utility import SyntaxHighlighter
 
 
-class ScriptEditor(QtWidgets.QPlainTextEdit):
+class ScriptEditor(QPlainTextEdit):
     def __init__(self, parent):
         super().__init__(parent)
-        self.fixed_width_font = QtGui.QFont("Source Code Pro", 9)
+        self.fixed_width_font = QFont("Source Code Pro", 9)
         self.setFont(self.fixed_width_font)
         self.setLineWrapMode(ScriptEditor.LineWrapMode.NoWrap)
         SyntaxHighlighter(parent).setDocument(self.document())
@@ -17,8 +19,8 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
     @override
     def keyPressEvent(self, e):
         event = e
-        should_indent = event.key() == QtCore.Qt.Key.Key_Tab
-        should_dedent = event.key() == QtCore.Qt.Key.Key_Backtab
+        should_indent = event.key() == Qt.Key.Key_Tab
+        should_dedent = event.key() == Qt.Key.Key_Backtab
         if should_indent or should_dedent:
             scroll_position = self.verticalScrollBar().value()
             text = self.toPlainText()
@@ -50,9 +52,7 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
                 select_from = line_start_positions[start_line]
                 text_cursor.setPosition(select_from)
                 select_to = line_end_positions[end_line]
-                text_cursor.setPosition(
-                    select_to, QtGui.QTextCursor.MoveMode.KeepAnchor
-                )
+                text_cursor.setPosition(select_to, QTextCursor.MoveMode.KeepAnchor)
             self.setTextCursor(text_cursor)
             self.verticalScrollBar().setValue(scroll_position)
             return

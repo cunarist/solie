@@ -1,4 +1,16 @@
-from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont, QPixmap
+from PySide6.QtWidgets import (
+    QGridLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QRadioButton,
+    QSizePolicy,
+    QSpacerItem,
+    QVBoxLayout,
+)
 
 from solie.common import PACKAGE_PATH, outsource, spawn
 from solie.utility import ApiRequester
@@ -15,7 +27,7 @@ class TokenSelection(BaseOverlay):
     async def fill(self, done_event):
         # ■■■■■ for remembering ■■■■■
 
-        token_radioboxes: dict[str, QtWidgets.QRadioButton] = {}
+        token_radioboxes: dict[str, QRadioButton] = {}
 
         # ■■■■■ prepare the api requester ■■■■■
 
@@ -69,39 +81,39 @@ class TokenSelection(BaseOverlay):
 
         # ■■■■■ full layout ■■■■■
 
-        full_layout = QtWidgets.QHBoxLayout(self)
-        cards_layout = QtWidgets.QVBoxLayout()
+        full_layout = QHBoxLayout(self)
+        cards_layout = QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
         # ■■■■■ spacing ■■■■■
 
-        spacer = QtWidgets.QSpacerItem(
+        spacer = QSpacerItem(
             0,
             0,
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding,
         )
         cards_layout.addItem(spacer)
 
         # ■■■■■ a card ■■■■■
 
         # card structure
-        card = QtWidgets.QGroupBox()
+        card = QGroupBox()
         card.setFixedWidth(720)
-        card_layout = QtWidgets.QVBoxLayout(card)
+        card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
         cards_layout.addWidget(card)
 
         # explanation
-        detail_text = QtWidgets.QLabel()
+        detail_text = QLabel()
         detail_text.setText("These are all the available tokens on Binance.")
-        detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        detail_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
         detail_text.setWordWrap(True)
         card_layout.addWidget(detail_text)
 
         # spacing
-        spacing_text = QtWidgets.QLabel("")
-        spacing_text_font = QtGui.QFont()
+        spacing_text = QLabel("")
+        spacing_text_font = QFont()
         spacing_text_font.setPointSize(3)
         spacing_text.setFont(spacing_text_font)
         card_layout.addWidget(spacing_text)
@@ -111,26 +123,26 @@ class TokenSelection(BaseOverlay):
         card_layout.addWidget(divider)
 
         # spacing
-        spacing_text = QtWidgets.QLabel("")
-        spacing_text_font = QtGui.QFont()
+        spacing_text = QLabel("")
+        spacing_text_font = QFont()
         spacing_text_font.setPointSize(3)
         spacing_text.setFont(spacing_text_font)
         card_layout.addWidget(spacing_text)
 
         # input
         token_icon_labels = {}
-        input_layout = QtWidgets.QGridLayout()
-        blank_coin_pixmap = QtGui.QPixmap()
+        input_layout = QGridLayout()
+        blank_coin_pixmap = QPixmap()
         blank_coin_pixmap.load(str(PACKAGE_PATH / "static" / "icon/blank_coin.png"))
         for turn, token in enumerate(sorted(available_tokens)):
-            this_layout = QtWidgets.QHBoxLayout()
+            this_layout = QHBoxLayout()
             row = turn // 2
             column = turn % 2
             input_layout.addLayout(this_layout, row, column)
-            radiobutton = QtWidgets.QRadioButton(card)
+            radiobutton = QRadioButton(card)
             token_radioboxes[token] = radiobutton
             this_layout.addWidget(radiobutton)
-            icon_label = QtWidgets.QLabel("", card)
+            icon_label = QLabel("", card)
             icon_label.setPixmap(blank_coin_pixmap)
             icon_label.setScaledContents(True)
             icon_label.setFixedSize(40, 40)
@@ -138,13 +150,13 @@ class TokenSelection(BaseOverlay):
             this_layout.addWidget(icon_label)
             token_icon_labels[token] = icon_label
             text = f"{token} ({number_of_markets[token]} coins available)"
-            text_label = QtWidgets.QLabel(text, card)
+            text_label = QLabel(text, card)
             this_layout.addWidget(text_label)
-            spacer = QtWidgets.QSpacerItem(
+            spacer = QSpacerItem(
                 0,
                 0,
-                QtWidgets.QSizePolicy.Policy.Expanding,
-                QtWidgets.QSizePolicy.Policy.Minimum,
+                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Minimum,
             )
             this_layout.addItem(spacer)
         card_layout.addItem(input_layout)
@@ -179,28 +191,28 @@ class TokenSelection(BaseOverlay):
                 self.done_event.set()
 
         # card structure
-        card = QtWidgets.QGroupBox()
+        card = QGroupBox()
         card.setFixedWidth(720)
-        card_layout = QtWidgets.QHBoxLayout(card)
+        card_layout = QHBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
         cards_layout.addWidget(card)
 
         # confirm button
-        confirm_button = QtWidgets.QPushButton("Okay", card)
+        confirm_button = QPushButton("Okay", card)
         outsource(confirm_button.clicked, job_cf)
         confirm_button.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed,
+            QSizePolicy.Policy.Fixed,
+            QSizePolicy.Policy.Fixed,
         )
         card_layout.addWidget(confirm_button)
 
         # ■■■■■ spacing ■■■■■
 
-        spacer = QtWidgets.QSpacerItem(
+        spacer = QSpacerItem(
             0,
             0,
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding,
         )
         cards_layout.addItem(spacer)
 
@@ -212,7 +224,7 @@ class TokenSelection(BaseOverlay):
                 if coin_icon_url == "":
                     continue
                 image_data = await api_requester.bytes(coin_icon_url)
-                pixmap = QtGui.QPixmap()
+                pixmap = QPixmap()
                 pixmap.loadFromData(image_data)
 
                 if self.is_closed:

@@ -2,7 +2,18 @@
 from asyncio import Event
 from typing import TypeVar
 
-from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QPushButton,
+    QSizePolicy,
+    QSpacerItem,
+    QVBoxLayout,
+    QWidget,
+)
 from typing_extensions import override
 
 from solie.common import outsource
@@ -11,7 +22,7 @@ from .popup_box import PopupBox
 from .transparent_scroll_area import TransparentScrollArea
 
 
-class BaseOverlay(QtWidgets.QWidget):
+class BaseOverlay(QWidget):
     done_event = Event()
 
     async def confirm_closing(self) -> bool:
@@ -32,18 +43,18 @@ async def overlay(title: str, widget: W, close_button=True) -> W:
     return widget
 
 
-class OverlayPopup(QtWidgets.QWidget):
-    installed_window: QtWidgets.QMainWindow
+class OverlayPopup(QWidget):
+    installed_window: QMainWindow
 
     @override
     def showEvent(self, event):
         # needed for filling the window when resized
-        parent: QtWidgets.QMainWindow = self.parent()  # type:ignore
+        parent: QMainWindow = self.parent()  # type:ignore
         self.setGeometry(parent.rect())
 
     @override
     def eventFilter(self, watched, event):
-        if not isinstance(watched, QtWidgets.QWidget):
+        if not isinstance(watched, QWidget):
             raise NotImplementedError
         # needed for filling the window when resized
         if event.type() == event.Type.Resize:
@@ -51,7 +62,7 @@ class OverlayPopup(QtWidgets.QWidget):
         return super().eventFilter(watched, event)
 
     @classmethod
-    def install_window(cls, window: QtWidgets.QMainWindow):
+    def install_window(cls, window: QMainWindow):
         cls.installed_window = window
 
     def __init__(
@@ -80,13 +91,13 @@ class OverlayPopup(QtWidgets.QWidget):
 
         # ■■■■■ full structure ■■■■■
 
-        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
-        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_StyledBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
         self.setAutoFillBackground(True)
 
         # ■■■■■ full layout ■■■■■
 
-        full_layout = QtWidgets.QHBoxLayout(self)
+        full_layout = QHBoxLayout(self)
 
         # ■■■■■ visaul box ■■■■■
 
@@ -94,27 +105,27 @@ class OverlayPopup(QtWidgets.QWidget):
         content_box = PopupBox()
         content_box.setAutoFillBackground(True)
         content_box.setMaximumSize(1600, 1200)
-        content_box_layout = QtWidgets.QVBoxLayout(content_box)
+        content_box_layout = QVBoxLayout(content_box)
         full_layout.addWidget(content_box)
 
         # line containing the title and close button
-        this_layout = QtWidgets.QHBoxLayout()
-        title_label = QtWidgets.QLabel(title)
-        title_label_font = QtGui.QFont()
+        this_layout = QHBoxLayout()
+        title_label = QLabel(title)
+        title_label_font = QFont()
         title_label_font.setPointSize(12)
         title_label.setFont(title_label_font)
         title_label.setWordWrap(False)
         this_layout.addWidget(title_label)
-        top_widget = QtWidgets.QSpacerItem(
+        top_widget = QSpacerItem(
             0,
             0,
-            QtWidgets.QSizePolicy.Policy.Expanding,
-            QtWidgets.QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum,
         )
         this_layout.addItem(top_widget)
         if close_button:
-            close_button_widget = QtWidgets.QPushButton("✕", content_box)
-            close_button_font = QtGui.QFont()
+            close_button_widget = QPushButton("✕", content_box)
+            close_button_font = QFont()
             close_button_font.setPointSize(11)
             close_button_widget.setFont(close_button_font)
 

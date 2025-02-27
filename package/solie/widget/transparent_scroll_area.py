@@ -1,5 +1,5 @@
-from PySide6 import QtWidgets
+from PySide6.QtWidgets import QScrollArea
 
 
-class TransparentScrollArea(QtWidgets.QScrollArea):
+class TransparentScrollArea(QScrollArea):
     pass

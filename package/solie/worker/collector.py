@@ -11,7 +11,7 @@ import aiofiles.os
 import numpy as np
 import pandas as pd
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from PySide6 import QtWidgets
+from PySide6.QtWidgets import QMenu
 
 from solie.common import UniqueTask, outsource, spawn, spawn_blocking
 from solie.overlay import DonationGuide, DownloadFillOption
@@ -144,7 +144,7 @@ class Collector:
         job = self.download_fill_candle_data
         outsource(window.pushButton_2.clicked, job)
 
-        action_menu = QtWidgets.QMenu(self.window)
+        action_menu = QMenu(self.window)
         self.window.pushButton_13.setMenu(action_menu)
 
         text = "Open historical data webpage of Binance"

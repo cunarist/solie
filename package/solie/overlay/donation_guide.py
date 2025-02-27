@@ -1,4 +1,13 @@
-from PySide6 import QtCore, QtWidgets
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QSizePolicy,
+    QSpacerItem,
+    QVBoxLayout,
+)
 
 from solie.widget import BaseOverlay
 
@@ -11,27 +20,27 @@ class DonationGuide(BaseOverlay):
 
         # ■■■■■ full layout ■■■■■
 
-        full_layout = QtWidgets.QHBoxLayout(self)
-        cards_layout = QtWidgets.QVBoxLayout()
+        full_layout = QHBoxLayout(self)
+        cards_layout = QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
         # ■■■■■ spacing ■■■■■
 
         # spacing
-        spacer = QtWidgets.QSpacerItem(
+        spacer = QSpacerItem(
             0,
             0,
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding,
         )
         cards_layout.addItem(spacer)
 
         # ■■■■■ a card ■■■■■
 
         # card structure
-        card = QtWidgets.QGroupBox()
+        card = QGroupBox()
         card.setFixedWidth(720)
-        card_layout = QtWidgets.QVBoxLayout(card)
+        card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
         cards_layout.addWidget(card)
 
@@ -43,24 +52,24 @@ class DonationGuide(BaseOverlay):
         text += " the growth and development of Solie."
         text += "\n\nIf you feel like so, please consider"
         text += " using the USDT(ETH mainnet) wallet address written below."
-        label = QtWidgets.QLabel(text)
+        label = QLabel(text)
         label.setWordWrap(True)
         card_layout.addWidget(label)
 
         # address text
         text = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
-        lineedit_widget = QtWidgets.QLineEdit(text)
+        lineedit_widget = QLineEdit(text)
         lineedit_widget.setReadOnly(True)
-        lineedit_widget.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        lineedit_widget.setAlignment(Qt.AlignmentFlag.AlignCenter)
         card_layout.addWidget(lineedit_widget)
 
         # ■■■■■ spacing ■■■■■
 
         # spacing
-        spacer = QtWidgets.QSpacerItem(
+        spacer = QSpacerItem(
             0,
             0,
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding,
         )
         cards_layout.addItem(spacer)

@@ -1,4 +1,11 @@
-from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QVBoxLayout,
+)
 
 from solie.common import outsource
 
@@ -13,32 +20,30 @@ class LogOverlay(BaseOverlay):
 
         # ■■■■■ full layout ■■■■■
 
-        full_layout = QtWidgets.QVBoxLayout(self)
-        cards_layout = QtWidgets.QVBoxLayout()
+        full_layout = QVBoxLayout(self)
+        cards_layout = QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
-        label = QtWidgets.QLabel(log_content)
-        fixed_width_font = QtGui.QFont("Source Code Pro", 9)
+        label = QLabel(log_content)
+        fixed_width_font = QFont("Source Code Pro", 9)
         label.setFont(fixed_width_font)
-        label.setTextInteractionFlags(
-            QtCore.Qt.TextInteractionFlag.TextSelectableByMouse
-        )
+        label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         cards_layout.addWidget(label)
 
 
-class LogList(QtWidgets.QListWidget):
+class LogList(QListWidget):
     def __init__(self, parent):
         super().__init__(parent)
-        self.fixed_width_font = QtGui.QFont("Source Code Pro", 9)
+        self.fixed_width_font = QFont("Source Code Pro", 9)
         self.setFont(self.fixed_width_font)
         outsource(self.itemClicked, self.show_fulltext)
 
     def add_item(self, summarization: str, log_content: str):
         maximum_item_limit = 1024
 
-        new_item = QtWidgets.QListWidgetItem(self)
+        new_item = QListWidgetItem(self)
         new_item.setText(summarization)
-        new_item.setData(QtCore.Qt.ItemDataRole.UserRole, log_content)
+        new_item.setData(Qt.ItemDataRole.UserRole, log_content)
 
         super().addItem(new_item)
 
@@ -53,7 +58,7 @@ class LogList(QtWidgets.QListWidget):
         selected_index = self.currentRow()
 
         selected_item = self.item(selected_index)
-        text = selected_item.data(QtCore.Qt.ItemDataRole.UserRole)
+        text = selected_item.data(Qt.ItemDataRole.UserRole)
 
         await overlay(
             "This is the full log",

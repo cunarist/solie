@@ -1,4 +1,5 @@
-from PySide6 import QtCore, QtWidgets
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QLabel, QVBoxLayout
 
 from solie.widget import BaseOverlay
 
@@ -11,12 +12,10 @@ class LongTextView(BaseOverlay):
 
         # ■■■■■ full layout ■■■■■
 
-        full_layout = QtWidgets.QVBoxLayout(self)
-        cards_layout = QtWidgets.QVBoxLayout()
+        full_layout = QVBoxLayout(self)
+        cards_layout = QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
-        label = QtWidgets.QLabel(long_text)
-        label.setTextInteractionFlags(
-            QtCore.Qt.TextInteractionFlag.TextSelectableByMouse
-        )
+        label = QLabel(long_text)
+        label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         cards_layout.addWidget(label)

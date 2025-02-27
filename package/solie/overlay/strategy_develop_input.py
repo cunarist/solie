@@ -1,7 +1,17 @@
 import webbrowser
 
 import aiofiles
-from PySide6 import QtCore, QtWidgets
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QMenu,
+    QPushButton,
+    QSizePolicy,
+    QSpacerItem,
+    QVBoxLayout,
+)
 
 from solie.common import PACKAGE_PATH, outsource, spawn_blocking
 from solie.utility import SavedStrategy
@@ -17,21 +27,21 @@ class StrategyDevelopInput(BaseOverlay):
 
         # ■■■■■ full layout ■■■■■
 
-        full_layout = QtWidgets.QVBoxLayout(self)
+        full_layout = QVBoxLayout(self)
 
         # ■■■■■ script editors ■■■■■
 
-        this_layout = QtWidgets.QHBoxLayout()
+        this_layout = QHBoxLayout()
         full_layout.addLayout(this_layout)
 
         # column layout
-        column_layout = QtWidgets.QVBoxLayout()
+        column_layout = QVBoxLayout()
         this_layout.addLayout(column_layout)
 
         # title
-        detail_text = QtWidgets.QLabel()
+        detail_text = QLabel()
         detail_text.setText("Indicator script")
-        detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        detail_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
         column_layout.addWidget(detail_text)
 
         # input
@@ -41,13 +51,13 @@ class StrategyDevelopInput(BaseOverlay):
         self.indicator_script_input = indicator_script_input
 
         # column layout
-        column_layout = QtWidgets.QVBoxLayout()
+        column_layout = QVBoxLayout()
         this_layout.addLayout(column_layout)
 
         # title
-        detail_text = QtWidgets.QLabel()
+        detail_text = QLabel()
         detail_text.setText("Decision script")
-        detail_text.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        detail_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
         column_layout.addWidget(detail_text)
 
         # input
@@ -59,16 +69,16 @@ class StrategyDevelopInput(BaseOverlay):
         # ■■■■■ a card ■■■■■
 
         # card structure
-        card = QtWidgets.QGroupBox()
-        card_layout = QtWidgets.QHBoxLayout(card)
+        card = QGroupBox()
+        card_layout = QHBoxLayout(card)
         full_layout.addWidget(card)
 
         # spacing
-        spacer = QtWidgets.QSpacerItem(
+        spacer = QSpacerItem(
             0,
             0,
-            QtWidgets.QSizePolicy.Policy.Expanding,
-            QtWidgets.QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum,
         )
         card_layout.addItem(spacer)
 
@@ -78,11 +88,11 @@ class StrategyDevelopInput(BaseOverlay):
             strategy.decision_script = decision_script_input.toPlainText()
             self.done_event.set()
 
-        button = QtWidgets.QPushButton("Save and close", card)
+        button = QPushButton("Save and close", card)
         outsource(button.clicked, job_ss)
         button.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed,
+            QSizePolicy.Policy.Fixed,
+            QSizePolicy.Policy.Fixed,
         )
         card_layout.addWidget(button)
 
@@ -91,8 +101,8 @@ class StrategyDevelopInput(BaseOverlay):
         card_layout.addWidget(divider)
 
         # action menu
-        action_menu = QtWidgets.QMenu(self)
-        action_button = QtWidgets.QPushButton()
+        action_menu = QMenu(self)
+        action_button = QPushButton()
         action_button.setText("☰")
         action_button.setMenu(action_menu)
         card_layout.addWidget(action_button)
@@ -148,11 +158,11 @@ class StrategyDevelopInput(BaseOverlay):
         outsource(new_action.triggered, job_td)
 
         # spacing
-        spacer = QtWidgets.QSpacerItem(
+        spacer = QSpacerItem(
             0,
             0,
-            QtWidgets.QSizePolicy.Policy.Expanding,
-            QtWidgets.QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum,
         )
         card_layout.addItem(spacer)
 

@@ -1,7 +1,16 @@
 import aiofiles
 import aiofiles.os
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from PySide6 import QtGui, QtWidgets
+from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtWidgets import (
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QMenu,
+    QPushButton,
+    QSizePolicy,
+    QSpacerItem,
+)
 
 from solie.common import PACKAGE_PATH, outsource, spawn
 from solie.overlay import StrategyBasicInput, StrategyDevelopInput
@@ -30,16 +39,16 @@ class Strategiest:
 
         self.saved_strategies: SavedStrategies
         self.strategies: list[Strategy] = []
-        self.strategy_cards: list[QtWidgets.QGroupBox] = []
+        self.strategy_cards: list[QGroupBox] = []
 
         self.before_selections: dict[str, Strategy] = {}
 
         iconpath = PACKAGE_PATH / "static" / "icon"
-        self.red_pixmap = QtGui.QPixmap()
+        self.red_pixmap = QPixmap()
         self.red_pixmap.load(str(iconpath / "traffic_light_red.png"))
-        self.yellow_pixmap = QtGui.QPixmap()
+        self.yellow_pixmap = QPixmap()
         self.yellow_pixmap.load(str(iconpath / "traffic_light_yellow.png"))
-        self.green_pixmap = QtGui.QPixmap()
+        self.green_pixmap = QPixmap()
         self.green_pixmap.load(str(iconpath / "traffic_light_green.png"))
 
         # ■■■■■ repetitive schedules ■■■■■
@@ -108,7 +117,7 @@ class Strategiest:
                 icon_pixmap = self.green_pixmap
             else:
                 raise ValueError("Invalid risk level for drawing an icon")
-            traffic_light_icon = QtGui.QIcon()
+            traffic_light_icon = QIcon()
             traffic_light_icon.addPixmap(icon_pixmap)
 
             text = f"{strategy.code_name} {strategy.version} - {strategy.readable_name}"
@@ -116,31 +125,31 @@ class Strategiest:
             self.window.comboBox_2.addItem(traffic_light_icon, text)
             self.window.comboBox.addItem(traffic_light_icon, text)
 
-            strategy_card = QtWidgets.QGroupBox()
+            strategy_card = QGroupBox()
             self.window.verticalLayout_16.addWidget(strategy_card)
             self.strategy_cards.append(strategy_card)
-            card_layout = QtWidgets.QHBoxLayout(strategy_card)
+            card_layout = QHBoxLayout(strategy_card)
 
-            icon_label = QtWidgets.QLabel("")
+            icon_label = QLabel("")
             card_layout.addWidget(icon_label)
             icon_label.setPixmap(icon_pixmap)
             icon_label.setScaledContents(True)
             icon_label.setFixedSize(16, 16)
 
-            text_label = QtWidgets.QLabel(text)
+            text_label = QLabel(text)
             card_layout.addWidget(text_label)
 
-            spacer = QtWidgets.QSpacerItem(
+            spacer = QSpacerItem(
                 0,
                 0,
-                QtWidgets.QSizePolicy.Policy.Expanding,
-                QtWidgets.QSizePolicy.Policy.Minimum,
+                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Minimum,
             )
             card_layout.addItem(spacer)
 
             # Allow editing only when this is not a fixed strategy.
             if not isinstance(strategy, SavedStrategy):
-                fixed_button = QtWidgets.QPushButton("Fixed")
+                fixed_button = QPushButton("Fixed")
                 fixed_button.setEnabled(False)
                 card_layout.addWidget(fixed_button)
                 continue
@@ -155,7 +164,7 @@ class Strategiest:
                 spawn(self.save_strategies())
                 spawn(self.restore_strategy_selections())
 
-            edit_button = QtWidgets.QPushButton("Develop")
+            edit_button = QPushButton("Develop")
             card_layout.addWidget(edit_button)
             outsource(edit_button.clicked, job_bs)
 
@@ -169,12 +178,12 @@ class Strategiest:
                 spawn(self.save_strategies())
                 spawn(self.restore_strategy_selections())
 
-            edit_button = QtWidgets.QPushButton("Edit basic info")
+            edit_button = QPushButton("Edit basic info")
             card_layout.addWidget(edit_button)
             outsource(edit_button.clicked, job_eb)
 
-            action_menu = QtWidgets.QMenu(self.window)
-            action_button = QtWidgets.QPushButton()
+            action_menu = QMenu(self.window)
+            action_button = QPushButton()
             action_button.setText("☰")
             action_button.setMenu(action_menu)
             card_layout.addWidget(action_button)
@@ -221,7 +230,7 @@ class Strategiest:
                 spawn(self.save_strategies())
                 spawn(self.restore_strategy_selections())
 
-            edit_button = QtWidgets.QPushButton("▼")
+            edit_button = QPushButton("▼")
             card_layout.addWidget(edit_button)
             outsource(edit_button.clicked, job_ss)
 
@@ -236,7 +245,7 @@ class Strategiest:
                 spawn(self.save_strategies())
                 spawn(self.restore_strategy_selections())
 
-            edit_button = QtWidgets.QPushButton("▲")
+            edit_button = QPushButton("▲")
             card_layout.addWidget(edit_button)
             outsource(edit_button.clicked, job_us)
 

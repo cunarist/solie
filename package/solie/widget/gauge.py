@@ -1,8 +1,8 @@
-from PySide6 import QtWidgets
+from PySide6.QtWidgets import QPushButton
 from typing_extensions import override
 
 
-class Gauge(QtWidgets.QPushButton):
+class Gauge(QPushButton):
     def __init__(self, parent):
         super().__init__(parent)
         self.is_mouse_over = False

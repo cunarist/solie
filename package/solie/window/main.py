@@ -9,7 +9,16 @@ import aiofiles
 import aiofiles.os
 import pandas as pd
 import pyqtgraph
-from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont, QIcon, QPixmap
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QSizePolicy,
+    QSpacerItem,
+    QVBoxLayout,
+)
 from typing_extensions import override
 
 from solie.common import PACKAGE_PATH, PACKAGE_VERSION, spawn
@@ -44,7 +53,7 @@ from .compiled import Ui_MainWindow
 logger = logging.getLogger(__name__)
 
 
-class Window(QtWidgets.QMainWindow, Ui_MainWindow):
+class Window(QMainWindow, Ui_MainWindow):
     def __init__(self, close_event: Event, config: SolieConfig):
         super().__init__()
 
@@ -56,7 +65,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.last_interaction = datetime.now(timezone.utc)
         self.splash_screen: SplashScreen
-        self.price_labels: dict[str, QtWidgets.QLabel] = {}
+        self.price_labels: dict[str, QLabel] = {}
 
         self.should_confirm_closing = False
 
@@ -146,7 +155,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         filepath = PACKAGE_PATH / "static" / "product_icon.png"
         async with aiofiles.open(filepath, mode="rb") as file:
             product_icon_data = await file.read()
-        product_icon_pixmap = QtGui.QPixmap()
+        product_icon_pixmap = QPixmap()
         product_icon_pixmap.loadFromData(product_icon_data)
         self.setWindowIcon(product_icon_pixmap)
 
@@ -254,7 +263,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         for symbol in target_symbols:
             coin_symbol = symbol.removesuffix(asset_token)
             coin_icon_url = coin_icon_urls.get(coin_symbol, "")
-            pixmap = QtGui.QPixmap()
+            pixmap = QPixmap()
             if coin_icon_url != "":
                 image_data = await api_requester.bytes(coin_icon_url)
                 pixmap.loadFromData(image_data)
@@ -263,7 +272,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             symbol_pixmaps[symbol] = pixmap
 
         token_icon_url = coin_icon_urls.get(asset_token, "")
-        token_pixmap = QtGui.QPixmap()
+        token_pixmap = QPixmap()
         image_data = await api_requester.bytes(token_icon_url)
         token_pixmap.loadFromData(image_data)
 
@@ -271,57 +280,57 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
         self.lineEdit.setText(text)
         self.lineEdit.setCursorPosition(len(text))
 
-        icon_label = QtWidgets.QLabel()
-        icon_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        icon_label = QLabel()
+        icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         icon_label.setPixmap(token_pixmap)
         icon_label.setScaledContents(True)
         icon_label.setFixedSize(30, 30)
-        this_layout = QtWidgets.QHBoxLayout()
+        this_layout = QHBoxLayout()
         self.verticalLayout_14.addLayout(this_layout)
         this_layout.addWidget(icon_label)
-        token_font = QtGui.QFont()
+        token_font = QFont()
         token_font.setPointSize(token_text_size)
-        token_font.setWeight(QtGui.QFont.Weight.Bold)
-        token_label = QtWidgets.QLabel()
+        token_font.setWeight(QFont.Weight.Bold)
+        token_label = QLabel()
         token_label.setText(asset_token)
-        token_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        token_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         token_label.setFont(token_font)
         self.verticalLayout_14.addWidget(token_label)
-        spacing_text = QtWidgets.QLabel("")
-        spacing_text_font = QtGui.QFont()
+        spacing_text = QLabel("")
+        spacing_text_font = QFont()
         spacing_text_font.setPointSize(1)
         spacing_text.setFont(spacing_text_font)
         self.verticalLayout_14.addWidget(spacing_text)
-        this_layout = QtWidgets.QHBoxLayout()
+        this_layout = QHBoxLayout()
         self.verticalLayout_14.addLayout(this_layout)
         divider = HorizontalDivider(self)
         divider.setFixedWidth(320)
         this_layout.addWidget(divider)
-        spacing_text = QtWidgets.QLabel("")
-        spacing_text_font = QtGui.QFont()
+        spacing_text = QLabel("")
+        spacing_text_font = QFont()
         spacing_text_font.setPointSize(2)
         spacing_text.setFont(spacing_text_font)
         self.verticalLayout_14.addWidget(spacing_text)
 
         for symbol in target_symbols:
-            icon = QtGui.QIcon()
+            icon = QIcon()
             icon.addPixmap(symbol_pixmaps[symbol])
             alias = self.symbol_to_alias[symbol]
             self.comboBox_4.addItem(icon, alias)
             self.comboBox_6.addItem(icon, alias)
 
-        spacer = QtWidgets.QSpacerItem(
+        spacer = QSpacerItem(
             0,
             0,
-            QtWidgets.QSizePolicy.Policy.Expanding,
-            QtWidgets.QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum,
         )
         self.horizontalLayout_20.addItem(spacer)
-        spacer = QtWidgets.QSpacerItem(
+        spacer = QSpacerItem(
             0,
             0,
-            QtWidgets.QSizePolicy.Policy.Expanding,
-            QtWidgets.QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum,
         )
         self.horizontalLayout_17.addItem(spacer)
         for turn, symbol in enumerate(target_symbols):
@@ -332,88 +341,88 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.horizontalLayout_17.addWidget(symbol_box)
             else:
                 self.horizontalLayout_20.addWidget(symbol_box)
-            inside_layout = QtWidgets.QVBoxLayout(symbol_box)
-            spacer = QtWidgets.QSpacerItem(
+            inside_layout = QVBoxLayout(symbol_box)
+            spacer = QSpacerItem(
                 0,
                 0,
-                QtWidgets.QSizePolicy.Policy.Minimum,
-                QtWidgets.QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Minimum,
+                QSizePolicy.Policy.Expanding,
             )
             inside_layout.addItem(spacer)
-            icon_label = QtWidgets.QLabel()
-            icon_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-            this_layout = QtWidgets.QHBoxLayout()
+            icon_label = QLabel()
+            icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            this_layout = QHBoxLayout()
             inside_layout.addLayout(this_layout)
             icon_label.setPixmap(symbol_pixmaps[symbol])
             icon_label.setScaledContents(True)
             icon_label.setFixedSize(50, 50)
             icon_label.setMargin(5)
             this_layout.addWidget(icon_label)
-            name_label = QtWidgets.QLabel()
+            name_label = QLabel()
             name_label.setText(self.symbol_to_alias[symbol])
-            name_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-            name_font = QtGui.QFont()
+            name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            name_font = QFont()
             name_font.setPointSize(name_text_size)
-            name_font.setWeight(QtGui.QFont.Weight.Bold)
+            name_font.setWeight(QFont.Weight.Bold)
             name_label.setFont(name_font)
             inside_layout.addWidget(name_label)
-            price_label = QtWidgets.QLabel()
-            price_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-            price_font = QtGui.QFont()
+            price_label = QLabel()
+            price_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            price_font = QFont()
             price_font.setPointSize(price_text_size)
-            price_font.setWeight(QtGui.QFont.Weight.Bold)
+            price_font.setWeight(QFont.Weight.Bold)
             price_label.setFont(price_font)
             inside_layout.addWidget(price_label)
             if coin_rank == 0:
                 text = coin_symbol
             else:
                 text = f"{coin_rank} - {coin_symbol}"
-            detail_label = QtWidgets.QLabel()
+            detail_label = QLabel()
             detail_label.setText(text)
-            detail_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-            detail_font = QtGui.QFont()
+            detail_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            detail_font = QFont()
             detail_font.setPointSize(detail_text_size)
-            detail_font.setWeight(QtGui.QFont.Weight.Bold)
+            detail_font.setWeight(QFont.Weight.Bold)
             detail_label.setFont(detail_font)
             inside_layout.addWidget(detail_label)
             self.price_labels[symbol] = price_label
-            spacer = QtWidgets.QSpacerItem(
+            spacer = QSpacerItem(
                 0,
                 0,
-                QtWidgets.QSizePolicy.Policy.Minimum,
-                QtWidgets.QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Minimum,
+                QSizePolicy.Policy.Expanding,
             )
             inside_layout.addItem(spacer)
-        spacer = QtWidgets.QSpacerItem(
+        spacer = QSpacerItem(
             0,
             0,
-            QtWidgets.QSizePolicy.Policy.Expanding,
-            QtWidgets.QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum,
         )
         self.horizontalLayout_20.addItem(spacer)
-        spacer = QtWidgets.QSpacerItem(
+        spacer = QSpacerItem(
             0,
             0,
-            QtWidgets.QSizePolicy.Policy.Expanding,
-            QtWidgets.QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum,
         )
         self.horizontalLayout_17.addItem(spacer)
 
         # ■■■■■ Show product icon and title ■■■■■
 
         this_layout = self.horizontalLayout_13
-        product_icon_pixmap = QtGui.QPixmap()
+        product_icon_pixmap = QPixmap()
         filepath = PACKAGE_PATH / "static" / "product_icon.png"
         async with aiofiles.open(filepath, mode="rb") as file:
             product_icon_data = await file.read()
         product_icon_pixmap.loadFromData(product_icon_data)
-        product_icon_label = QtWidgets.QLabel("", self)
+        product_icon_label = QLabel("", self)
         product_icon_label.setPixmap(product_icon_pixmap)
         product_icon_label.setScaledContents(True)
         product_icon_label.setFixedSize(80, 80)
         this_layout.addWidget(product_icon_label)
-        spacing_text = QtWidgets.QLabel("")
-        spacing_text_font = QtGui.QFont()
+        spacing_text = QLabel("")
+        spacing_text_font = QFont()
         spacing_text_font.setPointSize(8)
         spacing_text.setFont(spacing_text_font)
         this_layout.addWidget(spacing_text)

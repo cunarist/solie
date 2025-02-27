@@ -1,5 +1,5 @@
-from PySide6 import QtWidgets
+from PySide6.QtWidgets import QGroupBox
 
 
-class PopupBox(QtWidgets.QGroupBox):
+class PopupBox(QGroupBox):
     pass

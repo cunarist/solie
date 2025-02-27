@@ -1,10 +1,13 @@
-from PySide6 import QtGui, QtWidgets
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
+    QLabel,
+)
 
 
-class BrandLabel(QtWidgets.QLabel):
+class BrandLabel(QLabel):
     def __init__(self, parent, text="", size=9):
         super().__init__(parent)
-        font = QtGui.QFont("Lexend", size)
-        font.setWeight(QtGui.QFont.Weight.Bold)
+        font = QFont("Lexend", size)
+        font.setWeight(QFont.Weight.Bold)
         self.setFont(font)
         self.setText(text)

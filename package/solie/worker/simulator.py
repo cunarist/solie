@@ -9,7 +9,7 @@ import aiofiles.os
 import numpy as np
 import pandas as pd
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from PySide6 import QtWidgets
+from PySide6.QtWidgets import QMenu
 from scipy.signal import find_peaks
 
 from solie.common import UniqueTask, get_sync_manager, outsource, spawn, spawn_blocking
@@ -125,7 +125,7 @@ class Simulator:
         job = self.update_viewing_symbol
         outsource(window.comboBox_6.currentIndexChanged, job)
 
-        action_menu = QtWidgets.QMenu(self.window)
+        action_menu = QMenu(self.window)
         self.window.pushButton_11.setMenu(action_menu)
 
         text = "Calculate temporarily only on visible range"

@@ -1,4 +1,12 @@
-from PySide6 import QtWidgets
+from PySide6.QtWidgets import (
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QSizePolicy,
+    QSpacerItem,
+    QVBoxLayout,
+)
 
 from solie.common import outsource
 from solie.widget import BaseOverlay
@@ -21,31 +29,31 @@ class DownloadFillOption(BaseOverlay):
 
         # ■■■■■ full layout ■■■■■
 
-        full_layout = QtWidgets.QHBoxLayout(self)
-        cards_layout = QtWidgets.QVBoxLayout()
+        full_layout = QHBoxLayout(self)
+        cards_layout = QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
         # ■■■■■ spacing ■■■■■
 
-        spacer = QtWidgets.QSpacerItem(
+        spacer = QSpacerItem(
             0,
             0,
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding,
         )
         cards_layout.addItem(spacer)
 
         # ■■■■■ a card ■■■■■
 
         # card structure
-        card = QtWidgets.QGroupBox()
+        card = QGroupBox()
         card.setFixedWidth(720)
-        card_layout = QtWidgets.QVBoxLayout(card)
+        card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
         cards_layout.addWidget(card)
 
         # explanation
-        explain_label = QtWidgets.QLabel(
+        explain_label = QLabel(
             "Solie will fill the candle data with historical data provided by"
             " Binance. The more you fill, the longer it takes. Amount of a few days"
             " only takes few minutes while amount of a few years can take hours."
@@ -56,9 +64,9 @@ class DownloadFillOption(BaseOverlay):
         # ■■■■■ a card ■■■■■
 
         # card structure
-        card = QtWidgets.QGroupBox()
+        card = QGroupBox()
         card.setFixedWidth(720)
-        card_layout = QtWidgets.QVBoxLayout(card)
+        card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
         cards_layout.addWidget(card)
 
@@ -70,16 +78,16 @@ class DownloadFillOption(BaseOverlay):
                 self.result = turn
                 self.done_event.set()
 
-            option_button = QtWidgets.QPushButton(text, card)
+            option_button = QPushButton(text, card)
             outsource(option_button.clicked, job)
             card_layout.addWidget(option_button)
 
         # ■■■■■ spacing ■■■■■
 
-        spacer = QtWidgets.QSpacerItem(
+        spacer = QSpacerItem(
             0,
             0,
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding,
         )
         cards_layout.addItem(spacer)
