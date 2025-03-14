@@ -155,7 +155,7 @@ class OrderRole(Enum):
 
 class CalculationInput(NamedTuple):
     strategy: Strategy
-    progress_list: ListProxy
+    progress_list: ListProxy[float]
     target_progress: int
     target_symbols: list[str]
     calculation_index: pd.DatetimeIndex

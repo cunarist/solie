@@ -627,7 +627,7 @@ class Simulator:
         sync_manager = get_sync_manager()
 
         calculation_inputs: list[CalculationInput] = []
-        progress_list = sync_manager.list([0])
+        progress_list = sync_manager.list([0.0])
 
         if should_calculate:
             # a little more data for generation
@@ -654,7 +654,7 @@ class Simulator:
                 ]
 
                 chunk_count = len(chunk_candle_data_list)
-                progress_list = sync_manager.list([0] * chunk_count)
+                progress_list = sync_manager.list([0.0] * chunk_count)
 
                 for turn, chunk_candle_data in enumerate(chunk_candle_data_list):
                     chunk_index = chunk_candle_data.index
