@@ -468,16 +468,16 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
 
             # check if situation is okay
             if is_margin_negative:
-                text = ""
-                text += "Got an order with a negative margin"
-                text += f" while calculating {symbol} market at {current_moment}"
-                raise SimulationError(text)
+                raise SimulationError(
+                    "Got an order with a negative margin"
+                    f" while calculating {symbol} market at {current_moment}"
+                )
 
             elif is_margin_nan:
-                text = ""
-                text += "Got an order with a non-numeric margin"
-                text += f" while calculating {symbol} market at {current_moment}"
-                raise SimulationError(text)
+                raise SimulationError(
+                    "Got an order with a non-numeric margin"
+                    f" while calculating {symbol} market at {current_moment}"
+                )
 
             # ■■■■■ mimic the real world phenomenon ■■■■■
 
@@ -535,11 +535,11 @@ def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
                 is_new_trade_found = True
 
                 if chunk_virtual_state.available_balance < 0.0:
-                    text = ""
-                    text += "Available balance went below zero"
-                    text += f" while calculating {symbol} market"
-                    text += f" at {current_moment}"
-                    raise SimulationError(text)
+                    raise SimulationError(
+                        "Available balance went below zero"
+                        f" while calculating {symbol} market"
+                        f" at {current_moment}"
+                    )
 
             # ■■■■■ update the account state (symbol dependent) ■■■■■
 
