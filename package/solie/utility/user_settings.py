@@ -11,6 +11,7 @@ from .data_models import (
     DataSettings,
     DecisionInput,
     IndicatorInput,
+    RiskLevel,
     Strategy,
 )
 
@@ -53,7 +54,14 @@ async def save_data_settings(data_settings: DataSettings, datapath: Path):
         await file.write(data_settings.model_dump_json(indent=2))
 
 
-class SavedStrategy(Strategy):
+class SavedStrategy(BaseModel):
+    code_name: str
+    readable_name: str = "New Blank Strategy"
+    version: str = "0.1"
+    description: str = "A blank strategy template before being written"
+    risk_level: RiskLevel = RiskLevel.HIGH
+    parallelized_simulation: bool = False
+    chunk_division: int = 30
     indicator_script: str = "pass"
     decision_script: str = "pass"
 

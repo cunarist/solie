@@ -12,11 +12,18 @@ from solie import (
     PositionDirection,
     RiskLevel,
     SolieConfig,
-    Strategy,
 )
 
 
-class SilentStrategy(Strategy):
+class SilentStrategy:
+    code_name = "SILENT"
+    readable_name = "Silent Strategy"
+    version = "0.1"
+    description = "A silent strategy that does nothing"
+    risk_level = RiskLevel.LOW
+    parallelized_simulation = False
+    chunk_division = 30
+
     def create_indicators(self, given: IndicatorInput):
         pass
 
@@ -24,7 +31,15 @@ class SilentStrategy(Strategy):
         pass
 
 
-class ExampleStrategy(Strategy):
+class ExampleStrategy:
+    code_name = "EXAMPL"
+    readable_name = "Fixed Strategy"
+    version = "1.2"
+    description = "A fixed strategy for demonstration"
+    risk_level = RiskLevel.HIGH
+    parallelized_simulation = False
+    chunk_division = 30
+
     def create_indicators(self, given: IndicatorInput):
         target_symbols: list[str] = given.target_symbols
         candle_data: pd.DataFrame = given.candle_data
@@ -103,23 +118,6 @@ class ExampleStrategy(Strategy):
 
 def create_solie_config() -> SolieConfig:
     config = SolieConfig()
-
-    strategy = SilentStrategy(
-        code_name="SILENT",
-        readable_name="Silent Strategy",
-        version="0.1",
-        description="A silent strategy that does nothing",
-        risk_level=RiskLevel.LOW,
-    )
-    config.add_strategy(strategy)
-
-    strategy = ExampleStrategy(
-        code_name="EXAMPL",
-        readable_name="Fixed Strategy",
-        version="1.2",
-        description="A fixed strategy for demonstration",
-        risk_level=RiskLevel.HIGH,
-    )
-    config.add_strategy(strategy)
-
+    config.add_strategy(SilentStrategy())
+    config.add_strategy(ExampleStrategy())
     return config

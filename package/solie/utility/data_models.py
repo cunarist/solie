@@ -1,7 +1,6 @@
-from abc import abstractmethod
 from datetime import datetime
 from enum import Enum
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, Protocol
 
 import pandas as pd
 from pydantic import BaseModel
@@ -191,19 +190,14 @@ class DecisionInput(NamedTuple):
     new_decisions: dict[str, dict[OrderType, Decision]]
 
 
-class Strategy(BaseModel):
+class Strategy(Protocol):
     code_name: str
-    readable_name: str = "New Blank Strategy"
-    version: str = "0.1"
-    description: str = "A blank strategy template before being written"
-    risk_level: RiskLevel = RiskLevel.HIGH
-    parallelized_simulation: bool = False
-    chunk_division: int = 30
+    readable_name: str
+    version: str
+    description: str
+    risk_level: RiskLevel
+    parallelized_simulation: bool
+    chunk_division: int
 
-    @abstractmethod
-    def create_indicators(self, given: IndicatorInput):
-        pass
-
-    @abstractmethod
-    def create_decisions(self, given: DecisionInput):
-        pass
+    def create_indicators(self, given: IndicatorInput): ...
+    def create_decisions(self, given: DecisionInput): ...
