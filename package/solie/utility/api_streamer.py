@@ -1,14 +1,14 @@
 import json
-import logging
 from asyncio import Task, sleep
 from collections.abc import Callable, Coroutine
+from logging import getLogger
 from typing import Any
 
 from aiohttp import ClientError, ClientSession, WSMsgType
 
 from solie.common import spawn
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 class ApiStreamError(Exception):

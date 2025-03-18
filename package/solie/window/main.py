@@ -1,8 +1,8 @@
-import logging
 import math
 import os
 from asyncio import Event, sleep
 from datetime import datetime, timezone
+from logging import getLogger
 from pathlib import Path
 
 import aiofiles
@@ -50,7 +50,7 @@ from solie.widget import (
 
 from .compiled import Ui_MainWindow
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 class Window(QMainWindow, Ui_MainWindow):
@@ -457,7 +457,7 @@ class Window(QMainWindow, Ui_MainWindow):
         log_path = datapath / "+logs"
         await aiofiles.os.makedirs(log_path, exist_ok=True)
         log_handler = LogHandler(log_path, log_callback)
-        logging.root.addHandler(log_handler)
+        getLogger().addHandler(log_handler)
 
     def reveal(self):
         self.should_confirm_closing = True

@@ -1,13 +1,13 @@
-import logging
 from asyncio import Event, sleep
 from collections.abc import Callable, Coroutine
+from logging import getLogger
 from typing import Any
 
 from aiohttp import ClientSession
 
 from solie.common import spawn
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 ATTEMPT_IP = [

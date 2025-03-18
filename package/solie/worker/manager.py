@@ -1,10 +1,10 @@
-import logging
 import os
 import statistics
 import webbrowser
 from asyncio import all_tasks, sleep
 from collections import deque
 from datetime import datetime, timedelta, timezone
+from logging import getLogger
 from typing import Any
 
 import aiofiles
@@ -26,7 +26,7 @@ from solie.window import Window
 
 from .united import team
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 class Manager:

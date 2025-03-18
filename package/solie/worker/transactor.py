@@ -1,10 +1,10 @@
-import logging
 import math
 import pickle
 import webbrowser
 from asyncio import gather, sleep, wait
 from collections.abc import Coroutine
 from datetime import datetime, timedelta, timezone
+from logging import getLogger
 from typing import Any
 
 import aiofiles
@@ -49,7 +49,7 @@ from solie.window import Window
 
 from .united import team
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 class Transactor:

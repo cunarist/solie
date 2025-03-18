@@ -1,8 +1,8 @@
-import logging
 import time
 from asyncio import Lock
 from collections.abc import Callable
 from datetime import datetime, timezone
+from logging import Formatter, Handler
 from pathlib import Path
 
 import aiofiles
@@ -11,7 +11,7 @@ import aiofiles.os
 from solie.common import spawn
 
 
-class LogHandler(logging.Handler):
+class LogHandler(Handler):
     file_lock = Lock()
 
     def __init__(self, log_path: Path, callback: Callable[[str, str], None]):
@@ -22,7 +22,7 @@ class LogHandler(logging.Handler):
 
         log_format = "%(asctime)s.%(msecs)03d %(levelname)s"
         date_format = "%Y-%m-%d %H:%M:%S"
-        log_formatter = logging.Formatter(log_format, datefmt=date_format)
+        log_formatter = Formatter(log_format, datefmt=date_format)
         log_formatter.converter = time.gmtime
         self.setFormatter(log_formatter)
 

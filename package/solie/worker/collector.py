@@ -1,10 +1,10 @@
-import logging
 import math
 import random
 import webbrowser
 from asyncio import sleep, wait
 from collections import deque
 from datetime import datetime, timedelta, timezone
+from logging import getLogger
 from typing import Any
 
 import aiofiles.os
@@ -41,7 +41,7 @@ from solie.window import Window
 
 from .united import team
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 class Collector:

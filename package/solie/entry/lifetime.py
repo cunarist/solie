@@ -1,5 +1,5 @@
-import logging
 from asyncio import Event, sleep, wait
+from logging import getLogger
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6.QtGui import QColor, QFont, QFontDatabase, QPalette
@@ -18,7 +18,7 @@ from solie.worker import (
     team,
 )
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 async def keep_processing_events(app: QApplication):
@@ -67,7 +67,7 @@ async def live(app: QApplication, config: SolieConfig):
     OverlayPopup.install_window(window)
     spawn(keep_processing_events(app))
 
-    logging.getLogger(PACKAGE_NAME).setLevel("DEBUG")
+    getLogger(PACKAGE_NAME).setLevel("DEBUG")
     await window.boot()
     logger.info("Started up")
 
