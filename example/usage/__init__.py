@@ -2,7 +2,6 @@ from typing import Any
 
 import pandas as pd
 import pandas_ta as ta
-
 from solie import (
     AccountState,
     Decision,
