@@ -147,14 +147,14 @@ class StrategyBasicInput(BaseOverlay):
         this_layout = QFormLayout()
         card_layout.addLayout(this_layout)
         parallelized_input = QCheckBox()
-        parallelized_input.setChecked(strategy.parallelized_simulation)
+        parallelized_input.setChecked(bool(strategy.parallel_simulation_chunk_days))
         this_layout.addRow("Parallelized", parallelized_input)
         chunk_division_input = QSpinBox()
         chunk_division_input.setSuffix(" days")
         chunk_division_input.setMinimum(7)
         chunk_division_input.setMaximum(90)
         chunk_division_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
-        chunk_division_input.setValue(strategy.chunk_division)
+        chunk_division_input.setValue(strategy.parallel_simulation_chunk_days or 0)
         this_layout.addRow("Chunk division", chunk_division_input)
 
         # ■■■■■ a card ■■■■■
@@ -191,8 +191,9 @@ class StrategyBasicInput(BaseOverlay):
                 return
             strategy.description = description_input.toPlainText()
             strategy.risk_level = RiskLevel(risk_level_input.currentIndex())
-            strategy.parallelized_simulation = parallelized_input.isChecked()
-            strategy.chunk_division = chunk_division_input.value()
+            parallel = parallelized_input.isChecked()
+            parallel_chunk_days = chunk_division_input.value() if parallel else None
+            strategy.parallel_simulation_chunk_days = parallel_chunk_days
             self.done_event.set()
 
         # confirm button

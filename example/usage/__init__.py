@@ -2,6 +2,7 @@ from typing import Any
 
 import pandas as pd
 import pandas_ta as ta
+
 from solie import (
     AccountState,
     Decision,
@@ -21,8 +22,7 @@ class SilentStrategy:
     version = "0.1"
     description = "A silent strategy that does nothing"
     risk_level = RiskLevel.LOW
-    parallelized_simulation = False
-    chunk_division = 30
+    parallel_simulation_chunk_days: int | None = 30
 
     def create_indicators(self, given: IndicatorInput):
         pass
@@ -37,8 +37,7 @@ class ExampleStrategy:
     version = "1.2"
     description = "A fixed strategy for demonstration"
     risk_level = RiskLevel.HIGH
-    parallelized_simulation = False
-    chunk_division = 30
+    parallel_simulation_chunk_days: int | None = 30
 
     def create_indicators(self, given: IndicatorInput):
         target_symbols: list[str] = given.target_symbols

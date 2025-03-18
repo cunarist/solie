@@ -196,8 +196,7 @@ class Strategy(Protocol):
     version: str
     description: str
     risk_level: RiskLevel
-    parallelized_simulation: bool
-    chunk_division: int
+    parallel_simulation_chunk_days: int | None
 
     def create_indicators(self, given: IndicatorInput): ...
     def create_decisions(self, given: DecisionInput): ...

@@ -1,5 +1,4 @@
 from solie import SolieConfig, bring_to_life
-
 from usage import create_solie_config
 
 # Remember to guard the entry point for proper multiprocessing.

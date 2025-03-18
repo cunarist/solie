@@ -60,8 +60,7 @@ class SavedStrategy(BaseModel):
     version: str = "0.1"
     description: str = "A blank strategy template before being written"
     risk_level: RiskLevel = RiskLevel.HIGH
-    parallelized_simulation: bool = False
-    chunk_division: int = 30
+    parallel_simulation_chunk_days: int | None = 30
     indicator_script: str = "pass"
     decision_script: str = "pass"
 

@@ -504,8 +504,7 @@ class Simulator:
         strategy = team.strategist.strategies[strategy_index]
         strategy_code_name = strategy.code_name
         strategy_version = strategy.version
-        should_parallelize = strategy.parallelized_simulation
-        chunk_length = strategy.chunk_division
+        parallel_chunk_days = strategy.parallel_simulation_chunk_days
 
         workerpath = self.workerpath
         prefix = f"{strategy_code_name}_{strategy_version}_{year}"
@@ -644,8 +643,25 @@ class Simulator:
             needed_index: pd.DatetimeIndex = needed_candle_data.index  # type:ignore
             needed_indicators = year_indicators.reindex(needed_index)
 
-            if should_parallelize:
-                division = timedelta(days=chunk_length)
+            if parallel_chunk_days is None:
+                calculation_input = CalculationInput(
+                    strategy=strategy,
+                    progress_list=progress_list,
+                    target_progress=0,
+                    target_symbols=target_symbols,
+                    calculation_index=needed_index,
+                    chunk_candle_data=needed_candle_data,
+                    chunk_indicators=needed_indicators,
+                    chunk_asset_record=previous_asset_record,
+                    chunk_unrealized_changes=previous_unrealized_changes,
+                    chunk_scribbles=previous_scribbles,
+                    chunk_account_state=previous_account_state,
+                    chunk_virtual_state=previous_virtual_state,
+                )
+                calculation_inputs.append(calculation_input)
+
+            else:
+                division = timedelta(days=parallel_chunk_days)
                 chunk_candle_data_list = [
                     chunk_candle_data
                     for _, chunk_candle_data in needed_candle_data.groupby(
@@ -662,7 +678,7 @@ class Simulator:
                     chunk_asset_record = previous_asset_record.iloc[0:0]
                     chunk_unrealized_changes = previous_unrealized_changes.iloc[0:0]
                     first_timestamp = chunk_index[0].timestamp()
-                    division_seconds = chunk_length * 24 * 60 * 60
+                    division_seconds = parallel_chunk_days * 24 * 60 * 60
                     if turn == 0 and first_timestamp % division_seconds != 0:
                         # when this is the firstmost chunk of calculation
                         # and also chunk calculation was partially done before
@@ -689,23 +705,6 @@ class Simulator:
                         chunk_virtual_state=chunk_virtual_state,
                     )
                     calculation_inputs.append(calculation_input)
-
-            else:
-                calculation_input = CalculationInput(
-                    strategy=strategy,
-                    progress_list=progress_list,
-                    target_progress=0,
-                    target_symbols=target_symbols,
-                    calculation_index=needed_index,
-                    chunk_candle_data=needed_candle_data,
-                    chunk_indicators=needed_indicators,
-                    chunk_asset_record=previous_asset_record,
-                    chunk_unrealized_changes=previous_unrealized_changes,
-                    chunk_scribbles=previous_scribbles,
-                    chunk_account_state=previous_account_state,
-                    chunk_virtual_state=previous_virtual_state,
-                )
-                calculation_inputs.append(calculation_input)
 
         prepare_step = 6
 
@@ -819,26 +818,23 @@ class Simulator:
         # ■■■■■ get strategy details ■■■■
 
         if self.simulation_summary is None:
-            should_parallelize = False
-            chunk_length = 0
+            parallel_chunk_days = None
         else:
             strategy_index = self.simulation_settings.strategy_index
             strategy = team.strategist.strategies[strategy_index]
-            should_parallelize = strategy.parallelized_simulation
-            chunk_length = strategy.chunk_division
+            parallel_chunk_days = strategy.parallel_simulation_chunk_days
 
         # ■■■■■ apply other factors to the asset trace ■■■■
 
-        if should_parallelize:
-            division = timedelta(days=chunk_length)
+        if parallel_chunk_days is None:
+            chunk_asset_record_list = [asset_record]
+            chunk_count = 1
+        else:
+            division = timedelta(days=parallel_chunk_days)
             grouper = pd.Grouper(freq=division, origin="epoch")  # type:ignore
             grouped = asset_record.groupby(grouper)
             chunk_asset_record_list = [r.dropna() for _, r in grouped]
             chunk_count = len(chunk_asset_record_list)
-
-        else:
-            chunk_asset_record_list = [asset_record]
-            chunk_count = 1
 
         chunk_asset_changes_list: list[pd.Series] = []
         for turn in range(chunk_count):
