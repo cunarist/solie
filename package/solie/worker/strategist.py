@@ -92,7 +92,7 @@ class Strategiest:
 
     def _combine_strategies(self):
         soft_strategies = list[Strategy](self.saved_strategies.all)
-        fixed_strategies = self.window.config.strategies
+        fixed_strategies = self.window.config.get_strategies()
         self.strategies = fixed_strategies + soft_strategies
 
     async def save_strategies(self):

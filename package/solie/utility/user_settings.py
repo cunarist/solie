@@ -130,7 +130,10 @@ class SavedStrategies(BaseModel):
 
 class SolieConfig:
     def __init__(self):
-        self.strategies: list[Strategy] = []
+        self._strategies: list[Strategy] = []
 
     def add_strategy(self, strategy: Strategy):
-        self.strategies.append(strategy)
+        self._strategies.append(strategy)
+
+    def get_strategies(self) -> list[Strategy]:
+        return self._strategies.copy()
