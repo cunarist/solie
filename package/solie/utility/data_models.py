@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Any, NamedTuple, Protocol
+from typing import Any, NamedTuple, Protocol, runtime_checkable
 
 import pandas as pd
 from pydantic import BaseModel
@@ -190,6 +190,7 @@ class DecisionInput(NamedTuple):
     new_decisions: dict[str, dict[OrderType, Decision]]
 
 
+@runtime_checkable
 class Strategy(Protocol):
     code_name: str
     readable_name: str

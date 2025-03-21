@@ -133,6 +133,10 @@ class SolieConfig:
         self._strategies: list[Strategy] = []
 
     def add_strategy(self, strategy: Strategy):
+        if not isinstance(strategy, Strategy):
+            # This prevents developers from
+            # registering an invalid strategy at runtime.
+            raise TypeError(f"{strategy} is not a `Strategy`")
         self._strategies.append(strategy)
 
     def get_strategies(self) -> list[Strategy]:
