@@ -9,7 +9,7 @@
 project = "Solie"
 copyright = "2025, Cunarist"
 author = "Cunarist"
-release = "9.1.0"
+release = "9.1.1"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
