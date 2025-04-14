@@ -15,9 +15,15 @@ if TYPE_CHECKING:
 
 
 class Worker(Protocol):
+    """Each worker owns its tasks and data."""
+
     def __init__(self, window: Window, scheduler: AsyncIOScheduler): ...
-    async def load_work(self): ...
-    async def dump_work(self): ...
+
+    async def load_work(self):
+        """Reads work data from disk."""
+
+    async def dump_work(self):
+        """Writes work data to disk."""
 
 
 class Team:
