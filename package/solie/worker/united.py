@@ -15,7 +15,10 @@ if TYPE_CHECKING:
 
 
 class Worker(Protocol):
-    """Each worker owns its tasks and data."""
+    """
+    A worker owns its tasks and data.
+    Each worker has a single responsibility.
+    """
 
     def __init__(self, window: Window, scheduler: AsyncIOScheduler): ...
 
