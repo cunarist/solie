@@ -100,7 +100,7 @@ class Manager:
         job = self.change_settings
         outsource(window.comboBox_3.currentIndexChanged, job)
 
-    async def load(self):
+    async def load_work(self):
         await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
 
         # settings

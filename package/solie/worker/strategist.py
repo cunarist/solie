@@ -62,7 +62,7 @@ class Strategiest:
         job = self.add_blank_strategy
         outsource(window.pushButton_5.clicked, job)
 
-    async def load(self):
+    async def load_work(self):
         await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
 
         filepath = self.workerpath / "soft_strategies.json"

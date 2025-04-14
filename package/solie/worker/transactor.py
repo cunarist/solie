@@ -216,7 +216,7 @@ class Transactor:
         new_action = action_menu.addAction(text)
         outsource(new_action.triggered, job)
 
-    async def load(self):
+    async def load_work(self):
         await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
 
         # scribbles

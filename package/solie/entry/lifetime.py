@@ -76,16 +76,9 @@ async def live(app: QApplication, config: SolieConfig):
     simulator = Simulator(window, scheduler)
     strategist = Strategiest(window, scheduler)
     manager = Manager(window, scheduler)
-
     team.unite(collector, transactor, simulator, strategist, manager)
 
-    tasks = [
-        spawn(collector.load()),
-        spawn(transactor.load()),
-        spawn(simulator.load()),
-        spawn(strategist.load()),
-        spawn(manager.load()),
-    ]
+    tasks = [worker.load_work() for worker in team.get_all()]
     await wait(tasks)
 
     spawn(collector.get_exchange_information())
