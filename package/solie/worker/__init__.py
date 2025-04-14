@@ -3,7 +3,7 @@ from .manager import Manager
 from .simulator import Simulator
 from .strategist import Strategiest
 from .transactor import Transactor
-from .united import Team, Worker, team
+from .united import Team, team
 
 __all__ = [
     "Collector",
@@ -12,6 +12,5 @@ __all__ = [
     "Strategiest",
     "Team",
     "Transactor",
-    "Worker",
     "team",
 ]

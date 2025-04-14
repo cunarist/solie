@@ -90,12 +90,15 @@ class Strategiest:
 
         self._combine_strategies()
 
+    async def dump_work(self):
+        await self._save_strategies()
+
     def _combine_strategies(self):
         soft_strategies = list[Strategy](self.saved_strategies.all)
         fixed_strategies = self.window.config.get_strategies()
         self.strategies = fixed_strategies + soft_strategies
 
-    async def save_strategies(self):
+    async def _save_strategies(self):
         filepath = self.workerpath / "soft_strategies.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             await file.write(self.saved_strategies.model_dump_json(indent=2))
@@ -161,7 +164,7 @@ class Strategiest:
                     StrategyDevelopInput(strategy),
                 )
                 spawn(self.display_strategies())
-                spawn(self.save_strategies())
+                spawn(self._save_strategies())
                 spawn(self.restore_strategy_selections())
 
             edit_button = QPushButton("Develop")
@@ -175,7 +178,7 @@ class Strategiest:
                     StrategyBasicInput(strategy),
                 )
                 spawn(self.display_strategies())
-                spawn(self.save_strategies())
+                spawn(self._save_strategies())
                 spawn(self.restore_strategy_selections())
 
             edit_button = QPushButton("Edit basic info")
@@ -200,7 +203,7 @@ class Strategiest:
                 self.saved_strategies.all.remove(strategy)
                 self._combine_strategies()
                 spawn(self.display_strategies())
-                spawn(self.save_strategies())
+                spawn(self._save_strategies())
                 spawn(self.restore_strategy_selections())
 
             new_action = action_menu.addAction("Remove")
@@ -213,7 +216,7 @@ class Strategiest:
                 self.saved_strategies.all.append(duplicated)
                 self._combine_strategies()
                 spawn(self.display_strategies())
-                spawn(self.save_strategies())
+                spawn(self._save_strategies())
                 spawn(self.restore_strategy_selections())
 
             new_action = action_menu.addAction("Duplicate")
@@ -227,7 +230,7 @@ class Strategiest:
                 self.saved_strategies.all.insert(after_index, strategy)
                 self._combine_strategies()
                 spawn(self.display_strategies())
-                spawn(self.save_strategies())
+                spawn(self._save_strategies())
                 spawn(self.restore_strategy_selections())
 
             edit_button = QPushButton("▼")
@@ -242,7 +245,7 @@ class Strategiest:
                 self.saved_strategies.all.insert(after_index, strategy)
                 self._combine_strategies()
                 spawn(self.display_strategies())
-                spawn(self.save_strategies())
+                spawn(self._save_strategies())
                 spawn(self.restore_strategy_selections())
 
             edit_button = QPushButton("▲")

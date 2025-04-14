@@ -106,7 +106,7 @@ class Collector:
             minute="*",
         )
         self.scheduler.add_job(
-            self.save_candle_data,
+            self._save_candle_data,
             trigger="cron",
             hour="*",
         )
@@ -169,6 +169,9 @@ class Collector:
                     df = await spawn_blocking(sort_data_frame, df)
                 cell.data = df
 
+    async def dump_work(self):
+        await self._save_candle_data()
+
     async def organize_data(self):
         duration_recorder = DurationRecorder("ORGANIZE_COLLECTOR_DATA")
 
@@ -182,7 +185,7 @@ class Collector:
 
         duration_recorder.record()
 
-    async def save_candle_data(self):
+    async def _save_candle_data(self):
         # ■■■■■ default values ■■■■■
 
         current_year = datetime.now(timezone.utc).year
@@ -598,7 +601,7 @@ class Collector:
                             cell.data,
                             cell_worker.data,
                         )
-                await self.save_candle_data()
+                await self._save_candle_data()
 
         # ■■■■■ add to log ■■■■■
 

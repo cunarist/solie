@@ -129,7 +129,7 @@ class Transactor:
             second="*/10",
         )
         self.scheduler.add_job(
-            self.save_scribbles,
+            self._save_scribbles,
             trigger="cron",
             second="*/10",
         )
@@ -144,7 +144,7 @@ class Transactor:
             minute="*",
         )
         self.scheduler.add_job(
-            self.save_large_data,
+            self._save_large_data,
             trigger="cron",
             hour="*",
         )
@@ -264,6 +264,10 @@ class Transactor:
             df: pd.DataFrame = await spawn_blocking(pd.read_pickle, filepath)
             self.auto_order_record = RWLock(df)
 
+    async def dump_work(self):
+        await self._save_large_data()
+        await self._save_scribbles()
+
     async def organize_data(self):
         async with self.unrealized_changes.write_lock as cell:
             if not cell.data.index.is_unique:
@@ -289,7 +293,7 @@ class Transactor:
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await spawn_blocking(sort_data_frame, cell.data)
 
-    async def save_large_data(self):
+    async def _save_large_data(self):
         async with self.unrealized_changes.read_lock as cell:
             unrealized_changes = cell.data.copy()
         await spawn_blocking(
@@ -311,7 +315,7 @@ class Transactor:
             self.workerpath / "asset_record.pickle",
         )
 
-    async def save_scribbles(self):
+    async def _save_scribbles(self):
         filepath = self.workerpath / "scribbles.pickle"
         async with aiofiles.open(filepath, "wb") as file:
             content = pickle.dumps(self.scribbles)

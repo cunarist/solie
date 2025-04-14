@@ -152,6 +152,9 @@ class Simulator:
         text = "Nothing drawn"
         self.window.label_19.setText(text)
 
+    async def dump_work(self):
+        pass
+
     async def update_viewing_symbol(self):
         alias = self.window.comboBox_6.currentText()
         symbol = self.window.alias_to_symbol[alias]
@@ -673,7 +676,7 @@ class Simulator:
                 progress_list = sync_manager.list([0.0] * chunk_count)
 
                 for turn, chunk_candle_data in enumerate(chunk_candle_data_list):
-                    chunk_index = chunk_candle_data.index
+                    chunk_index: pd.DatetimeIndex = chunk_candle_data.index  # type:ignore
                     chunk_indicators = needed_indicators.reindex(chunk_index)
                     chunk_asset_record = previous_asset_record.iloc[0:0]
                     chunk_unrealized_changes = previous_unrealized_changes.iloc[0:0]

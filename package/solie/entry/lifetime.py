@@ -78,8 +78,7 @@ async def live(app: QApplication, config: SolieConfig):
     manager = Manager(window, scheduler)
     team.unite(collector, transactor, simulator, strategist, manager)
 
-    tasks = [worker.load_work() for worker in team.get_all()]
-    await wait(tasks)
+    await wait(worker.load_work() for worker in team.get_all())
 
     spawn(collector.get_exchange_information())
     spawn(strategist.display_strategies())
@@ -103,10 +102,4 @@ async def live(app: QApplication, config: SolieConfig):
     scheduler.shutdown()
     await sleep(1)
 
-    tasks = [
-        spawn(transactor.save_large_data()),
-        spawn(transactor.save_scribbles()),
-        spawn(strategist.save_strategies()),
-        spawn(collector.save_candle_data()),
-    ]
-    await wait(tasks)
+    await wait(worker.dump_work() for worker in team.get_all())

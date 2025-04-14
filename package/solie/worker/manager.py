@@ -122,6 +122,9 @@ class Manager:
             script = "from solie.worker import team\n\nlogger.info(team)"
         self.window.plainTextEdit.setPlainText(script)
 
+    async def dump_work(self):
+        pass
+
     async def change_settings(self):
         current_index = self.window.comboBox_3.currentIndex()
         self.management_settings.lock_board = BoardLockOptions(current_index)
