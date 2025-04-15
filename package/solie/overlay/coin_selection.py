@@ -1,3 +1,5 @@
+from asyncio import Event
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QPixmap
 from PySide6.QtWidgets import (
@@ -10,21 +12,29 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QSpacerItem,
     QVBoxLayout,
+    QWidget,
 )
 
 from solie.common import PACKAGE_PATH, outsource, spawn
 from solie.utility import ApiRequester
-from solie.widget import BaseOverlay, HorizontalDivider, ask
+from solie.widget import HorizontalDivider, ask
 
 
-class CoinSelection(BaseOverlay):
+class CoinSelection:
+    done_event = Event()
+    result: list[str]
+
     def __init__(self, asset_token: str):
         super().__init__()
+        self.widget = QWidget()
         self.is_closed = False
 
         self.asset_token = asset_token
 
         spawn(self.fill())
+
+    async def confirm_closing(self) -> bool:
+        return True
 
     async def fill(self):
         # ■■■■■ for remembering ■■■■■
@@ -87,7 +97,7 @@ class CoinSelection(BaseOverlay):
 
         # ■■■■■ full layout ■■■■■
 
-        full_layout = QHBoxLayout(self)
+        full_layout = QHBoxLayout(self.widget)
         cards_layout = QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
@@ -128,7 +138,7 @@ class CoinSelection(BaseOverlay):
         card_layout.addWidget(spacing_text)
 
         # divider
-        divider = HorizontalDivider(self)
+        divider = HorizontalDivider(self.widget)
         card_layout.addWidget(divider)
 
         # spacing
@@ -177,8 +187,6 @@ class CoinSelection(BaseOverlay):
         card_layout.addItem(input_layout)
 
         # ■■■■■ a card ■■■■■
-
-        self.result: list[str]
 
         # confirm function
         async def job_cf():

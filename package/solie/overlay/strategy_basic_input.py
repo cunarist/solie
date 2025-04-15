@@ -1,4 +1,5 @@
-import re
+from asyncio import Event
+from re import fullmatch
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QPixmap
@@ -16,22 +17,27 @@ from PySide6.QtWidgets import (
     QSpinBox,
     QTextEdit,
     QVBoxLayout,
+    QWidget,
 )
 
 from solie.common import PACKAGE_PATH, outsource
 from solie.utility import RiskLevel, Strategy, is_left_version_higher
-from solie.widget import BaseOverlay, HorizontalDivider, ask
+from solie.widget import HorizontalDivider, ask
 
 
-class StrategyBasicInput(BaseOverlay):
+class StrategyBasicInput:
+    done_event = Event()
+    result = None
+
     def __init__(self, strategy: Strategy):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
+        self.widget = QWidget()
 
         # ■■■■■ full layout ■■■■■
 
-        full_layout = QHBoxLayout(self)
+        full_layout = QHBoxLayout(self.widget)
         cards_layout = QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
@@ -70,7 +76,7 @@ class StrategyBasicInput(BaseOverlay):
         card_layout.addWidget(spacing_text)
 
         # divider
-        divider = HorizontalDivider(self)
+        divider = HorizontalDivider(self.widget)
         card_layout.addWidget(divider)
 
         # spacing
@@ -133,7 +139,7 @@ class StrategyBasicInput(BaseOverlay):
         card_layout.addWidget(spacing_text)
 
         # divider
-        divider = HorizontalDivider(self)
+        divider = HorizontalDivider(self.widget)
         card_layout.addWidget(divider)
 
         # spacing
@@ -170,7 +176,7 @@ class StrategyBasicInput(BaseOverlay):
         async def job():
             strategy.readable_name = readable_name_input.text()
             version = version_input.text()
-            if re.fullmatch(r"[0-9]+\.[0-9]+", version):
+            if fullmatch(r"[0-9]+\.[0-9]+", version):
                 if not is_left_version_higher(strategy.version, version):
                     strategy.version = version
                 else:
@@ -215,3 +221,6 @@ class StrategyBasicInput(BaseOverlay):
             QSizePolicy.Policy.Expanding,
         )
         cards_layout.addItem(spacer)
+
+    async def confirm_closing(self) -> bool:
+        return True

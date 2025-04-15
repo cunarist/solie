@@ -34,6 +34,7 @@ async def ask(main_text: str, detail_text: str, options: list[str]) -> int:
 
 class AskPopup(QWidget):
     done_event = Event()
+    result = None
     installed_window: QMainWindow
 
     @override

@@ -1,3 +1,5 @@
+from asyncio import Event
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
@@ -10,18 +12,22 @@ from PySide6.QtWidgets import (
 
 from solie.common import outsource
 
-from .overlay_popup import BaseOverlay, overlay
+from .overlay_popup import overlay
 
 
-class LogOverlay(BaseOverlay):
+class LogOverlay:
+    done_event = Event()
+    result = None
+
     def __init__(self, log_content: str):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
+        self.widget = QWidget()
 
         # ■■■■■ full layout ■■■■■
 
-        full_layout = QVBoxLayout(self)
+        full_layout = QVBoxLayout(self.widget)
         cards_layout = QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
@@ -30,6 +36,9 @@ class LogOverlay(BaseOverlay):
         label.setFont(fixed_width_font)
         label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         cards_layout.addWidget(label)
+
+    async def confirm_closing(self) -> bool:
+        return True
 
 
 class LogList(QListWidget):

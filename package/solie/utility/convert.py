@@ -1,13 +1,9 @@
 from collections import deque
-from typing import TypeVar
-
-F = TypeVar("F")
-K = TypeVar("K")
-V = TypeVar("V")
-T = TypeVar("T")
 
 
-def list_to_dict(input_list: list[dict[F, K]], key_for_key: F) -> dict[K, dict[F, K]]:
+def list_to_dict[F, K](
+    input_list: list[dict[F, K]], key_for_key: F
+) -> dict[K, dict[F, K]]:
     new_dict: dict[K, dict[F, K]] = {}
     for item in input_list:
         if key_for_key in item:
@@ -16,7 +12,7 @@ def list_to_dict(input_list: list[dict[F, K]], key_for_key: F) -> dict[K, dict[F
     return new_dict
 
 
-def slice_deque(original: deque[T], size: int, front: bool = False) -> list[T]:
+def slice_deque[T](original: deque[T], size: int, front: bool = False) -> list[T]:
     """
     Efficiently slices a `deque` from the specified size.
     """

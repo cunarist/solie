@@ -4,10 +4,6 @@ from collections.abc import Callable
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import Manager, cpu_count
 from multiprocessing.managers import SyncManager
-from typing import ParamSpec, TypeVar
-
-T = TypeVar("T")
-P = ParamSpec("P")
 
 PROCESS_COUNT = cpu_count()
 sync_manager: SyncManager | None = None
@@ -25,7 +21,7 @@ def get_sync_manager() -> SyncManager:
     return sync_manager
 
 
-async def spawn_blocking(
+async def spawn_blocking[**P, T](
     callable: Callable[P, T], *args: P.args, **kwargs: P.kwargs
 ) -> T:
     """

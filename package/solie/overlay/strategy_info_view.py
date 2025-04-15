@@ -1,3 +1,5 @@
+from asyncio import Event
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
@@ -7,21 +9,26 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QSpacerItem,
     QVBoxLayout,
+    QWidget,
 )
 
 from solie.utility import Strategy
-from solie.widget import BaseOverlay, HorizontalDivider
+from solie.widget import HorizontalDivider
 
 
-class StrategyInfoView(BaseOverlay):
+class StrategyInfoView:
+    done_event = Event()
+    result = None
+
     def __init__(self, strategy: Strategy):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
+        self.widget = QWidget()
 
         # ■■■■■ full layout ■■■■■
 
-        full_layout = QHBoxLayout(self)
+        full_layout = QHBoxLayout(self.widget)
         cards_layout = QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
@@ -60,7 +67,7 @@ class StrategyInfoView(BaseOverlay):
         card_layout.addWidget(spacing_text)
 
         # divider
-        divider = HorizontalDivider(self)
+        divider = HorizontalDivider(self.widget)
         card_layout.addWidget(divider)
 
         # spacing
@@ -85,3 +92,6 @@ class StrategyInfoView(BaseOverlay):
             QSizePolicy.Policy.Expanding,
         )
         cards_layout.addItem(spacer)
+
+    async def confirm_closing(self) -> bool:
+        return True

@@ -1,14 +1,12 @@
 from asyncio import Task, create_task
 from collections.abc import Callable, Coroutine
-from typing import Any, TypeVar
-
-T = TypeVar("T")
+from typing import Any
 
 # A set to keep track of all running tasks.
 all_tasks = set[Task[Any]]()
 
 
-def spawn(coroutine: Coroutine[None, None, T]) -> Task[T]:
+def spawn[T](coroutine: Coroutine[None, None, T]) -> Task[T]:
     """
     Spawns an asynchronous task from the given coroutine and manages its lifecycle.
 

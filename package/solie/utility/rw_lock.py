@@ -8,7 +8,7 @@ from asyncio import (
     sleep,
 )
 from collections import deque
-from typing import Any, Generic, TypeVar
+from typing import Any
 
 
 # The internal lock object managing the RWLock state.
@@ -161,16 +161,13 @@ class RWLockCore:
                     self._r_state += 1
 
 
-T = TypeVar("T")
-
-
-class Cell(Generic[T]):
+class Cell[T]:
     def __init__(self, data: T):
         self.data: T = data
 
 
 # Lock objects to access the _RWLockCore in reader or writer mode
-class ReadLock(Generic[T]):
+class ReadLock[T]:
     def __init__(self, lock: RWLockCore, wrapper: Cell[T]):
         self._wrapper = wrapper
         self._lock = lock
@@ -191,7 +188,7 @@ class ReadLock(Generic[T]):
         return "<ReaderLock: [{}]>".format(status)
 
 
-class WriteLock(Generic[T]):
+class WriteLock[T]:
     def __init__(self, lock: RWLockCore, wrapper: Cell[T]):
         self._wrapper = wrapper
         self._lock = lock
@@ -212,7 +209,7 @@ class WriteLock(Generic[T]):
         return "<WriterLock: [{}]>".format(status)
 
 
-class RWLock(Generic[T]):
+class RWLock[T]:
     """A RWLock maintains a pair of associated locks, one for read-only
     operations and one for writing. The read lock may be held simultaneously
     by multiple reader tasks, so long as there are no writers. The write

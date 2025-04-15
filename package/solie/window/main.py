@@ -38,7 +38,6 @@ from solie.utility import (
 )
 from solie.widget import (
     AskPopup,
-    BaseOverlay,
     BrandLabel,
     GraphLines,
     HorizontalDivider,
@@ -87,7 +86,6 @@ class Window(QMainWindow, Ui_MainWindow):
                     return
 
             AskPopup.done_event.set()
-            BaseOverlay.done_event.set()
 
             self.gauge.hide()
             self.board.hide()
@@ -176,12 +174,11 @@ class Window(QMainWindow, Ui_MainWindow):
         datapath = await read_datapath()
 
         if not datapath:
-            overlay_widget = await overlay(
+            datapath = await overlay(
                 "Choose your data folder",
                 DatapathInput(),
                 False,
             )
-            datapath = overlay_widget.result
             await save_datapath(datapath)
 
         self.datapath = datapath
@@ -191,18 +188,16 @@ class Window(QMainWindow, Ui_MainWindow):
         data_settings = await read_data_settings(datapath)
 
         if not data_settings:
-            overlay_widget = await overlay(
+            asset_token = await overlay(
                 "Choose a token to treat as your asset",
                 TokenSelection(),
                 False,
             )
-            asset_token = overlay_widget.result
-            overlay_widget = await overlay(
+            target_symbols = await overlay(
                 "Choose coins to observe and trade",
                 CoinSelection(asset_token),
                 False,
             )
-            target_symbols = overlay_widget.result
             data_settings = DataSettings(
                 asset_token=asset_token,
                 target_symbols=target_symbols,

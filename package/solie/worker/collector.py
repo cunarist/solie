@@ -439,12 +439,10 @@ class Collector:
 
         # ■■■■■ ask filling type ■■■■■
 
-        overlay_widget = await overlay(
+        filling_type = await overlay(
             "Choose the range to fill",
             DownloadFillOption(),
         )
-        filling_type = overlay_widget.result
-
         if filling_type is None:
             return
 

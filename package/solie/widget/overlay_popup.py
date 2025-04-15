@@ -1,6 +1,6 @@
 # https://stackoverflow.com/questions/67029993/pyqt-creating-a-popup-in-the-window
 from asyncio import Event
-from typing import TypeVar
+from typing import Protocol
 
 from PySide6.QtCore import QEvent, QObject, Qt
 from PySide6.QtGui import QFont, QShowEvent
@@ -22,28 +22,28 @@ from .popup_box import PopupBox
 from .transparent_scroll_area import TransparentScrollArea
 
 
-class BaseOverlay(QWidget):
-    done_event = Event()
+class OverlayContent[T](Protocol):
+    done_event: Event
+    result: T
+    widget: QWidget
 
     async def confirm_closing(self) -> bool:
-        return True
-
-
-W = TypeVar("W", bound=BaseOverlay)
+        """Shows a closing confirmation dialog if needed."""
+        ...
 
 
 # show an mainpulatable overlap popup
-async def overlay(title: str, widget: W, close_button=True) -> W:
-    overlay_panel = OverlayPopup(title, widget, close_button)
+async def overlay[T](title: str, content: OverlayContent[T], close_button=True) -> T:
+    overlay_panel = OverlayPopup(title, content, close_button)
     overlay_panel.show()
 
-    await widget.done_event.wait()
+    await content.done_event.wait()
     overlay_panel.setParent(None)
 
-    return widget
+    return content.result
 
 
-class OverlayPopup(QWidget):
+class OverlayPopup[T](QWidget):
     installed_window: QMainWindow
 
     @override
@@ -68,7 +68,7 @@ class OverlayPopup(QWidget):
     def __init__(
         self,
         title: str,
-        widget: BaseOverlay,
+        content: OverlayContent[T],
         close_button: bool,
     ):
         # ■■■■■ the basic ■■■■■
@@ -82,8 +82,8 @@ class OverlayPopup(QWidget):
 
         # ■■■■■ in case other overlay popup exists ■■■■■
 
-        widget.done_event.set()
-        widget.done_event.clear()
+        content.done_event.set()
+        content.done_event.clear()
 
         # ■■■■■ prepare answer ■■■■■
 
@@ -130,9 +130,9 @@ class OverlayPopup(QWidget):
             close_button_widget.setFont(close_button_font)
 
             async def job():
-                should_close = await widget.confirm_closing()
+                should_close = await content.confirm_closing()
                 if should_close:
-                    widget.done_event.set()
+                    content.done_event.set()
 
             outsource(close_button_widget.clicked, job)
             this_layout.addWidget(close_button_widget)
@@ -141,7 +141,7 @@ class OverlayPopup(QWidget):
         # scroll area
         scroll_area = TransparentScrollArea()
 
-        scroll_area.setWidget(widget)
+        scroll_area.setWidget(content.widget)
         scroll_area.setWidgetResizable(True)
 
         content_box_layout.addWidget(scroll_area)

@@ -1,4 +1,5 @@
 import webbrowser
+from asyncio import Event
 
 import aiofiles
 from PySide6.QtCore import Qt
@@ -11,23 +12,28 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QSpacerItem,
     QVBoxLayout,
+    QWidget,
 )
 
 from solie.common import PACKAGE_PATH, outsource, spawn_blocking
 from solie.utility import SavedStrategy
-from solie.widget import BaseOverlay, ScriptEditor, VerticalDivider, ask
+from solie.widget import ScriptEditor, VerticalDivider, ask
 
 
-class StrategyDevelopInput(BaseOverlay):
+class StrategyDevelopInput:
+    done_event = Event()
+    result = None
+
     def __init__(self, strategy: SavedStrategy):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
+        self.widget = QWidget()
         self.strategy = strategy
 
         # ■■■■■ full layout ■■■■■
 
-        full_layout = QVBoxLayout(self)
+        full_layout = QVBoxLayout(self.widget)
 
         # ■■■■■ script editors ■■■■■
 
@@ -45,7 +51,7 @@ class StrategyDevelopInput(BaseOverlay):
         column_layout.addWidget(detail_text)
 
         # input
-        indicator_script_input = ScriptEditor(self)
+        indicator_script_input = ScriptEditor(self.widget)
         indicator_script_input.setPlainText(strategy.indicator_script)
         column_layout.addWidget(indicator_script_input)
         self.indicator_script_input = indicator_script_input
@@ -61,7 +67,7 @@ class StrategyDevelopInput(BaseOverlay):
         column_layout.addWidget(detail_text)
 
         # input
-        decision_script_input = ScriptEditor(self)
+        decision_script_input = ScriptEditor(self.widget)
         decision_script_input.setPlainText(strategy.decision_script)
         column_layout.addWidget(decision_script_input)
         self.decision_script_input = decision_script_input
@@ -97,11 +103,11 @@ class StrategyDevelopInput(BaseOverlay):
         card_layout.addWidget(button)
 
         # Vertical divider
-        divider = VerticalDivider(self)
+        divider = VerticalDivider(self.widget)
         card_layout.addWidget(divider)
 
         # action menu
-        action_menu = QMenu(self)
+        action_menu = QMenu(self.widget)
         action_button = QPushButton()
         action_button.setText("☰")
         action_button.setMenu(action_menu)

@@ -1,3 +1,5 @@
+from asyncio import Event
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QGroupBox,
@@ -7,20 +9,23 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QSpacerItem,
     QVBoxLayout,
+    QWidget,
 )
 
-from solie.widget import BaseOverlay
 
+class DonationGuide:
+    done_event = Event()
+    result = None
 
-class DonationGuide(BaseOverlay):
     def __init__(self):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
+        self.widget = QWidget()
 
         # ■■■■■ full layout ■■■■■
 
-        full_layout = QHBoxLayout(self)
+        full_layout = QHBoxLayout(self.widget)
         cards_layout = QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
@@ -73,3 +78,6 @@ class DonationGuide(BaseOverlay):
             QSizePolicy.Policy.Expanding,
         )
         cards_layout.addItem(spacer)
+
+    async def confirm_closing(self) -> bool:
+        return True

@@ -1,7 +1,7 @@
 [project]
 name = "usage"
 version = "0.1.0"
-requires-python = "==3.10.*" # The oldest version supported by Solie
+requires-python = "==3.12.*" # The oldest version supported by Solie
 dependencies = ["solie"]
 
 [build-system]

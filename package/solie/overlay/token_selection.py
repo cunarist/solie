@@ -1,3 +1,5 @@
+from asyncio import Event
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QPixmap
 from PySide6.QtWidgets import (
@@ -10,19 +12,27 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QSpacerItem,
     QVBoxLayout,
+    QWidget,
 )
 
 from solie.common import PACKAGE_PATH, outsource, spawn
 from solie.utility import ApiRequester
-from solie.widget import BaseOverlay, HorizontalDivider, ask
+from solie.widget import HorizontalDivider, ask
 
 
-class TokenSelection(BaseOverlay):
+class TokenSelection:
+    done_event = Event()
+    result: str
+
     def __init__(self):
         super().__init__()
+        self.widget = QWidget()
         self.is_closed = False
 
         spawn(self.fill(self.done_event))
+
+    async def confirm_closing(self) -> bool:
+        return True
 
     async def fill(self, done_event):
         # ■■■■■ for remembering ■■■■■
@@ -82,7 +92,7 @@ class TokenSelection(BaseOverlay):
 
         # ■■■■■ full layout ■■■■■
 
-        full_layout = QHBoxLayout(self)
+        full_layout = QHBoxLayout(self.widget)
         cards_layout = QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
@@ -120,7 +130,7 @@ class TokenSelection(BaseOverlay):
         card_layout.addWidget(spacing_text)
 
         # divider
-        divider = HorizontalDivider(self)
+        divider = HorizontalDivider(self.widget)
         card_layout.addWidget(divider)
 
         # spacing
@@ -163,8 +173,6 @@ class TokenSelection(BaseOverlay):
         card_layout.addItem(input_layout)
 
         # ■■■■■ a card ■■■■■
-
-        self.result: str
 
         # confirm function
         async def job_cf():

@@ -1,3 +1,5 @@
+from asyncio import Event
+
 from PySide6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
@@ -6,17 +8,21 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QSpacerItem,
     QVBoxLayout,
+    QWidget,
 )
 
 from solie.common import outsource
-from solie.widget import BaseOverlay
 
 
-class DownloadFillOption(BaseOverlay):
+class DownloadFillOption:
+    done_event = Event()
+    result: int | None
+
     def __init__(self):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
+        self.widget = QWidget()
 
         # ■■■■■ prepare variables ■■■■■
 
@@ -29,7 +35,7 @@ class DownloadFillOption(BaseOverlay):
 
         # ■■■■■ full layout ■■■■■
 
-        full_layout = QHBoxLayout(self)
+        full_layout = QHBoxLayout(self.widget)
         cards_layout = QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
@@ -71,7 +77,6 @@ class DownloadFillOption(BaseOverlay):
         cards_layout.addWidget(card)
 
         # option buttons
-        self.result: int | None = None
         for turn, text in enumerate(fill_options):
 
             async def job(turn=turn):
@@ -91,3 +96,6 @@ class DownloadFillOption(BaseOverlay):
             QSizePolicy.Policy.Expanding,
         )
         cards_layout.addItem(spacer)
+
+    async def confirm_closing(self) -> bool:
+        return True
