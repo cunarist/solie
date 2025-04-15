@@ -39,11 +39,11 @@ class OverlayContent[T](Protocol):
 
 # show an mainpulatable overlap popup
 async def overlay[T](content: OverlayContent[T]) -> T:
-    overlay_panel = OverlayBox(content)
-    overlay_panel.show()
+    overlay_box = OverlayBox(content)
+    overlay_box.show()
 
     await content.done_event.wait()
-    overlay_panel.setParent(None)
+    overlay_box.setParent(None)
 
     return content.result
 
