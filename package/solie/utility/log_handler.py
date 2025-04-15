@@ -4,9 +4,9 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 from logging import Formatter, Handler
 from pathlib import Path
+from typing import override
 
 import aiofiles
-import aiofiles.os
 
 from solie.common import spawn
 
@@ -33,6 +33,7 @@ class LogHandler(Handler):
             + f".{now.tzinfo}.txt"
         )
 
+    @override
     def emit(self, record):
         formatted = self.format(record)
 
@@ -55,9 +56,9 @@ class LogHandler(Handler):
 
         log_content = f"{formatted}\n{log_content}"
 
-        spawn(self.add_log_output(summarization, log_content))
+        spawn(self._add_log_output(summarization, log_content))
 
-    async def add_log_output(self, summarization: str, log_content: str):
+    async def _add_log_output(self, summarization: str, log_content: str):
         # add to log list
         self.callback(summarization, log_content)
 
