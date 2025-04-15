@@ -439,10 +439,7 @@ class Collector:
 
         # ■■■■■ ask filling type ■■■■■
 
-        filling_type = await overlay(
-            "Choose the range to fill",
-            DownloadFillOption(),
-        )
+        filling_type = await overlay(DownloadFillOption())
         if filling_type is None:
             return
 
@@ -744,10 +741,7 @@ class Collector:
         self.download_fill_task.cancel()
 
     async def guide_donation(self):
-        await overlay(
-            "Support Solie",
-            DonationGuide(),
-        )
+        await overlay(DonationGuide())
 
     async def check_saved_years(self) -> list[int]:
         years = [

@@ -20,14 +20,16 @@ from solie.widget import HorizontalDivider, ask
 
 
 class DatapathInput:
+    title = "Choose your data folder"
+    close_button = False
     done_event = Event()
-    result: Path
 
     def __init__(self):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
         self.widget = QWidget()
+        self.result: Path
 
         # ■■■■■ full layout ■■■■■
 

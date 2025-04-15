@@ -21,8 +21,9 @@ from solie.widget import ScriptEditor, VerticalDivider, ask
 
 
 class StrategyDevelopInput:
+    title = "Develop your strategy"
+    close_button = True
     done_event = Event()
-    result = None
 
     def __init__(self, strategy: SavedStrategy):
         # ■■■■■ the basic ■■■■■
@@ -30,6 +31,7 @@ class StrategyDevelopInput:
         super().__init__()
         self.widget = QWidget()
         self.strategy = strategy
+        self.result = None
 
         # ■■■■■ full layout ■■■■■
 

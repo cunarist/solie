@@ -159,10 +159,7 @@ class Strategiest:
 
             async def job_bs(strategy=strategy):
                 await self.remember_strategy_selections()
-                await overlay(
-                    "Develop your strategy",
-                    StrategyDevelopInput(strategy),
-                )
+                await overlay(StrategyDevelopInput(strategy))
                 spawn(self.display_strategies())
                 spawn(self._save_strategies())
                 spawn(self.restore_strategy_selections())
@@ -173,10 +170,7 @@ class Strategiest:
 
             async def job_eb(strategy=strategy):
                 await self.remember_strategy_selections()
-                await overlay(
-                    "Edit your strategy's basic information",
-                    StrategyBasicInput(strategy),
-                )
+                await overlay(StrategyBasicInput(strategy))
                 spawn(self.display_strategies())
                 spawn(self._save_strategies())
                 spawn(self.restore_strategy_selections())

@@ -26,14 +26,16 @@ from solie.widget import HorizontalDivider, ask
 
 
 class StrategyBasicInput:
+    title = "Edit your strategy's basic information"
+    close_button = True
     done_event = Event()
-    result = None
 
     def __init__(self, strategy: Strategy):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
         self.widget = QWidget()
+        self.result = None
 
         # ■■■■■ full layout ■■■■■
 

@@ -15,14 +15,16 @@ from solie.common import outsource
 
 
 class DownloadFillOption:
+    title = "Choose the range to fill"
+    close_button = True
     done_event = Event()
-    result: int | None
 
     def __init__(self):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
         self.widget = QWidget()
+        self.result: int | None = None
 
         # ■■■■■ prepare variables ■■■■■
 

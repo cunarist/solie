@@ -21,16 +21,17 @@ from solie.widget import HorizontalDivider, ask
 
 
 class CoinSelection:
+    title = "Choose coins to observe and trade"
+    close_button = False
     done_event = Event()
-    result: list[str]
 
     def __init__(self, asset_token: str):
         super().__init__()
         self.widget = QWidget()
+        self.result: list[str]
+
         self.is_closed = False
-
         self.asset_token = asset_token
-
         spawn(self.fill())
 
     async def confirm_closing(self) -> bool:

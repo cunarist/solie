@@ -16,14 +16,16 @@ from .overlay_popup import overlay
 
 
 class LogOverlay:
+    title = "This is the full log"
+    close_button = True
     done_event = Event()
-    result = None
 
     def __init__(self, log_content: str):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
         self.widget = QWidget()
+        self.result = None
 
         # ■■■■■ full layout ■■■■■
 
@@ -70,7 +72,4 @@ class LogList(QListWidget):
         selected_item = self.item(selected_index)
         text = selected_item.data(Qt.ItemDataRole.UserRole)
 
-        await overlay(
-            "This is the full log",
-            LogOverlay(text),
-        )
+        await overlay(LogOverlay(text))

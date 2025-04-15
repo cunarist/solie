@@ -23,9 +23,14 @@ from .transparent_scroll_area import TransparentScrollArea
 
 
 class OverlayContent[T](Protocol):
+    # Class members
+    title: str
+    close_button: bool
     done_event: Event
-    result: T
+
+    # Instance members
     widget: QWidget
+    result: T
 
     async def confirm_closing(self) -> bool:
         """Shows a closing confirmation dialog if needed."""
@@ -33,8 +38,8 @@ class OverlayContent[T](Protocol):
 
 
 # show an mainpulatable overlap popup
-async def overlay[T](title: str, content: OverlayContent[T], close_button=True) -> T:
-    overlay_panel = OverlayPopup(title, content, close_button)
+async def overlay[T](content: OverlayContent[T]) -> T:
+    overlay_panel = OverlayPopup(content)
     overlay_panel.show()
 
     await content.done_event.wait()
@@ -65,12 +70,7 @@ class OverlayPopup[T](QWidget):
     def install_window(cls, window: QMainWindow):
         cls.installed_window = window
 
-    def __init__(
-        self,
-        title: str,
-        content: OverlayContent[T],
-        close_button: bool,
-    ):
+    def __init__(self, content: OverlayContent[T]):
         # ■■■■■ the basic ■■■■■
 
         super().__init__(self.installed_window)
@@ -110,7 +110,7 @@ class OverlayPopup[T](QWidget):
 
         # line containing the title and close button
         this_layout = QHBoxLayout()
-        title_label = QLabel(title)
+        title_label = QLabel(content.title)
         title_label_font = QFont()
         title_label_font.setPointSize(12)
         title_label.setFont(title_label_font)
@@ -123,7 +123,7 @@ class OverlayPopup[T](QWidget):
             QSizePolicy.Policy.Minimum,
         )
         this_layout.addItem(top_widget)
-        if close_button:
+        if content.close_button:
             close_button_widget = QPushButton("✕", content_box)
             close_button_font = QFont()
             close_button_font.setPointSize(11)

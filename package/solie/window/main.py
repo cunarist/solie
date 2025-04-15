@@ -174,11 +174,7 @@ class Window(QMainWindow, Ui_MainWindow):
         datapath = await read_datapath()
 
         if not datapath:
-            datapath = await overlay(
-                "Choose your data folder",
-                DatapathInput(),
-                False,
-            )
+            datapath = await overlay(DatapathInput())
             await save_datapath(datapath)
 
         self.datapath = datapath
@@ -188,16 +184,8 @@ class Window(QMainWindow, Ui_MainWindow):
         data_settings = await read_data_settings(datapath)
 
         if not data_settings:
-            asset_token = await overlay(
-                "Choose a token to treat as your asset",
-                TokenSelection(),
-                False,
-            )
-            target_symbols = await overlay(
-                "Choose coins to observe and trade",
-                CoinSelection(asset_token),
-                False,
-            )
+            asset_token = await overlay(TokenSelection())
+            target_symbols = await overlay(CoinSelection(asset_token))
             data_settings = DataSettings(
                 asset_token=asset_token,
                 target_symbols=target_symbols,

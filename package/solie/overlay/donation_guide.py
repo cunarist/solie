@@ -14,14 +14,16 @@ from PySide6.QtWidgets import (
 
 
 class DonationGuide:
+    title = "Support Solie"
+    close_button = True
     done_event = Event()
-    result = None
 
     def __init__(self):
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
         self.widget = QWidget()
+        self.result = None
 
         # ■■■■■ full layout ■■■■■
 

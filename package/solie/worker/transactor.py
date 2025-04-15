@@ -1959,7 +1959,4 @@ class Transactor:
         text += "\n\n"
         text += self.account_state.model_dump_json(indent=2)
 
-        await overlay(
-            "This is the raw account state object",
-            LongTextView(text),
-        )
+        await overlay(LongTextView(text))

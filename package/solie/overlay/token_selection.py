@@ -21,14 +21,16 @@ from solie.widget import HorizontalDivider, ask
 
 
 class TokenSelection:
+    title = "Choose a token to treat as your asset"
+    close_button = False
     done_event = Event()
-    result: str
 
     def __init__(self):
         super().__init__()
         self.widget = QWidget()
-        self.is_closed = False
+        self.result: str
 
+        self.is_closed = False
         spawn(self.fill(self.done_event))
 
     async def confirm_closing(self) -> bool:
