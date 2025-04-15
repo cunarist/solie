@@ -4,7 +4,7 @@ from .gauge import Gauge
 from .graph_lines import GraphLines
 from .horizontal_divider import HorizontalDivider
 from .log_list import LogList
-from .overlay_popup import OverlayContent, OverlayPopup, overlay
+from .overlay_popup import OverlayBox, OverlayContent, overlay
 from .popup_box import PopupBox
 from .script_editor import ScriptEditor
 from .splash_screen import SplashScreen
@@ -19,8 +19,8 @@ __all__ = [
     "GraphLines",
     "HorizontalDivider",
     "LogList",
+    "OverlayBox",
     "OverlayContent",
-    "OverlayPopup",
     "PopupBox",
     "ScriptEditor",
     "SplashScreen",

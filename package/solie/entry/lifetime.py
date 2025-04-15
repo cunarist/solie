@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QApplication
 
 from solie.common import PACKAGE_NAME, PACKAGE_PATH, spawn
 from solie.utility import SolieConfig
-from solie.widget import AskPopup, OverlayPopup
+from solie.widget import AskPopup, OverlayBox
 from solie.window import Window
 from solie.worker import (
     Collector,
@@ -64,7 +64,7 @@ async def live(app: QApplication, config: SolieConfig):
     window = Window(close_event, config)
     window.setPalette(dark_palette)
     AskPopup.install_window(window)
-    OverlayPopup.install_window(window)
+    OverlayBox.install_window(window)
     spawn(keep_processing_events(app))
 
     getLogger(PACKAGE_NAME).setLevel("DEBUG")

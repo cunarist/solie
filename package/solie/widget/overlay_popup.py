@@ -39,7 +39,7 @@ class OverlayContent[T](Protocol):
 
 # show an mainpulatable overlap popup
 async def overlay[T](content: OverlayContent[T]) -> T:
-    overlay_panel = OverlayPopup(content)
+    overlay_panel = OverlayBox(content)
     overlay_panel.show()
 
     await content.done_event.wait()
@@ -48,7 +48,7 @@ async def overlay[T](content: OverlayContent[T]) -> T:
     return content.result
 
 
-class OverlayPopup[T](QWidget):
+class OverlayBox[T](QWidget):
     installed_window: QMainWindow
 
     @override
