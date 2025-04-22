@@ -1,7 +1,8 @@
+from typing import override
+
 from PySide6.QtCore import QEvent
 from PySide6.QtGui import QEnterEvent
 from PySide6.QtWidgets import QPushButton, QWidget
-from typing_extensions import override
 
 
 class Gauge(QPushButton):

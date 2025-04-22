@@ -1,7 +1,8 @@
+from typing import override
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFocusEvent, QFont, QKeyEvent, QTextCursor
 from PySide6.QtWidgets import QPlainTextEdit, QWidget
-from typing_extensions import override
 from yapf.yapflib.errors import YapfError
 from yapf.yapflib.yapf_api import FormatCode
 

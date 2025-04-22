@@ -1,4 +1,5 @@
 from asyncio import Event
+from typing import override
 
 from PySide6.QtCore import QEvent, QObject, Qt
 from PySide6.QtGui import QFont, QShowEvent
@@ -12,7 +13,6 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from typing_extensions import override
 
 from solie.common import outsource
 

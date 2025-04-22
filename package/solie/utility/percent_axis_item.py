@@ -1,7 +1,7 @@
 import math
+from typing import override
 
 from pyqtgraph import AxisItem
-from typing_extensions import override
 
 
 class PercentAxisItem(AxisItem):

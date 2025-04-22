@@ -4,6 +4,7 @@ from asyncio import Event, sleep
 from datetime import datetime, timezone
 from logging import getLogger
 from pathlib import Path
+from typing import override
 
 import aiofiles
 import aiofiles.os
@@ -19,7 +20,6 @@ from PySide6.QtWidgets import (
     QSpacerItem,
     QVBoxLayout,
 )
-from typing_extensions import override
 
 from solie.common import PACKAGE_PATH, PACKAGE_VERSION, spawn
 from solie.overlay import CoinSelection, DatapathInput, TokenSelection

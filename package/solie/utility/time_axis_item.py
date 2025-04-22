@@ -1,8 +1,8 @@
 import math
 from datetime import datetime, timedelta, timezone
+from typing import override
 
 from pyqtgraph import AxisItem
-from typing_extensions import override
 
 # not using pyqtgraph's default DateAxisItem
 # because it doesn't show values in UTC time
