@@ -1,7 +1,7 @@
 import functools
 from asyncio import get_event_loop
 from collections.abc import Callable
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import BrokenExecutor, ProcessPoolExecutor
 from multiprocessing import Manager, cpu_count
 from multiprocessing.managers import SyncManager
 
@@ -44,8 +44,16 @@ async def spawn_blocking[**P, T](
     ```
     """
     event_loop = get_event_loop()
-    result = await event_loop.run_in_executor(
-        process_pool,
-        functools.partial(callable, *args, **kwargs),
-    )
+    try:
+        result = await event_loop.run_in_executor(
+            process_pool,
+            functools.partial(callable, *args, **kwargs),
+        )
+    except BrokenExecutor:
+        process_pool.shutdown()
+        prepare_process_pool()
+        result = await event_loop.run_in_executor(
+            process_pool,
+            functools.partial(callable, *args, **kwargs),
+        )
     return result
