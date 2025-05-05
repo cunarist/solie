@@ -44,16 +44,11 @@ async def spawn_blocking[**P, T](
     ```
     """
     event_loop = get_event_loop()
+    partial_callable = functools.partial(callable, *args, **kwargs)
     try:
-        result = await event_loop.run_in_executor(
-            process_pool,
-            functools.partial(callable, *args, **kwargs),
-        )
+        result = await event_loop.run_in_executor(process_pool, partial_callable)
     except BrokenExecutor:
         process_pool.shutdown()
         prepare_process_pool()
-        result = await event_loop.run_in_executor(
-            process_pool,
-            functools.partial(callable, *args, **kwargs),
-        )
+        result = await event_loop.run_in_executor(process_pool, partial_callable)
     return result
