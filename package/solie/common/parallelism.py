@@ -19,6 +19,11 @@ def prepare_process_pool():
     PoolHolder.sync_manager = Manager()
 
 
+def shutdown_process_pool():
+    PoolHolder.process_pool.shutdown()
+    PoolHolder.sync_manager.shutdown()
+
+
 def get_sync_manager() -> SyncManager:
     return PoolHolder.sync_manager
 
@@ -51,7 +56,7 @@ async def spawn_blocking[**P, T](
     try:
         result = await event_loop.run_in_executor(process_pool, partial_callable)
     except BrokenExecutor:
-        process_pool.shutdown()
+        shutdown_process_pool()
         prepare_process_pool()
         result = await event_loop.run_in_executor(process_pool, partial_callable)
     return result
