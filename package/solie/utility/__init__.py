@@ -11,8 +11,7 @@ from .api_streamer import ApiStreamer
 from .ball import ball_ceil, ball_floor
 from .check_internet import (
     internet_connected,
-    is_internet_checked,
-    monitor_internet,
+    start_monitoring_internet,
     when_internet_connected,
     when_internet_disconnected,
 )
@@ -126,13 +125,10 @@ __all__ = [
     "fill_holes_with_aggtrades",
     "format_numeric",
     "internet_connected",
-    "is_internet_checked",
     "is_left_version_higher",
     "list_to_dict",
     "make_decisions",
     "make_indicators",
-    "monitor_internet",
-    "monitor_internet",
     "read_data_settings",
     "read_datapath",
     "save_data_settings",
@@ -141,6 +137,7 @@ __all__ = [
     "slice_deque",
     "sort_data_frame",
     "sort_series",
+    "start_monitoring_internet",
     "to_moment",
     "when_internet_connected",
     "when_internet_disconnected",

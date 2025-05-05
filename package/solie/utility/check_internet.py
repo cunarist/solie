@@ -1,7 +1,7 @@
 from asyncio import Event, sleep
 from collections.abc import Callable, Coroutine
 from logging import getLogger
-from typing import Any
+from typing import Any, ClassVar
 
 from aiohttp import ClientSession
 
@@ -17,25 +17,30 @@ ATTEMPT_IP = [
     "208.67.220.220",  # OpenDNS
 ]
 
-is_connected = False
-is_internet_checked = Event()
 
-connected_functions: list[Callable[[], Coroutine[None, None, Any]]] = []
-disconnected_functions: list[Callable[[], Coroutine[None, None, Any]]] = []
+class StatusHolder:
+    is_connected: ClassVar[bool] = False
+    is_internet_checked: ClassVar[Event] = Event()
+    connected_calls: ClassVar[list[Callable[[], Coroutine[None, None, Any]]]] = []
+    disconnected_calls: ClassVar[list[Callable[[], Coroutine[None, None, Any]]]] = []
 
 
 def internet_connected():
-    if is_internet_checked.is_set():
-        return is_connected
+    if StatusHolder.is_internet_checked.is_set():
+        return StatusHolder.is_connected
     else:
         raise RuntimeError("Internet connection is not being monitored")
 
 
-async def monitor_internet():
-    global is_connected
+async def start_monitoring_internet():
+    spawn(keep_monitoring_internet())
+    await StatusHolder.is_internet_checked.wait()
+
+
+async def keep_monitoring_internet():
     while True:
         # Try to connect to DNS servers and analyze internet connection
-        was_connected = is_connected
+        was_connected = StatusHolder.is_connected
         analyzed = False
         async with ClientSession() as session:
             for attempt_ip in ATTEMPT_IP:
@@ -46,16 +51,16 @@ async def monitor_internet():
                             break
                 except Exception:
                     pass
-        is_connected = analyzed
-        is_internet_checked.set()
+        StatusHolder.is_connected = analyzed
+        StatusHolder.is_internet_checked.set()
 
         # Detect changes
-        if was_connected and not is_connected:
-            for job in disconnected_functions:
+        if was_connected and not StatusHolder.is_connected:
+            for job in StatusHolder.disconnected_calls:
                 spawn(job())
             logger.warning("Internet disconnected")
-        elif not was_connected and is_connected:
-            for job in connected_functions:
+        elif not was_connected and StatusHolder.is_connected:
+            for job in StatusHolder.connected_calls:
                 spawn(job())
             logger.info("Internet connected")
 
@@ -64,10 +69,8 @@ async def monitor_internet():
 
 
 def when_internet_connected(job: Callable[[], Coroutine[None, None, Any]]):
-    global connected_functions
-    connected_functions.append(job)
+    StatusHolder.connected_calls.append(job)
 
 
 def when_internet_disconnected(job: Callable[[], Coroutine[None, None, Any]]):
-    global disconnected_functions
-    disconnected_functions.append(job)
+    StatusHolder.disconnected_calls.append(job)
