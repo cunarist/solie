@@ -29,12 +29,11 @@ from solie.utility import (
     LogHandler,
     SolieConfig,
     internet_connected,
-    is_internet_checked,
-    monitor_internet,
     read_data_settings,
     read_datapath,
     save_data_settings,
     save_datapath,
+    start_monitoring_internet,
 )
 from solie.widget import (
     AskPopup,
@@ -159,8 +158,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         # ■■■■■ Request internet connection ■■■■■
 
-        spawn(monitor_internet())
-        await is_internet_checked.wait()
+        await start_monitoring_internet()
         while not internet_connected():
             await ask(
                 "No internet connection",
