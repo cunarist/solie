@@ -676,7 +676,7 @@ class Transactor:
             asset_record = cell.data[range_start:range_end].copy()
 
         auto_trade_mask = asset_record["CAUSE"] == "AUTO_TRADE"
-        asset_changes = asset_record["RESULT_ASSET"].pct_change(fill_method=None) + 1  # type:ignore
+        asset_changes = asset_record["RESULT_ASSET"].pct_change(fill_method=None) + 1
         asset_record = asset_record[auto_trade_mask]
         asset_changes = asset_changes.reindex(asset_record.index, fill_value=1.0)
         symbol_mask = asset_record["SYMBOL"] == symbol

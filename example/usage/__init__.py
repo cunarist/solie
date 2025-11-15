@@ -52,14 +52,14 @@ class ExampleStrategy:
             volume_sr: pd.Series = candle_data[f"{symbol}/VOLUME"]
 
             # Price scale indicators
-            price_sma_one: pd.Series = ta.sma(close_sr, short_period)  # type:ignore
-            price_sma_two: pd.Series = ta.sma(close_sr, long_period)  # type:ignore
+            price_sma_one: pd.Series = ta.sma(close_sr, short_period)
+            price_sma_two: pd.Series = ta.sma(close_sr, long_period)
             new_indicators[f"{symbol}/PRICE/SMA_ONE(#00FFA6)"] = price_sma_one
             new_indicators[f"{symbol}/PRICE/SMA_TWO(#C261FF)"] = price_sma_two
 
             # Volume scale indicators
-            volume_sma_one: pd.Series = ta.sma(volume_sr, short_period * 2)  # type:ignore
-            volume_sma_two: pd.Series = ta.sma(volume_sr, long_period * 2)  # type:ignore
+            volume_sma_one: pd.Series = ta.sma(volume_sr, short_period * 2)
+            volume_sma_two: pd.Series = ta.sma(volume_sr, long_period * 2)
             new_indicators[f"{symbol}/VOLUME/SMA_ONE"] = volume_sma_one
             new_indicators[f"{symbol}/VOLUME/SMA_TWO"] = volume_sma_two
 

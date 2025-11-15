@@ -6,10 +6,10 @@ authors = [{ name = "Cunarist", email = "cunarist@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.12,<4.0"
 dependencies = [
-    "numpy~=1.26.2",
-    "pandas~=2.2.3",
-    "pandas-stubs~=2.2.3",
-    "scipy~=1.11.3",
+    "numpy~=2.2.6",
+    "pandas~=2.3.2",
+    "pandas-stubs~=2.3.2",
+    "scipy~=1.16.3",
     "pyside6~=6.8.2",
     "pyqtgraph~=0.13.7",
     "aiohttp~=3.9.3",
@@ -20,7 +20,7 @@ dependencies = [
     "pygments~=2.17.1",
     "yapf~=0.32.0",
     "getmac~=0.8.3",
-    "pandas-ta==0.3.14b",
+    "pandas-ta==0.4.71b0",
     "time-machine~=2.13.0",
     "xdialog~=1.1.1",
     "setuptools~=75.6.0",

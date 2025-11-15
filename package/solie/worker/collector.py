@@ -288,7 +288,7 @@ class Collector:
                 temp_sr = await spawn_blocking(temp_sr.asfreq, "10s")
                 isnan_sr = await spawn_blocking(temp_sr.isna)
                 nan_index = isnan_sr[isnan_sr == 1].index
-                moment_to_fill_from: datetime = nan_index[0]  # type:ignore
+                moment_to_fill_from: datetime = nan_index[0]
 
                 # request historical aggtrade data
                 aggtrades: dict[int, AggregateTrade] = {}
@@ -731,7 +731,7 @@ class Collector:
 
         async with self.candle_data.write_lock as cell:
             for column_name, new_data_value in new_values.items():
-                cell.data.loc[before_moment, column_name] = np.float32(new_data_value)  # type:ignore
+                cell.data.loc[before_moment, column_name] = np.float32(new_data_value)
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await spawn_blocking(sort_data_frame, cell.data)
 
