@@ -23,7 +23,7 @@ class CsvRow(NamedTuple):
     transact_time: int
 
 
-class AggTrade(NamedTuple):
+class Candle(NamedTuple):
     time: int
     open: float
     high: float
@@ -48,7 +48,7 @@ class DownloadPreset(NamedTuple):
 def process_csv_line(
     line: str,
     csv_rows: list[CsvRow],
-    agg_trades: list[AggTrade],
+    agg_trades: list[Candle],
     current_tick_start: int | None,
 ) -> int | None:
     """Process a single CSV line and return the new current_tick_start."""
@@ -77,7 +77,7 @@ def process_csv_line(
 
 def finalize_tick(
     csv_rows: list[CsvRow],
-    agg_trades: list[AggTrade],
+    agg_trades: list[Candle],
     current_tick_start: int,
     next_tick_start: int | None = None,
 ) -> None:
@@ -93,7 +93,7 @@ def finalize_tick(
     volume = sum(row.quantity for row in csv_rows)
 
     agg_trades.append(
-        AggTrade(
+        Candle(
             time=current_tick_start,
             open=open_price,
             high=high_price,
@@ -112,7 +112,7 @@ def finalize_tick(
         last_close = agg_trades[-1].close
         gap_tick = current_tick_start + TICK_MS
         while gap_tick < next_tick_start:
-            new_agg_trade = AggTrade(
+            new_agg_trade = Candle(
                 time=gap_tick,
                 open=last_close,
                 high=last_close,
@@ -190,7 +190,7 @@ def process_aggtrade_csv(symbol: str, zip_file_path: Path) -> pd.DataFrame | Non
             has_header = "price" in first_line.lower()
 
     csv_rows = list[CsvRow]()
-    agg_trades: list[AggTrade] = []
+    agg_trades: list[Candle] = []
     current_tick_start: int | None = None
 
     with ZipFile(zip_file_path, "r") as zip_ref:
