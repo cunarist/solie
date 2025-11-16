@@ -1,3 +1,4 @@
+from asyncio import sleep
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
@@ -16,7 +17,8 @@ from .data_models import AggregateTrade
 from .timing import to_moment
 
 BYTE_CHUNK = 1024 * 1024
-RETRY_COUNT = 5
+RETRY_COUNT = 10
+RETRY_INTERVAL = 2
 TICK_MS = 10_000
 COMMA_BYTE = b","
 
@@ -180,6 +182,7 @@ async def download_aggtrade_csv(
             did_download = True
             break
         except Exception:
+            await sleep(RETRY_INTERVAL)
             continue
 
     # Check if download was successful
