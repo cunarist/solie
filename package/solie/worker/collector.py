@@ -613,18 +613,18 @@ class Collector:
                             cell_worker.data,
                         )
                 await self._save_candle_data()
+
+            # Update displays in the team members.
+            spawn(team.transactor.display_lines())
+            spawn(team.simulator.display_lines())
+            spawn(team.simulator.display_available_years())
+
         await aioshutil.rmtree(download_dir, ignore_errors=True)
 
         # ■■■■■ add to log ■■■■■
 
         text = "Filled the candle data with the history data downloaded from Binance"
         logger.info(text)
-
-        # ■■■■■ display to graphs ■■■■■
-
-        spawn(team.transactor.display_lines())
-        spawn(team.simulator.display_lines())
-        spawn(team.simulator.display_available_years())
 
     async def _add_book_tickers(self, received: dict[str, Any]):
         duration_recorder = DurationRecorder("ADD_BOOK_TICKERS")
