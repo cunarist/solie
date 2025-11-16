@@ -566,13 +566,13 @@ class Collector:
         for download_preset in download_presets:
             classified_download_presets[download_preset.year].append(download_preset)
 
-        # Prepare download directory.
-        download_dir = self._workerpath / "downloaded_csv"
-        await aioshutil.rmtree(download_dir, ignore_errors=True)
-        await aiofiles.os.makedirs(download_dir, exist_ok=True)
-
         # Download each year's data one by one.
         for preset_year, download_presets in classified_download_presets.items():
+            # Prepare download directory.
+            download_dir = self._workerpath / f"downloaded_csv_{preset_year}"
+            await aioshutil.rmtree(download_dir, ignore_errors=True)
+            await aiofiles.os.makedirs(download_dir, exist_ok=True)
+
             # Collect all DataFrames in a list for batch concatenation
             downloaded_dfs: list[pd.DataFrame] = []
 
@@ -634,7 +634,8 @@ class Collector:
             spawn(team.simulator.display_lines())
             spawn(team.simulator.display_available_years())
 
-        await aioshutil.rmtree(download_dir, ignore_errors=True)
+            # Clean up the download directory.
+            await aioshutil.rmtree(download_dir, ignore_errors=True)
 
     async def _add_book_tickers(self, received: dict[str, Any]):
         duration_recorder = DurationRecorder("ADD_BOOK_TICKERS")
