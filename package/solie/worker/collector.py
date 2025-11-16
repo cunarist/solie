@@ -573,9 +573,8 @@ class Collector:
 
         # Download each year's data one by one.
         for preset_year, download_presets in classified_download_presets.items():
-            # Make an empty dataframe, but of same types with that of candle data.
-            async with self.candle_data.read_lock as cell:
-                combined_df = RWLock(cell.data.iloc[0:0].copy())
+            # Collect all DataFrames in a list for batch concatenation
+            downloaded_dfs: list[pd.DataFrame] = []
 
             async def download_fill(download_preset: DownloadPreset) -> None:
                 nonlocal done_steps
@@ -591,18 +590,13 @@ class Collector:
 
                 # Process the CSV file into a DataFrame.
                 if zip_file_path is not None:
-                    returned = await spawn_blocking(
+                    downloaded_df = await spawn_blocking(
                         process_aggtrade_csv,
                         download_preset.symbol,
                         zip_file_path,
                     )
-                    if returned is not None:
-                        new_df = returned
-                        async with combined_df.write_lock as cell:
-                            new = await spawn_blocking(
-                                combine_candle_data, new_df, cell.data
-                            )
-                            cell.data = new
+                    if downloaded_df is not None:
+                        downloaded_dfs.append(downloaded_df)
                 done_steps += 1
 
             download_lock = Lock()
@@ -610,28 +604,28 @@ class Collector:
             unique_task.add_done_callback(lambda _: (t.cancel() for t in fill_tasks))
             await wait(fill_tasks)
 
+            # Combine all downloaded DataFrames at once
+            if len(downloaded_dfs) > 0:
+                combined_df = await spawn_blocking(combine_candle_data, downloaded_dfs)
+            else:
+                logger.info(f"No data downloaded for the year {preset_year}")
+                continue
+
             if preset_year < current_year:
-                # For data of previous years,
-                # save them in the disk.
-                async with combined_df.read_lock as cell:
-                    if len(cell.data) > 0:
-                        await spawn_blocking(
-                            cell.data.to_pickle,
-                            self._workerpath / f"candle_data_{preset_year}.pickle",
-                        )
-                        logger.info(f"Saved candle data of year {preset_year}")
-                    else:
-                        logger.info(f"No data downloaded for the year {preset_year}")
+                # For data of previous years, save them in the disk.
+                await spawn_blocking(
+                    combined_df.to_pickle,
+                    self._workerpath / f"candle_data_{preset_year}.pickle",
+                )
+                logger.info(f"Saved candle data of year {preset_year}")
             else:
                 # For data of current year, pass it to this collector worker
                 # and store them in the memory.
-                async with combined_df.read_lock as cell:
-                    async with self.candle_data.write_lock as cell_worker:
-                        cell_worker.data = await spawn_blocking(
-                            combine_candle_data,
-                            cell.data,
-                            cell_worker.data,
-                        )
+                async with self.candle_data.write_lock as cell_worker:
+                    cell_worker.data = await spawn_blocking(
+                        combine_candle_data,
+                        [combined_df, cell_worker.data],
+                    )
                 await self._save_candle_data()
                 logger.info("Filled the candle data with the downloaded history data")
 
