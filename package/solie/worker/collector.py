@@ -556,7 +556,7 @@ class Collector:
 
         # Gather information about years.
         current_year = datetime.now(timezone.utc).year
-        all_years = {t.year for t in download_presets}
+        all_years = sorted({t.year for t in download_presets})
 
         # Download and save historical data by year for lower memory usage.
         # Key is the year, value is the list of download presets.
