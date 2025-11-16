@@ -199,7 +199,8 @@ async def download_aggtrade_csv(
 def process_aggtrade_csv(symbol: str, zip_file_path: Path) -> pd.DataFrame | None:
     """
     Process the downloaded aggtrade CSV file from Binance
-    and convert it into a DataFrame of aggregated trades."""
+    and convert it into a DataFrame of aggregated trades.
+    """
     # Check if CSV has header by reading first line
     has_header = False
     with ZipFile(zip_file_path, "r") as zip_ref:
