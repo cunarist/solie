@@ -456,10 +456,10 @@ class Simulator:
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
 
     async def _calculate(self, only_visible=False):
-        self._calculation_task.spawn(self._calculate_real(only_visible))
-
-    async def _calculate_real(self, only_visible: bool):
         unique_task = self._calculation_task
+        unique_task.spawn(self._calculate_real(unique_task, only_visible))
+
+    async def _calculate_real(self, unique_task: UniqueTask, only_visible: bool):
         prepare_step = 0
         calculate_step = 0
 

@@ -2,12 +2,15 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
 from typing import NamedTuple
-from zipfile import ZipFile
+from zipfile import ZipFile, is_zipfile
 
 import aiofiles
+import aiofiles.os
 import aiohttp
 import numpy as np
 import pandas as pd
+
+from solie.common import spawn_blocking
 
 from .data_models import AggregateTrade
 from .timing import to_moment
@@ -144,7 +147,7 @@ async def download_aggtrade_csv(
                 f"/{symbol}/{symbol}-aggTrades"
                 f"-{year_string}-{month_string}-{day_string}.zip"
             )
-            file_name = f"{symbol}-{year_string}-{month_string}-{day_string}.zip"
+            file_name = f"{symbol}-{year_string}-{month_string}-{day_string}"
         case DownloadUnitSize.MONTHLY:
             year_string = format(download_target.year, "04")
             month_string = format(download_target.month, "02")
@@ -153,8 +156,10 @@ async def download_aggtrade_csv(
                 f"/{symbol}/{symbol}-aggTrades"
                 f"-{year_string}-{month_string}.zip"
             )
-            file_name = f"{symbol}-{year_string}-{month_string}.zip"
-    zip_file_path = download_dir / file_name
+            file_name = f"{symbol}-{year_string}-{month_string}"
+
+    # Prepare download file path
+    download_file_path = download_dir / f"{file_name}"
 
     # Download to a temporary file.
     # Download in chunks to avoid memory issues.
@@ -163,7 +168,7 @@ async def download_aggtrade_csv(
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as response:
-                    async with aiofiles.open(zip_file_path, "wb") as f:
+                    async with aiofiles.open(download_file_path, "wb") as f:
                         while True:
                             chunk = await response.content.read(BYTE_CHUNK)
                             if not chunk:
@@ -174,7 +179,18 @@ async def download_aggtrade_csv(
         except Exception:
             continue
 
-    return zip_file_path if did_download else None
+    # Check if download was successful
+    if not did_download:
+        return None
+
+    # Check if the file is actually a zip file
+    if not await spawn_blocking(is_zipfile, download_file_path):
+        return None
+
+    # Rename to .zip extension
+    zip_file_path = download_dir / f"{file_name}.zip"
+    await aiofiles.os.rename(download_file_path, zip_file_path)
+    return zip_file_path
 
 
 def process_aggtrade_csv(symbol: str, zip_file_path: Path) -> pd.DataFrame | None:

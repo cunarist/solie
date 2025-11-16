@@ -1,7 +1,7 @@
 import math
 import random
 import webbrowser
-from asyncio import sleep, wait
+from asyncio import Lock, sleep, wait
 from collections import deque
 from datetime import datetime, timedelta, timezone
 from logging import getLogger
@@ -15,7 +15,12 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6.QtWidgets import QMenu
 
 from solie.common import UniqueTask, outsource, spawn, spawn_blocking
-from solie.overlay import DonationGuide, DownloadFillOption
+from solie.overlay import (
+    DonationGuide,
+    DownloadFillOption,
+    DownloadFillOptionChooser,
+    DownloadYearRange,
+)
 from solie.utility import (
     AggregateTrade,
     ApiRequester,
@@ -436,85 +441,88 @@ class Collector:
         await spawn_blocking(webbrowser.open, "https://www.binance.com/en/landing/data")
 
     async def _download_fill_candle_data(self):
-        self._download_fill_task.spawn(self._download_fill_candle_data_real())
-
-    async def _download_fill_candle_data_real(self):
-        unique_task = self._download_fill_task
-
-        # ■■■■■ ask filling type ■■■■■
-
-        filling_type = await overlay(DownloadFillOption())
-        if filling_type is None:
+        fill_option = await overlay(DownloadFillOptionChooser())
+        if fill_option is None:
             return
+        unique_task = self._download_fill_task
+        unique_task.spawn(
+            self._download_fill_candle_data_real(unique_task, fill_option)
+        )
 
+    async def _download_fill_candle_data_real(
+        self,
+        unique_task: UniqueTask,
+        fill_option: DownloadYearRange | DownloadFillOption,
+    ):
         # ■■■■■ prepare target tuples for downloading ■■■■■
 
         download_presets: list[DownloadPreset] = []
         target_symbols = self._window.data_settings.target_symbols
-        if filling_type == 0:
-            current_year = datetime.now(timezone.utc).year
-            for year in range(2020, current_year):
-                for month in range(1, 12 + 1):
+
+        match fill_option:
+            case DownloadYearRange(start=year_from, end=year_to):
+                for year in range(year_from, year_to + 1):
+                    for month in range(1, 12 + 1):
+                        for symbol in target_symbols:
+                            download_presets.append(
+                                DownloadPreset(
+                                    symbol=symbol,
+                                    unit_size=DownloadUnitSize.MONTHLY,
+                                    year=year,
+                                    month=month,
+                                )
+                            )
+            case DownloadFillOption.FROM_YEAR_START_TO_LAST_MONTH:
+                current_year = datetime.now(timezone.utc).year
+                current_month = datetime.now(timezone.utc).month
+                for month in range(1, current_month):
                     for symbol in target_symbols:
                         download_presets.append(
                             DownloadPreset(
                                 symbol=symbol,
                                 unit_size=DownloadUnitSize.MONTHLY,
-                                year=year,
+                                year=current_year,
                                 month=month,
                             )
                         )
-        elif filling_type == 1:
-            current_year = datetime.now(timezone.utc).year
-            current_month = datetime.now(timezone.utc).month
-            for month in range(1, current_month):
-                for symbol in target_symbols:
-                    download_presets.append(
-                        DownloadPreset(
-                            symbol=symbol,
-                            unit_size=DownloadUnitSize.MONTHLY,
-                            year=current_year,
-                            month=month,
+            case DownloadFillOption.THIS_MONTH:
+                current_year = datetime.now(timezone.utc).year
+                current_month = datetime.now(timezone.utc).month
+                current_day = datetime.now(timezone.utc).day
+                for target_day in range(1, current_day):
+                    for symbol in target_symbols:
+                        download_presets.append(
+                            DownloadPreset(
+                                symbol=symbol,
+                                unit_size=DownloadUnitSize.DAILY,
+                                year=current_year,
+                                month=current_month,
+                                day=target_day,
+                            )
                         )
-                    )
-        elif filling_type == 2:
-            current_year = datetime.now(timezone.utc).year
-            current_month = datetime.now(timezone.utc).month
-            current_day = datetime.now(timezone.utc).day
-            for target_day in range(1, current_day):
+            case DownloadFillOption.LAST_TWO_DAYS:
+                now = datetime.now(timezone.utc)
+                yesterday = now - timedelta(hours=24)
+                day_before_yesterday = yesterday - timedelta(hours=24)
                 for symbol in target_symbols:
                     download_presets.append(
                         DownloadPreset(
                             symbol=symbol,
                             unit_size=DownloadUnitSize.DAILY,
-                            year=current_year,
-                            month=current_month,
-                            day=target_day,
-                        )
+                            year=day_before_yesterday.year,
+                            month=day_before_yesterday.month,
+                            day=day_before_yesterday.day,
+                        ),
                     )
-        elif filling_type == 3:
-            now = datetime.now(timezone.utc)
-            yesterday = now - timedelta(hours=24)
-            day_before_yesterday = yesterday - timedelta(hours=24)
-            for symbol in target_symbols:
-                download_presets.append(
-                    DownloadPreset(
-                        symbol=symbol,
-                        unit_size=DownloadUnitSize.DAILY,
-                        year=day_before_yesterday.year,
-                        month=day_before_yesterday.month,
-                        day=day_before_yesterday.day,
-                    ),
-                )
-                download_presets.append(
-                    DownloadPreset(
-                        symbol=symbol,
-                        unit_size=DownloadUnitSize.DAILY,
-                        year=yesterday.year,
-                        month=yesterday.month,
-                        day=yesterday.day,
-                    ),
-                )
+                    download_presets.append(
+                        DownloadPreset(
+                            symbol=symbol,
+                            unit_size=DownloadUnitSize.DAILY,
+                            year=yesterday.year,
+                            month=yesterday.month,
+                            day=yesterday.day,
+                        ),
+                    )
 
         random.shuffle(download_presets)
 
@@ -558,8 +566,12 @@ class Collector:
         for download_preset in download_presets:
             classified_download_presets[download_preset.year].append(download_preset)
 
+        # Prepare download directory.
         download_dir = self._workerpath / "downloaded_csv"
+        await aioshutil.rmtree(download_dir, ignore_errors=True)
         await aiofiles.os.makedirs(download_dir, exist_ok=True)
+
+        # Download each year's data one by one.
         for preset_year, download_presets in classified_download_presets.items():
             # Make an empty dataframe, but of same types with that of candle data.
             async with self.candle_data.read_lock as cell:
@@ -569,9 +581,12 @@ class Collector:
                 nonlocal done_steps
 
                 # Download the zipped CSV file.
-                zip_file_path = await download_aggtrade_csv(
-                    download_preset, download_dir
-                )
+                # We use the lock to concentrate network resource.
+                async with download_lock:
+                    zip_file_path = await download_aggtrade_csv(
+                        download_preset,
+                        download_dir,
+                    )
                 done_steps += 1
 
                 # Process the CSV file into a DataFrame.
@@ -590,6 +605,7 @@ class Collector:
                             cell.data = new
                 done_steps += 1
 
+            download_lock = Lock()
             fill_tasks = [spawn(download_fill(p)) for p in download_presets]
             unique_task.add_done_callback(lambda _: (t.cancel() for t in fill_tasks))
             await wait(fill_tasks)
@@ -598,10 +614,14 @@ class Collector:
                 # For data of previous years,
                 # save them in the disk.
                 async with combined_df.read_lock as cell:
-                    await spawn_blocking(
-                        cell.data.to_pickle,
-                        self._workerpath / f"candle_data_{preset_year}.pickle",
-                    )
+                    if len(cell.data) > 0:
+                        await spawn_blocking(
+                            cell.data.to_pickle,
+                            self._workerpath / f"candle_data_{preset_year}.pickle",
+                        )
+                        logger.info(f"Saved candle data of year {preset_year}")
+                    else:
+                        logger.info(f"No data downloaded for the year {preset_year}")
             else:
                 # For data of current year, pass it to this collector worker
                 # and store them in the memory.
@@ -613,6 +633,7 @@ class Collector:
                             cell_worker.data,
                         )
                 await self._save_candle_data()
+                logger.info("Filled the candle data with the downloaded history data")
 
             # Update displays in the team members.
             spawn(team.transactor.display_lines())
@@ -620,11 +641,6 @@ class Collector:
             spawn(team.simulator.display_available_years())
 
         await aioshutil.rmtree(download_dir, ignore_errors=True)
-
-        # ■■■■■ add to log ■■■■■
-
-        text = "Filled the candle data with the history data downloaded from Binance"
-        logger.info(text)
 
     async def _add_book_tickers(self, received: dict[str, Any]):
         duration_recorder = DurationRecorder("ADD_BOOK_TICKERS")
