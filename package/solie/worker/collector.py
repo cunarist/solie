@@ -613,7 +613,7 @@ class Collector:
                             cell_worker.data,
                         )
                 await self._save_candle_data()
-        await aioshutil.rmtree(download_dir)
+        await aioshutil.rmtree(download_dir, ignore_errors=True)
 
         # ■■■■■ add to log ■■■■■
 
