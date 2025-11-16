@@ -43,48 +43,48 @@ class Simulator:
     def __init__(self, window: Window, scheduler: AsyncIOScheduler):
         # ■■■■■ for data management ■■■■■
 
-        self.window = window
-        self.scheduler = scheduler
-        self.workerpath = window.datapath / "simulator"
+        self._window = window
+        self._scheduler = scheduler
+        self._workerpath = window.datapath / "simulator"
 
         # ■■■■■ internal memory ■■■■■
 
-        self.line_display_task = UniqueTask()
-        self.range_display_task = UniqueTask()
-        self.calculation_task = UniqueTask()
+        self._line_display_task = UniqueTask()
+        self._range_display_task = UniqueTask()
+        self._calculation_task = UniqueTask()
 
         # ■■■■■ remember and display ■■■■■
 
-        self.viewing_symbol = window.data_settings.target_symbols[0]
-        self.should_draw_all_years = False
+        self._viewing_symbol = window.data_settings.target_symbols[0]
+        self._should_draw_all_years = False
 
-        self.simulation_settings = SimulationSettings(
+        self._simulation_settings = SimulationSettings(
             year=datetime.now(timezone.utc).year,
         )
-        self.simulation_summary: SimulationSummary | None = None
+        self._simulation_summary: SimulationSummary | None = None
 
-        self.raw_account_state = create_empty_account_state(
-            self.window.data_settings.target_symbols
+        self._raw_account_state = create_empty_account_state(
+            self._window.data_settings.target_symbols
         )
-        self.raw_scribbles: dict[Any, Any] = {}
-        self.raw_asset_record = RWLock(create_empty_asset_record())
-        self.raw_unrealized_changes = RWLock(create_empty_unrealized_changes())
+        self._raw_scribbles: dict[Any, Any] = {}
+        self._raw_asset_record = RWLock(create_empty_asset_record())
+        self._raw_unrealized_changes = RWLock(create_empty_unrealized_changes())
 
-        self.account_state = create_empty_account_state(
-            self.window.data_settings.target_symbols
+        self._account_state = create_empty_account_state(
+            self._window.data_settings.target_symbols
         )
-        self.scribbles: dict[Any, Any] = {}
-        self.asset_record = RWLock(create_empty_asset_record())
-        self.unrealized_changes = RWLock(create_empty_unrealized_changes())
+        self._scribbles: dict[Any, Any] = {}
+        self._asset_record = RWLock(create_empty_asset_record())
+        self._unrealized_changes = RWLock(create_empty_unrealized_changes())
 
         # ■■■■■ repetitive schedules ■■■■■
 
-        self.scheduler.add_job(
+        self._scheduler.add_job(
             self.display_available_years,
             trigger="cron",
             hour="*",
         )
-        self.scheduler.add_job(
+        self._scheduler.add_job(
             self.display_lines,
             trigger="cron",
             hour="*",
@@ -97,106 +97,106 @@ class Simulator:
 
         # ■■■■■ connect UI events ■■■■■
 
-        job = self.display_range_information
+        job = self._display_range_information
         outsource(window.simulation_graph.price_widget.sigRangeChanged, job)
-        job = self.set_minimum_view_range
+        job = self._set_minimum_view_range
         outsource(window.simulation_graph.price_widget.sigRangeChanged, job)
-        job = self.update_calculation_settings
+        job = self._update_calculation_settings
         outsource(window.comboBox.currentIndexChanged, job)
-        job = self.calculate
+        job = self._calculate
         outsource(window.pushButton_3.clicked, job)
-        job = self.update_presentation_settings
+        job = self._update_presentation_settings
         outsource(window.spinBox_2.editingFinished, job)
-        job = self.update_presentation_settings
+        job = self._update_presentation_settings
         outsource(window.doubleSpinBox.editingFinished, job)
-        job = self.update_presentation_settings
+        job = self._update_presentation_settings
         outsource(window.doubleSpinBox_2.editingFinished, job)
-        job = self.erase
+        job = self._erase
         outsource(window.pushButton_4.clicked, job)
-        job = self.update_calculation_settings
+        job = self._update_calculation_settings
         outsource(window.comboBox_5.currentIndexChanged, job)
-        job = self.toggle_combined_draw
+        job = self._toggle_combined_draw
         outsource(window.checkBox_3.toggled, job)
         job = self.display_year_range
         outsource(window.pushButton_15.clicked, job)
-        job = self.delete_calculation_data
+        job = self._delete_calculation_data
         outsource(window.pushButton_16.clicked, job)
-        job = self.draw
+        job = self._draw
         outsource(window.pushButton_17.clicked, job)
-        job = self.update_viewing_symbol
+        job = self._update_viewing_symbol
         outsource(window.comboBox_6.currentIndexChanged, job)
 
-        action_menu = QMenu(self.window)
-        self.window.pushButton_11.setMenu(action_menu)
+        action_menu = QMenu(self._window)
+        self._window.pushButton_11.setMenu(action_menu)
 
         text = "Calculate temporarily only on visible range"
-        job = self.simulate_only_visible
+        job = self._simulate_only_visible
         new_action = action_menu.addAction(text)
         outsource(new_action.triggered, job)
         text = "Stop calculation"
-        job = self.stop_calculation
+        job = self._stop_calculation
         new_action = action_menu.addAction(text)
         outsource(new_action.triggered, job)
         text = "Find spots with lowest unrealized profit"
-        job = self.analyze_unrealized_peaks
+        job = self._analyze_unrealized_peaks
         new_action = action_menu.addAction(text)
         outsource(new_action.triggered, job)
         text = "Display same range as transaction graph"
-        job = self.match_graph_range
+        job = self._match_graph_range
         new_action = action_menu.addAction(text)
         outsource(new_action.triggered, job)
 
     async def load_work(self):
-        await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
+        await aiofiles.os.makedirs(self._workerpath, exist_ok=True)
 
         text = "Nothing drawn"
-        self.window.label_19.setText(text)
+        self._window.label_19.setText(text)
 
     async def dump_work(self):
         pass
 
-    async def update_viewing_symbol(self):
-        alias = self.window.comboBox_6.currentText()
-        symbol = self.window.alias_to_symbol[alias]
-        self.viewing_symbol = symbol
+    async def _update_viewing_symbol(self):
+        alias = self._window.comboBox_6.currentText()
+        symbol = self._window.alias_to_symbol[alias]
+        self._viewing_symbol = symbol
 
         await self.display_lines()
 
-    async def update_calculation_settings(self):
-        text = self.window.comboBox_5.currentText()
+    async def _update_calculation_settings(self):
+        text = self._window.comboBox_5.currentText()
         if text == "":
             return
-        from_year = self.simulation_settings.year
+        from_year = self._simulation_settings.year
         to_year = int(text)
-        self.simulation_settings.year = to_year
+        self._simulation_settings.year = to_year
         if from_year != to_year:
             spawn(self.display_year_range())
 
-        index = self.window.comboBox.currentIndex()
-        self.simulation_settings.strategy_index = index
+        index = self._window.comboBox.currentIndex()
+        self._simulation_settings.strategy_index = index
 
         await self.display_lines()
 
-    async def update_presentation_settings(self):
-        input_value = self.window.spinBox_2.value()
-        self.simulation_settings.leverage = input_value
-        input_value = self.window.doubleSpinBox.value()
-        self.simulation_settings.taker_fee = input_value
-        input_value = self.window.doubleSpinBox_2.value()
-        self.simulation_settings.maker_fee = input_value
+    async def _update_presentation_settings(self):
+        input_value = self._window.spinBox_2.value()
+        self._simulation_settings.leverage = input_value
+        input_value = self._window.doubleSpinBox.value()
+        self._simulation_settings.taker_fee = input_value
+        input_value = self._window.doubleSpinBox_2.value()
+        self._simulation_settings.maker_fee = input_value
         await self.present()
 
     async def display_lines(self, periodic=False):
-        self.line_display_task.spawn(self._display_lines(periodic))
+        self._line_display_task.spawn(self._display_lines_real(periodic))
 
-    async def _display_lines(self, periodic: bool):
+    async def _display_lines_real(self, periodic: bool):
         # ■■■■■ get basic information ■■■■■
 
-        symbol = self.viewing_symbol
-        strategy_index = self.simulation_settings.strategy_index
+        symbol = self._viewing_symbol
+        strategy_index = self._simulation_settings.strategy_index
         strategy = team.strategist.strategies[strategy_index]
 
-        should_draw_all_years = self.should_draw_all_years
+        should_draw_all_years = self._should_draw_all_years
 
         # ■■■■■ ensure that the latest data was added ■■■■■
 
@@ -227,7 +227,7 @@ class Simulator:
             slice_until = datetime.now(timezone.utc)
             slice_until = slice_until.replace(minute=0, second=0, microsecond=0)
         else:
-            year = self.simulation_settings.year
+            year = self._simulation_settings.year
             years = [year]
             slice_from = datetime(year, 1, 1, tzinfo=timezone.utc)
             if year == datetime.now(timezone.utc).year:
@@ -239,18 +239,18 @@ class Simulator:
 
         # ■■■■■ draw light lines ■■■■■
 
-        position = self.account_state.positions[symbol]
+        position = self._account_state.positions[symbol]
         if position.direction == PositionDirection.NONE:
             entry_price = None
         else:
             entry_price = position.entry_price
 
-        await self.window.simulation_graph.update_light_lines(
+        await self._window.simulation_graph.update_light_lines(
             mark_prices=[],
             aggregate_trades=[],
             book_tickers=[],
             entry_price=entry_price,
-            observed_until=self.account_state.observed_until,
+            observed_until=self._account_state.observed_until,
         )
 
         # ■■■■■ draw heavy lines ■■■■■
@@ -264,9 +264,9 @@ class Simulator:
             candle_data_original = await spawn_blocking(
                 sort_data_frame, candle_data_original
             )
-        async with self.unrealized_changes.read_lock as cell:
+        async with self._unrealized_changes.read_lock as cell:
             unrealized_changes = cell.data.copy()
-        async with self.asset_record.read_lock as cell:
+        async with self._asset_record.read_lock as cell:
             if len(cell.data) > 0:
                 last_asset = cell.data.iloc[-1]["RESULT_ASSET"]
             else:
@@ -288,7 +288,7 @@ class Simulator:
             candle_data = candle_data.reindex(new_index)
 
         if last_asset is not None:
-            observed_until = self.account_state.observed_until
+            observed_until = self._account_state.observed_until
             if len(asset_record) == 0 or asset_record.index[-1] < observed_until:
                 if slice_from < observed_until:
                     asset_record.loc[observed_until, "CAUSE"] = "OTHER"
@@ -305,7 +305,7 @@ class Simulator:
             if not asset_record.index.is_monotonic_increasing:
                 asset_record = await spawn_blocking(sort_data_frame, asset_record)
 
-        await self.window.simulation_graph.update_heavy_lines(
+        await self._window.simulation_graph.update_heavy_lines(
             symbol=symbol,
             candle_data=candle_data,
             asset_record=asset_record,
@@ -317,13 +317,13 @@ class Simulator:
         indicators = await spawn_blocking(
             make_indicators,
             strategy=strategy,
-            target_symbols=[self.viewing_symbol],
+            target_symbols=[self._viewing_symbol],
             candle_data=candle_data_original,
         )
 
         indicators = indicators[slice_from:slice_until]
 
-        await self.window.simulation_graph.update_custom_lines(symbol, indicators)
+        await self._window.simulation_graph.update_custom_lines(symbol, indicators)
 
         # ■■■■■ record task duration ■■■■■
 
@@ -331,16 +331,16 @@ class Simulator:
 
         # ■■■■■ set minimum view range ■■■■■
 
-        await self.set_minimum_view_range()
+        await self._set_minimum_view_range()
 
-    async def erase(self):
-        self.raw_account_state = create_empty_account_state(
-            self.window.data_settings.target_symbols
+    async def _erase(self):
+        self._raw_account_state = create_empty_account_state(
+            self._window.data_settings.target_symbols
         )
-        self.raw_scribbles = {}
-        self.raw_asset_record = RWLock(create_empty_asset_record())
-        self.raw_unrealized_changes = RWLock(create_empty_unrealized_changes())
-        self.simulation_summary = None
+        self._raw_scribbles = {}
+        self._raw_asset_record = RWLock(create_empty_asset_record())
+        self._raw_unrealized_changes = RWLock(create_empty_unrealized_changes())
+        self._simulation_summary = None
 
         await self.present()
 
@@ -348,24 +348,24 @@ class Simulator:
         years = await team.collector.check_saved_years()
         years.sort(reverse=True)
 
-        widget = self.window.comboBox_5
+        widget = self._window.comboBox_5
         choices = [int(widget.itemText(i)) for i in range(widget.count())]
         choices.sort(reverse=True)
 
         if years != choices:
             # if it's changed
-            self.window.comboBox_5.clear()
-            self.window.comboBox_5.addItems([str(y) for y in years])
+            self._window.comboBox_5.clear()
+            self._window.comboBox_5.addItems([str(y) for y in years])
 
-    async def simulate_only_visible(self):
-        await self.calculate(only_visible=True)
-
-    async def display_range_information(self):
-        self.range_display_task.spawn(self._display_range_information())
+    async def _simulate_only_visible(self):
+        await self._calculate(only_visible=True)
 
     async def _display_range_information(self):
-        symbol = self.viewing_symbol
-        price_widget = self.window.simulation_graph.price_widget
+        self._range_display_task.spawn(self._display_range_information_real())
+
+    async def _display_range_information_real(self):
+        symbol = self._viewing_symbol
+        price_widget = self._window.simulation_graph.price_widget
 
         range_start_timestamp = price_widget.getAxis("bottom").range[0]
         range_start_timestamp = max(range_start_timestamp, 0.0)
@@ -385,9 +385,9 @@ class Simulator:
         range_hours, remains = divmod(range_length.seconds, 3600)
         range_minutes, remains = divmod(remains, 60)
 
-        async with self.unrealized_changes.read_lock as cell:
+        async with self._unrealized_changes.read_lock as cell:
             unrealized_changes = cell.data[range_start:range_end].copy()
-        async with self.asset_record.read_lock as cell:
+        async with self._asset_record.read_lock as cell:
             asset_record = cell.data[range_start:range_end].copy()
 
         auto_trade_mask = asset_record["CAUSE"] == "AUTO_TRADE"
@@ -445,21 +445,21 @@ class Simulator:
         text += "  ⦁  "
         text += "Lowest unrealized profit"
         text += f" {min_unrealized_change * 100:+.4f}%"
-        self.window.label_13.setText(text)
+        self._window.label_13.setText(text)
 
-    async def set_minimum_view_range(self):
-        widget = self.window.simulation_graph.price_widget
+    async def _set_minimum_view_range(self):
+        widget = self._window.simulation_graph.price_widget
         range_down = widget.getAxis("left").range[0]
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
-        widget = self.window.simulation_graph.asset_widget
+        widget = self._window.simulation_graph.asset_widget
         range_down = widget.getAxis("left").range[0]
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
 
-    async def calculate(self, only_visible=False):
-        self.calculation_task.spawn(self._calculate(only_visible))
+    async def _calculate(self, only_visible=False):
+        self._calculation_task.spawn(self._calculate_real(only_visible))
 
-    async def _calculate(self, only_visible: bool):
-        unique_task = self.calculation_task
+    async def _calculate_real(self, only_visible: bool):
+        unique_task = self._calculation_task
         prepare_step = 0
         calculate_step = 0
 
@@ -467,24 +467,24 @@ class Simulator:
             while True:
                 if prepare_step == 6 and calculate_step == 1000:
                     is_progressbar_filled = True
-                    progressbar_value = self.window.progressBar_4.value()
+                    progressbar_value = self._window.progressBar_4.value()
                     if progressbar_value < 1000:
                         is_progressbar_filled = False
-                    progressbar_value = self.window.progressBar.value()
+                    progressbar_value = self._window.progressBar.value()
                     if progressbar_value < 1000:
                         is_progressbar_filled = False
                     if is_progressbar_filled:
                         await sleep(0.1)
-                        self.window.progressBar_4.setValue(0)
-                        self.window.progressBar.setValue(0)
+                        self._window.progressBar_4.setValue(0)
+                        self._window.progressBar.setValue(0)
                         return
-                widget = self.window.progressBar_4
+                widget = self._window.progressBar_4
                 before_value = widget.value()
                 if before_value < 1000:
                     remaining = math.ceil(1000 / 6 * prepare_step) - before_value
                     new_value = before_value + math.ceil(remaining * 0.2)
                     widget.setValue(new_value)
-                widget = self.window.progressBar
+                widget = self._window.progressBar
                 before_value = widget.value()
                 if before_value < 1000:
                     remaining = calculate_step - before_value
@@ -493,23 +493,23 @@ class Simulator:
                 await sleep(0.01)
 
         bar_task = spawn(play_progress_bar())
-        bar_task.add_done_callback(lambda _: self.window.progressBar_4.setValue(0))
-        bar_task.add_done_callback(lambda _: self.window.progressBar.setValue(0))
+        bar_task.add_done_callback(lambda _: self._window.progressBar_4.setValue(0))
+        bar_task.add_done_callback(lambda _: self._window.progressBar.setValue(0))
         unique_task.add_done_callback(lambda _: bar_task.cancel())
 
         prepare_step = 1
 
         # ■■■■■ default values and the strategy ■■■■■
 
-        year = self.simulation_settings.year
-        strategy_index = self.simulation_settings.strategy_index
+        year = self._simulation_settings.year
+        strategy_index = self._simulation_settings.strategy_index
 
         strategy = team.strategist.strategies[strategy_index]
         strategy_code_name = strategy.code_name
         strategy_version = strategy.version
         parallel_chunk_days = strategy.parallel_simulation_chunk_days
 
-        workerpath = self.workerpath
+        workerpath = self._workerpath
         prefix = f"{strategy_code_name}_{strategy_version}_{year}"
         asset_record_path = workerpath / f"{prefix}_asset_record.pickle"
         unrealized_changes_path = workerpath / f"{prefix}_unrealized_changes.pickle"
@@ -517,7 +517,7 @@ class Simulator:
         account_state_path = workerpath / f"{prefix}_account_state.pickle"
         virtual_state_path = workerpath / f"{prefix}_virtual_state.pickle"
 
-        target_symbols = self.window.data_settings.target_symbols
+        target_symbols = self._window.data_settings.target_symbols
 
         prepare_step = 2
 
@@ -547,7 +547,7 @@ class Simulator:
         blank_unrealized_changes = create_empty_unrealized_changes()
         blank_scribbles: dict[Any, Any] = {}
         blank_account_state = create_empty_account_state(
-            self.window.data_settings.target_symbols
+            self._window.data_settings.target_symbols
         )
         blank_virtual_state = VirtualState(
             available_balance=1,
@@ -572,12 +572,12 @@ class Simulator:
             previous_account_state = blank_account_state.model_copy(deep=True)
             previous_virtual_state = blank_virtual_state.model_copy(deep=True)
 
-            graph_widget = self.window.simulation_graph.price_widget
+            graph_widget = self._window.simulation_graph.price_widget
             view_range = graph_widget.getAxis("bottom").range
             view_start = datetime.fromtimestamp(view_range[0], tz=timezone.utc)
             view_end = datetime.fromtimestamp(view_range[1], tz=timezone.utc)
 
-            if self.should_draw_all_years:
+            if self._should_draw_all_years:
                 calculate_from = view_start
                 calculate_until = view_end
             else:
@@ -778,11 +778,11 @@ class Simulator:
 
         # ■■■■■ remember and present ■■■■■
 
-        self.raw_asset_record = RWLock(asset_record)
-        self.raw_unrealized_changes = RWLock(unrealized_changes)
-        self.raw_scribbles = scribbles
-        self.raw_account_state = account_state
-        self.simulation_summary = SimulationSummary(
+        self._raw_asset_record = RWLock(asset_record)
+        self._raw_unrealized_changes = RWLock(unrealized_changes)
+        self._raw_scribbles = scribbles
+        self._raw_account_state = account_state
+        self._simulation_summary = SimulationSummary(
             year=year,
             strategy_code_name=strategy_code_name,
             strategy_version=strategy_version,
@@ -805,25 +805,25 @@ class Simulator:
                 await file.write(content)
 
     async def present(self):
-        maker_fee = self.simulation_settings.maker_fee
-        taker_fee = self.simulation_settings.taker_fee
-        leverage = self.simulation_settings.leverage
+        maker_fee = self._simulation_settings.maker_fee
+        taker_fee = self._simulation_settings.taker_fee
+        leverage = self._simulation_settings.leverage
 
-        async with self.raw_asset_record.read_lock as cell:
+        async with self._raw_asset_record.read_lock as cell:
             asset_record = cell.data.copy()
 
-        async with self.raw_unrealized_changes.read_lock as cell:
+        async with self._raw_unrealized_changes.read_lock as cell:
             unrealized_changes = cell.data.copy()
 
-        scribbles = self.raw_scribbles.copy()
-        account_state = self.raw_account_state.model_copy(deep=True)
+        scribbles = self._raw_scribbles.copy()
+        account_state = self._raw_account_state.model_copy(deep=True)
 
         # ■■■■■ get strategy details ■■■■
 
-        if self.simulation_summary is None:
+        if self._simulation_summary is None:
             parallel_chunk_days = None
         else:
-            strategy_index = self.simulation_settings.strategy_index
+            strategy_index = self._simulation_settings.strategy_index
             strategy = team.strategist.strategies[strategy_index]
             parallel_chunk_days = strategy.parallel_simulation_chunk_days
 
@@ -890,60 +890,60 @@ class Simulator:
 
         # ■■■■■ remember ■■■■■
 
-        self.scribbles = presentation_scribbles
-        self.account_state = presentation_account_state
-        async with self.unrealized_changes.write_lock as cell:
+        self._scribbles = presentation_scribbles
+        self._account_state = presentation_account_state
+        async with self._unrealized_changes.write_lock as cell:
             cell.data = presentation_unrealized_changes
-        async with self.asset_record.write_lock as cell:
+        async with self._asset_record.write_lock as cell:
             cell.data = presentation_asset_record
 
         # ■■■■■ display ■■■■■
 
         spawn(self.display_lines())
-        spawn(self.display_range_information())
+        spawn(self._display_range_information())
 
-        if self.simulation_summary is None:
+        if self._simulation_summary is None:
             text = "Nothing drawn"
-            self.window.label_19.setText(text)
+            self._window.label_19.setText(text)
         else:
-            year = self.simulation_summary.year
-            strategy_code_name = self.simulation_summary.strategy_code_name
-            strategy_version = self.simulation_summary.strategy_version
+            year = self._simulation_summary.year
+            strategy_code_name = self._simulation_summary.strategy_code_name
+            strategy_version = self._simulation_summary.strategy_version
             text = ""
             text += f"Target year {year}"
             text += "  ⦁  "
             text += f"Strategy code name {strategy_code_name}"
             text += "  ⦁  "
             text += f"Strategy version {strategy_version}"
-            self.window.label_19.setText(text)
+            self._window.label_19.setText(text)
 
     async def display_year_range(self):
         range_start = datetime(
-            year=self.simulation_settings.year,
+            year=self._simulation_settings.year,
             month=1,
             day=1,
             tzinfo=timezone.utc,
         )
         range_start = range_start.timestamp()
         range_end = datetime(
-            year=self.simulation_settings.year + 1,
+            year=self._simulation_settings.year + 1,
             month=1,
             day=1,
             tzinfo=timezone.utc,
         )
         range_end = range_end.timestamp()
-        widget = self.window.simulation_graph.price_widget
+        widget = self._window.simulation_graph.price_widget
         widget.setXRange(range_start, range_end)
 
-    async def delete_calculation_data(self):
-        year = self.simulation_settings.year
-        strategy_index = self.simulation_settings.strategy_index
+    async def _delete_calculation_data(self):
+        year = self._simulation_settings.year
+        strategy_index = self._simulation_settings.strategy_index
 
         strategy = team.strategist.strategies[strategy_index]
         strategy_code_name = strategy.code_name
         strategy_version = strategy.version
 
-        workerpath = self.workerpath
+        workerpath = self._workerpath
         prefix = f"{strategy_code_name}_{strategy_version}_{year}"
         asset_record_path = workerpath / f"{prefix}_asset_record.pickle"
         unrealized_changes_path = workerpath / f"{prefix}_unrealized_changes.pickle"
@@ -995,17 +995,17 @@ class Simulator:
         if await aiofiles.os.path.isfile(virtual_state_path):
             await aiofiles.os.remove(virtual_state_path)
 
-        await self.erase()
+        await self._erase()
 
-    async def draw(self):
-        year = self.simulation_settings.year
-        strategy_index = self.simulation_settings.strategy_index
+    async def _draw(self):
+        year = self._simulation_settings.year
+        strategy_index = self._simulation_settings.strategy_index
 
         strategy = team.strategist.strategies[strategy_index]
         strategy_code_name = strategy.code_name
         strategy_version = strategy.version
 
-        workerpath = self.workerpath
+        workerpath = self._workerpath
         prefix = f"{strategy_code_name}_{strategy_version}_{year}"
         asset_record_path = workerpath / f"{prefix}_asset_record.pickle"
         unrealized_changes_path = workerpath / f"{prefix}_unrealized_changes.pickle"
@@ -1013,19 +1013,19 @@ class Simulator:
         account_state_path = workerpath / f"{prefix}_account_state.pickle"
 
         try:
-            async with self.raw_asset_record.write_lock as cell:
+            async with self._raw_asset_record.write_lock as cell:
                 new = await spawn_blocking(pd.read_pickle, asset_record_path)
                 cell.data = new
-            async with self.raw_unrealized_changes.write_lock as cell:
+            async with self._raw_unrealized_changes.write_lock as cell:
                 new = await spawn_blocking(pd.read_pickle, unrealized_changes_path)
                 cell.data = new
             async with aiofiles.open(scribbles_path, "rb") as file:
                 content = await file.read()
-                self.raw_scribbles = pickle.loads(content)
+                self._raw_scribbles = pickle.loads(content)
             async with aiofiles.open(account_state_path, "rb") as file:
                 content = await file.read()
-                self.raw_account_state: AccountState = pickle.loads(content)
-            self.simulation_summary = SimulationSummary(
+                self._raw_account_state: AccountState = pickle.loads(content)
+            self._simulation_summary = SimulationSummary(
                 year=year,
                 strategy_code_name=strategy_code_name,
                 strategy_version=strategy_version,
@@ -1040,20 +1040,20 @@ class Simulator:
             )
             return
 
-    async def match_graph_range(self):
-        graph_from = self.window.transaction_graph.price_widget
-        graph_to = self.window.simulation_graph.price_widget
+    async def _match_graph_range(self):
+        graph_from = self._window.transaction_graph.price_widget
+        graph_to = self._window.simulation_graph.price_widget
         graph_range = graph_from.getAxis("bottom").range
         range_start = graph_range[0]
         range_end = graph_range[1]
         graph_to.setXRange(range_start, range_end, padding=0)  # type:ignore
 
-    async def stop_calculation(self):
-        if self.calculation_task is not None:
-            self.calculation_task.cancel()
+    async def _stop_calculation(self):
+        if self._calculation_task is not None:
+            self._calculation_task.cancel()
 
-    async def analyze_unrealized_peaks(self):
-        async with self.unrealized_changes.read_lock as cell:
+    async def _analyze_unrealized_peaks(self):
+        async with self._unrealized_changes.read_lock as cell:
             peak_indexes, _ = find_peaks(-cell.data, distance=3600 / 10)
             peak_sr = cell.data.iloc[peak_indexes]
         peak_sr = peak_sr.sort_values().iloc[:12]
@@ -1075,10 +1075,10 @@ class Simulator:
                 ["Okay"],
             )
 
-    async def toggle_combined_draw(self):
-        is_checked = self.window.checkBox_3.isChecked()
+    async def _toggle_combined_draw(self):
+        is_checked = self._window.checkBox_3.isChecked()
         if is_checked:
-            self.should_draw_all_years = True
+            self._should_draw_all_years = True
         else:
-            self.should_draw_all_years = False
+            self._should_draw_all_years = False
         await self.display_lines()

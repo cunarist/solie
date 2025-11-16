@@ -29,27 +29,27 @@ class Strategiest:
     def __init__(self, window: Window, scheduler: AsyncIOScheduler):
         # ■■■■■ for data management ■■■■■
 
-        self.window = window
-        self.scheduler = scheduler
-        self.workerpath = window.datapath / "strategist"
+        self._window = window
+        self._scheduler = scheduler
+        self._workerpath = window.datapath / "strategist"
 
         # ■■■■■ internal memory ■■■■■
 
         # ■■■■■ remember and display ■■■■■
 
-        self.saved_strategies: SavedStrategies
+        self._saved_strategies: SavedStrategies
         self.strategies: list[Strategy] = []
-        self.strategy_cards: list[QGroupBox] = []
+        self._strategy_cards: list[QGroupBox] = []
 
-        self.before_selections: dict[str, Strategy] = {}
+        self._before_selections: dict[str, Strategy] = {}
 
         iconpath = PACKAGE_PATH / "static" / "icon"
-        self.red_pixmap = QPixmap()
-        self.red_pixmap.load(str(iconpath / "traffic_light_red.png"))
-        self.yellow_pixmap = QPixmap()
-        self.yellow_pixmap.load(str(iconpath / "traffic_light_yellow.png"))
-        self.green_pixmap = QPixmap()
-        self.green_pixmap.load(str(iconpath / "traffic_light_green.png"))
+        self._red_pixmap = QPixmap()
+        self._red_pixmap.load(str(iconpath / "traffic_light_red.png"))
+        self._yellow_pixmap = QPixmap()
+        self._yellow_pixmap.load(str(iconpath / "traffic_light_yellow.png"))
+        self._green_pixmap = QPixmap()
+        self._green_pixmap.load(str(iconpath / "traffic_light_green.png"))
 
         # ■■■■■ repetitive schedules ■■■■■
 
@@ -59,16 +59,16 @@ class Strategiest:
 
         # ■■■■■ connect UI events ■■■■■
 
-        job = self.add_blank_strategy
+        job = self._add_blank_strategy
         outsource(window.pushButton_5.clicked, job)
 
     async def load_work(self):
-        await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
+        await aiofiles.os.makedirs(self._workerpath, exist_ok=True)
 
-        filepath = self.workerpath / "soft_strategies.json"
+        filepath = self._workerpath / "soft_strategies.json"
         if await aiofiles.os.path.isfile(filepath):
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
-                self.saved_strategies = SavedStrategies.model_validate_json(
+                self._saved_strategies = SavedStrategies.model_validate_json(
                     await file.read()
                 )
         else:
@@ -86,7 +86,7 @@ class Strategiest:
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 read_data = await file.read()
                 first_strategy.decision_script = read_data
-            self.saved_strategies = SavedStrategies(all=[first_strategy])
+            self._saved_strategies = SavedStrategies(all=[first_strategy])
 
         self._combine_strategies()
 
@@ -94,30 +94,30 @@ class Strategiest:
         await self._save_strategies()
 
     def _combine_strategies(self):
-        soft_strategies = list[Strategy](self.saved_strategies.all)
-        fixed_strategies = self.window.config.get_strategies()
+        soft_strategies = list[Strategy](self._saved_strategies.all)
+        fixed_strategies = self._window.config.get_strategies()
         self.strategies = fixed_strategies + soft_strategies
 
     async def _save_strategies(self):
-        filepath = self.workerpath / "soft_strategies.json"
+        filepath = self._workerpath / "soft_strategies.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-            await file.write(self.saved_strategies.model_dump_json(indent=2))
+            await file.write(self._saved_strategies.model_dump_json(indent=2))
 
     async def display_strategies(self):
-        self.window.comboBox_2.clear()
-        self.window.comboBox.clear()
-        for strategy_card in self.strategy_cards:
+        self._window.comboBox_2.clear()
+        self._window.comboBox.clear()
+        for strategy_card in self._strategy_cards:
             strategy_card.setParent(None)
-        self.strategy_cards = []
+        self._strategy_cards = []
 
         # Update strategy list view.
         for strategy in self.strategies:
             if strategy.risk_level == RiskLevel.HIGH:
-                icon_pixmap = self.red_pixmap
+                icon_pixmap = self._red_pixmap
             elif strategy.risk_level == RiskLevel.MIDDLE:
-                icon_pixmap = self.yellow_pixmap
+                icon_pixmap = self._yellow_pixmap
             elif strategy.risk_level == RiskLevel.LOW:
-                icon_pixmap = self.green_pixmap
+                icon_pixmap = self._green_pixmap
             else:
                 raise ValueError("Invalid risk level for drawing an icon")
             traffic_light_icon = QIcon()
@@ -125,12 +125,12 @@ class Strategiest:
 
             text = f"{strategy.code_name} {strategy.version} - {strategy.readable_name}"
 
-            self.window.comboBox_2.addItem(traffic_light_icon, text)
-            self.window.comboBox.addItem(traffic_light_icon, text)
+            self._window.comboBox_2.addItem(traffic_light_icon, text)
+            self._window.comboBox.addItem(traffic_light_icon, text)
 
             strategy_card = QGroupBox()
-            self.window.verticalLayout_16.addWidget(strategy_card)
-            self.strategy_cards.append(strategy_card)
+            self._window.verticalLayout_16.addWidget(strategy_card)
+            self._strategy_cards.append(strategy_card)
             card_layout = QHBoxLayout(strategy_card)
 
             icon_label = QLabel("")
@@ -158,28 +158,28 @@ class Strategiest:
                 continue
 
             async def job_bs(strategy=strategy):
-                await self.remember_strategy_selections()
+                await self._remember_strategy_selections()
                 await overlay(StrategyDevelopInput(strategy))
                 spawn(self.display_strategies())
                 spawn(self._save_strategies())
-                spawn(self.restore_strategy_selections())
+                spawn(self._restore_strategy_selections())
 
             edit_button = QPushButton("Develop")
             card_layout.addWidget(edit_button)
             outsource(edit_button.clicked, job_bs)
 
             async def job_eb(strategy=strategy):
-                await self.remember_strategy_selections()
+                await self._remember_strategy_selections()
                 await overlay(StrategyBasicInput(strategy))
                 spawn(self.display_strategies())
                 spawn(self._save_strategies())
-                spawn(self.restore_strategy_selections())
+                spawn(self._restore_strategy_selections())
 
             edit_button = QPushButton("Edit basic info")
             card_layout.addWidget(edit_button)
             outsource(edit_button.clicked, job_eb)
 
-            action_menu = QMenu(self.window)
+            action_menu = QMenu(self._window)
             action_button = QPushButton()
             action_button.setText("☰")
             action_button.setMenu(action_menu)
@@ -193,77 +193,77 @@ class Strategiest:
                 )
                 if answer == 0:
                     return
-                await self.remember_strategy_selections()
-                self.saved_strategies.all.remove(strategy)
+                await self._remember_strategy_selections()
+                self._saved_strategies.all.remove(strategy)
                 self._combine_strategies()
                 spawn(self.display_strategies())
                 spawn(self._save_strategies())
-                spawn(self.restore_strategy_selections())
+                spawn(self._restore_strategy_selections())
 
             new_action = action_menu.addAction("Remove")
             outsource(new_action.triggered, job_rs)
 
             async def job_dp(strategy=strategy):
-                await self.remember_strategy_selections()
+                await self._remember_strategy_selections()
                 duplicated = strategy.model_copy(deep=True)
                 duplicated.code_name = create_strategy_code_name()
-                self.saved_strategies.all.append(duplicated)
+                self._saved_strategies.all.append(duplicated)
                 self._combine_strategies()
                 spawn(self.display_strategies())
                 spawn(self._save_strategies())
-                spawn(self.restore_strategy_selections())
+                spawn(self._restore_strategy_selections())
 
             new_action = action_menu.addAction("Duplicate")
             outsource(new_action.triggered, job_dp)
 
             async def job_ss(strategy=strategy):
-                await self.remember_strategy_selections()
-                original_index = self.saved_strategies.all.index(strategy)
+                await self._remember_strategy_selections()
+                original_index = self._saved_strategies.all.index(strategy)
                 after_index = original_index + 1
-                self.saved_strategies.all.pop(original_index)
-                self.saved_strategies.all.insert(after_index, strategy)
+                self._saved_strategies.all.pop(original_index)
+                self._saved_strategies.all.insert(after_index, strategy)
                 self._combine_strategies()
                 spawn(self.display_strategies())
                 spawn(self._save_strategies())
-                spawn(self.restore_strategy_selections())
+                spawn(self._restore_strategy_selections())
 
             edit_button = QPushButton("▼")
             card_layout.addWidget(edit_button)
             outsource(edit_button.clicked, job_ss)
 
             async def job_us(strategy=strategy):
-                await self.remember_strategy_selections()
-                original_index = self.saved_strategies.all.index(strategy)
+                await self._remember_strategy_selections()
+                original_index = self._saved_strategies.all.index(strategy)
                 after_index = original_index - 1
-                self.saved_strategies.all.pop(original_index)
-                self.saved_strategies.all.insert(after_index, strategy)
+                self._saved_strategies.all.pop(original_index)
+                self._saved_strategies.all.insert(after_index, strategy)
                 self._combine_strategies()
                 spawn(self.display_strategies())
                 spawn(self._save_strategies())
-                spawn(self.restore_strategy_selections())
+                spawn(self._restore_strategy_selections())
 
             edit_button = QPushButton("▲")
             card_layout.addWidget(edit_button)
             outsource(edit_button.clicked, job_us)
 
-    async def add_blank_strategy(self):
-        await self.remember_strategy_selections()
+    async def _add_blank_strategy(self):
+        await self._remember_strategy_selections()
         new_strategy = SavedStrategy(code_name=create_strategy_code_name())
-        self.saved_strategies.all.append(new_strategy)
+        self._saved_strategies.all.append(new_strategy)
         self._combine_strategies()
         await self.display_strategies()
-        await self.restore_strategy_selections()
+        await self._restore_strategy_selections()
 
-    async def remember_strategy_selections(self):
-        before_index = self.window.comboBox_2.currentIndex()
-        self.before_selections["transactor"] = self.strategies[before_index]
-        before_index = self.window.comboBox.currentIndex()
-        self.before_selections["simulator"] = self.strategies[before_index]
+    async def _remember_strategy_selections(self):
+        before_index = self._window.comboBox_2.currentIndex()
+        self._before_selections["transactor"] = self.strategies[before_index]
+        before_index = self._window.comboBox.currentIndex()
+        self._before_selections["simulator"] = self.strategies[before_index]
 
-    async def restore_strategy_selections(self):
-        if self.before_selections["transactor"] in self.strategies:
-            new_index = self.strategies.index(self.before_selections["transactor"])
-            self.window.comboBox_2.setCurrentIndex(new_index)
-        if self.before_selections["simulator"] in self.strategies:
-            new_index = self.strategies.index(self.before_selections["simulator"])
-            self.window.comboBox.setCurrentIndex(new_index)
+    async def _restore_strategy_selections(self):
+        if self._before_selections["transactor"] in self.strategies:
+            new_index = self.strategies.index(self._before_selections["transactor"])
+            self._window.comboBox_2.setCurrentIndex(new_index)
+        if self._before_selections["simulator"] in self.strategies:
+            new_index = self.strategies.index(self._before_selections["simulator"])
+            self._window.comboBox.setCurrentIndex(new_index)

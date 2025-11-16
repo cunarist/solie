@@ -1,4 +1,5 @@
 from solie import SolieConfig, bring_to_life
+
 from usage import ExampleStrategy, SilentStrategy
 
 

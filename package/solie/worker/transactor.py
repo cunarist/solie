@@ -56,39 +56,39 @@ class Transactor:
     def __init__(self, window: Window, scheduler: AsyncIOScheduler):
         # ■■■■■ for data management ■■■■■
 
-        self.window = window
-        self.scheduler = scheduler
-        self.workerpath = window.datapath / "transactor"
+        self._window = window
+        self._scheduler = scheduler
+        self._workerpath = window.datapath / "transactor"
 
         # ■■■■■ internal memory ■■■■■
 
-        self.line_display_task = UniqueTask()
-        self.range_display_task = UniqueTask()
+        self._line_display_task = UniqueTask()
+        self._range_display_task = UniqueTask()
 
-        self.maximum_quantities: dict[str, float] = {}  # Symbol and value
-        self.minimum_notionals: dict[str, float] = {}  # Symbol and value
-        self.price_precisions: dict[str, int] = {}  # Symbol and decimal places
-        self.quantity_precisions: dict[str, int] = {}  # Symbol and decimal places
-        self.maximum_leverages: dict[str, int] = {}  # Symbol and value
-        self.leverages: dict[str, int] = {}  # Symbol and value
-        self.is_key_restrictions_satisfied = True
+        self._maximum_quantities: dict[str, float] = {}  # Symbol and value
+        self._minimum_notionals: dict[str, float] = {}  # Symbol and value
+        self._price_precisions: dict[str, int] = {}  # Symbol and decimal places
+        self._quantity_precisions: dict[str, int] = {}  # Symbol and decimal places
+        self._maximum_leverages: dict[str, int] = {}  # Symbol and value
+        self._leverages: dict[str, int] = {}  # Symbol and value
+        self._is_key_restrictions_satisfied = True
 
         # ■■■■■ remember and display ■■■■■
 
-        self.api_requester = ApiRequester()
+        self._api_requester = ApiRequester()
 
-        self.viewing_symbol = window.data_settings.target_symbols[0]
-        self.should_draw_frequently = True
+        self._viewing_symbol = window.data_settings.target_symbols[0]
+        self._should_draw_frequently = True
 
-        self.account_state = create_empty_account_state(
+        self._account_state = create_empty_account_state(
             window.data_settings.target_symbols
         )
 
-        self.scribbles: dict[Any, Any] = {}
-        self.transaction_settings = TransactionSettings()
-        self.unrealized_changes = RWLock(create_empty_unrealized_changes())
-        self.asset_record = RWLock(create_empty_asset_record())
-        self.auto_order_record = RWLock(
+        self._scribbles: dict[Any, Any] = {}
+        self._transaction_settings = TransactionSettings()
+        self._unrealized_changes = RWLock(create_empty_unrealized_changes())
+        self._asset_record = RWLock(create_empty_asset_record())
+        self._auto_order_record = RWLock(
             pd.DataFrame(
                 columns=["SYMBOL", "ORDER_ID"],
                 index=pd.DatetimeIndex([], tz="UTC"),
@@ -97,58 +97,58 @@ class Transactor:
 
         # ■■■■■ repetitive schedules ■■■■■
 
-        self.scheduler.add_job(
-            self.display_status_information,
+        self._scheduler.add_job(
+            self._display_status_information,
             trigger="cron",
             second="*",
         )
-        self.scheduler.add_job(
-            self.display_range_information,
+        self._scheduler.add_job(
+            self._display_range_information,
             trigger="cron",
             second="*",
         )
-        self.scheduler.add_job(
-            self.cancel_conflicting_orders,
+        self._scheduler.add_job(
+            self._cancel_conflicting_orders,
             trigger="cron",
             second="*",
         )
-        self.scheduler.add_job(
+        self._scheduler.add_job(
             self.display_lines,
             trigger="cron",
             second="*/10",
             kwargs={"periodic": True, "frequent": True},
         )
-        self.scheduler.add_job(
-            self.pan_view_range,
+        self._scheduler.add_job(
+            self._pan_view_range,
             trigger="cron",
             second="*/10",
         )
-        self.scheduler.add_job(
-            self.perform_transaction,
+        self._scheduler.add_job(
+            self._perform_transaction,
             trigger="cron",
             second="*/10",
         )
-        self.scheduler.add_job(
+        self._scheduler.add_job(
             self._save_scribbles,
             trigger="cron",
             second="*/10",
         )
-        self.scheduler.add_job(
+        self._scheduler.add_job(
             self.watch_binance,
             trigger="cron",
             second="*/10",
         )
-        self.scheduler.add_job(
-            self.organize_data,
+        self._scheduler.add_job(
+            self._organize_data,
             trigger="cron",
             minute="*",
         )
-        self.scheduler.add_job(
+        self._scheduler.add_job(
             self._save_large_data,
             trigger="cron",
             hour="*",
         )
-        self.scheduler.add_job(
+        self._scheduler.add_job(
             self.update_user_data_stream,
             trigger="cron",
             hour="*",
@@ -167,116 +167,116 @@ class Transactor:
         # ■■■■■ connect UI events ■■■■■
 
         # Special widgets
-        job = self.display_range_information
-        outsource(window.transaction_graph.price_widget.sigRangeChanged, job)
-        job = self.set_minimum_view_range
-        outsource(window.transaction_graph.price_widget.sigRangeChanged, job)
-        job = self.update_automation_settings
-        outsource(window.comboBox_2.currentIndexChanged, job)
-        job = self.update_automation_settings
-        outsource(window.checkBox.toggled, job)
-        job = self.update_keys
-        outsource(window.lineEdit_4.editingFinished, job)
-        job = self.update_keys
-        outsource(window.lineEdit_6.editingFinished, job)
-        job = self.toggle_frequent_draw
-        outsource(window.checkBox_2.toggled, job)
+        job = self._display_range_information
+        outsource(self._window.transaction_graph.price_widget.sigRangeChanged, job)
+        job = self._set_minimum_view_range
+        outsource(self._window.transaction_graph.price_widget.sigRangeChanged, job)
+        job = self._update_automation_settings
+        outsource(self._window.comboBox_2.currentIndexChanged, job)
+        job = self._update_automation_settings
+        outsource(self._window.checkBox.toggled, job)
+        job = self._update_keys
+        outsource(self._window.lineEdit_4.editingFinished, job)
+        job = self._update_keys
+        outsource(self._window.lineEdit_6.editingFinished, job)
+        job = self._toggle_frequent_draw
+        outsource(self._window.checkBox_2.toggled, job)
         job = self.display_day_range
-        outsource(window.pushButton_14.clicked, job)
-        job = self.update_mode_settings
-        outsource(window.spinBox.editingFinished, job)
-        job = self.update_viewing_symbol
-        outsource(window.comboBox_4.currentIndexChanged, job)
+        outsource(self._window.pushButton_14.clicked, job)
+        job = self._update_mode_settings
+        outsource(self._window.spinBox.editingFinished, job)
+        job = self._update_viewing_symbol
+        outsource(self._window.comboBox_4.currentIndexChanged, job)
 
-        action_menu = QMenu(self.window)
-        self.window.pushButton_12.setMenu(action_menu)
+        action_menu = QMenu(self._window)
+        self._window.pushButton_12.setMenu(action_menu)
 
         text = "Open Binance exchange"
-        job = self.open_exchange
+        job = self._open_exchange
         new_action = action_menu.addAction(text)
         outsource(new_action.triggered, job)
         text = "Open Binance futures wallet"
-        job = self.open_futures_wallet_page
+        job = self._open_futures_wallet_page
         new_action = action_menu.addAction(text)
         outsource(new_action.triggered, job)
         text = "Open Binance API management webpage"
-        job = self.open_api_management_page
+        job = self._open_api_management_page
         new_action = action_menu.addAction(text)
         outsource(new_action.triggered, job)
         text = "Clear all positions and open orders"
-        job = self.clear_positions_and_open_orders
+        job = self._clear_positions_and_open_orders
         new_action = action_menu.addAction(text)
         outsource(new_action.triggered, job)
         text = "Display same range as simulation graph"
-        job = self.match_graph_range
+        job = self._match_graph_range
         new_action = action_menu.addAction(text)
         outsource(new_action.triggered, job)
         text = "Show Raw Account State Object"
-        job = self.show_raw_account_state_object
+        job = self._show_raw_account_state_object
         new_action = action_menu.addAction(text)
         outsource(new_action.triggered, job)
 
     async def load_work(self):
-        await aiofiles.os.makedirs(self.workerpath, exist_ok=True)
+        await aiofiles.os.makedirs(self._workerpath, exist_ok=True)
 
         # scribbles
-        filepath = self.workerpath / "scribbles.pickle"
+        filepath = self._workerpath / "scribbles.pickle"
         if await aiofiles.os.path.isfile(filepath):
             async with aiofiles.open(filepath, "rb") as file:
                 content = await file.read()
-                self.scribbles = pickle.loads(content)
+                self._scribbles = pickle.loads(content)
 
         # transaction settings
-        filepath = self.workerpath / "transaction_settings.json"
+        filepath = self._workerpath / "transaction_settings.json"
         if await aiofiles.os.path.isfile(filepath):
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
                 read_data = TransactionSettings.model_validate_json(await file.read())
-            self.transaction_settings = read_data
+            self._transaction_settings = read_data
             state = read_data.should_transact
-            self.window.checkBox.setChecked(state)
+            self._window.checkBox.setChecked(state)
             strategy_index = read_data.strategy_index
-            self.window.comboBox_2.setCurrentIndex(strategy_index)
+            self._window.comboBox_2.setCurrentIndex(strategy_index)
             new_value = read_data.desired_leverage
-            self.window.spinBox.setValue(new_value)
+            self._window.spinBox.setValue(new_value)
             text = read_data.binance_api_key
-            self.window.lineEdit_4.setText(text)
+            self._window.lineEdit_4.setText(text)
             text = read_data.binance_api_secret
-            self.window.lineEdit_6.setText(text)
-            self.api_requester.update_keys(
+            self._window.lineEdit_6.setText(text)
+            self._api_requester.update_keys(
                 read_data.binance_api_key, read_data.binance_api_secret
             )
 
         # unrealized changes
-        filepath = self.workerpath / "unrealized_changes.pickle"
+        filepath = self._workerpath / "unrealized_changes.pickle"
         if await aiofiles.os.path.isfile(filepath):
             sr: pd.Series = await spawn_blocking(pd.read_pickle, filepath)
-            self.unrealized_changes = RWLock(sr)
+            self._unrealized_changes = RWLock(sr)
 
         # asset record
-        filepath = self.workerpath / "asset_record.pickle"
+        filepath = self._workerpath / "asset_record.pickle"
         if await aiofiles.os.path.isfile(filepath):
             df: pd.DataFrame = await spawn_blocking(pd.read_pickle, filepath)
-            self.asset_record = RWLock(df)
+            self._asset_record = RWLock(df)
 
         # auto order record
-        filepath = self.workerpath / "auto_order_record.pickle"
+        filepath = self._workerpath / "auto_order_record.pickle"
         if await aiofiles.os.path.isfile(filepath):
             df: pd.DataFrame = await spawn_blocking(pd.read_pickle, filepath)
-            self.auto_order_record = RWLock(df)
+            self._auto_order_record = RWLock(df)
 
     async def dump_work(self):
         await self._save_large_data()
         await self._save_scribbles()
 
-    async def organize_data(self):
-        async with self.unrealized_changes.write_lock as cell:
+    async def _organize_data(self):
+        async with self._unrealized_changes.write_lock as cell:
             if not cell.data.index.is_unique:
                 unique_index = cell.data.index.drop_duplicates()
                 cell.data = cell.data.reindex(unique_index)
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await spawn_blocking(sort_series, cell.data)
 
-        async with self.auto_order_record.write_lock as cell:
+        async with self._auto_order_record.write_lock as cell:
             if not cell.data.index.is_unique:
                 unique_index = cell.data.index.drop_duplicates()
                 cell.data = cell.data.reindex(unique_index)
@@ -286,7 +286,7 @@ class Transactor:
             if len(cell.data) > max_length:
                 cell.data = cell.data.iloc[-max_length:].copy()
 
-        async with self.asset_record.write_lock as cell:
+        async with self._asset_record.write_lock as cell:
             if not cell.data.index.is_unique:
                 unique_index = cell.data.index.drop_duplicates()
                 cell.data = cell.data.reindex(unique_index)
@@ -294,31 +294,31 @@ class Transactor:
                 cell.data = await spawn_blocking(sort_data_frame, cell.data)
 
     async def _save_large_data(self):
-        async with self.unrealized_changes.read_lock as cell:
+        async with self._unrealized_changes.read_lock as cell:
             unrealized_changes = cell.data.copy()
         await spawn_blocking(
             unrealized_changes.to_pickle,
-            self.workerpath / "unrealized_changes.pickle",
+            self._workerpath / "unrealized_changes.pickle",
         )
 
-        async with self.auto_order_record.read_lock as cell:
+        async with self._auto_order_record.read_lock as cell:
             auto_order_record = cell.data.copy()
         await spawn_blocking(
             auto_order_record.to_pickle,
-            self.workerpath / "auto_order_record.pickle",
+            self._workerpath / "auto_order_record.pickle",
         )
 
-        async with self.asset_record.read_lock as cell:
+        async with self._asset_record.read_lock as cell:
             asset_record = cell.data.copy()
         await spawn_blocking(
             asset_record.to_pickle,
-            self.workerpath / "asset_record.pickle",
+            self._workerpath / "asset_record.pickle",
         )
 
     async def _save_scribbles(self):
-        filepath = self.workerpath / "scribbles.pickle"
+        filepath = self._workerpath / "scribbles.pickle"
         async with aiofiles.open(filepath, "wb") as file:
-            content = pickle.dumps(self.scribbles)
+            content = pickle.dumps(self._scribbles)
             await file.write(content)
 
     async def update_user_data_stream(self):
@@ -344,7 +344,7 @@ class Transactor:
             return
 
         try:
-            response = await self.api_requester.binance(
+            response = await self._api_requester.binance(
                 http_method="POST",
                 path="/fapi/v1/listenKey",
             )
@@ -365,17 +365,17 @@ class Transactor:
 
         self.user_data_streamer = ApiStreamer(
             new_url,
-            self.listen_to_account,
+            self._listen_to_account,
         )
 
-    async def listen_to_account(self, received: dict[str, Any]):
+    async def _listen_to_account(self, received: dict[str, Any]):
         # ■■■■■ default values ■■■■■
 
         event_type = str(received["e"])
         event_timestamp = int(received["E"]) / 1000
         event_time = datetime.fromtimestamp(event_timestamp, tz=timezone.utc)
 
-        self.account_state.observed_until = event_time
+        self._account_state.observed_until = event_time
 
         # ■■■■■ do the task according to event type ■■■■■
 
@@ -389,18 +389,18 @@ class Transactor:
             about_assets = about_update["B"]
             about_positions = about_update["P"]
 
-            asset_token = self.window.data_settings.asset_token
+            asset_token = self._window.data_settings.asset_token
 
             about_assets_keyed = list_to_dict(about_assets, "a")
             about_asset = about_assets_keyed[asset_token]
             wallet_balance = float(about_asset["wb"])
-            self.account_state.wallet_balance = wallet_balance
+            self._account_state.wallet_balance = wallet_balance
 
             about_positions_keyed = list_to_dict(about_positions, "ps")
             if "BOTH" in about_positions_keyed:
                 about_position = about_positions_keyed["BOTH"]
 
-                target_symbols = self.window.data_settings.target_symbols
+                target_symbols = self._window.data_settings.target_symbols
                 if about_position["s"] not in target_symbols:
                     return
 
@@ -408,7 +408,7 @@ class Transactor:
                 amount = float(about_position["pa"])
                 entry_price = float(about_position["ep"])
 
-                leverage = self.leverages[symbol]
+                leverage = self._leverages[symbol]
                 margin = abs(amount) * entry_price / leverage
                 if amount < 0.0:
                     direction = PositionDirection.SHORT
@@ -417,7 +417,7 @@ class Transactor:
                 else:
                     direction = PositionDirection.LONG
 
-                position = self.account_state.positions[symbol]
+                position = self._account_state.positions[symbol]
                 position.margin = margin
                 position.direction = direction
                 position.entry_price = entry_price
@@ -426,7 +426,7 @@ class Transactor:
         elif event_type == "ORDER_TRADE_UPDATE":
             about_update = received["o"]
 
-            target_symbols = self.window.data_settings.target_symbols
+            target_symbols = self._window.data_settings.target_symbols
             if about_update["s"] not in target_symbols:
                 return
 
@@ -451,13 +451,13 @@ class Transactor:
             realized_profit = float(about_update["rp"])
 
             # from remembered
-            leverage = self.leverages[symbol]
-            wallet_balance = self.account_state.wallet_balance
+            leverage = self._leverages[symbol]
+            wallet_balance = self._account_state.wallet_balance
 
             # when the order is removed
             if order_status not in ("NEW", "PARTIALLY_FILLED"):
-                if order_id in self.account_state.open_orders[symbol].keys():
-                    self.account_state.open_orders[symbol].pop(order_id)
+                if order_id in self._account_state.open_orders[symbol].keys():
+                    self._account_state.open_orders[symbol].pop(order_id)
 
             # when the order is left or created
             if order_status in ("NEW", "PARTIALLY_FILLED"):
@@ -528,7 +528,7 @@ class Transactor:
                     left_quantity = origianal_quantity - executed_quantity
                     left_margin = left_quantity * boundary / leverage
 
-                self.account_state.open_orders[symbol][order_id] = OpenOrder(
+                self._account_state.open_orders[symbol][order_id] = OpenOrder(
                     order_type=order_type,
                     boundary=boundary,
                     left_margin=left_margin,
@@ -541,11 +541,11 @@ class Transactor:
                 added_margin = added_notional / leverage
                 added_margin_ratio = added_margin / wallet_balance
 
-                async with self.auto_order_record.read_lock as cell:
+                async with self._auto_order_record.read_lock as cell:
                     symbol_df = cell.data[cell.data["SYMBOL"] == symbol]
                     unique_order_ids = symbol_df["ORDER_ID"].unique()
 
-                async with self.asset_record.write_lock as cell:
+                async with self._asset_record.write_lock as cell:
                     symbol_df = cell.data[cell.data["SYMBOL"] == symbol]
                     recorded_id_list = symbol_df["ORDER_ID"].tolist()
                     does_record_exist = order_id in recorded_id_list
@@ -587,70 +587,70 @@ class Transactor:
 
         # ■■■■■ cancel conflicting orders ■■■■■
 
-        await self.cancel_conflicting_orders()
+        await self._cancel_conflicting_orders()
 
-    async def open_exchange(self):
-        symbol = self.viewing_symbol
+    async def _open_exchange(self):
+        symbol = self._viewing_symbol
         await spawn_blocking(
             webbrowser.open,
             f"https://www.binance.com/en/futures/{symbol}",
         )
 
-    async def open_futures_wallet_page(self):
+    async def _open_futures_wallet_page(self):
         await spawn_blocking(
             webbrowser.open,
             "https://www.binance.com/en/my/wallet/account/futures",
         )
 
-    async def open_api_management_page(self):
+    async def _open_api_management_page(self):
         await spawn_blocking(
             webbrowser.open,
             "https://www.binance.com/en/my/settings/api-management",
         )
 
-    async def save_transaction_settings(self):
-        filepath = self.workerpath / "transaction_settings.json"
+    async def _save_transaction_settings(self):
+        filepath = self._workerpath / "transaction_settings.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
-            await file.write(self.transaction_settings.model_dump_json(indent=2))
+            await file.write(self._transaction_settings.model_dump_json(indent=2))
 
-    async def update_keys(self):
-        binance_api_key = self.window.lineEdit_4.text()
-        binance_api_secret = self.window.lineEdit_6.text()
+    async def _update_keys(self):
+        binance_api_key = self._window.lineEdit_4.text()
+        binance_api_secret = self._window.lineEdit_6.text()
 
-        self.transaction_settings.binance_api_key = binance_api_key
-        self.transaction_settings.binance_api_secret = binance_api_secret
+        self._transaction_settings.binance_api_key = binance_api_key
+        self._transaction_settings.binance_api_secret = binance_api_secret
 
-        await self.save_transaction_settings()
-        self.api_requester.update_keys(binance_api_key, binance_api_secret)
+        await self._save_transaction_settings()
+        self._api_requester.update_keys(binance_api_key, binance_api_secret)
         await self.update_user_data_stream()
 
-    async def update_automation_settings(self):
+    async def _update_automation_settings(self):
         # ■■■■■ get information about strategy ■■■■■
 
-        strategy_index = self.window.comboBox_2.currentIndex()
-        self.transaction_settings.strategy_index = strategy_index
+        strategy_index = self._window.comboBox_2.currentIndex()
+        self._transaction_settings.strategy_index = strategy_index
 
         spawn(self.display_lines())
 
         # ■■■■■ is automation turned on ■■■■■
 
-        is_checked = self.window.checkBox.isChecked()
+        is_checked = self._window.checkBox.isChecked()
 
         if is_checked:
-            self.transaction_settings.should_transact = True
+            self._transaction_settings.should_transact = True
         else:
-            self.transaction_settings.should_transact = False
+            self._transaction_settings.should_transact = False
 
         # ■■■■■ save ■■■■■
 
-        await self.save_transaction_settings()
-
-    async def display_range_information(self):
-        self.range_display_task.spawn(self._display_range_information())
+        await self._save_transaction_settings()
 
     async def _display_range_information(self):
-        symbol = self.viewing_symbol
-        price_widget = self.window.transaction_graph.price_widget
+        self._range_display_task.spawn(self._display_range_information_real())
+
+    async def _display_range_information_real(self):
+        symbol = self._viewing_symbol
+        price_widget = self._window.transaction_graph.price_widget
 
         range_start_timestamp = price_widget.getAxis("bottom").range[0]
         range_start_timestamp = max(range_start_timestamp, 0.0)
@@ -670,9 +670,9 @@ class Transactor:
         range_hours, remains = divmod(range_length.seconds, 3600)
         range_minutes, remains = divmod(remains, 60)
 
-        async with self.unrealized_changes.read_lock as cell:
+        async with self._unrealized_changes.read_lock as cell:
             unrealized_changes = cell.data[range_start:range_end].copy()
-        async with self.asset_record.read_lock as cell:
+        async with self._asset_record.read_lock as cell:
             asset_record = cell.data[range_start:range_end].copy()
 
         auto_trade_mask = asset_record["CAUSE"] == "AUTO_TRADE"
@@ -730,31 +730,31 @@ class Transactor:
         text += "  ⦁  "
         text += "Lowest unrealized profit"
         text += f" {min_unrealized_change * 100:+.4f}%"
-        self.window.label_8.setText(text)
+        self._window.label_8.setText(text)
 
-    async def set_minimum_view_range(self):
-        widget = self.window.transaction_graph.price_widget
+    async def _set_minimum_view_range(self):
+        widget = self._window.transaction_graph.price_widget
         range_down = widget.getAxis("left").range[0]
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
-        widget = self.window.transaction_graph.asset_widget
+        widget = self._window.transaction_graph.asset_widget
         range_down = widget.getAxis("left").range[0]
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
 
     async def display_strategy_index(self):
-        strategy_index = self.transaction_settings.strategy_index
-        self.window.comboBox_2.setCurrentIndex(strategy_index)
+        strategy_index = self._transaction_settings.strategy_index
+        self._window.comboBox_2.setCurrentIndex(strategy_index)
 
     async def display_lines(self, periodic=False, frequent=False):
-        self.line_display_task.spawn(self._display_lines(periodic, frequent))
+        self._line_display_task.spawn(self._display_lines_real(periodic, frequent))
 
-    async def _display_lines(self, periodic: bool, frequent: bool):
+    async def _display_lines_real(self, periodic: bool, frequent: bool):
         # ■■■■■ get basic information ■■■■■
 
-        symbol = self.viewing_symbol
-        strategy_index = self.transaction_settings.strategy_index
+        symbol = self._viewing_symbol
+        strategy_index = self._transaction_settings.strategy_index
         strategy = team.strategist.strategies[strategy_index]
 
-        should_draw_frequently = self.should_draw_frequently
+        should_draw_frequently = self._should_draw_frequently
         if frequent and not should_draw_frequently:
             return
 
@@ -809,18 +809,18 @@ class Transactor:
         aggregate_trades = slice_deque(team.collector.aggregate_trades, 2 ** (10 + 6))
         aggregate_trades = [a for a in aggregate_trades if a.symbol == symbol]
 
-        position = self.account_state.positions[symbol]
+        position = self._account_state.positions[symbol]
         if position.direction == PositionDirection.NONE:
             entry_price = None
         else:
             entry_price = position.entry_price
 
-        await self.window.transaction_graph.update_light_lines(
+        await self._window.transaction_graph.update_light_lines(
             mark_prices=mark_prices,
             aggregate_trades=aggregate_trades,
             book_tickers=book_tickers,
             entry_price=entry_price,
-            observed_until=self.account_state.observed_until,
+            observed_until=self._account_state.observed_until,
         )
 
         # ■■■■■ draw heavy lines ■■■■■
@@ -831,9 +831,9 @@ class Transactor:
             candle_data_original = cell.data[chosen_columns][
                 get_from:slice_until
             ].copy()
-        async with self.unrealized_changes.read_lock as cell:
+        async with self._unrealized_changes.read_lock as cell:
             unrealized_changes = cell.data.copy()
-        async with self.asset_record.read_lock as cell:
+        async with self._asset_record.read_lock as cell:
             if len(cell.data) > 0:
                 last_asset = cell.data.iloc[-1]["RESULT_ASSET"]
             else:
@@ -855,7 +855,7 @@ class Transactor:
             candle_data = candle_data.reindex(new_index)
 
         if last_asset is not None:
-            observed_until = self.account_state.observed_until
+            observed_until = self._account_state.observed_until
             if len(asset_record) == 0 or asset_record.index[-1] < observed_until:
                 if slice_from < observed_until:
                     asset_record.loc[observed_until, "CAUSE"] = "OTHER"
@@ -872,7 +872,7 @@ class Transactor:
             if not asset_record.index.is_monotonic_increasing:
                 asset_record = await spawn_blocking(sort_data_frame, asset_record)
 
-        await self.window.transaction_graph.update_heavy_lines(
+        await self._window.transaction_graph.update_heavy_lines(
             symbol=symbol,
             candle_data=candle_data,
             asset_record=asset_record,
@@ -884,13 +884,13 @@ class Transactor:
         indicators = await spawn_blocking(
             make_indicators,
             strategy=strategy,
-            target_symbols=[self.viewing_symbol],
+            target_symbols=[self._viewing_symbol],
             candle_data=candle_data_original,
         )
 
         indicators = indicators[slice_from:slice_until]
 
-        await self.window.transaction_graph.update_custom_lines(symbol, indicators)
+        await self._window.transaction_graph.update_custom_lines(symbol, indicators)
 
         # ■■■■■ record task duration ■■■■■
 
@@ -898,44 +898,44 @@ class Transactor:
 
         # ■■■■■ set minimum view range ■■■■■
 
-        await self.set_minimum_view_range()
+        await self._set_minimum_view_range()
 
-    async def toggle_frequent_draw(self):
-        is_checked = self.window.checkBox_2.isChecked()
+    async def _toggle_frequent_draw(self):
+        is_checked = self._window.checkBox_2.isChecked()
         if is_checked:
-            self.should_draw_frequently = True
+            self._should_draw_frequently = True
         else:
-            self.should_draw_frequently = False
+            self._should_draw_frequently = False
         await self.display_lines()
 
-    async def update_viewing_symbol(self):
-        alias = self.window.comboBox_4.currentText()
-        symbol = self.window.alias_to_symbol[alias]
-        self.viewing_symbol = symbol
+    async def _update_viewing_symbol(self):
+        alias = self._window.comboBox_4.currentText()
+        symbol = self._window.alias_to_symbol[alias]
+        self._viewing_symbol = symbol
 
         spawn(self.display_lines())
-        spawn(self.display_status_information())
-        spawn(self.display_range_information())
+        spawn(self._display_status_information())
+        spawn(self._display_range_information())
 
-    async def display_status_information(self):
+    async def _display_status_information(self):
         # ■■■■■ Display important things first ■■■■■
 
-        time_passed = datetime.now(timezone.utc) - self.account_state.observed_until
+        time_passed = datetime.now(timezone.utc) - self._account_state.observed_until
         if time_passed > timedelta(seconds=30):
             text = (
                 "Couldn't get the latest info on your Binance account due to a problem"
                 " with your key or connection to the Binance server."
             )
-            self.window.label_16.setText(text)
+            self._window.label_16.setText(text)
             return
 
-        if not self.is_key_restrictions_satisfied:
+        if not self._is_key_restrictions_satisfied:
             text = (
                 "API key's restrictions are not satisfied. Auto transaction is"
                 " disabled. Go to your Binance API managements webpage to change"
                 " the restrictions."
             )
-            self.window.label_16.setText(text)
+            self._window.label_16.setText(text)
             return
 
         cumulation_rate = await team.collector.check_candle_data_cumulation_rate()
@@ -944,12 +944,12 @@ class Transactor:
                 "For auto transaction to work, the past 24 hour accumulation rate of"
                 " candle data must be 100%. Auto transaction is disabled."
             )
-            self.window.label_16.setText(text)
+            self._window.label_16.setText(text)
             return
 
         # ■■■■■ display assets and positions information ■■■■■
 
-        position = self.account_state.positions[self.viewing_symbol]
+        position = self._account_state.positions[self._viewing_symbol]
         if position.direction == PositionDirection.LONG:
             direction_text = "long"
         elif position.direction == PositionDirection.SHORT:
@@ -957,18 +957,18 @@ class Transactor:
         else:
             direction_text = "none"
         margin_sum = 0
-        for each_position in self.account_state.positions.values():
+        for each_position in self._account_state.positions.values():
             margin_sum += each_position.margin
 
-        open_orders = self.account_state.open_orders
-        open_orders_count = len(open_orders[self.viewing_symbol])
+        open_orders = self._account_state.open_orders
+        open_orders_count = len(open_orders[self._viewing_symbol])
         all_open_orders_count = 0
         for symbol_open_orders in open_orders.values():
             all_open_orders_count += len(symbol_open_orders)
 
         text = ""
         text += "Total asset"
-        text += f" ${self.account_state.wallet_balance:.4f}"
+        text += f" ${self._account_state.wallet_balance:.4f}"
         text += "  ⦁  "
         text += f"Investment ${position.margin:.4f}"
         text += f"({margin_sum:.4f})"
@@ -982,22 +982,22 @@ class Transactor:
         text += f" {open_orders_count}"
         text += f"({all_open_orders_count})"
 
-        self.window.label_16.setText(text)
+        self._window.label_16.setText(text)
 
-    async def perform_transaction(self):
+    async def _perform_transaction(self):
         # ■■■■■ Clear the progress bar ■■■■
 
-        self.window.progressBar_2.setValue(0)
+        self._window.progressBar_2.setValue(0)
 
         # ■■■■■ Stop if conditions are not met ■■■■
 
         if not internet_connected():
             return
 
-        if not self.transaction_settings.should_transact:
+        if not self._transaction_settings.should_transact:
             return
 
-        if not self.is_key_restrictions_satisfied:
+        if not self._is_key_restrictions_satisfied:
             return
 
         cumulation_rate = await team.collector.check_candle_data_cumulation_rate()
@@ -1021,10 +1021,10 @@ class Transactor:
                 if not is_cycle_done:
                     new_value = int(passed_time / timedelta(seconds=10) * 1000)
                 else:
-                    before_value = self.window.progressBar_2.value()
+                    before_value = self._window.progressBar_2.value()
                     remaining = 1000 - before_value
                     new_value = before_value + math.ceil(remaining * 0.2)
-                self.window.progressBar_2.setValue(new_value)
+                self._window.progressBar_2.setValue(new_value)
                 await sleep(0.01)
 
         spawn(play_progress_bar())
@@ -1053,9 +1053,9 @@ class Transactor:
 
         # ■■■■■ Make decision ■■■■■
 
-        target_symbols = self.window.data_settings.target_symbols
+        target_symbols = self._window.data_settings.target_symbols
 
-        strategy_index = self.transaction_settings.strategy_index
+        strategy_index = self._transaction_settings.strategy_index
         strategy = team.strategist.strategies[strategy_index]
 
         # Split the candle data by symbol before calculation to reduct UI lags
@@ -1094,8 +1094,8 @@ class Transactor:
             current_moment=current_moment,
             current_candle_data=current_candle_data,
             current_indicators=current_indicators,
-            account_state=self.account_state,
-            scribbles=self.scribbles,
+            account_state=self._account_state,
+            scribbles=self._scribbles,
         )
 
         # ■■■■■ Record task duration ■■■■■
@@ -1110,27 +1110,27 @@ class Transactor:
     async def display_day_range(self):
         range_start = (datetime.now(timezone.utc) - timedelta(hours=24)).timestamp()
         range_end = datetime.now(timezone.utc).timestamp()
-        widget = self.window.transaction_graph.price_widget
+        widget = self._window.transaction_graph.price_widget
         widget.setXRange(range_start, range_end)
 
-    async def match_graph_range(self):
-        graph_from = self.window.simulation_graph.price_widget
-        graph_to = self.window.transaction_graph.price_widget
+    async def _match_graph_range(self):
+        graph_from = self._window.simulation_graph.price_widget
+        graph_to = self._window.transaction_graph.price_widget
         graph_range = graph_from.getAxis("bottom").range
         range_start = graph_range[0]
         range_end = graph_range[1]
         graph_to.setXRange(range_start, range_end, padding=0)  # type:ignore
 
-    async def update_mode_settings(self):
-        desired_leverage = self.window.spinBox.value()
-        self.transaction_settings.desired_leverage = desired_leverage
+    async def _update_mode_settings(self):
+        desired_leverage = self._window.spinBox.value()
+        self._transaction_settings.desired_leverage = desired_leverage
 
         # ■■■■■ tell if some symbol's leverage cannot be set as desired ■■■■■
 
-        target_symbols = self.window.data_settings.target_symbols
+        target_symbols = self._window.data_settings.target_symbols
         target_max_leverages: dict[str, int] = {}
         for symbol in target_symbols:
-            max_leverage = self.maximum_leverages.get(symbol, 125)
+            max_leverage = self._maximum_leverages.get(symbol, 125)
             target_max_leverages[symbol] = max_leverage
         lowest_max_leverage = min(target_max_leverages.values())
 
@@ -1157,13 +1157,13 @@ class Transactor:
 
         # ■■■■■ save ■■■■■
 
-        await self.save_transaction_settings()
+        await self._save_transaction_settings()
 
     async def watch_binance(self):
         # ■■■■■ Basic data ■■■■■
 
-        target_symbols = self.window.data_settings.target_symbols
-        asset_token = self.window.data_settings.asset_token
+        target_symbols = self._window.data_settings.target_symbols
+        asset_token = self._window.data_settings.asset_token
 
         # ■■■■■ Check internet connection ■■■■■
 
@@ -1178,7 +1178,7 @@ class Transactor:
         # ■■■■■ Request exchange information ■■■■■
 
         payload: dict[str, Any] = {}
-        response = await self.api_requester.binance(
+        response = await self._api_requester.binance(
             http_method="GET",
             path="/fapi/v1/exchangeInfo",
             payload=payload,
@@ -1192,21 +1192,21 @@ class Transactor:
             about_filters_keyed = list_to_dict(about_filters, "filterType")
 
             minimum_notional = float(about_filters_keyed["MIN_NOTIONAL"]["notional"])
-            self.minimum_notionals[symbol] = minimum_notional
+            self._minimum_notionals[symbol] = minimum_notional
 
             maximum_quantity = min(
                 float(about_filters_keyed["LOT_SIZE"]["maxQty"]),
                 float(about_filters_keyed["MARKET_LOT_SIZE"]["maxQty"]),
             )
-            self.maximum_quantities[symbol] = maximum_quantity
+            self._maximum_quantities[symbol] = maximum_quantity
 
             ticksize = float(about_filters_keyed["PRICE_FILTER"]["tickSize"])
             price_precision = int(math.log10(1 / ticksize))
-            self.price_precisions[symbol] = price_precision
+            self._price_precisions[symbol] = price_precision
 
             stepsize = float(about_filters_keyed["LOT_SIZE"]["stepSize"])
             quantity_precision = int(math.log10(1 / stepsize))
-            self.quantity_precisions[symbol] = quantity_precision
+            self._quantity_precisions[symbol] = quantity_precision
 
         # ■■■■■ Request leverage bracket information ■■■■■
 
@@ -1214,7 +1214,7 @@ class Transactor:
             payload = {
                 "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
             }
-            response = await self.api_requester.binance(
+            response = await self._api_requester.binance(
                 http_method="GET",
                 path="/fapi/v1/leverageBracket",
                 payload=payload,
@@ -1224,7 +1224,7 @@ class Transactor:
             for about_bracket in about_brackets:
                 symbol = about_bracket["symbol"]
                 max_leverage = about_bracket["brackets"][0]["initialLeverage"]
-                self.maximum_leverages[symbol] = max_leverage
+                self._maximum_leverages[symbol] = max_leverage
         except ApiRequestError:
             # when the key is not ready
             return
@@ -1235,7 +1235,7 @@ class Transactor:
             payload = {
                 "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
             }
-            response = await self.api_requester.binance(
+            response = await self._api_requester.binance(
                 http_method="GET",
                 path="/fapi/v2/account",
                 payload=payload,
@@ -1252,7 +1252,7 @@ class Transactor:
                 "symbol": symbol,
                 "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
             }
-            response = await self.api_requester.binance(
+            response = await self._api_requester.binance(
                 http_method="GET",
                 path="/fapi/v1/openOrders",
                 payload=payload,
@@ -1265,14 +1265,14 @@ class Transactor:
         # ■■■■■ Update account state ■■■■■
 
         # observed until
-        self.account_state.observed_until = current_moment
+        self._account_state.observed_until = current_moment
 
         # wallet_balance
         about_assets = about_account["assets"]
         about_assets_keyed = list_to_dict(about_assets, "asset")
         about_asset = about_assets_keyed[asset_token]
         wallet_balance = float(about_asset["walletBalance"])
-        self.account_state.wallet_balance = wallet_balance
+        self._account_state.wallet_balance = wallet_balance
 
         about_positions = about_account["positions"]
         about_positions_keyed = list_to_dict(about_positions, "symbol")
@@ -1295,7 +1295,7 @@ class Transactor:
             amount = float(about_position["positionAmt"])
             margin = abs(amount) * entry_price / leverage
 
-            position = self.account_state.positions[symbol]
+            position = self._account_state.positions[symbol]
             position.margin = margin
             position.direction = direction
             position.entry_price = entry_price
@@ -1395,14 +1395,14 @@ class Transactor:
                     left_margin=left_margin,
                 )
 
-        self.account_state.open_orders = open_orders
+        self._account_state.open_orders = open_orders
 
         # ■■■■■ Update hidden state ■■■■■
 
         for symbol in target_symbols:
             about_position = about_positions_keyed[symbol]
             leverage = int(about_position["leverage"])
-            self.leverages[symbol] = leverage
+            self._leverages[symbol] = leverage
 
         # ■■■■■ Record unrealized change ■■■■■
 
@@ -1414,14 +1414,14 @@ class Transactor:
         else:
             unrealized_change = 0
 
-        async with self.unrealized_changes.write_lock as cell:
+        async with self._unrealized_changes.write_lock as cell:
             cell.data[before_moment] = unrealized_change
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await spawn_blocking(sort_series, cell.data)
 
         # ■■■■■ Make an asset trace if it's blank ■■■■■
 
-        async with self.asset_record.write_lock as cell:
+        async with self._asset_record.write_lock as cell:
             if len(cell.data) == 0:
                 wallet_balance = float(about_asset["walletBalance"])
                 current_time = datetime.now(timezone.utc)
@@ -1432,7 +1432,7 @@ class Transactor:
 
         wallet_balance = float(about_asset["walletBalance"])
 
-        async with self.asset_record.read_lock as cell:
+        async with self._asset_record.read_lock as cell:
             last_index = cell.data.index[-1]
             last_asset = float(cell.data.loc[last_index, "RESULT_ASSET"])  # type:ignore
 
@@ -1441,7 +1441,7 @@ class Transactor:
         elif abs(wallet_balance - last_asset) / wallet_balance > 10**-9:
             # when the difference is bigger than a billionth
             # referal fee, funding fee, wallet transfer, etc..
-            async with self.asset_record.write_lock as cell:
+            async with self._asset_record.write_lock as cell:
                 current_time = datetime.now(timezone.utc)
                 cell.data.loc[current_time, "CAUSE"] = "OTHER"
                 cell.data.loc[current_time, "RESULT_ASSET"] = wallet_balance
@@ -1449,20 +1449,20 @@ class Transactor:
                     cell.data = await spawn_blocking(sort_data_frame, cell.data)
         else:
             # when the difference is small enough to consider as an numeric error
-            async with self.asset_record.write_lock as cell:
+            async with self._asset_record.write_lock as cell:
                 last_index = cell.data.index[-1]
                 cell.data.loc[last_index, "RESULT_ASSET"] = wallet_balance
 
         # ■■■■■ Correct mode of the account market if automation is turned on ■■■■■
 
-        if self.transaction_settings.should_transact:
+        if self._transaction_settings.should_transact:
 
             async def job_1(symbol):
                 about_position = about_positions_keyed[symbol]
                 current_leverage = int(about_position["leverage"])
 
-                desired_leverage = self.transaction_settings.desired_leverage
-                maximum_leverages = self.maximum_leverages
+                desired_leverage = self._transaction_settings.desired_leverage
+                maximum_leverages = self._maximum_leverages
                 max_leverage = maximum_leverages.get(symbol, 125)
                 goal_leverage = min(desired_leverage, max_leverage)
 
@@ -1473,7 +1473,7 @@ class Transactor:
                         "timestamp": timestamp,
                         "leverage": goal_leverage,
                     }
-                    await self.api_requester.binance(
+                    await self._api_requester.binance(
                         http_method="POST",
                         path="/fapi/v1/leverage",
                         payload=payload,
@@ -1501,7 +1501,7 @@ class Transactor:
                         "timestamp": timestamp,
                         "marginType": "CROSSED",
                     }
-                    await self.api_requester.binance(
+                    await self._api_requester.binance(
                         http_method="POST",
                         path="/fapi/v1/marginType",
                         payload=payload,
@@ -1516,7 +1516,7 @@ class Transactor:
                     "timestamp": timestamp,
                     "multiAssetsMargin": "false",
                 }
-                await self.api_requester.binance(
+                await self._api_requester.binance(
                     http_method="POST",
                     path="/fapi/v1/multiAssetsMargin",
                     payload=payload,
@@ -1530,7 +1530,7 @@ class Transactor:
                     "timestamp": timestamp,
                     "dualSidePosition": "false",
                 }
-                await self.api_requester.binance(
+                await self._api_requester.binance(
                     http_method="POST",
                     path="/fapi/v1/positionSide/dual",
                     payload=payload,
@@ -1543,7 +1543,7 @@ class Transactor:
         payload = {
             "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
         }
-        response = await self.api_requester.binance(
+        response = await self._api_requester.binance(
             http_method="GET",
             path="/sapi/v1/account/apiRestrictions",
             payload=payload,
@@ -1559,10 +1559,10 @@ class Transactor:
             is_enabled = api_restrictions[restriction_name]
             if not is_enabled:
                 is_satisfied = False
-        self.is_key_restrictions_satisfied = is_satisfied
+        self._is_key_restrictions_satisfied = is_satisfied
 
     async def place_orders(self, decisions: dict[str, dict[OrderType, Decision]]):
-        target_symbols = self.window.data_settings.target_symbols
+        target_symbols = self._window.data_settings.target_symbols
         current_timestamp = to_moment(datetime.now(timezone.utc)).timestamp() * 1000
 
         current_prices: dict[str, float] = {}
@@ -1581,14 +1581,14 @@ class Transactor:
         # ■■■■■ Prepare closure functions ■■■■■
 
         async def job_cancel_order(payload):
-            await self.api_requester.binance(
+            await self._api_requester.binance(
                 http_method="DELETE",
                 path="/fapi/v1/allOpenOrders",
                 payload=payload,
             )
 
         async def job_new_order(payload):
-            response = await self.api_requester.binance(
+            response = await self._api_requester.binance(
                 http_method="POST",
                 path="/fapi/v1/order",
                 payload=payload,
@@ -1597,7 +1597,7 @@ class Transactor:
             order_id = response["orderId"]
             timestamp = response["updateTime"] / 1000
             update_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-            async with self.auto_order_record.write_lock as cell:
+            async with self._auto_order_record.write_lock as cell:
                 while update_time in cell.data.index:
                     update_time += timedelta(milliseconds=1)
                 cell.data.loc[update_time, "SYMBOL"] = order_symbol
@@ -1635,11 +1635,11 @@ class Transactor:
                 continue
 
             current_price = current_prices[symbol]
-            leverage = self.leverages[symbol]
-            maximum_quantity = self.maximum_quantities[symbol]
-            minimum_notional = self.minimum_notionals[symbol]
-            quantity_precision = self.quantity_precisions[symbol]
-            current_direction = self.account_state.positions[symbol].direction
+            leverage = self._leverages[symbol]
+            maximum_quantity = self._maximum_quantities[symbol]
+            minimum_notional = self._minimum_notionals[symbol]
+            quantity_precision = self._quantity_precisions[symbol]
+            current_direction = self._account_state.positions[symbol].direction
 
             if OrderType.NOW_CLOSE in decisions[symbol]:
                 quantity = maximum_quantity
@@ -1701,11 +1701,11 @@ class Transactor:
             if symbol not in decisions:
                 continue
 
-            leverage = self.leverages[symbol]
-            maximum_quantity = self.maximum_quantities[symbol]
-            minimum_notional = self.minimum_notionals[symbol]
-            price_precision = self.price_precisions[symbol]
-            quantity_precision = self.quantity_precisions[symbol]
+            leverage = self._leverages[symbol]
+            maximum_quantity = self._maximum_quantities[symbol]
+            minimum_notional = self._minimum_notionals[symbol]
+            price_precision = self._price_precisions[symbol]
+            quantity_precision = self._quantity_precisions[symbol]
 
             if OrderType.BOOK_BUY in decisions[symbol]:
                 decision = decisions[symbol][OrderType.BOOK_BUY]
@@ -1751,12 +1751,12 @@ class Transactor:
             if symbol not in decisions:
                 continue
 
-            leverage = self.leverages[symbol]
-            maximum_quantity = self.maximum_quantities[symbol]
-            minimum_notional = self.minimum_notionals[symbol]
-            price_precision = self.price_precisions[symbol]
-            quantity_precision = self.quantity_precisions[symbol]
-            current_direction = self.account_state.positions[symbol].direction
+            leverage = self._leverages[symbol]
+            maximum_quantity = self._maximum_quantities[symbol]
+            minimum_notional = self._minimum_notionals[symbol]
+            price_precision = self._price_precisions[symbol]
+            quantity_precision = self._quantity_precisions[symbol]
+            current_direction = self._account_state.positions[symbol].direction
 
             # Even if there's no open position analyzed yet
             # due to user data stream from Binance being slow,
@@ -1883,22 +1883,22 @@ class Transactor:
             tasks = [spawn(job_new_order(o)) for o in later_orders]
             await wait(tasks)
 
-    async def clear_positions_and_open_orders(self):
+    async def _clear_positions_and_open_orders(self):
         decisions: dict[str, dict[OrderType, Decision]] = {}
-        for symbol in self.window.data_settings.target_symbols:
+        for symbol in self._window.data_settings.target_symbols:
             decisions[symbol] = {
                 OrderType.CANCEL_ALL: Decision(),
                 OrderType.NOW_CLOSE: Decision(),
             }
         await self.place_orders(decisions)
 
-    async def cancel_conflicting_orders(self):
-        if not self.transaction_settings.should_transact:
+    async def _cancel_conflicting_orders(self):
+        if not self._transaction_settings.should_transact:
             return
 
         conflicting_order_tuples: list[tuple[str, int]] = []
-        for symbol in self.window.data_settings.target_symbols:
-            symbol_open_orders = self.account_state.open_orders[symbol]
+        for symbol in self._window.data_settings.target_symbols:
+            symbol_open_orders = self._account_state.open_orders[symbol]
             grouped_open_orders: dict[OrderType, list[int]] = {}
             for order_id, open_order_state in symbol_open_orders.items():
                 order_type = open_order_state.order_type
@@ -1923,7 +1923,7 @@ class Transactor:
                     "symbol": conflicting_order_tuple[0],
                     "orderId": conflicting_order_tuple[1],
                 }
-                await self.api_requester.binance(
+                await self._api_requester.binance(
                     http_method="DELETE",
                     path="/fapi/v1/order",
                     payload=payload,
@@ -1935,11 +1935,11 @@ class Transactor:
             tasks = [spawn(job(c)) for c in conflicting_order_tuples]
             await wait(tasks)
 
-    async def pan_view_range(self):
-        if not self.should_draw_frequently:
+    async def _pan_view_range(self):
+        if not self._should_draw_frequently:
             return
 
-        widget = self.window.transaction_graph.price_widget
+        widget = self._window.transaction_graph.price_widget
         before_range = widget.getAxis("bottom").range
         range_start = before_range[0]
         range_end = before_range[1]
@@ -1949,7 +1949,7 @@ class Transactor:
 
         widget.setXRange(range_start + 10, range_end + 10, padding=0)  # type:ignore
 
-    async def show_raw_account_state_object(self):
+    async def _show_raw_account_state_object(self):
         text = ""
 
         now_time = datetime.now(timezone.utc)
@@ -1957,6 +1957,6 @@ class Transactor:
         text += f"At UTC {time_text}"
 
         text += "\n\n"
-        text += self.account_state.model_dump_json(indent=2)
+        text += self._account_state.model_dump_json(indent=2)
 
         await overlay(LongTextView(text))

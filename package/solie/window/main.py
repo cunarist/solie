@@ -55,14 +55,14 @@ class Window(QMainWindow, Ui_MainWindow):
     def __init__(self, close_event: Event, config: SolieConfig):
         super().__init__()
 
-        self.close_event = close_event
+        self._close_event = close_event
         self.config = config
 
         self.datapath: Path
         self.data_settings: DataSettings
 
         self.last_interaction = datetime.now(timezone.utc)
-        self.splash_screen: SplashScreen
+        self._splash_screen: SplashScreen
         self.price_labels: dict[str, QLabel] = {}
 
         self.should_confirm_closing = False
@@ -90,8 +90,8 @@ class Window(QMainWindow, Ui_MainWindow):
             self.board.hide()
             self.closeEvent = lambda event: event.ignore()
 
-            self.splash_screen.show()
-            self.close_event.set()
+            self._splash_screen.show()
+            self._close_event.set()
 
         spawn(job_close())
 
@@ -130,11 +130,11 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self.gauge.hide()
         self.board.hide()
-        self.splash_screen = SplashScreen()
+        self._splash_screen = SplashScreen()
         central_layout = self.centralWidget().layout()
         if central_layout is None:
             raise ValueError("There's no central layout")
-        central_layout.addWidget(self.splash_screen)
+        central_layout.addWidget(self._splash_screen)
 
         # ■■■■■ Show the window ■■■■■
         self.show()
@@ -443,6 +443,6 @@ class Window(QMainWindow, Ui_MainWindow):
     def reveal(self):
         self.should_confirm_closing = True
 
-        self.splash_screen.hide()
+        self._splash_screen.hide()
         self.board.show()
         self.gauge.show()
