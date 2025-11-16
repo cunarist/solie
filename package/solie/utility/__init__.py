@@ -43,8 +43,9 @@ from .data_models import (
 from .download_from_binance import (
     DownloadPreset,
     DownloadUnitSize,
-    download_aggtrade_data,
+    download_aggtrade_csv,
     fill_holes_with_aggtrades,
+    process_aggtrade_csv,
 )
 from .log_handler import LogHandler
 from .pandas_related import combine_candle_data
@@ -121,7 +122,7 @@ __all__ = [
     "create_empty_candle_data",
     "create_empty_unrealized_changes",
     "create_strategy_code_name",
-    "download_aggtrade_data",
+    "download_aggtrade_csv",
     "fill_holes_with_aggtrades",
     "format_numeric",
     "internet_connected",
@@ -129,6 +130,7 @@ __all__ = [
     "list_to_dict",
     "make_decisions",
     "make_indicators",
+    "process_aggtrade_csv",
     "read_data_settings",
     "read_datapath",
     "save_data_settings",

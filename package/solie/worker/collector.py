@@ -28,10 +28,11 @@ from solie.utility import (
     RWLock,
     combine_candle_data,
     create_empty_candle_data,
-    download_aggtrade_data,
+    download_aggtrade_csv,
     fill_holes_with_aggtrades,
     format_numeric,
     internet_connected,
+    process_aggtrade_csv,
     slice_deque,
     sort_data_frame,
     to_moment,
@@ -517,7 +518,7 @@ class Collector:
 
         random.shuffle(download_presets)
 
-        total_steps = len(download_presets)
+        total_steps = len(download_presets) * 2
         done_steps = 0
 
         # ■■■■■ play the progress bar ■■■■■
@@ -566,21 +567,27 @@ class Collector:
 
             async def download_fill(download_preset: DownloadPreset) -> None:
                 nonlocal done_steps
-                nonlocal combined_df
 
-                returned = await spawn_blocking(
-                    download_aggtrade_data,
-                    download_preset,
-                    download_dir,
+                # Download the zipped CSV file.
+                zip_file_path = await download_aggtrade_csv(
+                    download_preset, download_dir
                 )
-                if returned is not None:
-                    new_df = returned
-                    async with combined_df.write_lock as cell:
-                        new = await spawn_blocking(
-                            combine_candle_data, new_df, cell.data
-                        )
-                        cell.data = new
+                done_steps += 1
 
+                # Process the CSV file into a DataFrame.
+                if zip_file_path is not None:
+                    returned = await spawn_blocking(
+                        process_aggtrade_csv,
+                        download_preset.symbol,
+                        zip_file_path,
+                    )
+                    if returned is not None:
+                        new_df = returned
+                        async with combined_df.write_lock as cell:
+                            new = await spawn_blocking(
+                                combine_candle_data, new_df, cell.data
+                            )
+                            cell.data = new
                 done_steps += 1
 
             fill_tasks = [spawn(download_fill(p)) for p in download_presets]

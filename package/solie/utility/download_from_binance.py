@@ -2,9 +2,10 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
 from typing import NamedTuple
-from urllib.request import urlopen
 from zipfile import ZipFile
 
+import aiofiles
+import aiohttp
 import numpy as np
 import pandas as pd
 
@@ -123,9 +124,12 @@ def finalize_tick(
             gap_tick += TICK_MS
 
 
-def download_aggtrade_data(
+async def download_aggtrade_csv(
     download_target: DownloadPreset, download_dir: Path
-) -> pd.DataFrame | None:
+) -> Path | None:
+    """
+    Download the aggtrade CSV file from Binance and return as DataFrame.
+    """
     symbol = download_target.symbol
     unit_size = download_target.unit_size
 
@@ -157,21 +161,26 @@ def download_aggtrade_data(
     did_download = False
     for _ in range(RETRY_COUNT):
         try:
-            with urlopen(url) as response:
-                with open(zip_file_path, "wb") as f:
-                    while True:
-                        chunk = response.read(BYTE_CHUNK)
-                        if not chunk:
-                            break
-                        f.write(chunk)
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    async with aiofiles.open(zip_file_path, "wb") as f:
+                        while True:
+                            chunk = await response.content.read(BYTE_CHUNK)
+                            if not chunk:
+                                break
+                            await f.write(chunk)
             did_download = True
             break
         except Exception:
             continue
 
-    if not did_download:
-        return None
+    return zip_file_path if did_download else None
 
+
+def process_aggtrade_csv(symbol: str, zip_file_path: Path) -> pd.DataFrame | None:
+    """
+    Process the downloaded aggtrade CSV file from Binance
+    and convert it into a DataFrame of aggregated trades."""
     # Check if CSV has header by reading first line
     has_header = False
     with ZipFile(zip_file_path, "r") as zip_ref:
