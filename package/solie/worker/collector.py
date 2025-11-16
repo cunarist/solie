@@ -576,6 +576,7 @@ class Collector:
             # Collect all DataFrames in a list for batch concatenation
             downloaded_dfs: list[pd.DataFrame] = []
 
+            # Download and process all presets for this year.
             async def download_fill(download_preset: DownloadPreset) -> None:
                 nonlocal done_steps
 
