@@ -8,6 +8,7 @@ from logging import getLogger
 from typing import Any
 
 import aiofiles.os
+import aioshutil
 import numpy as np
 import pandas as pd
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -556,6 +557,8 @@ class Collector:
         for download_preset in download_presets:
             classified_download_presets[download_preset.year].append(download_preset)
 
+        download_dir = self._workerpath / "downloaded_csv"
+        await aiofiles.os.makedirs(download_dir, exist_ok=True)
         for preset_year, download_presets in classified_download_presets.items():
             # Make an empty dataframe, but of same types with that of candle data.
             async with self.candle_data.read_lock as cell:
@@ -565,7 +568,11 @@ class Collector:
                 nonlocal done_steps
                 nonlocal combined_df
 
-                returned = await spawn_blocking(download_aggtrade_data, download_preset)
+                returned = await spawn_blocking(
+                    download_aggtrade_data,
+                    download_preset,
+                    download_dir,
+                )
                 if returned is not None:
                     new_df = returned
                     async with combined_df.write_lock as cell:
@@ -599,6 +606,7 @@ class Collector:
                             cell_worker.data,
                         )
                 await self._save_candle_data()
+        await aioshutil.rmtree(download_dir)
 
         # ■■■■■ add to log ■■■■■
 

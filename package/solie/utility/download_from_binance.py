@@ -1,14 +1,34 @@
-import io
 from datetime import datetime, timedelta, timezone
 from enum import Enum
+from pathlib import Path
 from typing import NamedTuple
 from urllib.request import urlopen
+from zipfile import ZipFile
 
 import numpy as np
 import pandas as pd
 
 from .data_models import AggregateTrade
 from .timing import to_moment
+
+BYTE_CHUNK = 1024 * 1024
+RETRY_COUNT = 5
+TICK_MS = 10_000
+
+
+class CsvRow(NamedTuple):
+    price: float
+    quantity: float
+    transact_time: int
+
+
+class AggTrade(NamedTuple):
+    time: int
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: float
 
 
 class DownloadUnitSize(Enum):
@@ -24,124 +44,188 @@ class DownloadPreset(NamedTuple):
     day: int = 0  # Valid only when `unit_size` is `DAILY`
 
 
-def download_aggtrade_data(download_target: DownloadPreset) -> pd.DataFrame | None:
+def process_csv_line(
+    line: str,
+    csv_rows: list[CsvRow],
+    agg_trades: list[AggTrade],
+    current_tick_start: int | None,
+) -> int | None:
+    """Process a single CSV line and return the new current_tick_start."""
+    decoded_line = line.strip()
+    if not decoded_line:
+        return current_tick_start
+
+    columns = decoded_line.split(",")
+    csv_row = CsvRow(
+        price=float(columns[1]),
+        quantity=float(columns[2]),
+        transact_time=int(columns[5]),
+    )
+
+    # Calculate which 10-second tick this row belongs to
+    row_tick_start = (csv_row.transact_time // TICK_MS) * TICK_MS
+
+    # If we moved to a new tick, process the previous tick
+    if current_tick_start is not None and row_tick_start != current_tick_start:
+        finalize_tick(csv_rows, agg_trades, current_tick_start, row_tick_start)
+        csv_rows.clear()
+
+    csv_rows.append(csv_row)
+    return row_tick_start
+
+
+def finalize_tick(
+    csv_rows: list[CsvRow],
+    agg_trades: list[AggTrade],
+    current_tick_start: int,
+    next_tick_start: int | None = None,
+) -> None:
+    """Finalize the current tick by creating a candle and filling gaps."""
+    if not csv_rows:
+        return
+
+    # Create candle from accumulated rows
+    open_price = csv_rows[0].price
+    high_price = max(row.price for row in csv_rows)
+    low_price = min(row.price for row in csv_rows)
+    close_price = csv_rows[-1].price
+    volume = sum(row.quantity for row in csv_rows)
+
+    agg_trades.append(
+        AggTrade(
+            time=current_tick_start,
+            open=open_price,
+            high=high_price,
+            low=low_price,
+            close=close_price,
+            volume=volume,
+        )
+    )
+
+    # Fill gaps if there are missing ticks
+    if (
+        next_tick_start
+        and agg_trades
+        and next_tick_start > current_tick_start + TICK_MS
+    ):
+        last_close = agg_trades[-1].close
+        gap_tick = current_tick_start + TICK_MS
+        while gap_tick < next_tick_start:
+            new_agg_trade = AggTrade(
+                time=gap_tick,
+                open=last_close,
+                high=last_close,
+                low=last_close,
+                close=last_close,
+                volume=0.0,
+            )
+            agg_trades.append(new_agg_trade)
+            gap_tick += TICK_MS
+
+
+def download_aggtrade_data(
+    download_target: DownloadPreset, download_dir: Path
+) -> pd.DataFrame | None:
     symbol = download_target.symbol
     unit_size = download_target.unit_size
 
-    if unit_size == DownloadUnitSize.DAILY:
-        year_string = format(download_target.year, "04")
-        month_string = format(download_target.month, "02")
-        day_string = format(download_target.day, "02")
-        url = (
-            "https://data.binance.vision/data/futures/um/daily/aggTrades"
-            + f"/{symbol}/{symbol}-aggTrades"
-            + f"-{year_string}-{month_string}-{day_string}.zip"
-        )
-    elif unit_size == DownloadUnitSize.MONTHLY:
-        year_string = format(download_target.year, "04")
-        month_string = format(download_target.month, "02")
-        url = (
-            "https://data.binance.vision/data/futures/um/monthly/aggTrades"
-            + f"/{symbol}/{symbol}-aggTrades"
-            + f"-{year_string}-{month_string}.zip"
-        )
-    else:
-        raise ValueError("This download type is not supported")
+    # Create download URL and file name
+    match unit_size:
+        case DownloadUnitSize.DAILY:
+            year_string = format(download_target.year, "04")
+            month_string = format(download_target.month, "02")
+            day_string = format(download_target.day, "02")
+            url = (
+                "https://data.binance.vision/data/futures/um/daily/aggTrades"
+                f"/{symbol}/{symbol}-aggTrades"
+                f"-{year_string}-{month_string}-{day_string}.zip"
+            )
+            file_name = f"{symbol}-{year_string}-{month_string}-{day_string}.zip"
+        case DownloadUnitSize.MONTHLY:
+            year_string = format(download_target.year, "04")
+            month_string = format(download_target.month, "02")
+            url = (
+                "https://data.binance.vision/data/futures/um/monthly/aggTrades"
+                f"/{symbol}/{symbol}-aggTrades"
+                f"-{year_string}-{month_string}.zip"
+            )
+            file_name = f"{symbol}-{year_string}-{month_string}.zip"
+    zip_file_path = download_dir / file_name
 
-    zipped_csv_data = None
-    for _ in range(5):
+    # Download to a temporary file.
+    # Download in chunks to avoid memory issues.
+    did_download = False
+    for _ in range(RETRY_COUNT):
         try:
-            zipped_csv_data = io.BytesIO(urlopen(url).read())
+            with urlopen(url) as response:
+                with open(zip_file_path, "wb") as f:
+                    while True:
+                        chunk = response.read(BYTE_CHUNK)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+            did_download = True
             break
         except Exception:
-            pass
+            continue
 
-    if zipped_csv_data is None:
-        return
+    if not did_download:
+        return None
 
-    try:
-        df: pd.DataFrame = pd.concat(
-            pd.read_csv(
-                zipped_csv_data,
-                compression="zip",
-                header=None,
-                usecols=[1, 2, 5],
-                dtype={1: np.float32, 2: np.float32, 5: np.int64},
-                chunksize=10**6,
-            )
-        )
-    except ValueError:
-        # when there is a header line in start of the file
-        # from august 2022, header is included from binance
-        df: pd.DataFrame = pd.concat(
-            pd.read_csv(
-                zipped_csv_data,
-                compression="zip",
-                header=0,
-                usecols=[1, 2, 5],
-                dtype={1: np.float32, 2: np.float32, 5: np.int64},
-                chunksize=10**6,
-            )
-        )
-        df = df.rename(columns={"price": 1, "quantity": 2, "transact_time": 5})
+    # Check if CSV has header by reading first line
+    has_header = False
+    with ZipFile(zip_file_path, "r") as zip_ref:
+        csv_filename = zip_ref.namelist()[0]
+        with zip_ref.open(csv_filename) as csv_file:
+            first_line = csv_file.readline().decode("ascii")
+            has_header = "price" in first_line.lower()
 
-    df = df.set_index(5)
+    csv_rows = list[CsvRow]()
+    agg_trades: list[AggTrade] = []
+    current_tick_start: int | None = None
+
+    with ZipFile(zip_file_path, "r") as zip_ref:
+        csv_filename = zip_ref.namelist()[0]
+        with zip_ref.open(csv_filename) as csv_file:
+            # Skip header if exists
+            if has_header:
+                csv_file.readline()
+
+            # Read and process CSV lines
+            for line in csv_file:
+                decoded_line = line.decode("ascii")
+                current_tick_start = process_csv_line(
+                    decoded_line, csv_rows, agg_trades, current_tick_start
+                )
+
+            # Process the last tick
+            if csv_rows and current_tick_start is not None:
+                finalize_tick(csv_rows, agg_trades, current_tick_start)
+
+    # Convert to DataFrame
+    if not agg_trades:
+        return None
+
+    df = pd.DataFrame(agg_trades)
+    df = df.set_index("time")
     df.index.name = None
     df.index = pd.to_datetime(df.index, unit="ms", utc=True)
 
-    # fill index holes that's smaller than 10 minutes
-    temp_sr = pd.Series(0, index=df.index, dtype=np.float32)
-    temp_sr = temp_sr.groupby(temp_sr.index).first()
-    temp_sr: pd.Series = temp_sr.resample("10s").agg("mean")  # type:ignore
-    temp_sr = temp_sr.interpolate(limit=60, limit_direction="forward")
-    temp_sr = temp_sr.replace(np.nan, 1)
-    temp_sr = temp_sr.replace(0, np.nan)
-    temp_sr = temp_sr.interpolate(limit=60, limit_direction="backward")
-    temp_sr = temp_sr.replace(np.nan, 0)
-    temp_sr = temp_sr.replace(1, np.nan)
-    temp_sr = temp_sr.dropna()
-    valid_index = temp_sr.index
+    # Rename columns to match expected format
+    df = df.rename(
+        columns={
+            "open": f"{symbol}/OPEN",
+            "high": f"{symbol}/HIGH",
+            "low": f"{symbol}/LOW",
+            "close": f"{symbol}/CLOSE",
+            "volume": f"{symbol}/VOLUME",
+        }
+    )
 
-    del temp_sr
+    # Convert to float32 for memory efficiency
+    df = df.astype(np.float32)
 
-    # process data
-
-    close_sr: pd.Series = df[1].resample("10s").agg("last")  # type:ignore
-    close_sr = close_sr.reindex(valid_index)
-    close_sr = close_sr.ffill()
-    close_sr = close_sr.astype(np.float32)
-    close_sr.name = f"{symbol}/CLOSE"
-
-    open_sr: pd.Series = df[1].resample("10s").agg("first")  # type:ignore
-    open_sr = open_sr.reindex(valid_index)
-    open_sr = open_sr.fillna(value=close_sr)
-    open_sr = open_sr.astype(np.float32)
-    open_sr.name = f"{symbol}/OPEN"
-
-    high_sr: pd.Series = df[1].resample("10s").agg("max")  # type:ignore
-    high_sr = high_sr.reindex(valid_index)
-    high_sr = high_sr.fillna(value=close_sr)
-    high_sr = high_sr.astype(np.float32)
-    high_sr.name = f"{symbol}/HIGH"
-
-    low_sr: pd.Series = df[1].resample("10s").agg("min")  # type:ignore
-    low_sr = low_sr.reindex(valid_index)
-    low_sr = low_sr.fillna(value=close_sr)
-    low_sr = low_sr.astype(np.float32)
-    low_sr.name = f"{symbol}/LOW"
-
-    volume_sr: pd.Series = df[2].resample("10s").agg("sum")  # type:ignore
-    volume_sr = volume_sr.reindex(valid_index)
-    volume_sr = volume_sr.fillna(value=0)
-    volume_sr = volume_sr.astype(np.float32)
-    volume_sr.name = f"{symbol}/VOLUME"
-
-    del df
-
-    series_list = [open_sr, high_sr, low_sr, close_sr, volume_sr]
-    new_df = pd.concat(series_list, axis="columns")
-
-    return new_df
+    return df
 
 
 def fill_holes_with_aggtrades(
