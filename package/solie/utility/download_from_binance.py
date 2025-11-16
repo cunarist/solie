@@ -18,6 +18,7 @@ from .timing import to_moment
 BYTE_CHUNK = 1024 * 1024
 RETRY_COUNT = 5
 TICK_MS = 10_000
+COMMA_BYTE = b","
 
 
 class CsvRow(NamedTuple):
@@ -49,32 +50,34 @@ class DownloadPreset(NamedTuple):
 
 
 def process_csv_line(
-    line: str,
+    line: bytes,
     csv_rows: list[CsvRow],
     agg_trades: list[Candle],
     current_tick_start: int | None,
 ) -> int | None:
-    """Process a single CSV line and return the new current_tick_start."""
-    decoded_line = line.strip()
-    if not decoded_line:
-        return current_tick_start
+    """
+    Process a single CSV line and return the new current_tick_start.
+    We use byte parsing for performance.
+    """
 
-    columns = decoded_line.split(",")
-    csv_row = CsvRow(
-        price=float(columns[1]),
-        quantity=float(columns[2]),
-        transact_time=int(columns[5]),
-    )
+    # Split the line by commas
+    columns = line.split(COMMA_BYTE)
+
+    # Extract only the needed values for performance
+    price = float(columns[1])
+    quantity = float(columns[2])
+    transact_time = int(columns[5])
 
     # Calculate which 10-second tick this row belongs to
-    row_tick_start = (csv_row.transact_time // TICK_MS) * TICK_MS
+    row_tick_start = (transact_time // TICK_MS) * TICK_MS
 
     # If we moved to a new tick, process the previous tick
     if current_tick_start is not None and row_tick_start != current_tick_start:
         finalize_tick(csv_rows, agg_trades, current_tick_start, row_tick_start)
         csv_rows.clear()
 
-    csv_rows.append(csv_row)
+    # Do not write keyword arguments that impact performance
+    csv_rows.append(CsvRow(price, quantity, transact_time))
     return row_tick_start
 
 
@@ -202,8 +205,8 @@ def process_aggtrade_csv(symbol: str, zip_file_path: Path) -> pd.DataFrame | Non
     with ZipFile(zip_file_path, "r") as zip_ref:
         csv_filename = zip_ref.namelist()[0]
         with zip_ref.open(csv_filename) as csv_file:
-            first_line = csv_file.readline().decode("ascii")
-            has_header = "price" in first_line.lower()
+            first_line = csv_file.readline()
+            has_header = b"price" in first_line
 
     csv_rows = list[CsvRow]()
     agg_trades: list[Candle] = []
@@ -218,9 +221,8 @@ def process_aggtrade_csv(symbol: str, zip_file_path: Path) -> pd.DataFrame | Non
 
             # Read and process CSV lines
             for line in csv_file:
-                decoded_line = line.decode("ascii")
                 current_tick_start = process_csv_line(
-                    decoded_line, csv_rows, agg_trades, current_tick_start
+                    line, csv_rows, agg_trades, current_tick_start
                 )
 
             # Process the last tick
