@@ -212,7 +212,7 @@ def process_aggtrade_csv(symbol: str, zip_file_path: Path) -> pd.DataFrame | Non
             first_line = csv_file.readline()
             has_header = b"price" in first_line
 
-    csv_rows = list[CsvRow]()
+    csv_rows: list[CsvRow] = []
     agg_trades: list[Candle] = []
     current_tick_start: int | None = None
 
