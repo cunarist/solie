@@ -1,7 +1,7 @@
 import math
 import pickle
 import webbrowser
-from asyncio import gather, sleep, wait
+from asyncio import gather, sleep
 from collections.abc import Coroutine
 from datetime import datetime, timedelta, timezone
 from logging import getLogger
@@ -1259,8 +1259,7 @@ class Transactor:
             )
             about_open_orders[symbol] = response
 
-        tasks = [spawn(job(s)) for s in target_symbols]
-        await wait(tasks)
+        await gather(*(job(s) for s in target_symbols))
 
         # ■■■■■ Update account state ■■■■■
 
@@ -1479,8 +1478,7 @@ class Transactor:
                         payload=payload,
                     )
 
-            tasks = [spawn(job_1(s)) for s in target_symbols]
-            await wait(tasks)
+            await gather(*(job_1(s) for s in target_symbols))
 
             async def job_2(symbol):
                 about_position = about_positions_keyed[symbol]
@@ -1507,8 +1505,7 @@ class Transactor:
                         payload=payload,
                     )
 
-            tasks = [spawn(job_2(s)) for s in target_symbols]
-            await wait(tasks)
+            await gather(*(job_2(s) for s in target_symbols))
 
             try:
                 timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
@@ -1623,8 +1620,7 @@ class Transactor:
                 cancel_orders.append(cancel_order)
 
         if cancel_orders:
-            tasks = [spawn(job_cancel_order(o)) for o in cancel_orders]
-            await wait(tasks)
+            await gather(*(job_cancel_order(o) for o in cancel_orders))
 
         # ■■■■■ Do now orders ■■■■■
 
@@ -1690,8 +1686,7 @@ class Transactor:
                 now_orders.append(new_order)
 
         if now_orders:
-            tasks = [spawn(job_new_order(o)) for o in now_orders]
-            await wait(tasks)
+            await gather(*(job_new_order(o) for o in now_orders))
 
         # ■■■■■ Do book orders ■■■■■
 
@@ -1740,8 +1735,7 @@ class Transactor:
                 book_orders.append(new_order)
 
         if book_orders:
-            tasks = [spawn(job_new_order(o)) for o in book_orders]
-            await wait(tasks)
+            await gather(*(job_new_order(o) for o in book_orders))
 
         # ■■■■■ Do later orders ■■■■■
 
@@ -1880,8 +1874,7 @@ class Transactor:
                 later_orders.append(new_order)
 
         if later_orders:
-            tasks = [spawn(job_new_order(o)) for o in later_orders]
-            await wait(tasks)
+            await gather(*(job_new_order(o) for o in later_orders))
 
     async def _clear_positions_and_open_orders(self):
         decisions: dict[str, dict[OrderType, Decision]] = {}
@@ -1932,8 +1925,7 @@ class Transactor:
                 pass
 
         if conflicting_order_tuples:
-            tasks = [spawn(job(c)) for c in conflicting_order_tuples]
-            await wait(tasks)
+            await gather(*(job(c) for c in conflicting_order_tuples))
 
     async def _pan_view_range(self):
         if not self._should_draw_frequently:

@@ -1,7 +1,7 @@
 import math
 import random
 import webbrowser
-from asyncio import Lock, sleep, wait
+from asyncio import Lock, gather, sleep
 from collections import deque
 from datetime import datetime, timedelta, timezone
 from logging import getLogger
@@ -601,9 +601,7 @@ class Collector:
                 done_steps += 1
 
             download_lock = Lock()
-            fill_tasks = [spawn(download_fill(p)) for p in download_presets]
-            unique_task.add_done_callback(lambda _: (t.cancel() for t in fill_tasks))
-            await wait(fill_tasks)
+            await gather(*(download_fill(p) for p in download_presets))
 
             # Combine all downloaded DataFrames at once
             if len(downloaded_dfs) > 0:
