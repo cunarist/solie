@@ -1,4 +1,4 @@
-from asyncio import Event, sleep, wait
+from asyncio import Event, gather, sleep
 from logging import getLogger
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -78,7 +78,7 @@ async def live(app: QApplication, config: SolieConfig):
     manager = Manager(window, scheduler)
     team.unite(collector, transactor, simulator, strategist, manager)
 
-    await wait(spawn(worker.load_work()) for worker in team.get_all())
+    await gather(*(worker.load_work() for worker in team.get_all()))
 
     spawn(collector.get_exchange_information())
     spawn(strategist.display_strategies())
@@ -102,4 +102,4 @@ async def live(app: QApplication, config: SolieConfig):
     scheduler.shutdown()
     await sleep(1)
 
-    await wait(spawn(worker.dump_work()) for worker in team.get_all())
+    await gather(*(worker.dump_work() for worker in team.get_all()))
