@@ -40,7 +40,7 @@ from .united import team
 
 
 class Simulator:
-    def __init__(self, window: Window, scheduler: AsyncIOScheduler):
+    def __init__(self, window: Window, scheduler: AsyncIOScheduler) -> None:
         # ■■■■■ for data management ■■■■■
 
         self._window = window
@@ -146,23 +146,23 @@ class Simulator:
         new_action = action_menu.addAction(text)
         outsource(new_action.triggered, job)
 
-    async def load_work(self):
+    async def load_work(self) -> None:
         await aiofiles.os.makedirs(self._workerpath, exist_ok=True)
 
         text = "Nothing drawn"
         self._window.label_19.setText(text)
 
-    async def dump_work(self):
+    async def dump_work(self) -> None:
         pass
 
-    async def _update_viewing_symbol(self):
+    async def _update_viewing_symbol(self) -> None:
         alias = self._window.comboBox_6.currentText()
         symbol = self._window.alias_to_symbol[alias]
         self._viewing_symbol = symbol
 
         await self.display_lines()
 
-    async def _update_calculation_settings(self):
+    async def _update_calculation_settings(self) -> None:
         text = self._window.comboBox_5.currentText()
         if text == "":
             return
@@ -177,7 +177,7 @@ class Simulator:
 
         await self.display_lines()
 
-    async def _update_presentation_settings(self):
+    async def _update_presentation_settings(self) -> None:
         input_value = self._window.spinBox_2.value()
         self._simulation_settings.leverage = input_value
         input_value = self._window.doubleSpinBox.value()
@@ -186,10 +186,10 @@ class Simulator:
         self._simulation_settings.maker_fee = input_value
         await self.present()
 
-    async def display_lines(self, periodic=False):
+    async def display_lines(self, periodic=False) -> None:
         self._line_display_task.spawn(self._display_lines_real(periodic))
 
-    async def _display_lines_real(self, periodic: bool):
+    async def _display_lines_real(self, periodic: bool) -> None:
         # ■■■■■ get basic information ■■■■■
 
         symbol = self._viewing_symbol
@@ -333,7 +333,7 @@ class Simulator:
 
         await self._set_minimum_view_range()
 
-    async def _erase(self):
+    async def _erase(self) -> None:
         self._raw_account_state = create_empty_account_state(
             self._window.data_settings.target_symbols
         )
@@ -344,7 +344,7 @@ class Simulator:
 
         await self.present()
 
-    async def display_available_years(self):
+    async def display_available_years(self) -> None:
         years = await team.collector.check_saved_years()
         years.sort(reverse=True)
 
@@ -357,13 +357,13 @@ class Simulator:
             self._window.comboBox_5.clear()
             self._window.comboBox_5.addItems([str(y) for y in years])
 
-    async def _simulate_only_visible(self):
+    async def _simulate_only_visible(self) -> None:
         await self._calculate(only_visible=True)
 
-    async def _display_range_information(self):
+    async def _display_range_information(self) -> None:
         self._range_display_task.spawn(self._display_range_information_real())
 
-    async def _display_range_information_real(self):
+    async def _display_range_information_real(self) -> None:
         symbol = self._viewing_symbol
         price_widget = self._window.simulation_graph.price_widget
 
@@ -447,7 +447,7 @@ class Simulator:
         text += f" {min_unrealized_change * 100:+.4f}%"
         self._window.label_13.setText(text)
 
-    async def _set_minimum_view_range(self):
+    async def _set_minimum_view_range(self) -> None:
         widget = self._window.simulation_graph.price_widget
         range_down = widget.getAxis("left").range[0]
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
@@ -455,15 +455,17 @@ class Simulator:
         range_down = widget.getAxis("left").range[0]
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
 
-    async def _calculate(self, only_visible=False):
+    async def _calculate(self, only_visible=False) -> None:
         unique_task = self._calculation_task
         unique_task.spawn(self._calculate_real(unique_task, only_visible))
 
-    async def _calculate_real(self, unique_task: UniqueTask, only_visible: bool):
+    async def _calculate_real(
+        self, unique_task: UniqueTask, only_visible: bool
+    ) -> None:
         prepare_step = 0
         calculate_step = 0
 
-        async def play_progress_bar():
+        async def play_progress_bar() -> None:
             while True:
                 if prepare_step == 6 and calculate_step == 1000:
                     is_progressbar_filled = True
@@ -724,7 +726,7 @@ class Simulator:
 
             total_seconds = (calculate_until - calculate_from).total_seconds()
 
-            async def update_calculation_step():
+            async def update_calculation_step() -> None:
                 nonlocal calculate_step
                 while True:
                     if gathered.done():
@@ -804,7 +806,7 @@ class Simulator:
                 content = pickle.dumps(virtual_state)
                 await file.write(content)
 
-    async def present(self):
+    async def present(self) -> None:
         maker_fee = self._simulation_settings.maker_fee
         taker_fee = self._simulation_settings.taker_fee
         leverage = self._simulation_settings.leverage
@@ -917,7 +919,7 @@ class Simulator:
             text += f"Strategy version {strategy_version}"
             self._window.label_19.setText(text)
 
-    async def display_year_range(self):
+    async def display_year_range(self) -> None:
         range_start = datetime(
             year=self._simulation_settings.year,
             month=1,
@@ -935,7 +937,7 @@ class Simulator:
         widget = self._window.simulation_graph.price_widget
         widget.setXRange(range_start, range_end)
 
-    async def _delete_calculation_data(self):
+    async def _delete_calculation_data(self) -> None:
         year = self._simulation_settings.year
         strategy_index = self._simulation_settings.strategy_index
 
@@ -997,7 +999,7 @@ class Simulator:
 
         await self._erase()
 
-    async def _draw(self):
+    async def _draw(self) -> None:
         year = self._simulation_settings.year
         strategy_index = self._simulation_settings.strategy_index
 
@@ -1040,7 +1042,7 @@ class Simulator:
             )
             return
 
-    async def _match_graph_range(self):
+    async def _match_graph_range(self) -> None:
         graph_from = self._window.transaction_graph.price_widget
         graph_to = self._window.simulation_graph.price_widget
         graph_range = graph_from.getAxis("bottom").range
@@ -1048,11 +1050,11 @@ class Simulator:
         range_end = graph_range[1]
         graph_to.setXRange(range_start, range_end, padding=0)  # type:ignore
 
-    async def _stop_calculation(self):
+    async def _stop_calculation(self) -> None:
         if self._calculation_task is not None:
             self._calculation_task.cancel()
 
-    async def _analyze_unrealized_peaks(self):
+    async def _analyze_unrealized_peaks(self) -> None:
         async with self._unrealized_changes.read_lock as cell:
             peak_indexes, _ = find_peaks(-cell.data, distance=3600 / 10)
             peak_sr = cell.data.iloc[peak_indexes]
@@ -1075,7 +1077,7 @@ class Simulator:
                 ["Okay"],
             )
 
-    async def _toggle_combined_draw(self):
+    async def _toggle_combined_draw(self) -> None:
         is_checked = self._window.checkBox_3.isChecked()
         if is_checked:
             self._should_draw_all_years = True

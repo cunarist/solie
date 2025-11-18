@@ -38,13 +38,13 @@ class AskPopup(QWidget):
     installed_window: QMainWindow
 
     @override
-    def showEvent(self, event: QShowEvent):
+    def showEvent(self, event: QShowEvent) -> None:
         # needed for filling the window when resized
         parent: QMainWindow = self.parent()  # type:ignore
         self.setGeometry(parent.rect())
 
     @override
-    def eventFilter(self, watched: QObject, event: QEvent):
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         if not isinstance(watched, QWidget):
             raise NotImplementedError
         # needed for filling the window when resized
@@ -53,7 +53,7 @@ class AskPopup(QWidget):
         return super().eventFilter(watched, event)
 
     @classmethod
-    def install_window(cls, window: QMainWindow):
+    def install_window(cls, window: QMainWindow) -> None:
         cls.installed_window = window
 
     def __init__(
@@ -61,7 +61,7 @@ class AskPopup(QWidget):
         main_text: str,
         detail_text: str,
         options: list[str],
-    ):
+    ) -> None:
         # ■■■■■ the basic ■■■■■
 
         super().__init__(self.installed_window)
@@ -113,7 +113,7 @@ class AskPopup(QWidget):
         close_button_font.setPointSize(11)
         close_button.setFont(close_button_font)
 
-        async def job_de():
+        async def job_de() -> None:
             self.done_event.set()
 
         outsource(close_button.clicked, job_de)
@@ -167,7 +167,7 @@ class AskPopup(QWidget):
         for turn, option in enumerate(options):
             option_button = QPushButton(option, content_box)
 
-            async def job(answer=turn + 1):
+            async def job(answer=turn + 1) -> None:
                 self.answer = answer
                 self.done_event.set()
 

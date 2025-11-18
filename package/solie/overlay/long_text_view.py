@@ -9,7 +9,7 @@ class LongTextView:
     close_button = True
     done_event = Event()
 
-    def __init__(self, long_text: str):
+    def __init__(self, long_text: str) -> None:
         # ■■■■■ the basic ■■■■■
 
         super().__init__()

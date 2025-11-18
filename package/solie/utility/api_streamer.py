@@ -12,7 +12,7 @@ logger = getLogger(__name__)
 
 
 class ApiStreamError(Exception):
-    def __init__(self, received: Any):
+    def __init__(self, received: Any) -> None:
         formatted = json.dumps(received, indent=2)
         super().__init__(formatted)
 
@@ -22,7 +22,7 @@ class ApiStreamer:
         self,
         url: str,
         handler: Callable[[Any], Coroutine[None, None, Any]],
-    ):
+    ) -> None:
         self._url = url
         self._handler = handler
         self._session = ClientSession()
@@ -34,7 +34,7 @@ class ApiStreamer:
     def url(self) -> str:
         return self._url
 
-    async def _keep_connecting(self):
+    async def _keep_connecting(self) -> None:
         while self._is_open:
             try:
                 await self._keep_listening()
@@ -43,7 +43,7 @@ class ApiStreamer:
                 pass
             await sleep(5.0)
 
-    async def _keep_listening(self):
+    async def _keep_listening(self) -> None:
         async with self._session.ws_connect(self._url, heartbeat=5.0) as websocket:
             logger.info(f"Websocket connected\n{self._url}")
             async for message in websocket:
@@ -54,7 +54,7 @@ class ApiStreamer:
                 else:
                     content = message.json()
 
-                    def done_callback(task: Task[Any], content=content):
+                    def done_callback(task: Task[Any], content=content) -> None:
                         error = task.exception()
                         if error:
                             raise ApiStreamError(content) from error
@@ -63,6 +63,6 @@ class ApiStreamer:
                     task.add_done_callback(done_callback)
             logger.info(f"Websocket disconnected\n{self._url}")
 
-    async def close(self):
+    async def close(self) -> None:
         self._is_open = False
         await self._session.close()

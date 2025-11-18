@@ -52,7 +52,7 @@ logger = getLogger(__name__)
 
 
 class Window(QMainWindow, Ui_MainWindow):
-    def __init__(self, close_event: Event, config: SolieConfig):
+    def __init__(self, close_event: Event, config: SolieConfig) -> None:
         super().__init__()
 
         self._close_event = close_event
@@ -68,10 +68,10 @@ class Window(QMainWindow, Ui_MainWindow):
         self.should_confirm_closing = False
 
     @override
-    def closeEvent(self, event: QCloseEvent):
+    def closeEvent(self, event: QCloseEvent) -> None:
         event.ignore()
 
-        async def job_close():
+        async def job_close() -> None:
             if self.should_confirm_closing:
                 answer = await ask(
                     "Really quit?",
@@ -96,13 +96,13 @@ class Window(QMainWindow, Ui_MainWindow):
         spawn(job_close())
 
     @override
-    def mouseReleaseEvent(self, event: QMouseEvent):
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         self.last_interaction = datetime.now(timezone.utc)
 
         if self.board.isEnabled():
             return
 
-        async def job_ask():
+        async def job_ask() -> None:
             answer = await ask(
                 "Board is locked. Do you want to unlock it?",
                 "You will be able to manipulate the board again.",
@@ -114,7 +114,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         spawn(job_ask())
 
-    async def boot(self):
+    async def boot(self) -> None:
         # ■■■■■ Do basic Qt things ■■■■■
 
         self.setupUi(self)
@@ -432,7 +432,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         # ■■■■■ Prepare logging ■■■■■
 
-        def log_callback(summarization: str, log_content: str):
+        def log_callback(summarization: str, log_content: str) -> None:
             self.listWidget.add_item(summarization, log_content)
 
         log_path = datapath / "+logs"
@@ -440,7 +440,7 @@ class Window(QMainWindow, Ui_MainWindow):
         log_handler = LogHandler(log_path, log_callback)
         getLogger().addHandler(log_handler)
 
-    def reveal(self):
+    def reveal(self) -> None:
         self.should_confirm_closing = True
 
         self._splash_screen.hide()

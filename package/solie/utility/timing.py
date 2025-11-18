@@ -12,12 +12,12 @@ class DurationRecord(NamedTuple):
 class DurationRecorder:
     task_durations: ClassVar[dict[str, deque[DurationRecord]]] = {}
 
-    def __init__(self, task_name: str):
+    def __init__(self, task_name: str) -> None:
         self._task_name = task_name
         self._start_time = perf_counter()
         self._did_record = False
 
-    def record(self):
+    def record(self) -> None:
         # Check that this is the first time.
         if self._did_record:
             raise RuntimeError("Cannot record more than once")

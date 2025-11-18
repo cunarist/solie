@@ -21,7 +21,7 @@ from solie.worker import (
 logger = getLogger(__name__)
 
 
-async def keep_processing_events(app: QApplication):
+async def keep_processing_events(app: QApplication) -> None:
     """
     `Qt` does not have proper async support, as it is focused on threads.
     To use async-based concurrency, we need to periodically process UI events.
@@ -33,7 +33,7 @@ async def keep_processing_events(app: QApplication):
         await sleep(interval)
 
 
-async def live(app: QApplication, config: SolieConfig):
+async def live(app: QApplication, config: SolieConfig) -> None:
     staticpath = PACKAGE_PATH / "static"
     QFontDatabase.addApplicationFont(str(staticpath / "source_code_pro.ttf"))
     QFontDatabase.addApplicationFont(str(staticpath / "notosans_regular.ttf"))

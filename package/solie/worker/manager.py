@@ -30,7 +30,7 @@ logger = getLogger(__name__)
 
 
 class Manager:
-    def __init__(self, window: Window, scheduler: AsyncIOScheduler):
+    def __init__(self, window: Window, scheduler: AsyncIOScheduler) -> None:
         # ■■■■■ for data management ■■■■■
 
         self._window = window
@@ -100,7 +100,7 @@ class Manager:
         job = self._change_settings
         outsource(self._window.comboBox_3.currentIndexChanged, job)
 
-    async def load_work(self):
+    async def load_work(self) -> None:
         await aiofiles.os.makedirs(self._workerpath, exist_ok=True)
 
         # settings
@@ -122,10 +122,10 @@ class Manager:
             script = "from solie.worker import team\n\nlogger.info(team)"
         self._window.plainTextEdit.setPlainText(script)
 
-    async def dump_work(self):
+    async def dump_work(self) -> None:
         pass
 
-    async def _change_settings(self):
+    async def _change_settings(self) -> None:
         current_index = self._window.comboBox_3.currentIndex()
         self._management_settings.lock_board = BoardLockOptions(current_index)
 
@@ -133,7 +133,7 @@ class Manager:
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             await file.write(self._management_settings.model_dump_json(indent=2))
 
-    async def _open_datapath(self):
+    async def _open_datapath(self) -> None:
         if os.name == "nt":
             await spawn_blocking(os.startfile, self._window.datapath)
         else:
@@ -143,10 +143,10 @@ class Manager:
                 ["Okay"],
             )
 
-    async def _deselect_log_output(self):
+    async def _deselect_log_output(self) -> None:
         self._window.listWidget.clearSelection()
 
-    async def display_internal_status(self):
+    async def display_internal_status(self) -> None:
         while True:
             texts: list[str] = []
             tasks = all_tasks()
@@ -216,7 +216,7 @@ class Manager:
 
             await sleep(0.1)
 
-    async def _run_script(self):
+    async def _run_script(self) -> None:
         script_text = self._window.plainTextEdit.toPlainText()
         filepath = self._workerpath / "python_script.txt"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
@@ -224,11 +224,11 @@ class Manager:
         namespace = {"logger": logger}
         exec(script_text, namespace)
 
-    async def _check_online_status(self):
+    async def _check_online_status(self) -> None:
         if not internet_connected():
             return
 
-        async def job():
+        async def job() -> None:
             request_time = datetime.now(timezone.utc)
             payload: dict[str, Any] = {}
             response = await self._api_requester.binance(
@@ -248,7 +248,7 @@ class Manager:
 
         spawn(job())
 
-    async def _display_system_status(self):
+    async def _display_system_status(self) -> None:
         time = datetime.now(timezone.utc)
         time_text = time.strftime("%Y-%m-%d %H:%M:%S")
         is_internet_connected = internet_connected()
@@ -276,7 +276,7 @@ class Manager:
         text += f"Board {('unlocked' if board_enabled else 'locked')}"
         self._window.gauge.setText(text)
 
-    async def _correct_time(self):
+    async def _correct_time(self) -> None:
         server_time_differences = self._server_time_differences
         if len(server_time_differences) < 30:
             return
@@ -288,7 +288,7 @@ class Manager:
         time_traveller.start()
         self._time_traveller = time_traveller
 
-    async def check_binance_limits(self):
+    async def check_binance_limits(self) -> None:
         if not internet_connected():
             return
 
@@ -306,7 +306,7 @@ class Manager:
             limit_name = f"{limit_type}({interval_value}{interval_unit})"
             self._binance_limits[limit_name] = limit_value
 
-    async def _reset_datapath(self):
+    async def _reset_datapath(self) -> None:
         answer = await ask(
             "Are you sure you want to change the data folder?",
             "Solie will shut down shortly. You will get to choose the new data folder"
@@ -322,10 +322,10 @@ class Manager:
         self._window.should_confirm_closing = False
         self._window.close()
 
-    async def _open_documentation(self):
+    async def _open_documentation(self) -> None:
         await spawn_blocking(webbrowser.open, "https://solie-docs.cunarist.com")
 
-    async def _lock_board(self):
+    async def _lock_board(self) -> None:
         lock_board = self._management_settings.lock_board
 
         if lock_board == BoardLockOptions.NEVER:

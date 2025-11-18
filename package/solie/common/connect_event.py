@@ -7,9 +7,10 @@ from .concurrency import spawn
 
 
 def outsource(
-    signal: SignalInstance, target_function: Callable[[], Coroutine[None, None, Any]]
-):
-    def job(*args, **kwargs):
+    signal: SignalInstance,
+    target_function: Callable[[], Coroutine[None, None, Any]],
+) -> None:
+    def job(*args, **kwargs) -> None:
         spawn(target_function())
 
     signal.connect(job)

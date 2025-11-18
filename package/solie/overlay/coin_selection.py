@@ -25,7 +25,7 @@ class CoinSelection:
     close_button = False
     done_event = Event()
 
-    def __init__(self, asset_token: str):
+    def __init__(self, asset_token: str) -> None:
         super().__init__()
         self.widget = QWidget()
         self.result: list[str]
@@ -37,7 +37,7 @@ class CoinSelection:
     async def confirm_closing(self) -> bool:
         return True
 
-    async def fill(self):
+    async def fill(self) -> None:
         # ■■■■■ for remembering ■■■■■
 
         api_requester = ApiRequester()
@@ -190,7 +190,7 @@ class CoinSelection:
         # ■■■■■ a card ■■■■■
 
         # confirm function
-        async def job_cf():
+        async def job_cf() -> None:
             selected_symbols: list[str] = []
             for symbol, checkbox in symbol_checkboxes.items():
                 is_checked = checkbox.isChecked()
@@ -243,7 +243,7 @@ class CoinSelection:
 
         # ■■■■■ draw coin icons from another task ■■■■■
 
-        async def draw_icons():
+        async def draw_icons() -> None:
             for symbol, icon_label in symbol_icon_labels.items():
                 coin_symbol = symbol.removesuffix(asset_token)
                 coin_icon_url = coin_icon_urls.get(coin_symbol, "")

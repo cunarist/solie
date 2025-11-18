@@ -11,7 +11,7 @@ from solie.common import spawn
 
 
 class ApiRequestError(Exception):
-    def __init__(self, info_text: str, payload: dict | None):
+    def __init__(self, info_text: str, payload: dict | None) -> None:
         error_message = info_text
         if payload:
             error_message += "\n"
@@ -22,15 +22,15 @@ class ApiRequestError(Exception):
 class ApiRequester:
     used_rates: ClassVar[dict[str, tuple[str, datetime]]] = {}
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._session = ClientSession()
         self._binance_api_key = ""
         self._binance_api_secret = ""
 
-    def __del__(self):
+    def __del__(self) -> None:
         spawn(self._session.close())
 
-    def update_keys(self, binance_api_key: str, binance_api_secret: str):
+    def update_keys(self, binance_api_key: str, binance_api_secret: str) -> None:
         self._binance_api_key = binance_api_key
         self._binance_api_secret = binance_api_secret
 
@@ -97,7 +97,7 @@ class ApiRequester:
 
         return response
 
-    async def bytes(self, url: str):
+    async def bytes(self, url: str) -> bytes:
         headers = {
             "User-agent": "Mozilla/5.0",
         }

@@ -20,12 +20,12 @@ class Worker(Protocol):
     Each worker has a single responsibility.
     """
 
-    def __init__(self, window: Window, scheduler: AsyncIOScheduler): ...
+    def __init__(self, window: Window, scheduler: AsyncIOScheduler) -> None: ...
 
-    async def load_work(self):
+    async def load_work(self) -> None:
         """Reads work data from disk."""
 
-    async def dump_work(self):
+    async def dump_work(self) -> None:
         """Writes work data to disk."""
 
 
@@ -37,7 +37,7 @@ class Team:
         simulator: Simulator,
         strategist: Strategiest,
         manager: Manager,
-    ):
+    ) -> None:
         self.collector = collector
         self.transactor = transactor
         self.simulator = simulator

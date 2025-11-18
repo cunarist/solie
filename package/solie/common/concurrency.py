@@ -44,22 +44,22 @@ class UniqueTask:
     ensuring only the latest one is running.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._task: Task[Any] | None = None
 
-    def spawn(self, coro: Coroutine[None, None, Any]):
+    def spawn(self, coro: Coroutine[None, None, Any]) -> None:
         """
         Spawns a new task, canceling the previous one if it exists.
         """
         self.cancel()
         self._task = create_task(coro)
 
-    def cancel(self):
+    def cancel(self) -> None:
         """Cancels the previous task if it exists."""
         if self._task is not None and not self._task.done():
             self._task.cancel()
 
-    def add_done_callback(self, callback: Callable[[Task[Any]], Any]):
+    def add_done_callback(self, callback: Callable[[Task[Any]], Any]) -> None:
         """
         Adds a callback to be called when the current task is done.
         """

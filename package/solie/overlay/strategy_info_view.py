@@ -20,7 +20,7 @@ class StrategyInfoView:
     done_event = Event()
     result = None
 
-    def __init__(self, strategy: Strategy):
+    def __init__(self, strategy: Strategy) -> None:
         # ■■■■■ the basic ■■■■■
 
         super().__init__()

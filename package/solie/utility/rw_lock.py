@@ -16,7 +16,7 @@ class RWLockCore:
     _RL = 1
     _WL = 2
 
-    def __init__(self, fast: bool, loop: AbstractEventLoop):
+    def __init__(self, fast: bool, loop: AbstractEventLoop) -> None:
         self._do_yield = not fast
         self._loop = loop
         self._read_waiters = deque[Future[None]]()
@@ -42,7 +42,7 @@ class RWLockCore:
     def write_locked(self) -> bool:
         return self._w_state > 0
 
-    async def _yield_after_acquire(self, lock_type: int):
+    async def _yield_after_acquire(self, lock_type: int) -> None:
         if self._do_yield:
             try:
                 await sleep(0.0)
@@ -119,13 +119,13 @@ class RWLockCore:
         finally:
             self._write_waiters.remove(fut)
 
-    def release_read(self):
+    def release_read(self) -> None:
         self._release(self._RL)
 
-    def release_write(self):
+    def release_write(self) -> None:
         self._release(self._WL)
 
-    def _release(self, lock_type: int):
+    def _release(self, lock_type: int) -> None:
         # assert lock_type in (self._RL, self._WL)
         me = current_task(loop=self._loop)
         assert me is not None  # nosec
@@ -140,7 +140,7 @@ class RWLockCore:
             self._w_state -= 1
         self._wake_up()
 
-    def _wake_up(self):
+    def _wake_up(self) -> None:
         # If no one is reading or writing, wake up write waiters
         # first, only one write waiter should be waken up, if no
         # write waiters and have read waiters, wake up all read
@@ -162,13 +162,13 @@ class RWLockCore:
 
 
 class Cell[T]:
-    def __init__(self, data: T):
+    def __init__(self, data: T) -> None:
         self.data: T = data
 
 
 # Lock objects to access the _RWLockCore in reader or writer mode
 class ReadLock[T]:
-    def __init__(self, lock: RWLockCore, wrapper: Cell[T]):
+    def __init__(self, lock: RWLockCore, wrapper: Cell[T]) -> None:
         self._wrapper = wrapper
         self._lock = lock
 
@@ -180,7 +180,7 @@ class ReadLock[T]:
         await self._lock.acquire_read()
         return self._wrapper
 
-    async def __aexit__(self, exc_type, exc, tb):
+    async def __aexit__(self, exc_type, exc, tb) -> None:
         self._lock.release_read()
 
     def __repr__(self) -> str:
@@ -189,7 +189,7 @@ class ReadLock[T]:
 
 
 class WriteLock[T]:
-    def __init__(self, lock: RWLockCore, wrapper: Cell[T]):
+    def __init__(self, lock: RWLockCore, wrapper: Cell[T]) -> None:
         self._wrapper = wrapper
         self._lock = lock
 
@@ -201,7 +201,7 @@ class WriteLock[T]:
         await self._lock.acquire_write()
         return self._wrapper
 
-    async def __aexit__(self, exc_type, exc, tb):
+    async def __aexit__(self, exc_type, exc, tb) -> None:
         self._lock.release_write()
 
     def __repr__(self) -> str:
@@ -216,7 +216,7 @@ class RWLock[T]:
     lock is exclusive.
     """
 
-    def __init__(self, cell_data: T, fast: bool = True):
+    def __init__(self, cell_data: T, fast: bool = True) -> None:
         loop = get_running_loop()
         self._wrapper = Cell(cell_data)
         self._loop = loop
@@ -229,5 +229,5 @@ class RWLock[T]:
         wl = self.write_lock.__repr__()
         return "<RWLock: {} {}>".format(rl, wl)
 
-    def replace(self, new: T):
+    def replace(self, new: T) -> None:
         self._wrapped = new

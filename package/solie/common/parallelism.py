@@ -14,12 +14,12 @@ class PoolHolder:
     sync_manager: ClassVar[SyncManager]
 
 
-def prepare_process_pool():
+def prepare_process_pool() -> None:
     PoolHolder.process_pool = ProcessPoolExecutor(PROCESS_COUNT)
     PoolHolder.sync_manager = Manager()
 
 
-def shutdown_process_pool():
+def shutdown_process_pool() -> None:
     PoolHolder.process_pool.shutdown()
     PoolHolder.sync_manager.shutdown()
 
@@ -40,7 +40,7 @@ async def spawn_blocking[**P, T](
     Example:
     ```python
     # Define a blocking function
-    def my_blocking_function(a, b):
+    def my_blocking_function(a: int, b: int) -> int:
         for _ in range(1000000):
             pass
         return a + b

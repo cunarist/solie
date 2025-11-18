@@ -44,7 +44,7 @@ class DownloadFillOptionChooser:
     close_button = True
     done_event = Event()
 
-    def __init__(self):
+    def __init__(self) -> None:
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
@@ -130,7 +130,7 @@ class DownloadFillOptionChooser:
         )
         button_layout.addWidget(option_button)
 
-        async def custom_job():
+        async def custom_job() -> None:
             year_from = self.year_from_input.value()
             year_to = self.year_to_input.value()
             if year_from <= year_to:
@@ -148,7 +148,7 @@ class DownloadFillOptionChooser:
         # option buttons
         for turn, text in enumerate(FILL_OPTIONS_TEXTS):
 
-            async def job(turn=turn):
+            async def job(turn=turn) -> None:
                 self.result = DownloadFillOption(turn)
                 self.done_event.set()
 

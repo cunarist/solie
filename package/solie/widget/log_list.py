@@ -20,7 +20,7 @@ class LogOverlay:
     close_button = True
     done_event = Event()
 
-    def __init__(self, log_content: str):
+    def __init__(self, log_content: str) -> None:
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
@@ -44,13 +44,13 @@ class LogOverlay:
 
 
 class LogList(QListWidget):
-    def __init__(self, parent: QWidget):
+    def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
         self.fixed_width_font = QFont("Source Code Pro", 9)
         self.setFont(self.fixed_width_font)
         outsource(self.itemClicked, self.show_fulltext)
 
-    def add_item(self, summarization: str, log_content: str):
+    def add_item(self, summarization: str, log_content: str) -> None:
         maximum_item_limit = 1024
 
         new_item = QListWidgetItem(self)
@@ -66,7 +66,7 @@ class LogList(QListWidget):
             for _ in range(remove_count):
                 self.takeItem(0)
 
-    async def show_fulltext(self):
+    async def show_fulltext(self) -> None:
         selected_index = self.currentRow()
 
         selected_item = self.item(selected_index)

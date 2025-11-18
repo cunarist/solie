@@ -26,7 +26,7 @@ from solie.window import Window
 
 
 class Strategiest:
-    def __init__(self, window: Window, scheduler: AsyncIOScheduler):
+    def __init__(self, window: Window, scheduler: AsyncIOScheduler) -> None:
         # ■■■■■ for data management ■■■■■
 
         self._window = window
@@ -62,7 +62,7 @@ class Strategiest:
         job = self._add_blank_strategy
         outsource(window.pushButton_5.clicked, job)
 
-    async def load_work(self):
+    async def load_work(self) -> None:
         await aiofiles.os.makedirs(self._workerpath, exist_ok=True)
 
         filepath = self._workerpath / "soft_strategies.json"
@@ -90,20 +90,20 @@ class Strategiest:
 
         self._combine_strategies()
 
-    async def dump_work(self):
+    async def dump_work(self) -> None:
         await self._save_strategies()
 
-    def _combine_strategies(self):
+    def _combine_strategies(self) -> None:
         soft_strategies = list[Strategy](self._saved_strategies.all)
         fixed_strategies = self._window.config.get_strategies()
         self.strategies = fixed_strategies + soft_strategies
 
-    async def _save_strategies(self):
+    async def _save_strategies(self) -> None:
         filepath = self._workerpath / "soft_strategies.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             await file.write(self._saved_strategies.model_dump_json(indent=2))
 
-    async def display_strategies(self):
+    async def display_strategies(self) -> None:
         self._window.comboBox_2.clear()
         self._window.comboBox.clear()
         for strategy_card in self._strategy_cards:
@@ -157,7 +157,7 @@ class Strategiest:
                 card_layout.addWidget(fixed_button)
                 continue
 
-            async def job_bs(strategy=strategy):
+            async def job_bs(strategy=strategy) -> None:
                 await self._remember_strategy_selections()
                 await overlay(StrategyDevelopInput(strategy))
                 spawn(self.display_strategies())
@@ -168,7 +168,7 @@ class Strategiest:
             card_layout.addWidget(edit_button)
             outsource(edit_button.clicked, job_bs)
 
-            async def job_eb(strategy=strategy):
+            async def job_eb(strategy=strategy) -> None:
                 await self._remember_strategy_selections()
                 await overlay(StrategyBasicInput(strategy))
                 spawn(self.display_strategies())
@@ -185,7 +185,7 @@ class Strategiest:
             action_button.setMenu(action_menu)
             card_layout.addWidget(action_button)
 
-            async def job_rs(strategy=strategy):
+            async def job_rs(strategy=strategy) -> None:
                 answer = await ask(
                     "Remove this strategy?",
                     "Once you remove this, it cannot be recovered.",
@@ -203,7 +203,7 @@ class Strategiest:
             new_action = action_menu.addAction("Remove")
             outsource(new_action.triggered, job_rs)
 
-            async def job_dp(strategy=strategy):
+            async def job_dp(strategy=strategy) -> None:
                 await self._remember_strategy_selections()
                 duplicated = strategy.model_copy(deep=True)
                 duplicated.code_name = create_strategy_code_name()
@@ -216,7 +216,7 @@ class Strategiest:
             new_action = action_menu.addAction("Duplicate")
             outsource(new_action.triggered, job_dp)
 
-            async def job_ss(strategy=strategy):
+            async def job_ss(strategy=strategy) -> None:
                 await self._remember_strategy_selections()
                 original_index = self._saved_strategies.all.index(strategy)
                 after_index = original_index + 1
@@ -231,7 +231,7 @@ class Strategiest:
             card_layout.addWidget(edit_button)
             outsource(edit_button.clicked, job_ss)
 
-            async def job_us(strategy=strategy):
+            async def job_us(strategy=strategy) -> None:
                 await self._remember_strategy_selections()
                 original_index = self._saved_strategies.all.index(strategy)
                 after_index = original_index - 1
@@ -246,7 +246,7 @@ class Strategiest:
             card_layout.addWidget(edit_button)
             outsource(edit_button.clicked, job_us)
 
-    async def _add_blank_strategy(self):
+    async def _add_blank_strategy(self) -> None:
         await self._remember_strategy_selections()
         new_strategy = SavedStrategy(code_name=create_strategy_code_name())
         self._saved_strategies.all.append(new_strategy)
@@ -254,13 +254,13 @@ class Strategiest:
         await self.display_strategies()
         await self._restore_strategy_selections()
 
-    async def _remember_strategy_selections(self):
+    async def _remember_strategy_selections(self) -> None:
         before_index = self._window.comboBox_2.currentIndex()
         self._before_selections["transactor"] = self.strategies[before_index]
         before_index = self._window.comboBox.currentIndex()
         self._before_selections["simulator"] = self.strategies[before_index]
 
-    async def _restore_strategy_selections(self):
+    async def _restore_strategy_selections(self) -> None:
         if self._before_selections["transactor"] in self.strategies:
             new_index = self.strategies.index(self._before_selections["transactor"])
             self._window.comboBox_2.setCurrentIndex(new_index)

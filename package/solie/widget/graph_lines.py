@@ -30,7 +30,7 @@ class LinePair(NamedTuple):
 
 
 class GraphLines:
-    def __init__(self):
+    def __init__(self) -> None:
         # Create widgets.
         self.price_widget = PlotWidget()
         self.volume_widget = PlotWidget()
@@ -155,7 +155,7 @@ class GraphLines:
         self._configure_widgets()
         self._configure_plots()
 
-    def _configure_widgets(self):
+    def _configure_widgets(self) -> None:
         self.price_widget.setBackground("#252525")
         self.volume_widget.setBackground("#252525")
         self.abstract_widget.setBackground("#252525")
@@ -175,7 +175,7 @@ class GraphLines:
         self.abstract_widget.setXLink(self.volume_widget)
         self.asset_widget.setXLink(self.abstract_widget)
 
-    def _configure_plots(self):
+    def _configure_plots(self) -> None:
         self.price_plot.vb.setLimits(xMin=0, yMin=0)  # type:ignore
         self.volume_plot.vb.setLimits(xMin=0, yMin=0)  # type:ignore
         self.abstract_plot.vb.setLimits(xMin=0)  # type:ignore
@@ -269,7 +269,7 @@ class GraphLines:
         book_tickers: list[BookTicker],
         entry_price: float | None,
         observed_until: datetime,
-    ):
+    ) -> None:
         # mark price
         data_y = [d.mark_price for d in mark_prices]
         data_x = [d.timestamp / 10**3 for d in mark_prices]
@@ -330,7 +330,7 @@ class GraphLines:
         candle_data: pd.DataFrame,
         asset_record: pd.DataFrame,
         unrealized_changes: pd.Series,
-    ):
+    ) -> None:
         # price movement
         index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
         open_ar = candle_data[f"{symbol}/OPEN"].to_numpy()
@@ -492,7 +492,7 @@ class GraphLines:
         self.buy.setData(data_x, data_y)
         await sleep(0.0)
 
-    async def update_custom_lines(self, symbol: str, indicators: pd.DataFrame):
+    async def update_custom_lines(self, symbol: str, indicators: pd.DataFrame) -> None:
         # common data
         columns = [str(n) for n in indicators.columns]
         data_x = indicators.index.to_numpy(dtype=np.int64) / 10**9

@@ -52,7 +52,7 @@ logger = getLogger(__name__)
 
 
 class Collector:
-    def __init__(self, window: Window, scheduler: AsyncIOScheduler):
+    def __init__(self, window: Window, scheduler: AsyncIOScheduler) -> None:
         # ■■■■■ for data management ■■■■■
 
         self._window = window
@@ -165,7 +165,7 @@ class Collector:
 
     # ■■■■■ Public interface for lifecycle management ■■■■■
 
-    async def load_work(self):
+    async def load_work(self) -> None:
         await aiofiles.os.makedirs(self._workerpath, exist_ok=True)
 
         # candle data
@@ -178,10 +178,10 @@ class Collector:
                     df = await spawn_blocking(sort_data_frame, df)
                 cell.data = df
 
-    async def dump_work(self):
+    async def dump_work(self) -> None:
         await self._save_candle_data()
 
-    async def _organize_data(self):
+    async def _organize_data(self) -> None:
         duration_recorder = DurationRecorder("ORGANIZE_COLLECTOR_DATA")
 
         async with self.candle_data.write_lock as cell:
@@ -194,7 +194,7 @@ class Collector:
 
         duration_recorder.record()
 
-    async def _save_candle_data(self):
+    async def _save_candle_data(self) -> None:
         # ■■■■■ default values ■■■■■
 
         current_year = datetime.now(timezone.utc).year
@@ -219,7 +219,7 @@ class Collector:
         if await aiofiles.os.path.isfile(filepath_new):
             await aiofiles.os.rename(filepath_new, filepath)
 
-    async def get_exchange_information(self):
+    async def get_exchange_information(self) -> None:
         if not internet_connected():
             return
 
@@ -244,7 +244,7 @@ class Collector:
             price_precision = int(math.log10(1 / ticksize))
             self._price_precisions[symbol] = price_precision
 
-    async def _fill_candle_data_holes(self):
+    async def _fill_candle_data_holes(self) -> None:
         # ■■■■■ check internet connection ■■■■■
 
         if not internet_connected():
@@ -360,7 +360,7 @@ class Collector:
             candle_data = pd.concat([original_candle_data, recent_candle_data])
             cell.data = candle_data
 
-    async def _display_status_information(self):
+    async def _display_status_information(self) -> None:
         async with self.candle_data.read_lock as cell:
             if len(cell.data) == 0:
                 # when the app is executed for the first time
@@ -437,10 +437,10 @@ class Collector:
 
         return cumulation_rate
 
-    async def _open_binance_data_page(self):
+    async def _open_binance_data_page(self) -> None:
         await spawn_blocking(webbrowser.open, "https://www.binance.com/en/landing/data")
 
-    async def _download_fill_candle_data(self):
+    async def _download_fill_candle_data(self) -> None:
         fill_option = await overlay(DownloadFillOptionChooser())
         if fill_option is None:
             return
@@ -453,7 +453,7 @@ class Collector:
         self,
         unique_task: UniqueTask,
         fill_option: DownloadYearRange | DownloadFillOption,
-    ):
+    ) -> None:
         # ■■■■■ prepare target tuples for downloading ■■■■■
 
         download_presets: list[DownloadPreset] = []
@@ -531,7 +531,7 @@ class Collector:
 
         # ■■■■■ play the progress bar ■■■■■
 
-        async def play_progress_bar():
+        async def play_progress_bar() -> None:
             while True:
                 if done_steps == total_steps:
                     progressbar_value = self._window.progressBar_3.value()
@@ -636,7 +636,7 @@ class Collector:
             # Clean up the download directory.
             await aioshutil.rmtree(download_dir, ignore_errors=True)
 
-    async def _add_book_tickers(self, received: dict[str, Any]):
+    async def _add_book_tickers(self, received: dict[str, Any]) -> None:
         duration_recorder = DurationRecorder("ADD_BOOK_TICKERS")
 
         symbol = received["s"]
@@ -654,7 +654,7 @@ class Collector:
 
         duration_recorder.record()
 
-    async def _add_mark_price(self, received: list[dict[str, Any]]):
+    async def _add_mark_price(self, received: list[dict[str, Any]]) -> None:
         duration_recorder = DurationRecorder("ADD_MARK_PRICE")
 
         target_symbols = self._window.data_settings.target_symbols
@@ -672,7 +672,7 @@ class Collector:
 
         duration_recorder.record()
 
-    async def _add_aggregate_trades(self, received: dict[str, Any]):
+    async def _add_aggregate_trades(self, received: dict[str, Any]) -> None:
         duration_recorder = DurationRecorder("ADD_AGGREGATE_TRADES")
 
         symbol = received["s"]
@@ -690,10 +690,10 @@ class Collector:
 
         duration_recorder.record()
 
-    async def _clear_aggregate_trades(self):
+    async def _clear_aggregate_trades(self) -> None:
         self.realtime_data.clear()
 
-    async def _add_candle_data(self):
+    async def _add_candle_data(self) -> None:
         duration_recorder = DurationRecorder("ADD_CANDLE_DATA")
 
         # Prepare basic infos.
@@ -764,10 +764,10 @@ class Collector:
 
         duration_recorder.record()
 
-    async def _stop_filling_candle_data(self):
+    async def _stop_filling_candle_data(self) -> None:
         self._download_fill_task.cancel()
 
-    async def _guide_donation(self):
+    async def _guide_donation(self) -> None:
         await overlay(DonationGuide())
 
     async def check_saved_years(self) -> list[int]:

@@ -10,7 +10,7 @@ from solie.utility import SyntaxHighlighter
 
 
 class ScriptEditor(QPlainTextEdit):
-    def __init__(self, parent: QWidget):
+    def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
         self.fixed_width_font = QFont("Source Code Pro", 9)
         self.setFont(self.fixed_width_font)
@@ -18,7 +18,7 @@ class ScriptEditor(QPlainTextEdit):
         SyntaxHighlighter(parent).setDocument(self.document())
 
     @override
-    def keyPressEvent(self, event: QKeyEvent):
+    def keyPressEvent(self, event: QKeyEvent) -> None:
         should_indent = event.key() == Qt.Key.Key_Tab
         should_dedent = event.key() == Qt.Key.Key_Backtab
         if should_indent or should_dedent:
@@ -59,7 +59,7 @@ class ScriptEditor(QPlainTextEdit):
         return super().keyPressEvent(event)
 
     @override
-    def focusOutEvent(self, event: QFocusEvent):
+    def focusOutEvent(self, event: QFocusEvent) -> None:
         # apply formatter style
         scroll_position = self.verticalScrollBar().value()
         text = self.toPlainText()

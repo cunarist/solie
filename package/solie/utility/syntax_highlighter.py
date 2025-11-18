@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QWidget
 
 class SyntaxHighlighter(QSyntaxHighlighter):
     @override
-    def highlightBlock(self, text: str):
+    def highlightBlock(self, text: str) -> None:
         current_position = 0
 
         for token, text_block in lex(text, self._lexer):
@@ -22,7 +22,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
                 self.setFormat(current_position, length, text_format)
             current_position += length
 
-    def __init__(self, parent: QWidget):
+    def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
 
         self._lexer = get_lexer_by_name("python")

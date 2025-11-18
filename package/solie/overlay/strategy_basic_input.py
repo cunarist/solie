@@ -30,7 +30,7 @@ class StrategyBasicInput:
     close_button = True
     done_event = Event()
 
-    def __init__(self, strategy: Strategy):
+    def __init__(self, strategy: Strategy) -> None:
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
@@ -175,7 +175,7 @@ class StrategyBasicInput:
         cards_layout.addWidget(card)
 
         # function
-        async def job():
+        async def job() -> None:
             strategy.readable_name = readable_name_input.text()
             version = version_input.text()
             if fullmatch(r"[0-9]+\.[0-9]+", version):

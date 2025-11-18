@@ -10,7 +10,12 @@ from pyqtgraph import AxisItem
 
 class TimeAxisItem(AxisItem):
     @override
-    def tickValues(self, minVal: float, maxVal: float, size: float):  # noqa
+    def tickValues(
+        self,
+        minVal: float,  # noqa
+        maxVal: float,  # noqa
+        size: float,
+    ) -> list[tuple[float, list[float]]]:
         min_value = minVal
         max_value = maxVal
         if min_value <= 0:  # use standard implementation from parent
@@ -87,7 +92,9 @@ class TimeAxisItem(AxisItem):
         return [(distance.total_seconds(), majticks)]
 
     @override
-    def tickStrings(self, values: list[float], scale: float, spacing: float):
+    def tickStrings(
+        self, values: list[float], scale: float, spacing: float
+    ) -> list[str]:
         """Reimplemented from PlotItem to adjust to the range"""
 
         count = len(values)

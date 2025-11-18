@@ -25,7 +25,7 @@ class TokenSelection:
     close_button = False
     done_event = Event()
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.widget = QWidget()
         self.result: str
@@ -36,7 +36,7 @@ class TokenSelection:
     async def confirm_closing(self) -> bool:
         return True
 
-    async def fill(self, done_event):
+    async def fill(self, done_event) -> None:
         # ■■■■■ for remembering ■■■■■
 
         token_radioboxes: dict[str, QRadioButton] = {}
@@ -177,7 +177,7 @@ class TokenSelection:
         # ■■■■■ a card ■■■■■
 
         # confirm function
-        async def job_cf():
+        async def job_cf() -> None:
             selected_tokens: list[str] = []
             for symbol, radiobox in token_radioboxes.items():
                 is_selected = radiobox.isChecked()
@@ -229,7 +229,7 @@ class TokenSelection:
 
         # ■■■■■ draw coin icons from another task ■■■■■
 
-        async def job_dc():
+        async def job_dc() -> None:
             for token, icon_label in token_icon_labels.items():
                 coin_icon_url = coin_icon_urls.get(token, "")
                 if coin_icon_url == "":

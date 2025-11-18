@@ -15,7 +15,7 @@ from .brand_label import BrandLabel
 
 
 class SplashScreen(QFrame):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         self.full_layout = QHBoxLayout()
@@ -23,7 +23,7 @@ class SplashScreen(QFrame):
 
         spawn(self.fill())
 
-    async def fill(self):
+    async def fill(self) -> None:
         full_layout = self.full_layout
 
         spacer = QSpacerItem(

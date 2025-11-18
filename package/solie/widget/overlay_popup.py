@@ -51,13 +51,13 @@ class OverlayBox[T](QWidget):
     installed_window: QMainWindow
 
     @override
-    def showEvent(self, event: QShowEvent):
+    def showEvent(self, event: QShowEvent) -> None:
         # needed for filling the window when resized
         parent: QMainWindow = self.parent()  # type:ignore
         self.setGeometry(parent.rect())
 
     @override
-    def eventFilter(self, watched: QObject, event: QEvent):
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         if not isinstance(watched, QWidget):
             raise NotImplementedError
         # needed for filling the window when resized
@@ -66,10 +66,10 @@ class OverlayBox[T](QWidget):
         return super().eventFilter(watched, event)
 
     @classmethod
-    def install_window(cls, window: QMainWindow):
+    def install_window(cls, window: QMainWindow) -> None:
         cls.installed_window = window
 
-    def __init__(self, content: OverlayContent[T]):
+    def __init__(self, content: OverlayContent[T]) -> None:
         # ■■■■■ the basic ■■■■■
 
         super().__init__(self.installed_window)
@@ -128,7 +128,7 @@ class OverlayBox[T](QWidget):
             close_button_font.setPointSize(11)
             close_button_widget.setFont(close_button_font)
 
-            async def job():
+            async def job() -> None:
                 should_close = await content.confirm_closing()
                 if should_close:
                     content.done_event.set()

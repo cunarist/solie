@@ -53,7 +53,7 @@ logger = getLogger(__name__)
 
 
 class Transactor:
-    def __init__(self, window: Window, scheduler: AsyncIOScheduler):
+    def __init__(self, window: Window, scheduler: AsyncIOScheduler) -> None:
         # ■■■■■ for data management ■■■■■
 
         self._window = window
@@ -216,7 +216,7 @@ class Transactor:
         new_action = action_menu.addAction(text)
         outsource(new_action.triggered, job)
 
-    async def load_work(self):
+    async def load_work(self) -> None:
         await aiofiles.os.makedirs(self._workerpath, exist_ok=True)
 
         # scribbles
@@ -264,11 +264,11 @@ class Transactor:
             df: pd.DataFrame = await spawn_blocking(pd.read_pickle, filepath)
             self._auto_order_record = RWLock(df)
 
-    async def dump_work(self):
+    async def dump_work(self) -> None:
         await self._save_large_data()
         await self._save_scribbles()
 
-    async def _organize_data(self):
+    async def _organize_data(self) -> None:
         async with self._unrealized_changes.write_lock as cell:
             if not cell.data.index.is_unique:
                 unique_index = cell.data.index.drop_duplicates()
@@ -293,7 +293,7 @@ class Transactor:
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await spawn_blocking(sort_data_frame, cell.data)
 
-    async def _save_large_data(self):
+    async def _save_large_data(self) -> None:
         async with self._unrealized_changes.read_lock as cell:
             unrealized_changes = cell.data.copy()
         await spawn_blocking(
@@ -315,13 +315,13 @@ class Transactor:
             self._workerpath / "asset_record.pickle",
         )
 
-    async def _save_scribbles(self):
+    async def _save_scribbles(self) -> None:
         filepath = self._workerpath / "scribbles.pickle"
         async with aiofiles.open(filepath, "wb") as file:
             content = pickle.dumps(self._scribbles)
             await file.write(content)
 
-    async def update_user_data_stream(self):
+    async def update_user_data_stream(self) -> None:
         """
         Prepares the WebSocket user data stream from Binance,
         providing updates on account changes and market order results.
@@ -334,7 +334,7 @@ class Transactor:
         - https://binance-docs.github.io/apidocs/futures/en/#start-user-data-stream-user_stream
         """
 
-        async def close_stream():
+        async def close_stream() -> None:
             if self.user_data_streamer:
                 await self.user_data_streamer.close()
                 self.user_data_streamer = None
@@ -368,7 +368,7 @@ class Transactor:
             self._listen_to_account,
         )
 
-    async def _listen_to_account(self, received: dict[str, Any]):
+    async def _listen_to_account(self, received: dict[str, Any]) -> None:
         # ■■■■■ default values ■■■■■
 
         event_type = str(received["e"])
@@ -589,31 +589,31 @@ class Transactor:
 
         await self._cancel_conflicting_orders()
 
-    async def _open_exchange(self):
+    async def _open_exchange(self) -> None:
         symbol = self._viewing_symbol
         await spawn_blocking(
             webbrowser.open,
             f"https://www.binance.com/en/futures/{symbol}",
         )
 
-    async def _open_futures_wallet_page(self):
+    async def _open_futures_wallet_page(self) -> None:
         await spawn_blocking(
             webbrowser.open,
             "https://www.binance.com/en/my/wallet/account/futures",
         )
 
-    async def _open_api_management_page(self):
+    async def _open_api_management_page(self) -> None:
         await spawn_blocking(
             webbrowser.open,
             "https://www.binance.com/en/my/settings/api-management",
         )
 
-    async def _save_transaction_settings(self):
+    async def _save_transaction_settings(self) -> None:
         filepath = self._workerpath / "transaction_settings.json"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             await file.write(self._transaction_settings.model_dump_json(indent=2))
 
-    async def _update_keys(self):
+    async def _update_keys(self) -> None:
         binance_api_key = self._window.lineEdit_4.text()
         binance_api_secret = self._window.lineEdit_6.text()
 
@@ -624,7 +624,7 @@ class Transactor:
         self._api_requester.update_keys(binance_api_key, binance_api_secret)
         await self.update_user_data_stream()
 
-    async def _update_automation_settings(self):
+    async def _update_automation_settings(self) -> None:
         # ■■■■■ get information about strategy ■■■■■
 
         strategy_index = self._window.comboBox_2.currentIndex()
@@ -645,10 +645,10 @@ class Transactor:
 
         await self._save_transaction_settings()
 
-    async def _display_range_information(self):
+    async def _display_range_information(self) -> None:
         self._range_display_task.spawn(self._display_range_information_real())
 
-    async def _display_range_information_real(self):
+    async def _display_range_information_real(self) -> None:
         symbol = self._viewing_symbol
         price_widget = self._window.transaction_graph.price_widget
 
@@ -732,7 +732,7 @@ class Transactor:
         text += f" {min_unrealized_change * 100:+.4f}%"
         self._window.label_8.setText(text)
 
-    async def _set_minimum_view_range(self):
+    async def _set_minimum_view_range(self) -> None:
         widget = self._window.transaction_graph.price_widget
         range_down = widget.getAxis("left").range[0]
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
@@ -740,14 +740,14 @@ class Transactor:
         range_down = widget.getAxis("left").range[0]
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
 
-    async def display_strategy_index(self):
+    async def display_strategy_index(self) -> None:
         strategy_index = self._transaction_settings.strategy_index
         self._window.comboBox_2.setCurrentIndex(strategy_index)
 
-    async def display_lines(self, periodic=False, frequent=False):
+    async def display_lines(self, periodic=False, frequent=False) -> None:
         self._line_display_task.spawn(self._display_lines_real(periodic, frequent))
 
-    async def _display_lines_real(self, periodic: bool, frequent: bool):
+    async def _display_lines_real(self, periodic: bool, frequent: bool) -> None:
         # ■■■■■ get basic information ■■■■■
 
         symbol = self._viewing_symbol
@@ -900,7 +900,7 @@ class Transactor:
 
         await self._set_minimum_view_range()
 
-    async def _toggle_frequent_draw(self):
+    async def _toggle_frequent_draw(self) -> None:
         is_checked = self._window.checkBox_2.isChecked()
         if is_checked:
             self._should_draw_frequently = True
@@ -908,7 +908,7 @@ class Transactor:
             self._should_draw_frequently = False
         await self.display_lines()
 
-    async def _update_viewing_symbol(self):
+    async def _update_viewing_symbol(self) -> None:
         alias = self._window.comboBox_4.currentText()
         symbol = self._window.alias_to_symbol[alias]
         self._viewing_symbol = symbol
@@ -917,7 +917,7 @@ class Transactor:
         spawn(self._display_status_information())
         spawn(self._display_range_information())
 
-    async def _display_status_information(self):
+    async def _display_status_information(self) -> None:
         # ■■■■■ Display important things first ■■■■■
 
         time_passed = datetime.now(timezone.utc) - self._account_state.observed_until
@@ -984,7 +984,7 @@ class Transactor:
 
         self._window.label_16.setText(text)
 
-    async def _perform_transaction(self):
+    async def _perform_transaction(self) -> None:
         # ■■■■■ Clear the progress bar ■■■■
 
         self._window.progressBar_2.setValue(0)
@@ -1014,7 +1014,7 @@ class Transactor:
 
         is_cycle_done = False
 
-        async def play_progress_bar():
+        async def play_progress_bar() -> None:
             passed_time = timedelta(seconds=0)
             while passed_time < timedelta(seconds=10):
                 passed_time = datetime.now(timezone.utc) - current_moment
@@ -1107,13 +1107,13 @@ class Transactor:
 
         await self.place_orders(decisions)
 
-    async def display_day_range(self):
+    async def display_day_range(self) -> None:
         range_start = (datetime.now(timezone.utc) - timedelta(hours=24)).timestamp()
         range_end = datetime.now(timezone.utc).timestamp()
         widget = self._window.transaction_graph.price_widget
         widget.setXRange(range_start, range_end)
 
-    async def _match_graph_range(self):
+    async def _match_graph_range(self) -> None:
         graph_from = self._window.simulation_graph.price_widget
         graph_to = self._window.transaction_graph.price_widget
         graph_range = graph_from.getAxis("bottom").range
@@ -1121,7 +1121,7 @@ class Transactor:
         range_end = graph_range[1]
         graph_to.setXRange(range_start, range_end, padding=0)  # type:ignore
 
-    async def _update_mode_settings(self):
+    async def _update_mode_settings(self) -> None:
         desired_leverage = self._window.spinBox.value()
         self._transaction_settings.desired_leverage = desired_leverage
 
@@ -1159,7 +1159,7 @@ class Transactor:
 
         await self._save_transaction_settings()
 
-    async def watch_binance(self):
+    async def watch_binance(self) -> None:
         # ■■■■■ Basic data ■■■■■
 
         target_symbols = self._window.data_settings.target_symbols
@@ -1247,7 +1247,7 @@ class Transactor:
 
         about_open_orders: dict[str, list[dict[str, Any]]] = {}
 
-        async def job(symbol):
+        async def job(symbol) -> None:
             payload = {
                 "symbol": symbol,
                 "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -1456,7 +1456,7 @@ class Transactor:
 
         if self._transaction_settings.should_transact:
 
-            async def job_1(symbol):
+            async def job_1(symbol) -> None:
                 about_position = about_positions_keyed[symbol]
                 current_leverage = int(about_position["leverage"])
 
@@ -1480,7 +1480,7 @@ class Transactor:
 
             await gather(*(job_1(s) for s in target_symbols))
 
-            async def job_2(symbol):
+            async def job_2(symbol) -> None:
                 about_position = about_positions_keyed[symbol]
 
                 isolated = about_position["isolated"]
@@ -1558,7 +1558,9 @@ class Transactor:
                 is_satisfied = False
         self._is_key_restrictions_satisfied = is_satisfied
 
-    async def place_orders(self, decisions: dict[str, dict[OrderType, Decision]]):
+    async def place_orders(
+        self, decisions: dict[str, dict[OrderType, Decision]]
+    ) -> None:
         target_symbols = self._window.data_settings.target_symbols
         current_timestamp = to_moment(datetime.now(timezone.utc)).timestamp() * 1000
 
@@ -1577,14 +1579,14 @@ class Transactor:
 
         # ■■■■■ Prepare closure functions ■■■■■
 
-        async def job_cancel_order(payload):
+        async def job_cancel_order(payload) -> None:
             await self._api_requester.binance(
                 http_method="DELETE",
                 path="/fapi/v1/allOpenOrders",
                 payload=payload,
             )
 
-        async def job_new_order(payload):
+        async def job_new_order(payload) -> None:
             response = await self._api_requester.binance(
                 http_method="POST",
                 path="/fapi/v1/order",
@@ -1876,7 +1878,7 @@ class Transactor:
         if later_orders:
             await gather(*(job_new_order(o) for o in later_orders))
 
-    async def _clear_positions_and_open_orders(self):
+    async def _clear_positions_and_open_orders(self) -> None:
         decisions: dict[str, dict[OrderType, Decision]] = {}
         for symbol in self._window.data_settings.target_symbols:
             decisions[symbol] = {
@@ -1885,7 +1887,7 @@ class Transactor:
             }
         await self.place_orders(decisions)
 
-    async def _cancel_conflicting_orders(self):
+    async def _cancel_conflicting_orders(self) -> None:
         if not self._transaction_settings.should_transact:
             return
 
@@ -1909,7 +1911,7 @@ class Transactor:
                         if order_id != latest_id:
                             conflicting_order_tuples.append((symbol, order_id))
 
-        async def job(conflicting_order_tuple):
+        async def job(conflicting_order_tuple) -> None:
             try:
                 payload = {
                     "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
@@ -1927,7 +1929,7 @@ class Transactor:
         if conflicting_order_tuples:
             await gather(*(job(c) for c in conflicting_order_tuples))
 
-    async def _pan_view_range(self):
+    async def _pan_view_range(self) -> None:
         if not self._should_draw_frequently:
             return
 
@@ -1941,7 +1943,7 @@ class Transactor:
 
         widget.setXRange(range_start + 10, range_end + 10, padding=0)  # type:ignore
 
-    async def _show_raw_account_state_object(self):
+    async def _show_raw_account_state_object(self) -> None:
         text = ""
 
         now_time = datetime.now(timezone.utc)

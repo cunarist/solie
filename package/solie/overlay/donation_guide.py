@@ -18,7 +18,7 @@ class DonationGuide:
     close_button = True
     done_event = Event()
 
-    def __init__(self):
+    def __init__(self) -> None:
         # ■■■■■ the basic ■■■■■
 
         super().__init__()

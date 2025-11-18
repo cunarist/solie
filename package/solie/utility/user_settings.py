@@ -30,7 +30,7 @@ async def read_datapath() -> Path | None:
         return None
 
 
-async def save_datapath(datapath: Path | None):
+async def save_datapath(datapath: Path | None) -> None:
     if datapath:
         async with aiofiles.open(DATAPATH_FILE, "w", encoding="utf8") as file:
             await file.write(str(datapath))
@@ -48,7 +48,7 @@ async def read_data_settings(datapath: Path) -> DataSettings | None:
         return None
 
 
-async def save_data_settings(data_settings: DataSettings, datapath: Path):
+async def save_data_settings(data_settings: DataSettings, datapath: Path) -> None:
     filepath = datapath / "data_settings.json"
     async with aiofiles.open(filepath, "w", encoding="utf8") as file:
         await file.write(data_settings.model_dump_json(indent=2))
@@ -67,7 +67,7 @@ class SavedStrategy(BaseModel):
     _compiled_indicator_script: CodeType | None = None
     _compiled_decision_script: CodeType | None = None
 
-    def create_indicators(self, given: IndicatorInput):
+    def create_indicators(self, given: IndicatorInput) -> None:
         target_symbols = given.target_symbols
         candle_data = given.candle_data
         new_indicators = given.new_indicators
@@ -84,7 +84,7 @@ class SavedStrategy(BaseModel):
         }
         exec(code, namespace)
 
-    def create_decisions(self, given: DecisionInput):
+    def create_decisions(self, given: DecisionInput) -> None:
         target_symbols = given.target_symbols
         account_state = given.account_state
         current_moment = given.current_moment
@@ -109,7 +109,7 @@ class SavedStrategy(BaseModel):
         }
         exec(code, namespace)
 
-    def compile_code(self):
+    def compile_code(self) -> None:
         """
         Enables faster execution of the strategy code
         by precompiling the text-based script.
@@ -129,10 +129,10 @@ class SavedStrategies(BaseModel):
 
 
 class SolieConfig:
-    def __init__(self):
+    def __init__(self) -> None:
         self._strategies: list[Strategy] = []
 
-    def add_strategy(self, strategy: Strategy):
+    def add_strategy(self, strategy: Strategy) -> None:
         if not isinstance(strategy, Strategy):
             # This prevents developers from
             # registering an invalid strategy at runtime.

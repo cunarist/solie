@@ -6,7 +6,12 @@ from pyqtgraph import AxisItem
 
 class PercentAxisItem(AxisItem):
     @override
-    def tickValues(self, minVal: float, maxVal: float, size: float):  # noqa
+    def tickValues(
+        self,
+        minVal: float,  # noqa
+        maxVal: float,  # noqa
+        size: float,
+    ) -> list[tuple[float, list[float]]]:
         min_value = minVal
         max_value = maxVal
         min_value = max(0.001 * max_value, min_value)
@@ -30,7 +35,9 @@ class PercentAxisItem(AxisItem):
         ]
 
     @override
-    def tickStrings(self, values: list[float], scale: float, spacing: float):
+    def tickStrings(
+        self, values: list[float], scale: float, spacing: float
+    ) -> list[str]:
         optimal_count = max(2, math.ceil(self.size().height() / 20))
         distance = spacing / optimal_count
 

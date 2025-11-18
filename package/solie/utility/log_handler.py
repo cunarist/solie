@@ -14,7 +14,7 @@ from solie.common import spawn
 class LogHandler(Handler):
     file_lock = Lock()
 
-    def __init__(self, log_path: Path, callback: Callable[[str, str], None]):
+    def __init__(self, log_path: Path, callback: Callable[[str, str], None]) -> None:
         super().__init__()
 
         self.log_path = log_path
@@ -34,7 +34,7 @@ class LogHandler(Handler):
         )
 
     @override
-    def emit(self, record):
+    def emit(self, record) -> None:
         formatted = self.format(record)
 
         if record.exc_info is not None:
@@ -58,7 +58,7 @@ class LogHandler(Handler):
 
         spawn(self._add_log_output(summarization, log_content))
 
-    async def _add_log_output(self, summarization: str, log_content: str):
+    async def _add_log_output(self, summarization: str, log_content: str) -> None:
         # add to log list
         self.callback(summarization, log_content)
 

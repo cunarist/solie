@@ -37,7 +37,7 @@ def create_empty_account_state(target_symbols: list[str]) -> AccountState:
     )
 
 
-def create_empty_asset_record():
+def create_empty_asset_record() -> pd.DataFrame:
     return pd.DataFrame(
         columns=[
             "CAUSE",

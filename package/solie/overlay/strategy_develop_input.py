@@ -25,7 +25,7 @@ class StrategyDevelopInput:
     close_button = True
     done_event = Event()
 
-    def __init__(self, strategy: SavedStrategy):
+    def __init__(self, strategy: SavedStrategy) -> None:
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
@@ -91,7 +91,7 @@ class StrategyDevelopInput:
         card_layout.addItem(spacer)
 
         # confirm button
-        async def job_ss():
+        async def job_ss() -> None:
             strategy.indicator_script = indicator_script_input.toPlainText()
             strategy.decision_script = decision_script_input.toPlainText()
             self.done_event.set()
@@ -116,7 +116,7 @@ class StrategyDevelopInput:
         card_layout.addWidget(action_button)
 
         # sample script button
-        async def job_as():
+        async def job_as() -> None:
             # indicator script
             filepath = PACKAGE_PATH / "static" / "sample_indicator_script.txt"
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
@@ -142,7 +142,7 @@ class StrategyDevelopInput:
         outsource(new_action.triggered, job_as)
 
         # API docs button
-        async def job_ad():
+        async def job_ad() -> None:
             url = "https://solie-docs.cunarist.com/making-strategy/"
             await spawn_blocking(webbrowser.open, url)
 
@@ -150,7 +150,7 @@ class StrategyDevelopInput:
         outsource(new_action.triggered, job_ad)
 
         # Pandas docs button
-        async def job_pd():
+        async def job_pd() -> None:
             url = "https://pandas.pydata.org/docs/reference/index.html"
             await spawn_blocking(webbrowser.open, url)
 
@@ -158,7 +158,7 @@ class StrategyDevelopInput:
         outsource(new_action.triggered, job_pd)
 
         # TA docs button
-        async def job_td():
+        async def job_td() -> None:
             url = "https://github.com/twopirllc/pandas-ta#indicators-by-category"
             await spawn_blocking(webbrowser.open, url)
 

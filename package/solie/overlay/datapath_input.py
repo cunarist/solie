@@ -24,7 +24,7 @@ class DatapathInput:
     close_button = False
     done_event = Event()
 
-    def __init__(self):
+    def __init__(self) -> None:
         # ■■■■■ the basic ■■■■■
 
         super().__init__()
@@ -97,7 +97,7 @@ class DatapathInput:
 
         datapath: Path | None = None
 
-        async def job_dp():
+        async def job_dp() -> None:
             nonlocal datapath
             str_path = await spawn_blocking(directory, title="Data folder")
             datapath = Path(str_path)
@@ -116,7 +116,7 @@ class DatapathInput:
 
         # ■■■■■ a card ■■■■■
 
-        async def job_ac():
+        async def job_ac() -> None:
             if datapath is None:
                 await ask(
                     "Data folder is not chosen",
