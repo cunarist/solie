@@ -222,7 +222,7 @@ async def download_aggtrade_csv(
 def sort_aggtrade_csv(zip_file_path: Path, has_header: bool) -> None:
     """
     Sort CSV by transact_time and overwrite in ZIP.
-    Sometimes, Binance provides unsorted CSV files with mixed transact time order.
+    Rarely, Binance provides unsorted CSV files with mixed transact time order.
     """
     # Read CSV from ZIP
     with ZipFile(zip_file_path, "r") as zip_ref:
