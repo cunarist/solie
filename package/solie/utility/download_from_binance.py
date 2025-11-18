@@ -51,16 +51,29 @@ class DownloadPreset(NamedTuple):
     day: int = 0  # Valid only when `unit_size` is `DAILY`
 
 
+class UnsortedCsvError(Exception):
+    pass
+
+
+class LastTickStatus(NamedTuple):
+    current_tick_start: int
+    prev_transact_time: int
+
+
 def process_csv_line(
     line: bytes,
     csv_rows: list[CsvRow],
     agg_trades: list[Candle],
-    current_tick_start: int | None,
-) -> int | None:
+    last_tick_status: LastTickStatus | None,
+) -> LastTickStatus:
     """
-    Process a single CSV line and return the new current_tick_start.
-    We use byte parsing for performance.
+    Process a single CSV line and return the new tick status.
+    We use raw byte parsing for performance.
     """
+    if last_tick_status is None:
+        current_tick_start, prev_transact_time = None, None
+    else:
+        current_tick_start, prev_transact_time = last_tick_status
 
     # Split the line by commas
     columns = line.split(COMMA_BYTE)
@@ -70,6 +83,10 @@ def process_csv_line(
     quantity = float(columns[2])
     transact_time = int(columns[5])
 
+    # Check for timestamp ordering
+    if prev_transact_time is not None and transact_time < prev_transact_time:
+        raise UnsortedCsvError
+
     # Calculate which 10-second tick this row belongs to
     row_tick_start = (transact_time // TICK_MS) * TICK_MS
 
@@ -78,9 +95,10 @@ def process_csv_line(
         finalize_tick(csv_rows, agg_trades, current_tick_start, row_tick_start)
         csv_rows.clear()
 
-    # Do not write keyword arguments that impact performance
+    # Record the current status.
+    # Do not write keyword arguments that impact performance.
     csv_rows.append(CsvRow(price, quantity, transact_time))
-    return row_tick_start
+    return LastTickStatus(row_tick_start, transact_time)
 
 
 def finalize_tick(
@@ -113,7 +131,7 @@ def finalize_tick(
 
     # Fill gaps if there are missing ticks
     if (
-        next_tick_start
+        next_tick_start is not None
         and agg_trades
         and next_tick_start > current_tick_start + TICK_MS
     ):
@@ -133,10 +151,12 @@ def finalize_tick(
 
 
 async def download_aggtrade_csv(
-    download_target: DownloadPreset, download_dir: Path
+    download_target: DownloadPreset,
+    download_dir: Path,
 ) -> Path | None:
     """
-    Download the aggtrade CSV file from Binance and return as DataFrame.
+    Download the aggtrade CSV file from Binance
+    and return the ZIP file path.
     """
     symbol = download_target.symbol
     unit_size = download_target.unit_size
@@ -199,62 +219,111 @@ async def download_aggtrade_csv(
     return zip_file_path
 
 
-def process_aggtrade_csv(symbol: str, zip_file_path: Path) -> pd.DataFrame | None:
+def sort_aggtrade_csv(zip_file_path: Path, has_header: bool) -> None:
     """
-    Process the downloaded aggtrade CSV file from Binance
-    and convert it into a DataFrame of aggregated trades.
+    Sort CSV by transact_time and overwrite in ZIP.
+    Sometimes, Binance provides unsorted CSV files with mixed transact time order.
     """
-    # Check if CSV has header by reading first line
-    has_header = False
+    # Read CSV from ZIP
     with ZipFile(zip_file_path, "r") as zip_ref:
         csv_filename = zip_ref.namelist()[0]
-        with zip_ref.open(csv_filename) as csv_file:
+        with zip_ref.open(csv_filename, "r") as csv_file:
+            df = pd.read_csv(csv_file, header=0 if has_header else None)
+
+    # Sort by transact_time (column index 5)
+    df = df.sort_values(by=df.columns[5])
+
+    # Write sorted CSV back to ZIP
+    with ZipFile(zip_file_path, "w") as zip_ref:
+        with zip_ref.open(csv_filename, "w", force_zip64=True) as csv_file:
+            df.to_csv(csv_file, index=False, header=has_header)
+
+
+def check_header(zip_file_path: Path) -> bool:
+    """
+    Check if the CSV file inside the ZIP has a header.
+    Some Binance CSV files include headers, while others do not.
+    """
+    with ZipFile(zip_file_path, "r") as zip_ref:
+        csv_filename = zip_ref.namelist()[0]
+        with zip_ref.open(csv_filename, "r") as csv_file:
             first_line = csv_file.readline()
-            has_header = b"price" in first_line
+            return b"price" in first_line
 
-    csv_rows: list[CsvRow] = []
-    agg_trades: list[Candle] = []
-    current_tick_start: int | None = None
 
+def process_csv_lines(
+    zip_file_path: Path,
+    has_header: bool,
+    preset: DownloadPreset,
+) -> pd.DataFrame | None:
+    """
+    Process CSV lines and check for sorting.
+    """
     with ZipFile(zip_file_path, "r") as zip_ref:
         csv_filename = zip_ref.namelist()[0]
-        with zip_ref.open(csv_filename) as csv_file:
+        with zip_ref.open(csv_filename, "r") as csv_file:
             # Skip header if exists
             if has_header:
                 csv_file.readline()
 
             # Read and process CSV lines
+            csv_rows: list[CsvRow] = []
+            agg_trades: list[Candle] = []
+            last_tick_status: LastTickStatus | None = None
             for line in csv_file:
-                current_tick_start = process_csv_line(
-                    line, csv_rows, agg_trades, current_tick_start
+                last_tick_status = process_csv_line(
+                    line, csv_rows, agg_trades, last_tick_status
                 )
 
             # Process the last tick
-            if csv_rows and current_tick_start is not None:
-                finalize_tick(csv_rows, agg_trades, current_tick_start)
+            if csv_rows and last_tick_status is not None:
+                finalize_tick(csv_rows, agg_trades, last_tick_status.current_tick_start)
 
-    # Convert to DataFrame
-    if not agg_trades:
-        return None
+            # If no aggregate trades were processed, return None
+            if not agg_trades:
+                return None
 
-    df = pd.DataFrame(agg_trades)
-    df = df.set_index("time")
-    df.index.name = None
-    df.index = pd.to_datetime(df.index, unit="ms", utc=True)
+            # Convert to DataFrame
+            df = pd.DataFrame(agg_trades)
 
-    # Rename columns to match expected format
-    df = df.rename(
-        columns={
-            "open": f"{symbol}/OPEN",
-            "high": f"{symbol}/HIGH",
-            "low": f"{symbol}/LOW",
-            "close": f"{symbol}/CLOSE",
-            "volume": f"{symbol}/VOLUME",
-        }
-    )
+            # Set time index
+            df = df.set_index("time")
+            df.index.name = None
+            df.index = pd.to_datetime(df.index, unit="ms", utc=True)
 
-    # Convert to float32 for memory efficiency
-    df = df.astype(np.float32)
+            # Rename columns to match expected format
+            symbol = preset.symbol
+            df = df.rename(
+                columns={
+                    "open": f"{symbol}/OPEN",
+                    "high": f"{symbol}/HIGH",
+                    "low": f"{symbol}/LOW",
+                    "close": f"{symbol}/CLOSE",
+                    "volume": f"{symbol}/VOLUME",
+                }
+            )
+
+            # Convert to float32 for memory efficiency
+            df = df.astype(np.float32)
+            return df
+
+
+def process_aggtrade_csv(
+    preset: DownloadPreset,
+    zip_file_path: Path,
+) -> pd.DataFrame | None:
+    """
+    Process the downloaded aggtrade CSV file from Binance
+    and convert it into a DataFrame of aggregated trades.
+    This is a blocking function that can take tens of minutes.
+    """
+
+    has_header = check_header(zip_file_path)
+    try:
+        df = process_csv_lines(zip_file_path, has_header, preset)
+    except UnsortedCsvError:
+        sort_aggtrade_csv(zip_file_path, has_header)
+        df = process_csv_lines(zip_file_path, has_header, preset)
 
     return df
 

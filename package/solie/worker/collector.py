@@ -593,7 +593,7 @@ class Collector:
                 if zip_file_path is not None:
                     downloaded_df = await spawn_blocking(
                         process_aggtrade_csv,
-                        download_preset.symbol,
+                        download_preset,
                         zip_file_path,
                     )
                     if downloaded_df is not None:
