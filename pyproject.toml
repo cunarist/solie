@@ -16,5 +16,16 @@ ignore = ["package/solie/window/compiled.py"]
 extraPaths = ["package"]
 
 [tool.ruff.lint]
-extend-select = ["N", "PL", "I", "T20", "RUF", "SLF", "INP", "B", "ASYNC"]
+extend-select = [
+    "N",
+    "PL",
+    "I",
+    "T20",
+    "RUF",
+    "SLF",
+    "INP",
+    "B",
+    "PTH",
+    "ASYNC",
+]
 exclude = ["package/solie/window/compiled.py"]
