@@ -5,6 +5,7 @@ from asyncio import Lock, gather, sleep
 from collections import deque
 from datetime import datetime, timedelta, timezone
 from logging import getLogger
+from pathlib import Path
 from typing import Any
 
 import aiofiles.os
@@ -577,7 +578,12 @@ class Collector:
             downloaded_dfs: list[pd.DataFrame] = []
 
             # Download and process all presets for this year.
-            async def download_fill(download_preset: DownloadPreset) -> None:
+            async def download_fill(
+                download_preset: DownloadPreset,
+                download_lock: Lock,
+                download_dir: Path,
+                downloaded_dfs: list[pd.DataFrame],
+            ) -> None:
                 nonlocal done_steps
 
                 # Download the zipped CSV file.
@@ -601,7 +607,11 @@ class Collector:
                 done_steps += 1
 
             download_lock = Lock()
-            await gather(*(download_fill(p) for p in download_presets))
+            coros = (
+                download_fill(p, download_lock, download_dir, downloaded_dfs)
+                for p in download_presets
+            )
+            await gather(*coros)
 
             # Combine all downloaded DataFrames at once
             if len(downloaded_dfs) > 0:

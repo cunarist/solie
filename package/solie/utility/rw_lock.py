@@ -132,8 +132,8 @@ class RWLockCore:
 
         try:
             self._owning.remove((me, lock_type))
-        except ValueError:
-            raise RuntimeError("Cannot release an un-acquired lock")
+        except ValueError as err:
+            raise RuntimeError("Cannot release an un-acquired lock") from err
         if lock_type == self._RL:
             self._r_state -= 1
         else:

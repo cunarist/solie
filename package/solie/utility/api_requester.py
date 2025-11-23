@@ -38,10 +38,10 @@ class ApiRequester:
         self,
         http_method: str,
         path: str,
-        payload: dict[str, Any] = {},
+        payload: dict[str, Any] | None = None,
         server="futures",
     ):
-        query_string = urlencode(payload)
+        query_string = urlencode(payload or {})
         # replace single quote to double quote
         query_string = query_string.replace("%27", "%22")
 
@@ -84,9 +84,9 @@ class ApiRequester:
         self,
         http_method: str,
         path: str,
-        payload: dict[str, Any] = {},
+        payload: dict[str, Any] | None = None,
     ):
-        query_string = urlencode(payload)
+        query_string = urlencode(payload or {})
         # replace single quote to double quote
         query_string = query_string.replace("%27", "%22")
 
