@@ -50,7 +50,7 @@ async def monitor_internet() -> None:
         for attempt_ip in ATTEMPT_IP:
             try:
                 async with session.get(f"http://{attempt_ip}") as response:
-                    if response.status == 200:
+                    if response.ok:
                         analyzed = True
                         break
             except Exception:

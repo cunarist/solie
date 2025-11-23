@@ -16,6 +16,13 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6.QtWidgets import QMenu
 
 from solie.common import UniqueTask, outsource, spawn, spawn_blocking
+from solie.logic import (
+    DownloadPreset,
+    DownloadUnitSize,
+    download_aggtrade_csv,
+    fill_holes_with_aggtrades,
+    process_aggtrade_csv,
+)
 from solie.overlay import (
     DonationGuide,
     DownloadFillOption,
@@ -23,22 +30,20 @@ from solie.overlay import (
     DownloadYearRange,
 )
 from solie.utility import (
+    MAX_REQUEST_RETRIES,
+    PROGRESS_BAR_MAX,
     AggregateTrade,
     ApiRequester,
     ApiStreamer,
     BookTicker,
-    DownloadPreset,
-    DownloadUnitSize,
+    Cell,
     DurationRecorder,
     MarkPrice,
     RWLock,
     combine_candle_data,
     create_empty_candle_data,
-    download_aggtrade_csv,
-    fill_holes_with_aggtrades,
     format_numeric,
     internet_connected,
-    process_aggtrade_csv,
     slice_deque,
     sort_data_frame,
     to_moment,
@@ -54,20 +59,14 @@ logger = getLogger(__name__)
 
 class Collector:
     def __init__(self, window: Window, scheduler: AsyncIOScheduler) -> None:
-        # ■■■■■ for data management ■■■■■
-
         self._window = window
         self._scheduler = scheduler
         self._workerpath = window.datapath / "collector"
-
-        # ■■■■■ internal memory ■■■■■
 
         self._price_precisions: dict[str, int] = {}  # Symbol and decimal places
         self._markets_gone = set[str]()  # Symbols
 
         self._download_fill_task = UniqueTask()
-
-        # ■■■■■ remember and display ■■■■■
 
         self._api_requester = ApiRequester()
 
@@ -85,8 +84,6 @@ class Collector:
         # Realtime data
         self.realtime_data = deque[BookTicker | MarkPrice]([], 2 ** (10 + 10 + 2))
         self.aggregate_trades = deque[AggregateTrade]([], 2 ** (10 + 10))
-
-        # ■■■■■ repetitive schedules ■■■■■
 
         self._scheduler.add_job(
             self._display_status_information,
@@ -119,8 +116,6 @@ class Collector:
             hour="*",
         )
 
-        # ■■■■■ websocket streamings ■■■■■
-
         self._mark_price_streamer = ApiStreamer(
             "wss://fstream.binance.com/ws/!markPrice@arr@1s",
             self._add_mark_price,
@@ -141,19 +136,20 @@ class Collector:
             for s in self._window.data_settings.target_symbols
         ]
 
-        # ■■■■■ invoked by the internet connection status change ■■■■■
-
         when_internet_disconnected(self._clear_aggregate_trades)
 
-        # ■■■■■ connect UI events ■■■■■
+        self._connect_ui_events()
+
+    def _connect_ui_events(self):
+        window = self._window
 
         job = self._guide_donation
-        outsource(self._window.pushButton_9.clicked, job)
+        outsource(window.pushButton_9.clicked, job)
         job = self._download_fill_candle_data
-        outsource(self._window.pushButton_2.clicked, job)
+        outsource(window.pushButton_2.clicked, job)
 
-        action_menu = QMenu(self._window)
-        self._window.pushButton_13.setMenu(action_menu)
+        action_menu = QMenu(window)
+        window.pushButton_13.setMenu(action_menu)
 
         text = "Open historical data webpage of Binance"
         job = self._open_binance_data_page
@@ -164,12 +160,9 @@ class Collector:
         new_action = action_menu.addAction(text)
         outsource(new_action.triggered, job)
 
-    # ■■■■■ Public interface for lifecycle management ■■■■■
-
     async def load_work(self) -> None:
         await aiofiles.os.makedirs(self._workerpath, exist_ok=True)
 
-        # candle data
         current_year = datetime.now(timezone.utc).year
         async with self.candle_data.write_lock as cell:
             filepath = self._workerpath / f"candle_data_{current_year}.pickle"
@@ -196,8 +189,6 @@ class Collector:
         duration_recorder.record()
 
     async def _save_candle_data(self) -> None:
-        # ■■■■■ default values ■■■■■
-
         current_year = datetime.now(timezone.utc).year
         filepath = self._workerpath / f"candle_data_{current_year}.pickle"
         filepath_new = self._workerpath / f"candle_data_{current_year}.pickle.new"
@@ -207,11 +198,7 @@ class Collector:
             mask = cell.data.index.year == current_year  # type:ignore
             year_df: pd.DataFrame = cell.data[mask].copy()
 
-        # ■■■■■ make a new file ■■■■■
-
         await spawn_blocking(year_df.to_pickle, filepath_new)
-
-        # ■■■■■ safely replace the existing file ■■■■■
 
         if await aiofiles.os.path.isfile(filepath_backup):
             await aiofiles.os.remove(filepath_backup)
@@ -246,107 +233,169 @@ class Collector:
             self._price_precisions[symbol] = price_precision
 
     async def _fill_candle_data_holes(self) -> None:
-        # ■■■■■ check internet connection ■■■■■
-
+        """Fill holes in candle data by fetching missing data."""
         if not internet_connected():
             return
 
-        # ■■■■■ moments ■■■■■
-
         current_moment = to_moment(datetime.now(timezone.utc))
         split_moment = current_moment - timedelta(days=2)
-
-        # ■■■■■ fill holes ■■■■■
-
-        full_symbols = set[str]()
-        request_count = 0
+        target_symbols = self._window.data_settings.target_symbols
 
         # only the recent part
         async with self.candle_data.read_lock as cell:
             recent_candle_data = cell.data[cell.data.index >= split_moment].copy()
 
-        did_fill = False
-
-        target_symbols = self._window.data_settings.target_symbols
-        needed_moments = int((86400 - 60) / 10) + 1
-        while len(full_symbols) < len(target_symbols) and request_count < 10:
-            for symbol in target_symbols:
-                if symbol in full_symbols:
-                    continue
-
-                from_moment = current_moment - timedelta(hours=24)
-                until_moment = current_moment - timedelta(minutes=1)
-
-                columns = [str(s) for s in recent_candle_data.columns]
-                chosen_columns = [s for s in columns if s.startswith(symbol)]
-                inspect_df: pd.DataFrame = recent_candle_data[chosen_columns][
-                    from_moment:until_moment
-                ]
-                base_index = inspect_df.dropna().index
-                temp_sr = pd.Series(0, index=base_index)
-                written_moments = len(temp_sr)
-
-                if written_moments == needed_moments:
-                    # case when there are no holes
-                    full_symbols.add(symbol)
-                    continue
-
-                if from_moment not in temp_sr.index:
-                    temp_sr[from_moment] = np.nan
-                if until_moment not in temp_sr.index:
-                    temp_sr[until_moment] = np.nan
-                temp_sr = await spawn_blocking(temp_sr.asfreq, "10s")
-                isnan_sr = await spawn_blocking(temp_sr.isna)
-                nan_index = isnan_sr[isnan_sr == 1].index
-                moment_to_fill_from: datetime = nan_index[0]
-
-                # request historical aggtrade data
-                aggtrades: dict[int, AggregateTrade] = {}
-                last_fetched_time = moment_to_fill_from
-                while last_fetched_time < moment_to_fill_from + timedelta(seconds=10):
-                    # intend to fill at least one 10 second candle bar
-                    payload = {
-                        "symbol": symbol,
-                        "startTime": int(last_fetched_time.timestamp() * 1000),
-                        "limit": 1000,
-                    }
-                    response = await self._api_requester.binance(
-                        http_method="GET",
-                        path="/fapi/v1/aggTrades",
-                        payload=payload,
-                    )
-                    request_count += 1
-                    if len(response) == 0:
-                        self._markets_gone.add(symbol)
-                        break
-                    for about_aggtrade in response:
-                        aggtrade_id = int(about_aggtrade["a"])
-                        aggtrade = AggregateTrade(
-                            timestamp=about_aggtrade["T"],
-                            symbol=symbol,
-                            price=float(about_aggtrade["p"]),
-                            volume=float(about_aggtrade["q"]),
-                        )
-                        aggtrades[aggtrade_id] = aggtrade
-                    last_fetched_id = max(aggtrades.keys())
-                    last_fetched_time = datetime.fromtimestamp(
-                        aggtrades[last_fetched_id].timestamp / 1000, tz=timezone.utc
-                    )
-
-                recent_candle_data = await spawn_blocking(
-                    fill_holes_with_aggtrades,
-                    symbol,
-                    recent_candle_data,
-                    aggtrades,
-                    moment_to_fill_from,
-                    last_fetched_time,
-                )
-                did_fill = True
+        did_fill = await self._find_full_symbols(
+            recent_candle_data, current_moment, target_symbols
+        )
 
         if not did_fill:
             return
 
-        # combine
+        await self._merge_filled_data(recent_candle_data, split_moment)
+
+    async def _find_full_symbols(
+        self,
+        recent_candle_data: pd.DataFrame,
+        current_moment: datetime,
+        target_symbols: list[str],
+    ) -> bool:
+        """Find and fill holes in candle data for symbols."""
+        full_symbols: set[str] = set()
+        request_count = 0
+        needed_moments = int((86400 - 60) / 10) + 1
+        did_fill = False
+
+        while (
+            len(full_symbols) < len(target_symbols)
+            and request_count < MAX_REQUEST_RETRIES
+        ):
+            for symbol in target_symbols:
+                if symbol in full_symbols:
+                    continue
+
+                filled = await self._fill_symbol_holes(
+                    symbol, recent_candle_data, current_moment, needed_moments
+                )
+                if filled is None:
+                    # Symbol is complete
+                    full_symbols.add(symbol)
+                elif filled:
+                    # Successfully filled holes
+                    did_fill = True
+
+                request_count += 1
+
+        return did_fill
+
+    async def _fill_symbol_holes(
+        self,
+        symbol: str,
+        recent_candle_data: pd.DataFrame,
+        current_moment: datetime,
+        needed_moments: int,
+    ) -> bool | None:
+        """Fill holes for a specific symbol.
+
+        Returns None if complete, True if filled, False if failed.
+        """
+        from_moment = current_moment - timedelta(hours=24)
+        until_moment = current_moment - timedelta(minutes=1)
+
+        # Check current data completeness
+        columns = [str(s) for s in recent_candle_data.columns]
+        chosen_columns = [s for s in columns if s.startswith(symbol)]
+        inspect_df: pd.DataFrame = recent_candle_data[chosen_columns][
+            from_moment:until_moment
+        ]
+        base_index = inspect_df.dropna().index
+        temp_sr = pd.Series(0, index=base_index)
+        written_moments = len(temp_sr)
+
+        if written_moments == needed_moments:
+            return None  # Symbol is complete
+
+        # Find gaps
+        if from_moment not in temp_sr.index:
+            temp_sr[from_moment] = np.nan
+        if until_moment not in temp_sr.index:
+            temp_sr[until_moment] = np.nan
+        temp_sr = await spawn_blocking(temp_sr.asfreq, "10s")
+        isnan_sr = await spawn_blocking(temp_sr.isna)
+        nan_index = isnan_sr[isnan_sr == 1].index
+
+        if len(nan_index) == 0:
+            return None
+
+        moment_to_fill_from: datetime = nan_index[0]
+
+        # Fetch aggregate trades to fill gaps
+        aggtrades = await self._fetch_aggtrades_for_gap(symbol, moment_to_fill_from)
+
+        if aggtrades is None:
+            return False  # Failed to fetch
+
+        # Fill the gaps
+        last_fetched_id = max(aggtrades.keys())
+        last_fetched_time = datetime.fromtimestamp(
+            aggtrades[last_fetched_id].timestamp / 1000, tz=timezone.utc
+        )
+
+        await spawn_blocking(
+            fill_holes_with_aggtrades,
+            symbol,
+            recent_candle_data,
+            aggtrades,
+            moment_to_fill_from,
+            last_fetched_time,
+        )
+        return True
+
+    async def _fetch_aggtrades_for_gap(
+        self, symbol: str, moment_to_fill_from: datetime
+    ) -> dict[int, AggregateTrade] | None:
+        """Fetch aggregate trades to fill a data gap."""
+        aggtrades: dict[int, AggregateTrade] = {}
+        last_fetched_time = moment_to_fill_from
+
+        while last_fetched_time < moment_to_fill_from + timedelta(seconds=10):
+            # intend to fill at least one 10 second candle bar
+            payload = {
+                "symbol": symbol,
+                "startTime": int(last_fetched_time.timestamp() * 1000),
+                "limit": 1000,
+            }
+            response = await self._api_requester.binance(
+                http_method="GET",
+                path="/fapi/v1/aggTrades",
+                payload=payload,
+            )
+
+            if len(response) == 0:
+                self._markets_gone.add(symbol)
+                return None
+
+            for about_aggtrade in response:
+                aggtrade_id = int(about_aggtrade["a"])
+                aggtrade = AggregateTrade(
+                    timestamp=about_aggtrade["T"],
+                    symbol=symbol,
+                    price=float(about_aggtrade["p"]),
+                    volume=float(about_aggtrade["q"]),
+                )
+                aggtrades[aggtrade_id] = aggtrade
+
+            last_fetched_id = max(aggtrades.keys())
+            last_fetched_time = datetime.fromtimestamp(
+                aggtrades[last_fetched_id].timestamp / 1000, tz=timezone.utc
+            )
+
+        return aggtrades
+
+    async def _merge_filled_data(
+        self, recent_candle_data: pd.DataFrame, split_moment: datetime
+    ) -> None:
+        """Merge filled candle data back into main dataframe."""
         async with self.candle_data.write_lock as cell:
             original_candle_data = cell.data[cell.data.index < split_moment]
             # in case the other data is added during the task
@@ -364,14 +413,11 @@ class Collector:
     async def _display_status_information(self) -> None:
         async with self.candle_data.read_lock as cell:
             if len(cell.data) == 0:
-                # when the app is executed for the first time
                 return
 
         if len(self._price_precisions) == 0:
-            # right after the app execution
             return
 
-        # price
         price_precisions = self._price_precisions
         recent_aggregate_trades = slice_deque(self.aggregate_trades, 2 ** (10 + 6))
         for symbol in self._window.data_settings.target_symbols:
@@ -387,7 +433,6 @@ class Collector:
                 text = f"${latest_price:.{price_precision}f}"
             self._window.price_labels[symbol].setText(text)
 
-        # bottom information
         if len(self._markets_gone) == 0:
             cumulation_rate = await self.check_candle_data_cumulation_rate()
             first_written_time = None
@@ -415,20 +460,17 @@ class Collector:
         else:
             markets_gone = self._markets_gone
             text = (
-                f"It seems that {', '.join(markets_gone)} markets are removed by Binance."
-                + " You should make a new data folder."
+                f"It seems that {', '.join(markets_gone)} markets are "
+                "removed by Binance. You should make a new data folder."
             )
 
         self._window.label_6.setText(text)
 
     async def check_candle_data_cumulation_rate(self) -> float:
-        # End slicing at previous moment
-        # because current moment might still be filling.
         current_moment = to_moment(datetime.now(timezone.utc))
         count_end_moment = current_moment - timedelta(seconds=10)
         count_start_moment = count_end_moment - timedelta(hours=24)
 
-        # Pandas dataframe slicing uses inclusive end.
         count_end_moment -= timedelta(seconds=1)
 
         async with self.candle_data.read_lock as cell:
@@ -450,16 +492,12 @@ class Collector:
             self._download_fill_candle_data_real(unique_task, fill_option)
         )
 
-    async def _download_fill_candle_data_real(
+    def _create_download_presets(
         self,
-        unique_task: UniqueTask,
         fill_option: DownloadYearRange | DownloadFillOption,
-    ) -> None:
-        # ■■■■■ prepare target tuples for downloading ■■■■■
-
+    ) -> list[DownloadPreset]:
         download_presets: list[DownloadPreset] = []
         target_symbols = self._window.data_settings.target_symbols
-
         match fill_option:
             case DownloadYearRange(start=year_from, end=year_to):
                 for year in range(year_from, year_to + 1):
@@ -525,25 +563,31 @@ class Collector:
                         ),
                     )
 
+        return download_presets
+
+    async def _download_fill_candle_data_real(
+        self,
+        unique_task: UniqueTask,
+        fill_option: DownloadYearRange | DownloadFillOption,
+    ) -> None:
+        download_presets = self._create_download_presets(fill_option)
         random.shuffle(download_presets)
 
         total_steps = len(download_presets) * 2
-        done_steps = 0
-
-        # ■■■■■ play the progress bar ■■■■■
+        done_steps = Cell(0)
 
         async def play_progress_bar() -> None:
             while True:
-                if done_steps == total_steps:
+                if done_steps.value == total_steps:
                     progressbar_value = self._window.progressBar_3.value()
-                    if progressbar_value == 1000:
+                    if progressbar_value == PROGRESS_BAR_MAX:
                         await sleep(0.1)
                         self._window.progressBar_3.setValue(0)
                         return
                 before_value = self._window.progressBar_3.value()
-                if before_value < 1000:
+                if before_value < PROGRESS_BAR_MAX:
                     remaining = (
-                        math.ceil(1000 / total_steps * done_steps) - before_value
+                        math.ceil(1000 / total_steps * done_steps.value) - before_value
                     )
                     new_value = before_value + math.ceil(remaining * 0.2)
                     self._window.progressBar_3.setValue(new_value)
@@ -553,98 +597,105 @@ class Collector:
         bar_task.add_done_callback(lambda _: self._window.progressBar_3.setValue(0))
         unique_task.add_done_callback(lambda _: bar_task.cancel())
 
-        # ■■■■■ calculate in parellel ■■■■■
-
-        # Gather information about years.
         current_year = datetime.now(timezone.utc).year
-        all_years = sorted({t.year for t in download_presets})
+        classified_download_presets = self._classify_presets_by_year(download_presets)
 
-        # Download and save historical data by year for lower memory usage.
-        # Key is the year, value is the list of download presets.
+        for preset_year, download_presets in classified_download_presets.items():
+            combined_df = await self._download_and_combine_presets(
+                preset_year,
+                download_presets,
+                done_steps,
+            )
+            if combined_df is not None:
+                await self._save_or_merge_downloaded_data(
+                    preset_year, current_year, combined_df
+                )
+
+    def _classify_presets_by_year(
+        self, download_presets: list[DownloadPreset]
+    ) -> dict[int, list[DownloadPreset]]:
+        """Classify download presets by year."""
+        all_years = sorted({t.year for t in download_presets})
         classified_download_presets: dict[int, list[DownloadPreset]] = {
             y: [] for y in all_years
         }
         for download_preset in download_presets:
             classified_download_presets[download_preset.year].append(download_preset)
+        return classified_download_presets
 
-        # Download each year's data one by one.
-        for preset_year, download_presets in classified_download_presets.items():
-            # Prepare download directory.
-            download_dir = self._workerpath / f"downloaded_csv_{preset_year}"
-            await aioshutil.rmtree(download_dir, ignore_errors=True)
-            await aiofiles.os.makedirs(download_dir, exist_ok=True)
+    async def _download_and_combine_presets(
+        self,
+        preset_year: int,
+        download_presets: list[DownloadPreset],
+        done_steps: Cell[int],
+    ) -> pd.DataFrame | None:
+        """Download CSV files for presets and combine them."""
+        download_dir = self._workerpath / f"downloaded_csv_{preset_year}"
+        await aioshutil.rmtree(download_dir, ignore_errors=True)
+        await aiofiles.os.makedirs(download_dir, exist_ok=True)
 
-            # Collect all DataFrames in a list for batch concatenation
-            downloaded_dfs: list[pd.DataFrame] = []
+        downloaded_dfs: list[pd.DataFrame] = []
 
-            # Download and process all presets for this year.
-            async def download_fill(
-                download_preset: DownloadPreset,
-                download_lock: Lock,
-                download_dir: Path,
-                downloaded_dfs: list[pd.DataFrame],
-            ) -> None:
-                nonlocal done_steps
-
-                # Download the zipped CSV file.
-                # We use the lock to concentrate network resource.
-                async with download_lock:
-                    zip_file_path = await download_aggtrade_csv(
-                        download_preset,
-                        download_dir,
-                    )
-                done_steps += 1
-
-                # Process the CSV file into a DataFrame.
-                if zip_file_path is not None:
-                    downloaded_df = await spawn_blocking(
-                        process_aggtrade_csv,
-                        download_preset,
-                        zip_file_path,
-                    )
-                    if downloaded_df is not None:
-                        downloaded_dfs.append(downloaded_df)
-                done_steps += 1
-
-            download_lock = Lock()
-            coros = (
-                download_fill(p, download_lock, download_dir, downloaded_dfs)
-                for p in download_presets
-            )
-            await gather(*coros)
-
-            # Combine all downloaded DataFrames at once
-            if len(downloaded_dfs) > 0:
-                combined_df = await spawn_blocking(combine_candle_data, downloaded_dfs)
-            else:
-                logger.info(f"No data downloaded for the year {preset_year}")
-                continue
-
-            if preset_year < current_year:
-                # For data of previous years, save them in the disk.
-                await spawn_blocking(
-                    combined_df.to_pickle,
-                    self._workerpath / f"candle_data_{preset_year}.pickle",
+        async def download_fill(
+            download_preset: DownloadPreset,
+            download_lock: Lock,
+            download_dir: Path,
+            downloaded_dfs: list[pd.DataFrame],
+        ) -> None:
+            async with download_lock:
+                zip_file_path = await download_aggtrade_csv(
+                    download_preset,
+                    download_dir,
                 )
-                logger.info(f"Saved candle data of year {preset_year}")
-            else:
-                # For data of current year, pass it to this collector worker
-                # and store them in the memory.
-                async with self.candle_data.write_lock as cell_worker:
-                    cell_worker.data = await spawn_blocking(
-                        combine_candle_data,
-                        [combined_df, cell_worker.data],
-                    )
-                await self._save_candle_data()
-                logger.info("Filled the candle data with the downloaded history data")
+            done_steps.value += 1
 
-            # Update displays in the team members.
-            spawn(team.transactor.display_lines())
-            spawn(team.simulator.display_lines())
-            spawn(team.simulator.display_available_years())
+            if zip_file_path is not None:
+                downloaded_df = await spawn_blocking(
+                    process_aggtrade_csv,
+                    download_preset,
+                    zip_file_path,
+                )
+                if downloaded_df is not None:
+                    downloaded_dfs.append(downloaded_df)
+            done_steps.value += 1
 
-            # Clean up the download directory.
-            await aioshutil.rmtree(download_dir, ignore_errors=True)
+        download_lock = Lock()
+        coros = (
+            download_fill(p, download_lock, download_dir, downloaded_dfs)
+            for p in download_presets
+        )
+        await gather(*coros)
+
+        await aioshutil.rmtree(download_dir, ignore_errors=True)
+
+        if len(downloaded_dfs) > 0:
+            return await spawn_blocking(combine_candle_data, downloaded_dfs)
+        else:
+            logger.info(f"No data downloaded for the year {preset_year}")
+            return None
+
+    async def _save_or_merge_downloaded_data(
+        self, preset_year: int, current_year: int, combined_df: pd.DataFrame
+    ) -> None:
+        """Save downloaded data to disk or merge with current data."""
+        if preset_year < current_year:
+            await spawn_blocking(
+                combined_df.to_pickle,
+                self._workerpath / f"candle_data_{preset_year}.pickle",
+            )
+            logger.info(f"Saved candle data of year {preset_year}")
+        else:
+            async with self.candle_data.write_lock as cell_worker:
+                cell_worker.data = await spawn_blocking(
+                    combine_candle_data,
+                    [combined_df, cell_worker.data],
+                )
+            await self._save_candle_data()
+            logger.info("Filled the candle data with the downloaded history data")
+
+        spawn(team.transactor.display_lines())
+        spawn(team.simulator.display_lines())
+        spawn(team.simulator.display_available_years())
 
     async def _add_book_tickers(self, received: dict[str, Any]) -> None:
         duration_recorder = DurationRecorder("ADD_BOOK_TICKERS")
@@ -706,7 +757,6 @@ class Collector:
     async def _add_candle_data(self) -> None:
         duration_recorder = DurationRecorder("ADD_CANDLE_DATA")
 
-        # Prepare basic infos.
         current_moment = to_moment(datetime.now(timezone.utc))
         before_moment = current_moment - timedelta(seconds=10.0)
         collect_from = int(before_moment.timestamp()) * 1000
@@ -722,7 +772,7 @@ class Collector:
         collected_aggregate_trades: list[AggregateTrade] = []
         for aggregate_trade in reversed(aggregate_trades):
             if aggregate_trade.timestamp < collect_from - 1000:
-                # Go additional 1000 millliseconds backward.
+                # Go additional 1000 milliseconds backward.
                 break
             collected_aggregate_trades.append(aggregate_trade)
         if len(collected_aggregate_trades) == 0:

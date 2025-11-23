@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 )
 
 from solie.common import PACKAGE_PATH, outsource, spawn_blocking
-from solie.utility import SavedStrategy
+from solie.utility import EXIT_DIALOG_ANSWER, SavedStrategy
 from solie.widget import ScriptEditor, VerticalDivider, ask
 
 
@@ -26,153 +26,145 @@ class StrategyDevelopInput:
     done_event = Event()
 
     def __init__(self, strategy: SavedStrategy) -> None:
-        # ■■■■■ the basic ■■■■■
-
         super().__init__()
         self.widget = QWidget()
         self.strategy = strategy
         self.result = None
 
-        # ■■■■■ full layout ■■■■■
-
+        # Create main layout
         full_layout = QVBoxLayout(self.widget)
 
-        # ■■■■■ script editors ■■■■■
-
+        # Create script editors
         this_layout = QHBoxLayout()
         full_layout.addLayout(this_layout)
 
-        # column layout
-        column_layout = QVBoxLayout()
-        this_layout.addLayout(column_layout)
+        self.indicator_script_input = self._create_script_editor(
+            this_layout, "Indicator script", strategy.indicator_script
+        )
+        self.decision_script_input = self._create_script_editor(
+            this_layout, "Decision script", strategy.decision_script
+        )
 
-        # title
+        # Create button card
+        self._create_button_card(full_layout)
+
+    def _create_script_editor(
+        self, parent_layout: QHBoxLayout, title: str, content: str
+    ) -> ScriptEditor:
+        """Create a script editor column."""
+        column_layout = QVBoxLayout()
+        parent_layout.addLayout(column_layout)
+
         detail_text = QLabel()
-        detail_text.setText("Indicator script")
+        detail_text.setText(title)
         detail_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
         column_layout.addWidget(detail_text)
 
-        # input
-        indicator_script_input = ScriptEditor(self.widget)
-        indicator_script_input.setPlainText(strategy.indicator_script)
-        column_layout.addWidget(indicator_script_input)
-        self.indicator_script_input = indicator_script_input
+        script_input = ScriptEditor(self.widget)
+        script_input.setPlainText(content)
+        column_layout.addWidget(script_input)
 
-        # column layout
-        column_layout = QVBoxLayout()
-        this_layout.addLayout(column_layout)
+        return script_input
 
-        # title
-        detail_text = QLabel()
-        detail_text.setText("Decision script")
-        detail_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        column_layout.addWidget(detail_text)
-
-        # input
-        decision_script_input = ScriptEditor(self.widget)
-        decision_script_input.setPlainText(strategy.decision_script)
-        column_layout.addWidget(decision_script_input)
-        self.decision_script_input = decision_script_input
-
-        # ■■■■■ a card ■■■■■
-
-        # card structure
+    def _create_button_card(self, parent_layout: QVBoxLayout) -> None:
+        """Create button card with save and action buttons."""
         card = QGroupBox()
         card_layout = QHBoxLayout(card)
-        full_layout.addWidget(card)
+        parent_layout.addWidget(card)
 
-        # spacing
+        # Left spacer
+        self._add_horizontal_spacer(card_layout)
+
+        # Save button
+        self._add_save_button(card, card_layout)
+
+        # Divider
+        divider = VerticalDivider(self.widget)
+        card_layout.addWidget(divider)
+
+        # Action menu
+        self._add_action_menu(card, card_layout)
+
+        # Right spacer
+        self._add_horizontal_spacer(card_layout)
+
+    def _add_horizontal_spacer(self, layout: QHBoxLayout) -> None:
+        """Add horizontal expanding spacer."""
         spacer = QSpacerItem(
-            0,
-            0,
-            QSizePolicy.Policy.Expanding,
-            QSizePolicy.Policy.Minimum,
+            0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
         )
-        card_layout.addItem(spacer)
+        layout.addItem(spacer)
 
-        # confirm button
+    def _add_save_button(self, card: QGroupBox, layout: QHBoxLayout) -> None:
+        """Add save and close button."""
+
         async def job_ss() -> None:
-            strategy.indicator_script = indicator_script_input.toPlainText()
-            strategy.decision_script = decision_script_input.toPlainText()
+            self.strategy.indicator_script = self.indicator_script_input.toPlainText()
+            self.strategy.decision_script = self.decision_script_input.toPlainText()
             self.done_event.set()
 
         button = QPushButton("Save and close", card)
         outsource(button.clicked, job_ss)
-        button.setSizePolicy(
-            QSizePolicy.Policy.Fixed,
-            QSizePolicy.Policy.Fixed,
-        )
-        card_layout.addWidget(button)
+        button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        layout.addWidget(button)
 
-        # Vertical divider
-        divider = VerticalDivider(self.widget)
-        card_layout.addWidget(divider)
-
-        # action menu
+    def _add_action_menu(self, card: QGroupBox, layout: QHBoxLayout) -> None:
+        """Add action menu with documentation links and sample scripts."""
         action_menu = QMenu(self.widget)
         action_button = QPushButton()
         action_button.setText("☰")
         action_button.setMenu(action_menu)
-        card_layout.addWidget(action_button)
+        layout.addWidget(action_button)
 
-        # sample script button
+        # Apply sample scripts action
         async def job_as() -> None:
-            # indicator script
-            filepath = PACKAGE_PATH / "static" / "sample_indicator_script.txt"
-            async with aiofiles.open(filepath, "r", encoding="utf8") as file:
-                script = await file.read()
-
-            indicator_script_input.setPlainText(script)
-
-            # decision script
-            filepath = PACKAGE_PATH / "static" / "sample_decision_script.txt"
-            async with aiofiles.open(filepath, "r", encoding="utf8") as file:
-                script = await file.read()
-
-            decision_script_input.setPlainText(script)
-
-            await ask(
-                "Sample scripts applied",
-                "It hasn't been saved yet,"
-                " feel free to customize the code to your liking.",
-                ["Okay"],
-            )
+            await self._apply_sample_scripts()
 
         new_action = action_menu.addAction("Apply sample scripts")
         outsource(new_action.triggered, job_as)
 
-        # API docs button
-        async def job_ad() -> None:
-            url = "https://solie-docs.cunarist.com/making-strategy/"
-            await spawn_blocking(webbrowser.open, url)
+        # Documentation links
+        self._add_doc_links(action_menu)
 
-        new_action = action_menu.addAction("Show Solie API docs")
-        outsource(new_action.triggered, job_ad)
+    async def _apply_sample_scripts(self) -> None:
+        """Load and apply sample scripts."""
+        filepath = PACKAGE_PATH / "static" / "sample_indicator_script.txt"
+        async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+            script = await file.read()
+        self.indicator_script_input.setPlainText(script)
 
-        # Pandas docs button
-        async def job_pd() -> None:
-            url = "https://pandas.pydata.org/docs/reference/index.html"
-            await spawn_blocking(webbrowser.open, url)
+        filepath = PACKAGE_PATH / "static" / "sample_decision_script.txt"
+        async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+            script = await file.read()
+        self.decision_script_input.setPlainText(script)
 
-        new_action = action_menu.addAction("Show Pandas API docs")
-        outsource(new_action.triggered, job_pd)
-
-        # TA docs button
-        async def job_td() -> None:
-            url = "https://github.com/twopirllc/pandas-ta#indicators-by-category"
-            await spawn_blocking(webbrowser.open, url)
-
-        new_action = action_menu.addAction("Show TA API docs")
-        outsource(new_action.triggered, job_td)
-
-        # spacing
-        spacer = QSpacerItem(
-            0,
-            0,
-            QSizePolicy.Policy.Expanding,
-            QSizePolicy.Policy.Minimum,
+        await ask(
+            "Sample scripts applied",
+            "It hasn't been saved yet, feel free to customize the code to your liking.",
+            ["Okay"],
         )
-        card_layout.addItem(spacer)
+
+    def _add_doc_links(self, menu: QMenu) -> None:
+        """Add documentation link actions to menu."""
+        docs = [
+            ("Show Solie API docs", "https://solie-docs.cunarist.com/making-strategy/"),
+            (
+                "Show Pandas API docs",
+                "https://pandas.pydata.org/docs/reference/index.html",
+            ),
+            (
+                "Show TA API docs",
+                "https://github.com/twopirllc/pandas-ta#indicators-by-category",
+            ),
+        ]
+
+        for title, url in docs:
+
+            async def job_open(url=url) -> None:
+                await spawn_blocking(webbrowser.open, url)
+
+            new_action = menu.addAction(title)
+            outsource(new_action.triggered, job_open)
 
     async def confirm_closing(self) -> bool:
         strategy = self.strategy
@@ -190,7 +182,7 @@ class StrategyDevelopInput:
             "Are you sure you want to exit the editor without saving?",
             ["Cancel", "Exit"],
         )
-        if answer == 2:
+        if answer == EXIT_DIALOG_ANSWER:
             should_close = True
 
         return should_close

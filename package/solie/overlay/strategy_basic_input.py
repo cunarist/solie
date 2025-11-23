@@ -31,32 +31,59 @@ class StrategyBasicInput:
     done_event = Event()
 
     def __init__(self, strategy: Strategy) -> None:
-        # ■■■■■ the basic ■■■■■
-
+        """Initialize the strategy basic input dialog."""
         super().__init__()
         self.widget = QWidget()
         self.result = None
+        self.strategy = strategy
 
-        # ■■■■■ full layout ■■■■■
+        # Build main layout
+        cards_layout = self._create_main_layout()
 
+        # Build cards
+        self._build_about_card(cards_layout, strategy)
+        self._build_simulation_card(cards_layout, strategy)
+        self._build_confirmation_card(cards_layout, strategy)
+
+    def _create_main_layout(self) -> QVBoxLayout:
+        """Create the main layout structure."""
         full_layout = QHBoxLayout(self.widget)
         cards_layout = QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
-        # ■■■■■ spacing ■■■■■
+        # Top spacer
+        self._add_spacer(cards_layout, vertical=True)
 
-        # spacing
-        spacer = QSpacerItem(
-            0,
-            0,
-            QSizePolicy.Policy.Minimum,
-            QSizePolicy.Policy.Expanding,
-        )
-        cards_layout.addItem(spacer)
+        return cards_layout
 
-        # ■■■■■ a card ■■■■■
+    def _add_spacer(self, layout, vertical=False) -> None:
+        """Add a spacer to the layout."""
+        if vertical:
+            spacer = QSpacerItem(
+                0,
+                0,
+                QSizePolicy.Policy.Minimum,
+                QSizePolicy.Policy.Expanding,
+            )
+        else:
+            spacer = QSpacerItem(
+                0,
+                0,
+                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Minimum,
+            )
+        layout.addItem(spacer)
 
-        # card structure
+    def _add_small_spacing(self, layout) -> None:
+        """Add small vertical spacing."""
+        spacing_text = QLabel("")
+        spacing_text_font = QFont()
+        spacing_text_font.setPointSize(3)
+        spacing_text.setFont(spacing_text_font)
+        layout.addWidget(spacing_text)
+
+    def _build_about_card(self, cards_layout, strategy: Strategy) -> None:
+        """Build the 'About' information card."""
         card = QGroupBox()
         card.setFixedWidth(720)
         card_layout = QVBoxLayout(card)
@@ -70,141 +97,104 @@ class StrategyBasicInput:
         detail_text.setWordWrap(True)
         card_layout.addWidget(detail_text)
 
-        # spacing
-        spacing_text = QLabel("")
-        spacing_text_font = QFont()
-        spacing_text_font.setPointSize(3)
-        spacing_text.setFont(spacing_text_font)
-        card_layout.addWidget(spacing_text)
+        self._add_small_spacing(card_layout)
 
-        # divider
         divider = HorizontalDivider(self.widget)
         card_layout.addWidget(divider)
 
-        # spacing
-        spacing_text = QLabel("")
-        spacing_text_font = QFont()
-        spacing_text_font.setPointSize(3)
-        spacing_text.setFont(spacing_text_font)
-        card_layout.addWidget(spacing_text)
+        self._add_small_spacing(card_layout)
 
-        # input
+        # Create form inputs
         this_layout = QFormLayout()
         card_layout.addLayout(this_layout)
-        code_name_input = QLineEdit()
-        code_name_input.setText(strategy.code_name)
-        this_layout.addRow("Code name", code_name_input)
-        readable_name_input = QLineEdit()
-        readable_name_input.setText(strategy.readable_name)
-        this_layout.addRow("Readable name", readable_name_input)
-        version_input = QLineEdit()
-        version_input.setText(strategy.version)
-        this_layout.addRow("Version", version_input)
-        description_input = QTextEdit()
-        description_input.setPlainText(strategy.description)
-        this_layout.addRow("Description", description_input)
+
+        self.code_name_input = QLineEdit()
+        self.code_name_input.setText(strategy.code_name)
+        this_layout.addRow("Code name", self.code_name_input)
+
+        self.readable_name_input = QLineEdit()
+        self.readable_name_input.setText(strategy.readable_name)
+        this_layout.addRow("Readable name", self.readable_name_input)
+
+        self.version_input = QLineEdit()
+        self.version_input.setText(strategy.version)
+        this_layout.addRow("Version", self.version_input)
+
+        self.description_input = QTextEdit()
+        self.description_input.setPlainText(strategy.description)
+        this_layout.addRow("Description", self.description_input)
+
+        self.risk_level_input = self._create_risk_level_combobox(strategy)
+        this_layout.addRow("Risk level", self.risk_level_input)
+
+    def _create_risk_level_combobox(self, strategy: Strategy) -> QComboBox:
+        """Create risk level combo box with icons."""
         risk_level_input = QComboBox()
         iconpath = PACKAGE_PATH / "static" / "icon"
+
         red_pixmap = QPixmap()
         red_pixmap.load(str(iconpath / "traffic_light_red.png"))
         yellow_pixmap = QPixmap()
         yellow_pixmap.load(str(iconpath / "traffic_light_yellow.png"))
         green_pixmap = QPixmap()
         green_pixmap.load(str(iconpath / "traffic_light_green.png"))
+
         risk_level_input.addItem(green_pixmap, "Low")
         risk_level_input.addItem(yellow_pixmap, "Middle")
         risk_level_input.addItem(red_pixmap, "High")
         risk_level_input.setCurrentIndex(strategy.risk_level.value)
-        this_layout.addRow("Risk level", risk_level_input)
 
-        # ■■■■■ a card ■■■■■
+        return risk_level_input
 
-        # card structure
+    def _build_simulation_card(self, cards_layout, strategy: Strategy) -> None:
+        """Build the 'Simulation' settings card."""
         card = QGroupBox()
         card.setFixedWidth(720)
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
         cards_layout.addWidget(card)
 
-        # explanation
         detail_text = QLabel()
         detail_text.setText("Simulation")
         detail_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
         detail_text.setWordWrap(True)
         card_layout.addWidget(detail_text)
 
-        # spacing
-        spacing_text = QLabel("")
-        spacing_text_font = QFont()
-        spacing_text_font.setPointSize(3)
-        spacing_text.setFont(spacing_text_font)
-        card_layout.addWidget(spacing_text)
+        self._add_small_spacing(card_layout)
 
-        # divider
         divider = HorizontalDivider(self.widget)
         card_layout.addWidget(divider)
 
-        # spacing
-        spacing_text = QLabel("")
-        spacing_text_font = QFont()
-        spacing_text_font.setPointSize(3)
-        spacing_text.setFont(spacing_text_font)
-        card_layout.addWidget(spacing_text)
+        self._add_small_spacing(card_layout)
 
-        # input
         this_layout = QFormLayout()
         card_layout.addLayout(this_layout)
-        parallelized_input = QCheckBox()
-        parallelized_input.setChecked(bool(strategy.parallel_simulation_chunk_days))
-        this_layout.addRow("Parallelized", parallelized_input)
-        chunk_division_input = QSpinBox()
-        chunk_division_input.setSuffix(" days")
-        chunk_division_input.setMinimum(7)
-        chunk_division_input.setMaximum(90)
-        chunk_division_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
-        chunk_division_input.setValue(strategy.parallel_simulation_chunk_days or 0)
-        this_layout.addRow("Chunk division", chunk_division_input)
 
-        # ■■■■■ a card ■■■■■
+        self.parallelized_input = QCheckBox()
+        self.parallelized_input.setChecked(
+            bool(strategy.parallel_simulation_chunk_days)
+        )
+        this_layout.addRow("Parallelized", self.parallelized_input)
 
-        # card structure
+        self.chunk_division_input = QSpinBox()
+        self.chunk_division_input.setSuffix(" days")
+        self.chunk_division_input.setMinimum(7)
+        self.chunk_division_input.setMaximum(90)
+        self.chunk_division_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
+        self.chunk_division_input.setValue(strategy.parallel_simulation_chunk_days or 0)
+        this_layout.addRow("Chunk division", self.chunk_division_input)
+
+    def _build_confirmation_card(self, cards_layout, strategy: Strategy) -> None:
+        """Build the confirmation button card."""
         card = QGroupBox()
         card.setFixedWidth(720)
         card_layout = QHBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
         cards_layout.addWidget(card)
 
-        # function
         async def job() -> None:
-            strategy.readable_name = readable_name_input.text()
-            version = version_input.text()
-            if fullmatch(r"[0-9]+\.[0-9]+", version):
-                if not is_left_version_higher(strategy.version, version):
-                    strategy.version = version
-                else:
-                    await ask(
-                        "Version is lower.",
-                        "You can't lower the version of your strategy. It should only"
-                        " go up higher.",
-                        ["Okay"],
-                    )
-                    return
-            else:
-                await ask(
-                    "Version format is wrong.",
-                    "You should write the version in two numeric fields, divided by a"
-                    " single dot.",
-                    ["Okay"],
-                )
-                return
-            strategy.description = description_input.toPlainText()
-            strategy.risk_level = RiskLevel(risk_level_input.currentIndex())
-            parallel = parallelized_input.isChecked()
-            parallel_chunk_days = chunk_division_input.value() if parallel else None
-            strategy.parallel_simulation_chunk_days = parallel_chunk_days
-            self.done_event.set()
+            await self._save_strategy_settings()
 
-        # confirm button
         confirm_button = QPushButton("Save and close", card)
         outsource(confirm_button.clicked, job)
         confirm_button.setSizePolicy(
@@ -213,16 +203,44 @@ class StrategyBasicInput:
         )
         card_layout.addWidget(confirm_button)
 
-        # ■■■■■ spacing ■■■■■
+        # Bottom spacer
+        self._add_spacer(cards_layout, vertical=True)
 
-        # spacing
-        spacer = QSpacerItem(
-            0,
-            0,
-            QSizePolicy.Policy.Minimum,
-            QSizePolicy.Policy.Expanding,
-        )
-        cards_layout.addItem(spacer)
+    async def _save_strategy_settings(self) -> None:
+        """Save strategy settings with validation."""
+        strategy = self.strategy
+
+        strategy.readable_name = self.readable_name_input.text()
+
+        version = self.version_input.text()
+        if fullmatch(r"[0-9]+\.[0-9]+", version):
+            if not is_left_version_higher(strategy.version, version):
+                strategy.version = version
+            else:
+                await ask(
+                    "Version is lower.",
+                    "You can't lower the version of your strategy. It should only"
+                    " go up higher.",
+                    ["Okay"],
+                )
+                return
+        else:
+            await ask(
+                "Version format is wrong.",
+                "You should write the version in two numeric fields, divided by a"
+                " single dot.",
+                ["Okay"],
+            )
+            return
+
+        strategy.description = self.description_input.toPlainText()
+        strategy.risk_level = RiskLevel(self.risk_level_input.currentIndex())
+
+        parallel = self.parallelized_input.isChecked()
+        parallel_chunk_days = self.chunk_division_input.value() if parallel else None
+        strategy.parallel_simulation_chunk_days = parallel_chunk_days
+
+        self.done_event.set()
 
     async def confirm_closing(self) -> bool:
         return True

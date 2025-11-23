@@ -27,15 +27,9 @@ from solie.window import Window
 
 class Strategiest:
     def __init__(self, window: Window, scheduler: AsyncIOScheduler) -> None:
-        # ■■■■■ for data management ■■■■■
-
         self._window = window
         self._scheduler = scheduler
         self._workerpath = window.datapath / "strategist"
-
-        # ■■■■■ internal memory ■■■■■
-
-        # ■■■■■ remember and display ■■■■■
 
         self._saved_strategies: SavedStrategies
         self.strategies: list[Strategy] = []
@@ -51,13 +45,10 @@ class Strategiest:
         self._green_pixmap = QPixmap()
         self._green_pixmap.load(str(iconpath / "traffic_light_green.png"))
 
-        # ■■■■■ repetitive schedules ■■■■■
+        self._connect_ui_events()
 
-        # ■■■■■ websocket streamings ■■■■■
-
-        # ■■■■■ invoked by the internet connection status change ■■■■■
-
-        # ■■■■■ connect UI events ■■■■■
+    def _connect_ui_events(self):
+        window = self._window
 
         job = self._add_blank_strategy
         outsource(window.pushButton_5.clicked, job)
@@ -157,94 +148,107 @@ class Strategiest:
                 card_layout.addWidget(fixed_button)
                 continue
 
-            async def job_bs(strategy=strategy) -> None:
-                await self._remember_strategy_selections()
-                await overlay(StrategyDevelopInput(strategy))
-                spawn(self.display_strategies())
-                spawn(self._save_strategies())
-                spawn(self._restore_strategy_selections())
+            await self._create_basic_buttons(strategy, card_layout)
+            await self._create_menu_button(strategy, card_layout)
+            await self._create_reorder_buttons(strategy, card_layout)
 
-            edit_button = QPushButton("Develop")
-            card_layout.addWidget(edit_button)
-            outsource(edit_button.clicked, job_bs)
+    async def _create_basic_buttons(
+        self, strategy: SavedStrategy, card_layout: QHBoxLayout
+    ):
+        async def job_bs(strategy=strategy) -> None:
+            await self._remember_strategy_selections()
+            await overlay(StrategyDevelopInput(strategy))
+            spawn(self.display_strategies())
+            spawn(self._save_strategies())
+            spawn(self._restore_strategy_selections())
 
-            async def job_eb(strategy=strategy) -> None:
-                await self._remember_strategy_selections()
-                await overlay(StrategyBasicInput(strategy))
-                spawn(self.display_strategies())
-                spawn(self._save_strategies())
-                spawn(self._restore_strategy_selections())
+        edit_button = QPushButton("Develop")
+        card_layout.addWidget(edit_button)
+        outsource(edit_button.clicked, job_bs)
 
-            edit_button = QPushButton("Edit basic info")
-            card_layout.addWidget(edit_button)
-            outsource(edit_button.clicked, job_eb)
+        async def job_eb(strategy=strategy) -> None:
+            await self._remember_strategy_selections()
+            await overlay(StrategyBasicInput(strategy))
+            spawn(self.display_strategies())
+            spawn(self._save_strategies())
+            spawn(self._restore_strategy_selections())
 
-            action_menu = QMenu(self._window)
-            action_button = QPushButton()
-            action_button.setText("☰")
-            action_button.setMenu(action_menu)
-            card_layout.addWidget(action_button)
+        edit_button = QPushButton("Edit basic info")
+        card_layout.addWidget(edit_button)
+        outsource(edit_button.clicked, job_eb)
 
-            async def job_rs(strategy=strategy) -> None:
-                answer = await ask(
-                    "Remove this strategy?",
-                    "Once you remove this, it cannot be recovered.",
-                    ["Remove"],
-                )
-                if answer == 0:
-                    return
-                await self._remember_strategy_selections()
-                self._saved_strategies.all.remove(strategy)
-                self._combine_strategies()
-                spawn(self.display_strategies())
-                spawn(self._save_strategies())
-                spawn(self._restore_strategy_selections())
+    async def _create_menu_button(
+        self, strategy: SavedStrategy, card_layout: QHBoxLayout
+    ):
+        action_menu = QMenu(self._window)
+        action_button = QPushButton()
+        action_button.setText("☰")
+        action_button.setMenu(action_menu)
+        card_layout.addWidget(action_button)
 
-            new_action = action_menu.addAction("Remove")
-            outsource(new_action.triggered, job_rs)
+        async def job_rs(strategy=strategy) -> None:
+            answer = await ask(
+                "Remove this strategy?",
+                "Once you remove this, it cannot be recovered.",
+                ["Remove"],
+            )
+            if answer == 0:
+                return
+            await self._remember_strategy_selections()
+            self._saved_strategies.all.remove(strategy)
+            self._combine_strategies()
+            spawn(self.display_strategies())
+            spawn(self._save_strategies())
+            spawn(self._restore_strategy_selections())
 
-            async def job_dp(strategy=strategy) -> None:
-                await self._remember_strategy_selections()
-                duplicated = strategy.model_copy(deep=True)
-                duplicated.code_name = create_strategy_code_name()
-                self._saved_strategies.all.append(duplicated)
-                self._combine_strategies()
-                spawn(self.display_strategies())
-                spawn(self._save_strategies())
-                spawn(self._restore_strategy_selections())
+        new_action = action_menu.addAction("Remove")
+        outsource(new_action.triggered, job_rs)
 
-            new_action = action_menu.addAction("Duplicate")
-            outsource(new_action.triggered, job_dp)
+        async def job_dp(strategy=strategy) -> None:
+            await self._remember_strategy_selections()
+            duplicated = strategy.model_copy(deep=True)
+            duplicated.code_name = create_strategy_code_name()
+            self._saved_strategies.all.append(duplicated)
+            self._combine_strategies()
+            spawn(self.display_strategies())
+            spawn(self._save_strategies())
+            spawn(self._restore_strategy_selections())
 
-            async def job_ss(strategy=strategy) -> None:
-                await self._remember_strategy_selections()
-                original_index = self._saved_strategies.all.index(strategy)
-                after_index = original_index + 1
-                self._saved_strategies.all.pop(original_index)
-                self._saved_strategies.all.insert(after_index, strategy)
-                self._combine_strategies()
-                spawn(self.display_strategies())
-                spawn(self._save_strategies())
-                spawn(self._restore_strategy_selections())
+        new_action = action_menu.addAction("Duplicate")
+        outsource(new_action.triggered, job_dp)
 
-            edit_button = QPushButton("▼")
-            card_layout.addWidget(edit_button)
-            outsource(edit_button.clicked, job_ss)
+    async def _create_reorder_buttons(
+        self, strategy: SavedStrategy, card_layout: QHBoxLayout
+    ):
+        async def job_ss(strategy=strategy) -> None:
+            await self._remember_strategy_selections()
+            original_index = self._saved_strategies.all.index(strategy)
+            after_index = original_index + 1
+            self._saved_strategies.all.pop(original_index)
+            self._saved_strategies.all.insert(after_index, strategy)
+            self._combine_strategies()
+            spawn(self.display_strategies())
+            spawn(self._save_strategies())
+            spawn(self._restore_strategy_selections())
 
-            async def job_us(strategy=strategy) -> None:
-                await self._remember_strategy_selections()
-                original_index = self._saved_strategies.all.index(strategy)
-                after_index = original_index - 1
-                self._saved_strategies.all.pop(original_index)
-                self._saved_strategies.all.insert(after_index, strategy)
-                self._combine_strategies()
-                spawn(self.display_strategies())
-                spawn(self._save_strategies())
-                spawn(self._restore_strategy_selections())
+        edit_button = QPushButton("▼")
+        card_layout.addWidget(edit_button)
+        outsource(edit_button.clicked, job_ss)
 
-            edit_button = QPushButton("▲")
-            card_layout.addWidget(edit_button)
-            outsource(edit_button.clicked, job_us)
+        async def job_us(strategy=strategy) -> None:
+            await self._remember_strategy_selections()
+            original_index = self._saved_strategies.all.index(strategy)
+            after_index = original_index - 1
+            self._saved_strategies.all.pop(original_index)
+            self._saved_strategies.all.insert(after_index, strategy)
+            self._combine_strategies()
+            spawn(self.display_strategies())
+            spawn(self._save_strategies())
+            spawn(self._restore_strategy_selections())
+
+        edit_button = QPushButton("▲")
+        card_layout.addWidget(edit_button)
+        outsource(edit_button.clicked, job_us)
 
     async def _add_blank_strategy(self) -> None:
         await self._remember_strategy_selections()

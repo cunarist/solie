@@ -16,6 +16,7 @@ from pyqtgraph import (
 from PySide6.QtGui import QFont
 
 from solie.utility import (
+    MIN_SERIES_LENGTH,
     AggregateTrade,
     BookTicker,
     MarkPrice,
@@ -176,64 +177,84 @@ class GraphLines:
         self.asset_widget.setXLink(self.abstract_widget)
 
     def _configure_plots(self) -> None:
+        """Configure all plot widgets with limits, downsampling, and axes."""
+        # Set plot limits
+        self._set_plot_limits()
+
+        # Configure downsampling
+        self._configure_downsampling()
+
+        # Set axis items
+        self._set_axis_items()
+
+        # Set tick fonts
+        self._set_tick_fonts()
+
+    def _set_plot_limits(self) -> None:
+        """Set view limits for all plots."""
         self.price_plot.vb.setLimits(xMin=0, yMin=0)  # type:ignore
         self.volume_plot.vb.setLimits(xMin=0, yMin=0)  # type:ignore
         self.abstract_plot.vb.setLimits(xMin=0)  # type:ignore
         self.asset_plot.vb.setLimits(xMin=0, yMin=0)  # type:ignore
 
-        self.price_plot.setDownsampling(auto=True, mode="subsample")
-        self.price_plot.setClipToView(True)
-        self.price_plot.setAutoVisible(y=True)  # type:ignore
-        self.volume_plot.setDownsampling(auto=True, mode="subsample")
-        self.volume_plot.setClipToView(True)
-        self.volume_plot.setAutoVisible(y=True)  # type:ignore
-        self.abstract_plot.setDownsampling(auto=True, mode="subsample")
-        self.abstract_plot.setClipToView(True)
-        self.abstract_plot.setAutoVisible(y=True)  # type:ignore
-        self.asset_plot.setDownsampling(auto=True, mode="subsample")
-        self.asset_plot.setClipToView(True)
-        self.asset_plot.setAutoVisible(y=True)  # type:ignore
+    def _configure_downsampling(self) -> None:
+        """Configure downsampling for all plots."""
+        plots = [self.price_plot, self.volume_plot, self.abstract_plot, self.asset_plot]
+        for plot in plots:
+            plot.setDownsampling(auto=True, mode="subsample")
+            plot.setClipToView(True)
+            plot.setAutoVisible(y=True)  # type:ignore
 
-        axis_items = {
-            "top": TimeAxisItem(orientation="top"),
-            "bottom": TimeAxisItem(orientation="bottom"),
-            "left": PercentAxisItem(orientation="left"),
-            "right": PercentAxisItem(orientation="right"),
-        }
-        self.price_plot.setAxisItems(axis_items)
-        axis_items = {
-            "top": TimeAxisItem(orientation="top"),
-            "bottom": TimeAxisItem(orientation="bottom"),
-            "left": AxisItem(orientation="left"),
-            "right": AxisItem(orientation="right"),
-        }
-        self.volume_plot.setAxisItems(axis_items)
-        axis_items = {
-            "top": TimeAxisItem(orientation="top"),
-            "bottom": TimeAxisItem(orientation="bottom"),
-            "left": AxisItem(orientation="left"),
-            "right": AxisItem(orientation="right"),
-        }
-        self.abstract_plot.setAxisItems(axis_items)
-        axis_items = {
-            "top": TimeAxisItem(orientation="top"),
-            "bottom": TimeAxisItem(orientation="bottom"),
-            "left": PercentAxisItem(orientation="left"),
-            "right": PercentAxisItem(orientation="right"),
-        }
-        self.asset_plot.setAxisItems(axis_items)
+    def _set_axis_items(self) -> None:
+        """Set axis items for all plots."""
+        # Price plot with percent axes
+        self.price_plot.setAxisItems(
+            {
+                "top": TimeAxisItem(orientation="top"),
+                "bottom": TimeAxisItem(orientation="bottom"),
+                "left": PercentAxisItem(orientation="left"),
+                "right": PercentAxisItem(orientation="right"),
+            }
+        )
 
+        # Volume plot with standard axes
+        self.volume_plot.setAxisItems(
+            {
+                "top": TimeAxisItem(orientation="top"),
+                "bottom": TimeAxisItem(orientation="bottom"),
+                "left": AxisItem(orientation="left"),
+                "right": AxisItem(orientation="right"),
+            }
+        )
+
+        # Abstract plot with standard axes
+        self.abstract_plot.setAxisItems(
+            {
+                "top": TimeAxisItem(orientation="top"),
+                "bottom": TimeAxisItem(orientation="bottom"),
+                "left": AxisItem(orientation="left"),
+                "right": AxisItem(orientation="right"),
+            }
+        )
+
+        # Asset plot with percent axes
+        self.asset_plot.setAxisItems(
+            {
+                "top": TimeAxisItem(orientation="top"),
+                "bottom": TimeAxisItem(orientation="bottom"),
+                "left": PercentAxisItem(orientation="left"),
+                "right": PercentAxisItem(orientation="right"),
+            }
+        )
+
+    def _set_tick_fonts(self) -> None:
+        """Set tick fonts for all plot axes."""
         tick_font = QFont("Source Code Pro", 7)
-        self.price_plot.getAxis("top").setTickFont(tick_font)
-        self.price_plot.getAxis("bottom").setTickFont(tick_font)
-        self.price_plot.getAxis("left").setTickFont(tick_font)
-        self.price_plot.getAxis("right").setTickFont(tick_font)
-        self.volume_plot.getAxis("top").setTickFont(tick_font)
-        self.volume_plot.getAxis("bottom").setTickFont(tick_font)
-        self.volume_plot.getAxis("left").setTickFont(tick_font)
-        self.volume_plot.getAxis("right").setTickFont(tick_font)
-        self.abstract_plot.getAxis("top").setTickFont(tick_font)
-        self.abstract_plot.getAxis("bottom").setTickFont(tick_font)
+
+        plots = [self.price_plot, self.volume_plot, self.abstract_plot, self.asset_plot]
+        for plot in plots:
+            for position in ["top", "bottom", "left", "right"]:
+                plot.getAxis(position).setTickFont(tick_font)
         self.abstract_plot.getAxis("left").setTickFont(tick_font)
         self.abstract_plot.getAxis("right").setTickFont(tick_font)
         self.asset_plot.getAxis("top").setTickFont(tick_font)
@@ -270,13 +291,11 @@ class GraphLines:
         entry_price: float | None,
         observed_until: datetime,
     ) -> None:
-        # mark price
         data_y = [d.mark_price for d in mark_prices]
         data_x = [d.timestamp / 10**3 for d in mark_prices]
         self.mark_price.setData(data_x, data_y)
         await sleep(0.0)
 
-        # last price
         timestamps = [t.timestamp / 10**3 for t in aggregate_trades]
 
         data_x = timestamps.copy()
@@ -284,7 +303,6 @@ class GraphLines:
         self.last_price.setData(data_x, data_y)
         await sleep(0.0)
 
-        # last trade volume
         index_ar = np.array(timestamps)
         value_ar = np.array([t.volume for t in aggregate_trades])
         length = len(index_ar)
@@ -296,7 +314,6 @@ class GraphLines:
         self.last_volume.setData(data_x, data_y)
         await sleep(0.0)
 
-        # book tickers
         data_x = [d.timestamp / 10**3 for d in book_tickers]
         data_y = [d.best_bid_price for d in book_tickers]
         self.book_tickers.line_a.setData(data_x, data_y)
@@ -304,7 +321,6 @@ class GraphLines:
         self.book_tickers.line_b.setData(data_x, data_y)
         await sleep(0.0)
 
-        # entry price
         first_moment = observed_until - timedelta(hours=12)
         last_moment = observed_until + timedelta(hours=12)
         if entry_price is None:
@@ -331,126 +347,118 @@ class GraphLines:
         asset_record: pd.DataFrame,
         unrealized_changes: pd.Series,
     ) -> None:
-        # price movement
+        """Update heavy graph lines with candle and asset data."""
+        # Prepare arrays
+        arrays = self._prepare_candle_arrays(symbol, candle_data)
+
+        # Update price lines for rise/fall/stay
+        await self._update_price_lines(arrays)
+
+        # Update wobbles and volume
+        await self._update_wobbles_and_volume(symbol, candle_data)
+
+        # Update asset lines
+        await self._update_asset_lines(symbol, asset_record, unrealized_changes)
+
+    def _prepare_candle_arrays(
+        self, symbol: str, candle_data: pd.DataFrame
+    ) -> dict[str, np.ndarray]:
+        """Prepare numpy arrays from candle data."""
         index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
         open_ar = candle_data[f"{symbol}/OPEN"].to_numpy()
         close_ar = candle_data[f"{symbol}/CLOSE"].to_numpy()
         high_ar = candle_data[f"{symbol}/HIGH"].to_numpy()
         low_ar = candle_data[f"{symbol}/LOW"].to_numpy()
-        rise_ar = close_ar > open_ar
-        fall_ar = close_ar < open_ar
-        stay_ar = close_ar == open_ar
+
         length = len(index_ar)
         nan_ar = np.empty(length)
         nan_ar[:] = np.nan
 
-        data_x = np.stack(
-            [
-                index_ar[rise_ar] + 2,
-                index_ar[rise_ar] + 5,
-                index_ar[rise_ar],
-                index_ar[rise_ar] + 5,
-                index_ar[rise_ar] + 8,
-                index_ar[rise_ar],
-                index_ar[rise_ar] + 5,
-                index_ar[rise_ar] + 5,
-                index_ar[rise_ar],
-            ],
-            axis=1,
-        ).reshape(-1)
-        data_y = np.stack(
-            [
-                open_ar[rise_ar],
-                open_ar[rise_ar],
-                nan_ar[rise_ar],
-                close_ar[rise_ar],
-                close_ar[rise_ar],
-                nan_ar[rise_ar],
-                high_ar[rise_ar],
-                low_ar[rise_ar],
-                nan_ar[rise_ar],
-            ],
-            axis=1,
-        ).reshape(-1)
-        self.price_rise.setData(data_x, data_y)
-        await sleep(0.0)
+        return {
+            "index": index_ar,
+            "open": open_ar,
+            "close": close_ar,
+            "high": high_ar,
+            "low": low_ar,
+            "nan": nan_ar,
+            "rise": close_ar > open_ar,
+            "fall": close_ar < open_ar,
+            "stay": close_ar == open_ar,
+        }
+
+    async def _update_price_lines(self, arrays: dict[str, np.ndarray]) -> None:
+        """Update price rise/fall/stay lines."""
+        for condition, line in [
+            (arrays["rise"], self.price_rise),
+            (arrays["fall"], self.price_fall),
+            (arrays["stay"], self.price_stay),
+        ]:
+            data_x, data_y = self._create_candlestick_data(arrays, condition)
+            line.setData(data_x, data_y)
+            await sleep(0.0)
+
+    def _create_candlestick_data(
+        self, arrays: dict[str, np.ndarray], mask: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Create candlestick data arrays for a given condition mask."""
+        idx = arrays["index"][mask]
+        open_v = arrays["open"][mask]
+        close_v = arrays["close"][mask]
+        high_v = arrays["high"][mask]
+        low_v = arrays["low"][mask]
+        nan_v = arrays["nan"][mask]
 
         data_x = np.stack(
             [
-                index_ar[fall_ar] + 2,
-                index_ar[fall_ar] + 5,
-                index_ar[fall_ar],
-                index_ar[fall_ar] + 5,
-                index_ar[fall_ar] + 8,
-                index_ar[fall_ar],
-                index_ar[fall_ar] + 5,
-                index_ar[fall_ar] + 5,
-                index_ar[fall_ar],
+                idx + 2,
+                idx + 5,
+                idx,
+                idx + 5,
+                idx + 8,
+                idx,
+                idx + 5,
+                idx + 5,
+                idx,
             ],
             axis=1,
         ).reshape(-1)
+
         data_y = np.stack(
             [
-                open_ar[fall_ar],
-                open_ar[fall_ar],
-                nan_ar[fall_ar],
-                close_ar[fall_ar],
-                close_ar[fall_ar],
-                nan_ar[fall_ar],
-                high_ar[fall_ar],
-                low_ar[fall_ar],
-                nan_ar[fall_ar],
+                open_v,
+                open_v,
+                nan_v,
+                close_v,
+                close_v,
+                nan_v,
+                high_v,
+                low_v,
+                nan_v,
             ],
             axis=1,
         ).reshape(-1)
-        self.price_fall.setData(data_x, data_y)
-        await sleep(0.0)
 
-        data_x = np.stack(
-            [
-                index_ar[stay_ar] + 2,
-                index_ar[stay_ar] + 5,
-                index_ar[stay_ar],
-                index_ar[stay_ar] + 5,
-                index_ar[stay_ar] + 8,
-                index_ar[stay_ar],
-                index_ar[stay_ar] + 5,
-                index_ar[stay_ar] + 5,
-                index_ar[stay_ar],
-            ],
-            axis=1,
-        ).reshape(-1)
-        data_y = np.stack(
-            [
-                open_ar[stay_ar],
-                open_ar[stay_ar],
-                nan_ar[stay_ar],
-                close_ar[stay_ar],
-                close_ar[stay_ar],
-                nan_ar[stay_ar],
-                high_ar[stay_ar],
-                low_ar[stay_ar],
-                nan_ar[stay_ar],
-            ],
-            axis=1,
-        ).reshape(-1)
-        self.price_stay.setData(data_x, data_y)
-        await sleep(0.0)
+        return data_x, data_y
 
-        # wobbles
+    async def _update_wobbles_and_volume(
+        self, symbol: str, candle_data: pd.DataFrame
+    ) -> None:
+        """Update wobbles and volume lines."""
+        # High wobble
         sr = candle_data[f"{symbol}/HIGH"]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         self.wobbles.line_a.setData(data_x, data_y)
         await sleep(0.0)
 
+        # Low wobble
         sr = candle_data[f"{symbol}/LOW"]
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
         data_y = sr.to_numpy(dtype=np.float32)
         self.wobbles.line_b.setData(data_x, data_y)
         await sleep(0.0)
 
-        # trade volume
+        # Volume
         sr = candle_data[f"{symbol}/VOLUME"]
         sr = sr.fillna(value=0)
         data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
@@ -458,15 +466,22 @@ class GraphLines:
         self.volume.setData(data_x, data_y)
         await sleep(0.0)
 
-        # asset
+    async def _update_asset_lines(
+        self,
+        symbol: str,
+        asset_record: pd.DataFrame,
+        unrealized_changes: pd.Series,
+    ) -> None:
+        """Update asset result and trade lines."""
+        # Result asset
         data_x = asset_record["RESULT_ASSET"].index.to_numpy(dtype=np.int64) / 10**9
         data_y = asset_record["RESULT_ASSET"].to_numpy(dtype=np.float32)
         self.asset.setData(data_x, data_y)
         await sleep(0.0)
 
-        # asset with unrealized profit
+        # Asset with unrealized profit
         sr = asset_record["RESULT_ASSET"]
-        if len(sr) >= 2:
+        if len(sr) >= MIN_SERIES_LENGTH:
             sr = sr.resample("10s").ffill()
         unrealized_changes_sr = unrealized_changes.reindex(sr.index)
         sr = sr * (1 + unrealized_changes_sr)
@@ -475,7 +490,7 @@ class GraphLines:
         self.asset_with_unrealized_profit.setData(data_x, data_y)
         await sleep(0.0)
 
-        # buy and sell
+        # Sell trades
         df = asset_record.loc[asset_record["SYMBOL"] == symbol]
         df = df[df["SIDE"] == "SELL"]
         sr = df["FILL_PRICE"]
@@ -484,6 +499,7 @@ class GraphLines:
         self.sell.setData(data_x, data_y)
         await sleep(0.0)
 
+        # Buy trades
         df = asset_record.loc[asset_record["SYMBOL"] == symbol]
         df = df[df["SIDE"] == "BUY"]
         sr = df["FILL_PRICE"]
@@ -493,12 +509,10 @@ class GraphLines:
         await sleep(0.0)
 
     async def update_custom_lines(self, symbol: str, indicators: pd.DataFrame) -> None:
-        # common data
         columns = [str(n) for n in indicators.columns]
         data_x = indicators.index.to_numpy(dtype=np.int64) / 10**9
         data_x += 5
 
-        # price indicators
         chosen_columns = [n for n in columns if n.startswith(f"{symbol}/PRICE")]
         for index, widget in enumerate(self.price_indicators):
             if index >= len(chosen_columns):
@@ -516,7 +530,6 @@ class GraphLines:
             widget.setData(data_x, data_y)
             await sleep(0.0)
 
-        # trade volume indicators
         chosen_columns = [n for n in columns if n.startswith(f"{symbol}/VOLUME")]
         for index, widget in enumerate(self.volume_indicators):
             if index >= len(chosen_columns):
@@ -534,7 +547,6 @@ class GraphLines:
             widget.setData(data_x, data_y)
             await sleep(0.0)
 
-        # abstract indicators
         chosen_columns = [n for n in columns if n.startswith(f"{symbol}/ABSTRACT")]
         for index, widget in enumerate(self.abstract_indicators):
             if index >= len(chosen_columns):

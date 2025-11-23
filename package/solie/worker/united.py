@@ -30,19 +30,11 @@ class Worker(Protocol):
 
 
 class Team:
-    def unite(
-        self,
-        collector: Collector,
-        transactor: Transactor,
-        simulator: Simulator,
-        strategist: Strategiest,
-        manager: Manager,
-    ) -> None:
-        self.collector = collector
-        self.transactor = transactor
-        self.simulator = simulator
-        self.strategist = strategist
-        self.manager = manager
+    collector: Collector
+    transactor: Transactor
+    simulator: Simulator
+    strategist: Strategiest
+    manager: Manager
 
     def get_all(self) -> list[Worker]:
         return [

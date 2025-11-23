@@ -12,9 +12,7 @@ import numpy as np
 import pandas as pd
 
 from solie.common import spawn_blocking
-
-from .data_models import AggregateTrade
-from .timing import to_moment
+from solie.utility import AggregateTrade, to_moment
 
 BYTE_CHUNK = 1024 * 1024
 RETRY_COUNT = 10

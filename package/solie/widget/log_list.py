@@ -21,13 +21,9 @@ class LogOverlay:
     done_event = Event()
 
     def __init__(self, log_content: str) -> None:
-        # ■■■■■ the basic ■■■■■
-
         super().__init__()
         self.widget = QWidget()
         self.result = None
-
-        # ■■■■■ full layout ■■■■■
 
         full_layout = QVBoxLayout(self.widget)
         cards_layout = QVBoxLayout()

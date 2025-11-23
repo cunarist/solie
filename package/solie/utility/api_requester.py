@@ -9,6 +9,8 @@ from aiohttp import ClientSession
 
 from solie.common import spawn
 
+OK_CODE = 200
+
 
 class ApiRequestError(Exception):
     def __init__(self, info_text: str, payload: dict | None) -> None:
@@ -72,7 +74,7 @@ class ApiRequester:
                 self.used_rates[header_key] = (write_value, current_time)
 
         # check if the response contains error message
-        if "code" in response and response["code"] != 200:
+        if "code" in response and response["code"] != OK_CODE:
             error_code = response["code"]
             error_message = response["msg"]
             text = f"Binance error code {error_code}\n{error_message}"
@@ -106,7 +108,7 @@ class ApiRequester:
             response = await raw.read()
 
         status_code = raw.status
-        if status_code != 200:
+        if not raw.ok:
             text = f"HTTP {status_code}\n{url}"
             raise ApiRequestError(text, None)
 

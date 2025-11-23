@@ -61,3 +61,10 @@ def create_strategy_code_name() -> str:
     ingredients = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     code_name = "".join(random.choice(ingredients) for _ in range(6))
     return code_name
+
+
+class Cell[T]:
+    """A simple mutable box to hold a value."""
+
+    def __init__(self, value: T) -> None:
+        self.value = value

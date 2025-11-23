@@ -56,8 +56,7 @@ class PercentAxisItem(AxisItem):
         return strings
 
     def format_fixed_float(self, number: float, width=4, positive_sign=False) -> str:
-        if width < 4:
-            width = 4
+        width = max(width, 4)
 
         if number < 0 or (positive_sign and number >= 0):
             # when sign should be included

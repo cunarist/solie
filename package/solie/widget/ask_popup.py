@@ -62,52 +62,50 @@ class AskPopup(QWidget):
         detail_text: str,
         options: list[str],
     ) -> None:
-        # ■■■■■ the basic ■■■■■
-
         super().__init__(self.installed_window)
-
-        # ■■■■■ set properties ■■■■■
 
         # needed for filling the window when resized
         self.installed_window.installEventFilter(self)
 
-        # ■■■■■ in case other ask popup exists ■■■■■
-
+        # Reset done event
         self.done_event.set()
         self.done_event.clear()
 
-        # ■■■■■ prepare answer ■■■■■
-
         self.answer = 0
 
-        # ■■■■■ full structure ■■■■■
-
+        # Setup widget attributes
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
         self.setAutoFillBackground(True)
 
-        # ■■■■■ full layout ■■■■■
-
+        # Create main layout
         full_layout = QHBoxLayout(self)
 
-        # ■■■■■ visaul box ■■■■■
-
-        # box
-        content_box = PopupBox()
-        content_box.setAutoFillBackground(True)
-        content_box.setFixedSize(520, 520)
+        # Create content box
+        content_box = self._create_content_box()
         content_box_layout = QVBoxLayout(content_box)
         full_layout.addWidget(content_box)
 
-        # line containing the close button
+        # Setup UI components
+        self._add_close_button(content_box, content_box_layout)
+        self._add_text_content(content_box_layout, main_text, detail_text)
+        self._add_option_buttons(content_box, content_box_layout, options)
+
+    def _create_content_box(self) -> PopupBox:
+        """Create and configure the content box."""
+        content_box = PopupBox()
+        content_box.setAutoFillBackground(True)
+        content_box.setFixedSize(520, 520)
+        return content_box
+
+    def _add_close_button(self, content_box: PopupBox, layout: QVBoxLayout) -> None:
+        """Add close button to the top right."""
         this_layout = QHBoxLayout()
         widget = QSpacerItem(
-            0,
-            0,
-            QSizePolicy.Policy.Expanding,
-            QSizePolicy.Policy.Minimum,
+            0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
         )
         this_layout.addItem(widget)
+
         close_button = QPushButton("✕", content_box)
         close_button_font = QFont()
         close_button_font.setPointSize(11)
@@ -118,18 +116,19 @@ class AskPopup(QWidget):
 
         outsource(close_button.clicked, job_de)
         this_layout.addWidget(close_button)
-        content_box_layout.addLayout(this_layout)
+        layout.addLayout(this_layout)
 
-        # spacing
+    def _add_text_content(
+        self, layout: QVBoxLayout, main_text: str, detail_text: str
+    ) -> None:
+        """Add main and detail text widgets."""
+        # Top spacer
         widget = QSpacerItem(
-            0,
-            0,
-            QSizePolicy.Policy.Minimum,
-            QSizePolicy.Policy.Expanding,
+            0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
         )
-        content_box_layout.addItem(widget)
+        layout.addItem(widget)
 
-        # title
+        # Main text
         main_text_widget = QLabel()
         main_text_widget.setText(main_text)
         main_text_widget.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -137,32 +136,32 @@ class AskPopup(QWidget):
         main_text_font.setPointSize(12)
         main_text_widget.setFont(main_text_font)
         main_text_widget.setWordWrap(True)
-        content_box_layout.addWidget(main_text_widget)
+        layout.addWidget(main_text_widget)
 
-        # spacing
+        # Spacing
         spacing_text = QLabel("")
         spacing_text_font = QFont()
         spacing_text_font.setPointSize(3)
         spacing_text.setFont(spacing_text_font)
-        content_box_layout.addWidget(spacing_text)
+        layout.addWidget(spacing_text)
 
-        # explanation
+        # Detail text
         detail_text_widget = QLabel()
         detail_text_widget.setText(detail_text)
         detail_text_widget.setAlignment(Qt.AlignmentFlag.AlignCenter)
         detail_text_widget.setWordWrap(True)
-        content_box_layout.addWidget(detail_text_widget)
+        layout.addWidget(detail_text_widget)
 
-        # spacing
+        # Bottom spacer
         widget = QSpacerItem(
-            0,
-            0,
-            QSizePolicy.Policy.Minimum,
-            QSizePolicy.Policy.Expanding,
+            0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
         )
-        content_box_layout.addItem(widget)
+        layout.addItem(widget)
 
-        # line including selection buttons
+    def _add_option_buttons(
+        self, content_box: PopupBox, layout: QVBoxLayout, options: list[str]
+    ) -> None:
+        """Add option buttons."""
         this_layout = QHBoxLayout()
         for turn, option in enumerate(options):
             option_button = QPushButton(option, content_box)
@@ -175,4 +174,4 @@ class AskPopup(QWidget):
             option_button.setMaximumWidth(240)
             this_layout.addWidget(option_button)
 
-        content_box_layout.addLayout(this_layout)
+        layout.addLayout(this_layout)

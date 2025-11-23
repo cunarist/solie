@@ -19,19 +19,13 @@ class DonationGuide:
     done_event = Event()
 
     def __init__(self) -> None:
-        # ■■■■■ the basic ■■■■■
-
         super().__init__()
         self.widget = QWidget()
         self.result = None
 
-        # ■■■■■ full layout ■■■■■
-
         full_layout = QHBoxLayout(self.widget)
         cards_layout = QVBoxLayout()
         full_layout.addLayout(cards_layout)
-
-        # ■■■■■ spacing ■■■■■
 
         # spacing
         spacer = QSpacerItem(
@@ -41,8 +35,6 @@ class DonationGuide:
             QSizePolicy.Policy.Expanding,
         )
         cards_layout.addItem(spacer)
-
-        # ■■■■■ a card ■■■■■
 
         # card structure
         card = QGroupBox()
@@ -69,8 +61,6 @@ class DonationGuide:
         lineedit_widget.setReadOnly(True)
         lineedit_widget.setAlignment(Qt.AlignmentFlag.AlignCenter)
         card_layout.addWidget(lineedit_widget)
-
-        # ■■■■■ spacing ■■■■■
 
         # spacing
         spacer = QSpacerItem(

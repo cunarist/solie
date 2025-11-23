@@ -45,42 +45,42 @@ class DownloadFillOptionChooser:
     done_event = Event()
 
     def __init__(self) -> None:
-        # ■■■■■ the basic ■■■■■
-
         super().__init__()
         self.widget = QWidget()
         self.result: DownloadYearRange | DownloadFillOption | None = None
 
-        # ■■■■■ prepare variables ■■■■■
-
         current_year = datetime.now(timezone.utc).year
 
-        # ■■■■■ full layout ■■■■■
-
+        # Create main layout
         full_layout = QHBoxLayout(self.widget)
         cards_layout = QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
-        # ■■■■■ spacing ■■■■■
+        # Add top spacer
+        self._add_spacer(cards_layout)
 
+        # Create UI cards
+        self._create_explanation_card(cards_layout)
+        self._create_year_range_card(cards_layout, current_year)
+
+        # Add bottom spacer
+        self._add_spacer(cards_layout)
+
+    def _add_spacer(self, layout: QVBoxLayout) -> None:
+        """Add expanding spacer to layout."""
         spacer = QSpacerItem(
-            0,
-            0,
-            QSizePolicy.Policy.Minimum,
-            QSizePolicy.Policy.Expanding,
+            0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
         )
-        cards_layout.addItem(spacer)
+        layout.addItem(spacer)
 
-        # ■■■■■ a card ■■■■■
-
-        # card structure
+    def _create_explanation_card(self, parent_layout: QVBoxLayout) -> None:
+        """Create explanation card."""
         card = QGroupBox()
         card.setFixedWidth(720)
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
-        cards_layout.addWidget(card)
+        parent_layout.addWidget(card)
 
-        # explanation
         explain_label = QLabel(
             "Solie will fill the candle data with historical data provided by"
             " Binance. The more you fill, the longer it takes. Amount of a few days"
@@ -89,17 +89,28 @@ class DownloadFillOptionChooser:
         explain_label.setWordWrap(True)
         card_layout.addWidget(explain_label)
 
-        # ■■■■■ a card ■■■■■
-
-        # card structure
+    def _create_year_range_card(
+        self, parent_layout: QVBoxLayout, current_year: int
+    ) -> None:
+        """Create year range selection card."""
         card = QGroupBox()
         card.setFixedWidth(720)
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
-        cards_layout.addWidget(card)
+        parent_layout.addWidget(card)
 
-        # year range input
         last_year = current_year - 1
+
+        # Add year range inputs
+        self._add_year_range_inputs(card, card_layout, last_year)
+
+        # Add fill option buttons
+        self._add_fill_option_buttons(card, card_layout)
+
+    def _add_year_range_inputs(
+        self, card: QGroupBox, card_layout: QVBoxLayout, last_year: int
+    ) -> None:
+        """Add year range input controls."""
         button_layout = QHBoxLayout()
         card_layout.addLayout(button_layout)
         card_layout.addWidget(HorizontalDivider(self.widget))
@@ -145,7 +156,10 @@ class DownloadFillOptionChooser:
 
         outsource(option_button.clicked, custom_job)
 
-        # option buttons
+    def _add_fill_option_buttons(
+        self, card: QGroupBox, card_layout: QVBoxLayout
+    ) -> None:
+        """Add preset fill option buttons."""
         for turn, text in enumerate(FILL_OPTIONS_TEXTS):
 
             async def job(turn=turn) -> None:
@@ -155,16 +169,6 @@ class DownloadFillOptionChooser:
             option_button = QPushButton(text, card)
             outsource(option_button.clicked, job)
             card_layout.addWidget(option_button)
-
-        # ■■■■■ spacing ■■■■■
-
-        spacer = QSpacerItem(
-            0,
-            0,
-            QSizePolicy.Policy.Minimum,
-            QSizePolicy.Policy.Expanding,
-        )
-        cards_layout.addItem(spacer)
 
     async def confirm_closing(self) -> bool:
         return True

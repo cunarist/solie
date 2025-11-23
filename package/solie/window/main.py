@@ -4,7 +4,7 @@ from asyncio import Event, sleep
 from datetime import datetime, timezone
 from logging import getLogger
 from pathlib import Path
-from typing import override
+from typing import Any, NamedTuple, override
 
 import aiofiles
 import aiofiles.os
@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
 from solie.common import PACKAGE_PATH, PACKAGE_VERSION, spawn
 from solie.overlay import CoinSelection, DatapathInput, TokenSelection
 from solie.utility import (
+    LONG_SYMBOL_LIST_THRESHOLD,
     ApiRequester,
     DataSettings,
     LogHandler,
@@ -49,6 +50,18 @@ from solie.widget import (
 from .compiled import Ui_MainWindow
 
 logger = getLogger(__name__)
+
+
+class SymbolBoxParams(NamedTuple):
+    """Parameters for populating a symbol box."""
+
+    symbol: str
+    pixmap: QPixmap
+    coin_symbol: str
+    coin_rank: int
+    name_text_size: int
+    price_text_size: int
+    detail_text_size: int
 
 
 class Window(QMainWindow, Ui_MainWindow):
@@ -115,19 +128,35 @@ class Window(QMainWindow, Ui_MainWindow):
         spawn(job_ask())
 
     async def boot(self) -> None:
-        # ■■■■■ Do basic Qt things ■■■■■
+        """Initialize and boot the application window."""
+        self._setup_ui()
+        await self._setup_splash_screen()
+        self._configure_global_settings()
+        await self._set_window_icon()
+        await self._ensure_internet_connection()
+        await self._load_or_create_datapath()
+        await self._load_or_create_data_settings()
 
+        asset_token = self.data_settings.asset_token
+        target_symbols = self.data_settings.target_symbols
+
+        coin_info = await self._fetch_coin_information()
+        self._create_symbol_aliases(asset_token, target_symbols, coin_info)
+
+        await self._setup_ui_widgets(asset_token, target_symbols, coin_info)
+        await self._setup_graphs()
+        await self._setup_logging()
+
+    def _setup_ui(self) -> None:
+        """Setup basic UI elements and sizes."""
         self.setupUi(self)
         self.setMouseTracking(True)
-
-        # ■■■■■ Basic sizing ■■■■■
-
         self.resize(0, 0)  # To smallest size possible
         self.splitter.setSizes([3, 1, 1, 2])
         self.splitter_2.setSizes([3, 1, 1, 2])
 
-        # ■■■■■ Show the splash screen ■■■■■
-
+    async def _setup_splash_screen(self) -> None:
+        """Initialize and display the splash screen."""
         self.gauge.hide()
         self.board.hide()
         self._splash_screen = SplashScreen()
@@ -135,20 +164,18 @@ class Window(QMainWindow, Ui_MainWindow):
         if central_layout is None:
             raise ValueError("There's no central layout")
         central_layout.addWidget(self._splash_screen)
-
-        # ■■■■■ Show the window ■■■■■
         self.show()
 
-        # ■■■■■ Global settings of packages ■■■■■
-
+    def _configure_global_settings(self) -> None:
+        """Configure global settings for libraries."""
         os.get_terminal_size = lambda *args: os.terminal_size((150, 90))
         pd.set_option("display.precision", 6)
         pd.set_option("display.min_rows", 100)
         pd.set_option("display.max_rows", 100)
         pyqtgraph.setConfigOptions(antialias=True)
 
-        # ■■■■■ Window icon ■■■■■
-
+    async def _set_window_icon(self) -> None:
+        """Load and set the window icon."""
         filepath = PACKAGE_PATH / "static" / "product_icon.png"
         async with aiofiles.open(filepath, mode="rb") as file:
             product_icon_data = await file.read()
@@ -156,8 +183,8 @@ class Window(QMainWindow, Ui_MainWindow):
         product_icon_pixmap.loadFromData(product_icon_data)
         self.setWindowIcon(product_icon_pixmap)
 
-        # ■■■■■ Request internet connection ■■■■■
-
+    async def _ensure_internet_connection(self) -> None:
+        """Wait for internet connection to be established."""
         await start_monitoring_internet()
         while not internet_connected():
             await ask(
@@ -167,20 +194,17 @@ class Window(QMainWindow, Ui_MainWindow):
             )
             await sleep(1.0)
 
-        # ■■■■■ Get datapath ■■■■■
-
+    async def _load_or_create_datapath(self) -> None:
+        """Load existing datapath or prompt user to create one."""
         datapath = await read_datapath()
-
         if not datapath:
             datapath = await overlay(DatapathInput())
             await save_datapath(datapath)
-
         self.datapath = datapath
 
-        # ■■■■■ Get data settings ■■■■■
-
-        data_settings = await read_data_settings(datapath)
-
+    async def _load_or_create_data_settings(self) -> None:
+        """Load existing data settings or prompt user to create them."""
+        data_settings = await read_data_settings(self.datapath)
         if not data_settings:
             asset_token = await overlay(TokenSelection())
             target_symbols = await overlay(CoinSelection(asset_token))
@@ -188,17 +212,11 @@ class Window(QMainWindow, Ui_MainWindow):
                 asset_token=asset_token,
                 target_symbols=target_symbols,
             )
-            await save_data_settings(data_settings, datapath)
-
+            await save_data_settings(data_settings, self.datapath)
         self.data_settings = data_settings
 
-        # ■■■■■ Get data settings ■■■■■
-
-        asset_token = data_settings.asset_token
-        target_symbols = data_settings.target_symbols
-
-        # ■■■■■ Get information about target symbols ■■■■■
-
+    async def _fetch_coin_information(self) -> dict[str, dict[str, Any]]:
+        """Fetch coin information from CoinGecko API."""
         api_requester = ApiRequester()
         response = await api_requester.coingecko(
             "GET",
@@ -219,48 +237,81 @@ class Window(QMainWindow, Ui_MainWindow):
             coin_icon_urls[coin_symbol] = about_coin["image"]
             coin_ranks[coin_symbol] = about_coin["market_cap_rank"]
 
+        return {"names": coin_names, "urls": coin_icon_urls, "ranks": coin_ranks}
+
+    def _create_symbol_aliases(
+        self,
+        asset_token: str,
+        target_symbols: list[str],
+        coin_info: dict[str, dict[str, Any]],
+    ) -> None:
+        """Create mapping between symbols and their aliases."""
+        coin_names = coin_info["names"]
+
         self.alias_to_symbol: dict[str, str] = {}
         self.symbol_to_alias: dict[str, str] = {}
 
         for symbol in target_symbols:
             coin_symbol = symbol.removesuffix(asset_token)
             coin_name = coin_names.get(coin_symbol, "")
-            if coin_name == "":
-                alias = coin_symbol
-            else:
-                alias = coin_name
+            alias = coin_name if coin_name else coin_symbol
             self.alias_to_symbol[alias] = symbol
             self.symbol_to_alias[symbol] = alias
 
-        # ■■■■■ Make widgets according to the data_settings ■■■■■
+    async def _setup_ui_widgets(
+        self,
+        asset_token: str,
+        target_symbols: list[str],
+        coin_info: dict[str, dict[str, Any]],
+    ) -> None:
+        """Setup all UI widgets based on data settings."""
+        coin_icon_urls = coin_info["urls"]
+        coin_ranks = coin_info["ranks"]
 
-        token_text_size = 14
-        name_text_size = 11
-        price_text_size = 9
-        detail_text_size = 7
+        api_requester = ApiRequester()
 
-        is_long = len(target_symbols) > 5
-
+        # Load symbol pixmaps
         symbol_pixmaps: dict[str, QPixmap] = {}
         for symbol in target_symbols:
             coin_symbol = symbol.removesuffix(asset_token)
             coin_icon_url = coin_icon_urls.get(coin_symbol, "")
             pixmap = QPixmap()
-            if coin_icon_url != "":
+            if coin_icon_url:
                 image_data = await api_requester.bytes(coin_icon_url)
                 pixmap.loadFromData(image_data)
             else:
                 pixmap.load(str(PACKAGE_PATH / "static" / "icon" / "blank_coin.png"))
             symbol_pixmaps[symbol] = pixmap
 
+        # Load token pixmap
         token_icon_url = coin_icon_urls.get(asset_token, "")
         token_pixmap = QPixmap()
-        image_data = await api_requester.bytes(token_icon_url)
-        token_pixmap.loadFromData(image_data)
+        if token_icon_url:
+            image_data = await api_requester.bytes(token_icon_url)
+            token_pixmap.loadFromData(image_data)
 
-        text = str(datapath)
+        # Setup datapath display
+        text = str(self.datapath)
         self.lineEdit.setText(text)
         self.lineEdit.setCursorPosition(len(text))
+
+        # Setup token display
+        self._setup_token_display(asset_token, token_pixmap)
+
+        # Setup combo boxes
+        self._setup_combo_boxes(target_symbols, symbol_pixmaps)
+
+        # Setup symbol boxes
+        self._setup_symbol_boxes(
+            asset_token, target_symbols, symbol_pixmaps, coin_ranks
+        )
+
+        # Setup product branding
+        await self._setup_product_branding()
+
+    def _setup_token_display(self, asset_token: str, token_pixmap: QPixmap) -> None:
+        """Setup the token display area."""
+        token_text_size = 14
 
         icon_label = QLabel()
         icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -270,6 +321,7 @@ class Window(QMainWindow, Ui_MainWindow):
         this_layout = QHBoxLayout()
         self.verticalLayout_14.addLayout(this_layout)
         this_layout.addWidget(icon_label)
+
         token_font = QFont()
         token_font.setPointSize(token_text_size)
         token_font.setWeight(QFont.Weight.Bold)
@@ -278,22 +330,27 @@ class Window(QMainWindow, Ui_MainWindow):
         token_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         token_label.setFont(token_font)
         self.verticalLayout_14.addWidget(token_label)
-        spacing_text = QLabel("")
-        spacing_text_font = QFont()
-        spacing_text_font.setPointSize(1)
-        spacing_text.setFont(spacing_text_font)
-        self.verticalLayout_14.addWidget(spacing_text)
-        this_layout = QHBoxLayout()
-        self.verticalLayout_14.addLayout(this_layout)
-        divider = HorizontalDivider(self)
-        divider.setFixedWidth(320)
-        this_layout.addWidget(divider)
-        spacing_text = QLabel("")
-        spacing_text_font = QFont()
-        spacing_text_font.setPointSize(2)
-        spacing_text.setFont(spacing_text_font)
-        self.verticalLayout_14.addWidget(spacing_text)
 
+        # Add spacing
+        for point_size in [1, 2]:
+            spacing_text = QLabel("")
+            spacing_text_font = QFont()
+            spacing_text_font.setPointSize(point_size)
+            spacing_text.setFont(spacing_text_font)
+            if point_size == 1:
+                self.verticalLayout_14.addWidget(spacing_text)
+            else:
+                this_layout = QHBoxLayout()
+                self.verticalLayout_14.addLayout(this_layout)
+                divider = HorizontalDivider(self)
+                divider.setFixedWidth(320)
+                this_layout.addWidget(divider)
+                self.verticalLayout_14.addWidget(spacing_text)
+
+    def _setup_combo_boxes(
+        self, target_symbols: list[str], symbol_pixmaps: dict[str, QPixmap]
+    ) -> None:
+        """Setup combo boxes with symbol icons."""
         for symbol in target_symbols:
             icon = QIcon()
             icon.addPixmap(symbol_pixmaps[symbol])
@@ -301,98 +358,130 @@ class Window(QMainWindow, Ui_MainWindow):
             self.comboBox_4.addItem(icon, alias)
             self.comboBox_6.addItem(icon, alias)
 
-        spacer = QSpacerItem(
-            0,
-            0,
-            QSizePolicy.Policy.Expanding,
-            QSizePolicy.Policy.Minimum,
-        )
-        self.horizontalLayout_20.addItem(spacer)
-        spacer = QSpacerItem(
-            0,
-            0,
-            QSizePolicy.Policy.Expanding,
-            QSizePolicy.Policy.Minimum,
-        )
-        self.horizontalLayout_17.addItem(spacer)
+    def _setup_symbol_boxes(
+        self,
+        asset_token: str,
+        target_symbols: list[str],
+        symbol_pixmaps: dict[str, QPixmap],
+        coin_ranks: dict[str, int],
+    ) -> None:
+        """Setup symbol boxes for each trading symbol."""
+        name_text_size = 11
+        price_text_size = 9
+        detail_text_size = 7
+
+        is_long = len(target_symbols) > LONG_SYMBOL_LIST_THRESHOLD
+
+        # Add spacers
+        for layout in [self.horizontalLayout_20, self.horizontalLayout_17]:
+            spacer = QSpacerItem(
+                0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
+            )
+            layout.addItem(spacer)
+
         for turn, symbol in enumerate(target_symbols):
             coin_symbol = symbol.removesuffix(asset_token)
             coin_rank = coin_ranks.get(coin_symbol, 0)
             symbol_box = SymbolBox()
+
+            # Choose layout based on symbol count
             if is_long and turn + 1 > math.floor(len(target_symbols) / 2):
                 self.horizontalLayout_17.addWidget(symbol_box)
             else:
                 self.horizontalLayout_20.addWidget(symbol_box)
-            inside_layout = QVBoxLayout(symbol_box)
-            spacer = QSpacerItem(
-                0,
-                0,
-                QSizePolicy.Policy.Minimum,
-                QSizePolicy.Policy.Expanding,
-            )
-            inside_layout.addItem(spacer)
-            icon_label = QLabel()
-            icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            this_layout = QHBoxLayout()
-            inside_layout.addLayout(this_layout)
-            icon_label.setPixmap(symbol_pixmaps[symbol])
-            icon_label.setScaledContents(True)
-            icon_label.setFixedSize(50, 50)
-            icon_label.setMargin(5)
-            this_layout.addWidget(icon_label)
-            name_label = QLabel()
-            name_label.setText(self.symbol_to_alias[symbol])
-            name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            name_font = QFont()
-            name_font.setPointSize(name_text_size)
-            name_font.setWeight(QFont.Weight.Bold)
-            name_label.setFont(name_font)
-            inside_layout.addWidget(name_label)
-            price_label = QLabel()
-            price_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            price_font = QFont()
-            price_font.setPointSize(price_text_size)
-            price_font.setWeight(QFont.Weight.Bold)
-            price_label.setFont(price_font)
-            inside_layout.addWidget(price_label)
-            if coin_rank == 0:
-                text = coin_symbol
-            else:
-                text = f"{coin_rank} - {coin_symbol}"
-            detail_label = QLabel()
-            detail_label.setText(text)
-            detail_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            detail_font = QFont()
-            detail_font.setPointSize(detail_text_size)
-            detail_font.setWeight(QFont.Weight.Bold)
-            detail_label.setFont(detail_font)
-            inside_layout.addWidget(detail_label)
-            self.price_labels[symbol] = price_label
-            spacer = QSpacerItem(
-                0,
-                0,
-                QSizePolicy.Policy.Minimum,
-                QSizePolicy.Policy.Expanding,
-            )
-            inside_layout.addItem(spacer)
-        spacer = QSpacerItem(
-            0,
-            0,
-            QSizePolicy.Policy.Expanding,
-            QSizePolicy.Policy.Minimum,
-        )
-        self.horizontalLayout_20.addItem(spacer)
-        spacer = QSpacerItem(
-            0,
-            0,
-            QSizePolicy.Policy.Expanding,
-            QSizePolicy.Policy.Minimum,
-        )
-        self.horizontalLayout_17.addItem(spacer)
 
-        # ■■■■■ Show product icon and title ■■■■■
+            self._populate_symbol_box(
+                symbol_box,
+                SymbolBoxParams(
+                    symbol=symbol,
+                    pixmap=symbol_pixmaps[symbol],
+                    coin_symbol=coin_symbol,
+                    coin_rank=coin_rank,
+                    name_text_size=name_text_size,
+                    price_text_size=price_text_size,
+                    detail_text_size=detail_text_size,
+                ),
+            )
 
+        # Add trailing spacers
+        for layout in [self.horizontalLayout_20, self.horizontalLayout_17]:
+            spacer = QSpacerItem(
+                0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
+            )
+            layout.addItem(spacer)
+
+    def _populate_symbol_box(
+        self,
+        symbol_box: SymbolBox,
+        params: SymbolBoxParams,
+    ) -> None:
+        """Populate a symbol box with icon, name, price, and details."""
+        inside_layout = QVBoxLayout(symbol_box)
+
+        # Top spacer
+        spacer = QSpacerItem(
+            0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+        )
+        inside_layout.addItem(spacer)
+
+        # Icon
+        icon_label = QLabel()
+        icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        this_layout = QHBoxLayout()
+        inside_layout.addLayout(this_layout)
+        icon_label.setPixmap(params.pixmap)
+        icon_label.setScaledContents(True)
+        icon_label.setFixedSize(50, 50)
+        icon_label.setMargin(5)
+        this_layout.addWidget(icon_label)
+
+        # Name
+        name_label = QLabel()
+        name_label.setText(self.symbol_to_alias[params.symbol])
+        name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        name_font = QFont()
+        name_font.setPointSize(params.name_text_size)
+        name_font.setWeight(QFont.Weight.Bold)
+        name_label.setFont(name_font)
+        inside_layout.addWidget(name_label)
+
+        # Price
+        price_label = QLabel()
+        price_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        price_font = QFont()
+        price_font.setPointSize(params.price_text_size)
+        price_font.setWeight(QFont.Weight.Bold)
+        price_label.setFont(price_font)
+        inside_layout.addWidget(price_label)
+
+        # Details
+        text = (
+            params.coin_symbol
+            if params.coin_rank == 0
+            else f"{params.coin_rank} - {params.coin_symbol}"
+        )
+        detail_label = QLabel()
+        detail_label.setText(text)
+        detail_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        detail_font = QFont()
+        detail_font.setPointSize(params.detail_text_size)
+        detail_font.setWeight(QFont.Weight.Bold)
+        detail_label.setFont(detail_font)
+        inside_layout.addWidget(detail_label)
+
+        self.price_labels[params.symbol] = price_label
+
+        # Bottom spacer
+        spacer = QSpacerItem(
+            0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+        )
+        inside_layout.addItem(spacer)
+
+    async def _setup_product_branding(self) -> None:
+        """Setup product icon and title."""
         this_layout = self.horizontalLayout_13
+
+        # Product icon
         product_icon_pixmap = QPixmap()
         filepath = PACKAGE_PATH / "static" / "product_icon.png"
         async with aiofiles.open(filepath, mode="rb") as file:
@@ -403,19 +492,24 @@ class Window(QMainWindow, Ui_MainWindow):
         product_icon_label.setScaledContents(True)
         product_icon_label.setFixedSize(80, 80)
         this_layout.addWidget(product_icon_label)
+
+        # Spacing
         spacing_text = QLabel("")
         spacing_text_font = QFont()
         spacing_text_font.setPointSize(8)
         spacing_text.setFont(spacing_text_font)
         this_layout.addWidget(spacing_text)
+
+        # Title
         title_label = BrandLabel(self, "SOLIE", 48)
         this_layout.addWidget(title_label)
-        text = PACKAGE_VERSION
-        label = BrandLabel(self, text, 24)
+
+        # Version
+        label = BrandLabel(self, PACKAGE_VERSION, 24)
         this_layout.addWidget(label)
 
-        # ■■■■■ Graph widgets ■■■■■
-
+    async def _setup_graphs(self) -> None:
+        """Setup transaction and simulation graph widgets."""
         graph_lines = GraphLines()
         self.horizontalLayout_7.addWidget(graph_lines.price_widget)
         self.horizontalLayout_16.addWidget(graph_lines.volume_widget)
@@ -430,12 +524,13 @@ class Window(QMainWindow, Ui_MainWindow):
         self.horizontalLayout_30.addWidget(graph_lines.asset_widget)
         self.simulation_graph = graph_lines
 
-        # ■■■■■ Prepare logging ■■■■■
+    async def _setup_logging(self) -> None:
+        """Setup logging system."""
 
         def log_callback(summarization: str, log_content: str) -> None:
             self.listWidget.add_item(summarization, log_content)
 
-        log_path = datapath / "+logs"
+        log_path = self.datapath / "+logs"
         await aiofiles.os.makedirs(log_path, exist_ok=True)
         log_handler = LogHandler(log_path, log_callback)
         getLogger().addHandler(log_handler)

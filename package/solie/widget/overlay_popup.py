@@ -70,35 +70,21 @@ class OverlayBox[T](QWidget):
         cls.installed_window = window
 
     def __init__(self, content: OverlayContent[T]) -> None:
-        # ■■■■■ the basic ■■■■■
-
         super().__init__(self.installed_window)
-
-        # ■■■■■ set properties ■■■■■
 
         # needed for filling the window when resized
         self.installed_window.installEventFilter(self)
 
-        # ■■■■■ in case other overlay popup exists ■■■■■
-
         content.done_event.set()
         content.done_event.clear()
 
-        # ■■■■■ prepare answer ■■■■■
-
         self.answer = 0
-
-        # ■■■■■ full structure ■■■■■
 
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
         self.setAutoFillBackground(True)
 
-        # ■■■■■ full layout ■■■■■
-
         full_layout = QHBoxLayout(self)
-
-        # ■■■■■ visaul box ■■■■■
 
         # box
         content_box = PopupBox()

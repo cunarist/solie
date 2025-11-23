@@ -5,7 +5,7 @@ from asyncio import gather, sleep
 from collections.abc import Coroutine
 from datetime import datetime, timedelta, timezone
 from logging import getLogger
-from typing import Any
+from typing import Any, NamedTuple
 
 import aiofiles
 import aiofiles.os
@@ -15,6 +15,17 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6.QtWidgets import QMenu
 
 from solie.common import UniqueTask, outsource, spawn, spawn_blocking
+from solie.logic import (
+    AccountListener,
+    BinanceWatcher,
+    DecisionContext,
+    ExchangeConfig,
+    OrderPlacer,
+    OrderPlacerConfig,
+    StateConfig,
+    make_decisions,
+    make_indicators,
+)
 from solie.overlay import LongTextView
 from solie.utility import (
     ApiRequester,
@@ -23,20 +34,14 @@ from solie.utility import (
     BookTicker,
     Decision,
     DurationRecorder,
-    MarkPrice,
-    OpenOrder,
     OrderType,
     PositionDirection,
     RWLock,
     TransactionSettings,
-    ball_ceil,
     create_empty_account_state,
     create_empty_asset_record,
     create_empty_unrealized_changes,
     internet_connected,
-    list_to_dict,
-    make_decisions,
-    make_indicators,
     slice_deque,
     sort_data_frame,
     sort_series,
@@ -52,28 +57,69 @@ from .united import team
 logger = getLogger(__name__)
 
 
+class DisplayTimeRange(NamedTuple):
+    """Time range configuration for transaction display."""
+
+    get_from: datetime
+    slice_from: datetime
+    slice_until: datetime
+
+
+class RealtimeData(NamedTuple):
+    """Filtered realtime market data."""
+
+    mark_prices: list[Any]  # list[MarkPrice]
+    book_tickers: list[Any]  # list[BookTicker]
+    aggregate_trades: list[Any]
+
+
+class TransactionAssetData(NamedTuple):
+    """Asset record with candle and historical data."""
+
+    candle_original: pd.DataFrame
+    candle_sliced: pd.DataFrame
+    asset_record: pd.DataFrame
+    last_asset: float | None
+    before_asset: float | None
+
+
+class TradeMetrics(NamedTuple):
+    """Trade metrics for displaying transaction information."""
+
+    total_change_count: int
+    symbol_change_count: int
+    total_margin_ratio: float
+    symbol_margin_ratio: float
+    total_yield: float
+    symbol_yield: float
+
+
+class IndicatorData(NamedTuple):
+    """Current candle and indicator values."""
+
+    current_candle_data: dict[str, float]
+    current_indicators: dict[str, float]
+
+
 class Transactor:
     def __init__(self, window: Window, scheduler: AsyncIOScheduler) -> None:
-        # ■■■■■ for data management ■■■■■
-
         self._window = window
         self._scheduler = scheduler
         self._workerpath = window.datapath / "transactor"
 
-        # ■■■■■ internal memory ■■■■■
-
         self._line_display_task = UniqueTask()
         self._range_display_task = UniqueTask()
 
-        self._maximum_quantities: dict[str, float] = {}  # Symbol and value
-        self._minimum_notionals: dict[str, float] = {}  # Symbol and value
-        self._price_precisions: dict[str, int] = {}  # Symbol and decimal places
-        self._quantity_precisions: dict[str, int] = {}  # Symbol and decimal places
-        self._maximum_leverages: dict[str, int] = {}  # Symbol and value
-        self._leverages: dict[str, int] = {}  # Symbol and value
+        # Exchange configuration shared between components
+        self._exchange_config = ExchangeConfig(
+            maximum_quantities={},
+            minimum_notionals={},
+            price_precisions={},
+            quantity_precisions={},
+            maximum_leverages={},
+            leverages={},
+        )
         self._is_key_restrictions_satisfied = True
-
-        # ■■■■■ remember and display ■■■■■
 
         self._api_requester = ApiRequester()
 
@@ -95,7 +141,38 @@ class Transactor:
             )
         )
 
-        # ■■■■■ repetitive schedules ■■■■■
+        self._account_listener = AccountListener(
+            window=window,
+            account_state=self._account_state,
+            leverages=self._exchange_config.leverages,
+            asset_record=self._asset_record,
+            auto_order_record=self._auto_order_record,
+        )
+
+        state_config = StateConfig(
+            account_state=self._account_state,
+            transaction_settings=self._transaction_settings,
+            unrealized_changes=self._unrealized_changes,
+            asset_record=self._asset_record,
+        )
+        self._binance_watcher = BinanceWatcher(
+            window=window,
+            api_requester=self._api_requester,
+            state_config=state_config,
+            exchange_config=self._exchange_config,
+        )
+
+        order_placer_config = OrderPlacerConfig(
+            account_state=self._account_state,
+            auto_order_record=self._auto_order_record,
+            aggregate_trades_queue=team.collector.aggregate_trades,
+        )
+        self._order_placer = OrderPlacer(
+            window=window,
+            api_requester=self._api_requester,
+            config=order_placer_config,
+            exchange_config=self._exchange_config,
+        )
 
         self._scheduler.add_job(
             self._display_status_information,
@@ -154,42 +231,41 @@ class Transactor:
             hour="*",
         )
 
-        # ■■■■■ websocket streamings ■■■■■
-
         self.user_data_streamer: ApiStreamer | None = None
-
-        # ■■■■■ invoked by the internet connection status change ■■■■■
 
         when_internet_connected(self.watch_binance)
         when_internet_connected(self.update_user_data_stream)
         when_internet_disconnected(self.update_user_data_stream)
 
-        # ■■■■■ connect UI events ■■■■■
+        self._connect_ui_events()
+
+    def _connect_ui_events(self):
+        window = self._window
 
         # Special widgets
         job = self._display_range_information
-        outsource(self._window.transaction_graph.price_widget.sigRangeChanged, job)
+        outsource(window.transaction_graph.price_widget.sigRangeChanged, job)
         job = self._set_minimum_view_range
-        outsource(self._window.transaction_graph.price_widget.sigRangeChanged, job)
+        outsource(window.transaction_graph.price_widget.sigRangeChanged, job)
         job = self._update_automation_settings
-        outsource(self._window.comboBox_2.currentIndexChanged, job)
+        outsource(window.comboBox_2.currentIndexChanged, job)
         job = self._update_automation_settings
-        outsource(self._window.checkBox.toggled, job)
+        outsource(window.checkBox.toggled, job)
         job = self._update_keys
-        outsource(self._window.lineEdit_4.editingFinished, job)
+        outsource(window.lineEdit_4.editingFinished, job)
         job = self._update_keys
-        outsource(self._window.lineEdit_6.editingFinished, job)
+        outsource(window.lineEdit_6.editingFinished, job)
         job = self._toggle_frequent_draw
-        outsource(self._window.checkBox_2.toggled, job)
+        outsource(window.checkBox_2.toggled, job)
         job = self.display_day_range
-        outsource(self._window.pushButton_14.clicked, job)
+        outsource(window.pushButton_14.clicked, job)
         job = self._update_mode_settings
-        outsource(self._window.spinBox.editingFinished, job)
+        outsource(window.spinBox.editingFinished, job)
         job = self._update_viewing_symbol
-        outsource(self._window.comboBox_4.currentIndexChanged, job)
+        outsource(window.comboBox_4.currentIndexChanged, job)
 
-        action_menu = QMenu(self._window)
-        self._window.pushButton_12.setMenu(action_menu)
+        action_menu = QMenu(window)
+        window.pushButton_12.setMenu(action_menu)
 
         text = "Open Binance exchange"
         job = self._open_exchange
@@ -369,223 +445,11 @@ class Transactor:
         )
 
     async def _listen_to_account(self, received: dict[str, Any]) -> None:
-        # ■■■■■ default values ■■■■■
+        await self._account_listener.handle_event(received)
 
         event_type = str(received["e"])
-        event_timestamp = int(received["E"]) / 1000
-        event_time = datetime.fromtimestamp(event_timestamp, tz=timezone.utc)
-
-        self._account_state.observed_until = event_time
-
-        # ■■■■■ do the task according to event type ■■■■■
-
         if event_type == "listenKeyExpired":
-            text = "Binance user data stream listen key has expired"
-            logger.warning(text)
             await self.update_user_data_stream()
-
-        elif event_type == "ACCOUNT_UPDATE":
-            about_update = received["a"]
-            about_assets = about_update["B"]
-            about_positions = about_update["P"]
-
-            asset_token = self._window.data_settings.asset_token
-
-            about_assets_keyed = list_to_dict(about_assets, "a")
-            about_asset = about_assets_keyed[asset_token]
-            wallet_balance = float(about_asset["wb"])
-            self._account_state.wallet_balance = wallet_balance
-
-            about_positions_keyed = list_to_dict(about_positions, "ps")
-            if "BOTH" in about_positions_keyed:
-                about_position = about_positions_keyed["BOTH"]
-
-                target_symbols = self._window.data_settings.target_symbols
-                if about_position["s"] not in target_symbols:
-                    return
-
-                symbol = str(about_position["s"])
-                amount = float(about_position["pa"])
-                entry_price = float(about_position["ep"])
-
-                leverage = self._leverages[symbol]
-                margin = abs(amount) * entry_price / leverage
-                if amount < 0.0:
-                    direction = PositionDirection.SHORT
-                elif amount > 0.0:
-                    direction = PositionDirection.LONG
-                else:
-                    direction = PositionDirection.LONG
-
-                position = self._account_state.positions[symbol]
-                position.margin = margin
-                position.direction = direction
-                position.entry_price = entry_price
-                position.update_time = event_time
-
-        elif event_type == "ORDER_TRADE_UPDATE":
-            about_update = received["o"]
-
-            target_symbols = self._window.data_settings.target_symbols
-            if about_update["s"] not in target_symbols:
-                return
-
-            # from received
-            symbol = str(about_update["s"])
-            order_id = int(about_update["i"])
-            order_type = str(about_update["o"])
-            order_status = str(about_update["X"])
-            execution_type = str(about_update["x"])
-
-            side = str(about_update["S"])
-            close_position = bool(about_update["cp"])
-            is_maker = bool(about_update["m"])
-
-            origianal_quantity = float(about_update["q"])
-            executed_quantity = float(about_update["z"])
-            last_filled_quantity = float(about_update["l"])
-            last_filled_price = float(about_update["L"])
-            price = float(about_update["p"])
-            stop_price = float(about_update["sp"])
-            commission = float(about_update["n"])
-            realized_profit = float(about_update["rp"])
-
-            # from remembered
-            leverage = self._leverages[symbol]
-            wallet_balance = self._account_state.wallet_balance
-
-            # when the order is removed
-            if order_status not in ("NEW", "PARTIALLY_FILLED"):
-                if order_id in self._account_state.open_orders[symbol].keys():
-                    self._account_state.open_orders[symbol].pop(order_id)
-
-            # when the order is left or created
-            if order_status in ("NEW", "PARTIALLY_FILLED"):
-                if order_type == "STOP_MARKET":
-                    if close_position:
-                        if side == "BUY":
-                            order_type = OrderType.LATER_UP_CLOSE
-                            boundary = stop_price
-                            left_margin = None
-                        elif side == "SELL":
-                            order_type = OrderType.LATER_DOWN_CLOSE
-                            boundary = stop_price
-                            left_margin = None
-                        else:
-                            raise ValueError("Cannot order with this side")
-                    elif side == "BUY":
-                        order_type = OrderType.LATER_UP_BUY
-                        boundary = stop_price
-                        left_quantity = origianal_quantity
-                        left_margin = left_quantity * boundary / leverage
-                    elif side == "SELL":
-                        order_type = OrderType.LATER_DOWN_SELL
-                        boundary = stop_price
-                        left_quantity = origianal_quantity
-                        left_margin = left_quantity * boundary / leverage
-                    else:
-                        raise ValueError("Cannot order with this side")
-                elif order_type == "TAKE_PROFIT_MARKET":
-                    if close_position:
-                        if side == "BUY":
-                            order_type = OrderType.LATER_DOWN_CLOSE
-                            boundary = stop_price
-                            left_margin = None
-                        elif side == "SELL":
-                            order_type = OrderType.LATER_UP_CLOSE
-                            boundary = stop_price
-                            left_margin = None
-                        else:
-                            raise ValueError("Cannot order with this side")
-                    elif side == "BUY":
-                        order_type = OrderType.LATER_DOWN_BUY
-                        boundary = stop_price
-                        left_quantity = origianal_quantity
-                        left_margin = left_quantity * boundary / leverage
-                    elif side == "SELL":
-                        order_type = OrderType.LATER_UP_SELL
-                        boundary = stop_price
-                        left_quantity = origianal_quantity
-                        left_margin = left_quantity * boundary / leverage
-                    else:
-                        raise ValueError("Cannot order with this side")
-                elif order_type == "LIMIT":
-                    if side == "BUY":
-                        order_type = OrderType.BOOK_BUY
-                        boundary = price
-                        left_quantity = origianal_quantity - executed_quantity
-                        left_margin = left_quantity * boundary / leverage
-                    elif side == "SELL":
-                        order_type = OrderType.BOOK_SELL
-                        boundary = price
-                        left_quantity = origianal_quantity - executed_quantity
-                        left_margin = left_quantity * boundary / leverage
-                    else:
-                        raise ValueError("Cannot order with this side")
-                else:
-                    order_type = OrderType.OTHER
-                    boundary = max(price, stop_price)
-                    left_quantity = origianal_quantity - executed_quantity
-                    left_margin = left_quantity * boundary / leverage
-
-                self._account_state.open_orders[symbol][order_id] = OpenOrder(
-                    order_type=order_type,
-                    boundary=boundary,
-                    left_margin=left_margin,
-                )
-
-            # when the order is filled
-            if execution_type == "TRADE":
-                added_revenue = realized_profit - commission
-                added_notional = last_filled_price * last_filled_quantity
-                added_margin = added_notional / leverage
-                added_margin_ratio = added_margin / wallet_balance
-
-                async with self._auto_order_record.read_lock as cell:
-                    symbol_df = cell.data[cell.data["SYMBOL"] == symbol]
-                    unique_order_ids = symbol_df["ORDER_ID"].unique()
-
-                async with self._asset_record.write_lock as cell:
-                    symbol_df = cell.data[cell.data["SYMBOL"] == symbol]
-                    recorded_id_list = symbol_df["ORDER_ID"].tolist()
-                    does_record_exist = order_id in recorded_id_list
-                    last_index = cell.data.index[-1]
-                    if does_record_exist:
-                        mask_sr = symbol_df["ORDER_ID"] == order_id
-                        rec_time = symbol_df.index[mask_sr][0]
-                        rec_value = float(symbol_df.loc[rec_time, "MARGIN_RATIO"])  # type:ignore
-                        new_value = rec_value + added_margin_ratio
-                        cell.data.loc[rec_time, "MARGIN_RATIO"] = new_value
-                        last_asset = float(cell.data.loc[last_index, "RESULT_ASSET"])  # type:ignore
-                        new_value = last_asset + added_revenue
-                        cell.data.loc[last_index, "RESULT_ASSET"] = new_value
-                    else:
-                        record_time = event_time
-                        while record_time in cell.data.index:
-                            record_time += timedelta(milliseconds=1)
-                        new_value = symbol
-                        cell.data.loc[record_time, "SYMBOL"] = new_value
-                        new_value = "SELL" if side == "SELL" else "BUY"
-                        cell.data.loc[record_time, "SIDE"] = new_value
-                        new_value = last_filled_price
-                        cell.data.loc[record_time, "FILL_PRICE"] = new_value
-                        new_value = "MAKER" if is_maker else "TAKER"
-                        cell.data.loc[record_time, "ROLE"] = new_value
-                        new_value = added_margin_ratio
-                        cell.data.loc[record_time, "MARGIN_RATIO"] = new_value
-                        new_value = order_id
-                        cell.data.loc[record_time, "ORDER_ID"] = new_value
-                        last_asset = float(cell.data.loc[last_index, "RESULT_ASSET"])  # type:ignore
-                        new_value = last_asset + added_revenue
-                        cell.data.loc[record_time, "RESULT_ASSET"] = new_value
-                        if order_id in unique_order_ids:
-                            cell.data.loc[record_time, "CAUSE"] = "AUTO_TRADE"
-                        else:
-                            cell.data.loc[record_time, "CAUSE"] = "MANUAL_TRADE"
-                    if not cell.data.index.is_monotonic_increasing:
-                        cell.data = await spawn_blocking(sort_data_frame, cell.data)
-
-        # ■■■■■ cancel conflicting orders ■■■■■
 
         await self._cancel_conflicting_orders()
 
@@ -625,14 +489,10 @@ class Transactor:
         await self.update_user_data_stream()
 
     async def _update_automation_settings(self) -> None:
-        # ■■■■■ get information about strategy ■■■■■
-
         strategy_index = self._window.comboBox_2.currentIndex()
         self._transaction_settings.strategy_index = strategy_index
 
         spawn(self.display_lines())
-
-        # ■■■■■ is automation turned on ■■■■■
 
         is_checked = self._window.checkBox.isChecked()
 
@@ -641,34 +501,70 @@ class Transactor:
         else:
             self._transaction_settings.should_transact = False
 
-        # ■■■■■ save ■■■■■
-
         await self._save_transaction_settings()
 
     async def _display_range_information(self) -> None:
         self._range_display_task.spawn(self._display_range_information_real())
 
+    def _calculate_trade_metrics(
+        self,
+        asset_record: pd.DataFrame,
+        asset_changes: pd.Series,
+        symbol_mask: pd.Series,
+    ) -> TradeMetrics:
+        """Calculate trade counts, margins, and yields."""
+        total_change_count = len(asset_changes)
+        symbol_change_count = len(asset_changes[symbol_mask])
+
+        total_margin_ratio = (
+            asset_record["MARGIN_RATIO"].sum() if len(asset_record) > 0 else 0
+        )
+        symbol_margin_ratio = (
+            asset_record[symbol_mask]["MARGIN_RATIO"].sum()
+            if len(asset_record[symbol_mask]) > 0
+            else 0
+        )
+
+        if len(asset_changes) > 0:
+            total_yield = (asset_changes.cumprod().iloc[-1] - 1) * 100
+        else:
+            total_yield = 0
+
+        if len(asset_changes[symbol_mask]) > 0:
+            symbol_yield = (asset_changes[symbol_mask].cumprod().iloc[-1] - 1) * 100
+        else:
+            symbol_yield = 0
+
+        return TradeMetrics(
+            total_change_count=total_change_count,
+            symbol_change_count=symbol_change_count,
+            total_margin_ratio=total_margin_ratio,
+            symbol_margin_ratio=symbol_margin_ratio,
+            total_yield=total_yield,
+            symbol_yield=symbol_yield,
+        )
+
     async def _display_range_information_real(self) -> None:
         symbol = self._viewing_symbol
         price_widget = self._window.transaction_graph.price_widget
 
-        range_start_timestamp = price_widget.getAxis("bottom").range[0]
-        range_start_timestamp = max(range_start_timestamp, 0.0)
+        range_start_timestamp = max(price_widget.getAxis("bottom").range[0], 0.0)
         range_start = datetime.fromtimestamp(range_start_timestamp, tz=timezone.utc)
 
         range_end_timestamp = price_widget.getAxis("bottom").range[1]
         if range_end_timestamp < 0.0:
-            # case when pyqtgraph passed negative value because it's too big
             range_end_timestamp = 9223339636.0
         else:
-            # maximum value available in pandas
             range_end_timestamp = min(range_end_timestamp, 9223339636.0)
         range_end = datetime.fromtimestamp(range_end_timestamp, tz=timezone.utc)
 
         range_length = range_end - range_start
         range_days = range_length.days
-        range_hours, remains = divmod(range_length.seconds, 3600)
-        range_minutes, remains = divmod(remains, 60)
+        range_hours, range_minutes, _ = (
+            range_length.seconds // 3600,
+            (range_length.seconds % 3600) // 60,
+            range_length.seconds % 60,
+        )
 
         async with self._unrealized_changes.read_lock as cell:
             unrealized_changes = cell.data[range_start:range_end].copy()
@@ -681,39 +577,17 @@ class Transactor:
         asset_changes = asset_changes.reindex(asset_record.index, fill_value=1.0)
         symbol_mask = asset_record["SYMBOL"] == symbol
 
-        # trade count
-        total_change_count = len(asset_changes)
-        symbol_change_count = len(asset_changes[symbol_mask])
-        # trade volume
-        if len(asset_record) > 0:
-            total_margin_ratio = asset_record["MARGIN_RATIO"].sum()
-        else:
-            total_margin_ratio = 0
-        if len(asset_record[symbol_mask]) > 0:
-            symbol_margin_ratio = asset_record[symbol_mask]["MARGIN_RATIO"].sum()
-        else:
-            symbol_margin_ratio = 0
-        # asset changes
-        if len(asset_changes) > 0:
-            total_yield = asset_changes.cumprod().iloc[-1]
-            total_yield = (total_yield - 1) * 100
-        else:
-            total_yield = 0
-        if len(asset_changes[symbol_mask]) > 0:
-            symbol_yield = asset_changes[symbol_mask].cumprod().iloc[-1]
-            symbol_yield = (symbol_yield - 1) * 100
-        else:
-            symbol_yield = 0
-        # least unrealized changes
-        if len(unrealized_changes) > 0:
-            min_unrealized_change = unrealized_changes.min()
-        else:
-            min_unrealized_change = 0
+        metrics = self._calculate_trade_metrics(
+            asset_record, asset_changes, symbol_mask
+        )
 
+        min_unrealized_change = (
+            unrealized_changes.min() if len(unrealized_changes) > 0 else 0
+        )
+
+        price_widget = self._window.transaction_graph.price_widget
         view_range = price_widget.getAxis("left").range
-        range_down = view_range[0]
-        range_up = view_range[1]
-        price_range_height = (1 - range_down / range_up) * 100
+        price_range_height = (1 - view_range[0] / view_range[1]) * 100
 
         text = ""
         text += f"Visible time range {range_days}d {range_hours}h {range_minutes}s"
@@ -721,12 +595,12 @@ class Transactor:
         text += "Visible price range"
         text += f" {price_range_height:.2f}%"
         text += "  ⦁  "
-        text += f"Transaction count {symbol_change_count}({total_change_count})"
+        text += f"Transaction count {metrics.symbol_change_count}({metrics.total_change_count})"
         text += "  ⦁  "
         text += "Transaction amount"
-        text += f" *{symbol_margin_ratio:.4f}({total_margin_ratio:.4f})"
+        text += f" *{metrics.symbol_margin_ratio:.4f}({metrics.total_margin_ratio:.4f})"
         text += "  ⦁  "
-        text += f"Total realized profit {symbol_yield:+.4f}({total_yield:+.4f})%"
+        text += f"Total realized profit {metrics.symbol_yield:+.4f}({metrics.total_yield:+.4f})%"
         text += "  ⦁  "
         text += "Lowest unrealized profit"
         text += f" {min_unrealized_change * 100:+.4f}%"
@@ -747,41 +621,9 @@ class Transactor:
     async def display_lines(self, periodic=False, frequent=False) -> None:
         self._line_display_task.spawn(self._display_lines_real(periodic, frequent))
 
-    async def _display_lines_real(self, periodic: bool, frequent: bool) -> None:
-        # ■■■■■ get basic information ■■■■■
-
-        symbol = self._viewing_symbol
-        strategy_index = self._transaction_settings.strategy_index
-        strategy = team.strategist.strategies[strategy_index]
-
-        should_draw_frequently = self._should_draw_frequently
-        if frequent and not should_draw_frequently:
-            return
-
-        # ■■■■■ ensure that the latest data was added ■■■■■
-
-        async with team.collector.candle_data.read_lock as cell:
-            if len(cell.data) == 0:
-                return
-
-        current_moment = to_moment(datetime.now(timezone.utc))
-        before_moment = current_moment - timedelta(seconds=10)
-
-        if periodic:
-            for _ in range(50):
-                async with team.collector.candle_data.read_lock as cell:
-                    last_index = cell.data.index[-1]
-                    if last_index == before_moment:
-                        break
-                await sleep(0.1)
-
-        # ■■■■■ get ready for task duration measurement ■■■■■
-
-        duration_recorder = DurationRecorder("DISPLAY_TRANSACTION_LINES")
-
-        # ■■■■■ set the slicing range ■■■■■
-
-        if should_draw_frequently:
+    def _get_transaction_time_range(self) -> DisplayTimeRange:
+        """Calculate time range for transaction display."""
+        if self._should_draw_frequently:
             get_from = datetime.now(timezone.utc) - timedelta(days=28)
             slice_from = datetime.now(timezone.utc) - timedelta(hours=24)
             slice_until = datetime.now(timezone.utc)
@@ -791,12 +633,15 @@ class Transactor:
             slice_from = datetime(current_year, 1, 1, tzinfo=timezone.utc)
             slice_until = datetime.now(timezone.utc)
         slice_until -= timedelta(seconds=1)
+        return DisplayTimeRange(
+            get_from=get_from, slice_from=slice_from, slice_until=slice_until
+        )
 
-        # ■■■■■ draw light lines ■■■■■
-
+    def _collect_realtime_data(self, symbol: str) -> RealtimeData:
+        """Collect and filter realtime market data."""
         realtime_data = slice_deque(team.collector.realtime_data, 2 ** (10 + 6))
-        mark_prices: list[MarkPrice] = []
-        book_tickers: list[BookTicker] = []
+        mark_prices: list[Any] = []
+        book_tickers: list[Any] = []
         for realtime_record in realtime_data:
             if isinstance(realtime_record, BookTicker):
                 if realtime_record.symbol == symbol:
@@ -809,51 +654,59 @@ class Transactor:
         aggregate_trades = slice_deque(team.collector.aggregate_trades, 2 ** (10 + 6))
         aggregate_trades = [a for a in aggregate_trades if a.symbol == symbol]
 
-        position = self._account_state.positions[symbol]
-        if position.direction == PositionDirection.NONE:
-            entry_price = None
-        else:
-            entry_price = position.entry_price
-
-        await self._window.transaction_graph.update_light_lines(
+        return RealtimeData(
             mark_prices=mark_prices,
-            aggregate_trades=aggregate_trades,
             book_tickers=book_tickers,
-            entry_price=entry_price,
-            observed_until=self._account_state.observed_until,
+            aggregate_trades=aggregate_trades,
         )
 
-        # ■■■■■ draw heavy lines ■■■■■
-
+    async def _load_transaction_asset_data(
+        self, symbol: str, time_range: DisplayTimeRange
+    ) -> TransactionAssetData:
+        """Load candle and asset data for transaction display."""
         async with team.collector.candle_data.read_lock as cell:
             columns = [str(s) for s in cell.data.columns]
             chosen_columns = [s for s in columns if s.startswith(symbol)]
             candle_data_original = cell.data[chosen_columns][
-                get_from:slice_until
+                time_range.get_from : time_range.slice_until
             ].copy()
-        async with self._unrealized_changes.read_lock as cell:
-            unrealized_changes = cell.data.copy()
+
         async with self._asset_record.read_lock as cell:
             if len(cell.data) > 0:
                 last_asset = cell.data.iloc[-1]["RESULT_ASSET"]
             else:
                 last_asset = None
-            before_record = cell.data[:slice_from]
+            before_record = cell.data[: time_range.slice_from]
             if len(before_record) > 0:
                 before_asset = before_record.iloc[-1]["RESULT_ASSET"]
             else:
                 before_asset = None
-            asset_record = cell.data[slice_from:].copy()
+            asset_record = cell.data[time_range.slice_from :].copy()
 
-        candle_data = candle_data_original[slice_from:]
+        candle_data = candle_data_original[time_range.slice_from :]
 
-        # add the right end
         if len(candle_data) > 0:
             last_written_moment = candle_data.index[-1]
             new_moment = last_written_moment + timedelta(seconds=10)
             new_index = candle_data.index.union([new_moment])
             candle_data = candle_data.reindex(new_index)
 
+        return TransactionAssetData(
+            candle_original=candle_data_original,
+            candle_sliced=candle_data,
+            asset_record=asset_record,
+            last_asset=last_asset,
+            before_asset=before_asset,
+        )
+
+    async def _update_transaction_asset_record(
+        self,
+        asset_record: pd.DataFrame,
+        last_asset: float | None,
+        before_asset: float | None,
+        slice_from: datetime,
+    ) -> pd.DataFrame:
+        """Update asset record with latest observations."""
         if last_asset is not None:
             observed_until = self._account_state.observed_until
             if len(asset_record) == 0 or asset_record.index[-1] < observed_until:
@@ -865,39 +718,84 @@ class Transactor:
                             sort_data_frame, asset_record
                         )
 
-        # add the left end
         if before_asset is not None:
             asset_record.loc[slice_from, "CAUSE"] = "OTHER"
             asset_record.loc[slice_from, "RESULT_ASSET"] = before_asset
             if not asset_record.index.is_monotonic_increasing:
                 asset_record = await spawn_blocking(sort_data_frame, asset_record)
 
+        return asset_record
+
+    async def _display_lines_real(self, periodic: bool, frequent: bool) -> None:
+        symbol = self._viewing_symbol
+        strategy_index = self._transaction_settings.strategy_index
+        strategy = team.strategist.strategies[strategy_index]
+
+        if frequent and not self._should_draw_frequently:
+            return
+
+        async with team.collector.candle_data.read_lock as cell:
+            if len(cell.data) == 0:
+                return
+
+        if periodic:
+            current_moment = to_moment(datetime.now(timezone.utc))
+            before_moment = current_moment - timedelta(seconds=10)
+            for _ in range(50):
+                async with team.collector.candle_data.read_lock as cell:
+                    if cell.data.index[-1] == before_moment:
+                        break
+                await sleep(0.1)
+
+        duration_recorder = DurationRecorder("DISPLAY_TRANSACTION_LINES")
+
+        time_range = self._get_transaction_time_range()
+        realtime_data = self._collect_realtime_data(symbol)
+
+        position = self._account_state.positions[symbol]
+        entry_price = (
+            None
+            if position.direction == PositionDirection.NONE
+            else position.entry_price
+        )
+
+        await self._window.transaction_graph.update_light_lines(
+            mark_prices=realtime_data.mark_prices,
+            aggregate_trades=realtime_data.aggregate_trades,
+            book_tickers=realtime_data.book_tickers,
+            entry_price=entry_price,
+            observed_until=self._account_state.observed_until,
+        )
+
+        async with self._unrealized_changes.read_lock as cell:
+            unrealized_changes = cell.data.copy()
+
+        asset_data = await self._load_transaction_asset_data(symbol, time_range)
+
+        asset_record = await self._update_transaction_asset_record(
+            asset_data.asset_record,
+            asset_data.last_asset,
+            asset_data.before_asset,
+            time_range.slice_from,
+        )
+
         await self._window.transaction_graph.update_heavy_lines(
             symbol=symbol,
-            candle_data=candle_data,
+            candle_data=asset_data.candle_sliced,
             asset_record=asset_record,
             unrealized_changes=unrealized_changes,
         )
-
-        # ■■■■■ draw custom lines ■■■■■
 
         indicators = await spawn_blocking(
             make_indicators,
             strategy=strategy,
             target_symbols=[self._viewing_symbol],
-            candle_data=candle_data_original,
+            candle_data=asset_data.candle_original,
         )
-
-        indicators = indicators[slice_from:slice_until]
+        indicators = indicators[time_range.slice_from : time_range.slice_until]
 
         await self._window.transaction_graph.update_custom_lines(symbol, indicators)
-
-        # ■■■■■ record task duration ■■■■■
-
         duration_recorder.record()
-
-        # ■■■■■ set minimum view range ■■■■■
-
         await self._set_minimum_view_range()
 
     async def _toggle_frequent_draw(self) -> None:
@@ -918,8 +816,6 @@ class Transactor:
         spawn(self._display_range_information())
 
     async def _display_status_information(self) -> None:
-        # ■■■■■ Display important things first ■■■■■
-
         time_passed = datetime.now(timezone.utc) - self._account_state.observed_until
         if time_passed > timedelta(seconds=30):
             text = (
@@ -946,8 +842,6 @@ class Transactor:
             )
             self._window.label_16.setText(text)
             return
-
-        # ■■■■■ display assets and positions information ■■■■■
 
         position = self._account_state.positions[self._viewing_symbol]
         if position.direction == PositionDirection.LONG:
@@ -984,82 +878,15 @@ class Transactor:
 
         self._window.label_16.setText(text)
 
-    async def _perform_transaction(self) -> None:
-        # ■■■■■ Clear the progress bar ■■■■
-
-        self._window.progressBar_2.setValue(0)
-
-        # ■■■■■ Stop if conditions are not met ■■■■
-
-        if not internet_connected():
-            return
-
-        if not self._transaction_settings.should_transact:
-            return
-
-        if not self._is_key_restrictions_satisfied:
-            return
-
-        cumulation_rate = await team.collector.check_candle_data_cumulation_rate()
-        if cumulation_rate < 1:
-            return
-
-        # ■■■■■ Moment ■■■■■
-
-        duration_recorder = DurationRecorder("PERFORM_TRANSACTION")
-        current_moment = to_moment(datetime.now(timezone.utc))
-        before_moment = current_moment - timedelta(seconds=10)
-
-        # ■■■■■ Play the progress bar ■■■■■
-
-        is_cycle_done = False
-
-        async def play_progress_bar() -> None:
-            passed_time = timedelta(seconds=0)
-            while passed_time < timedelta(seconds=10):
-                passed_time = datetime.now(timezone.utc) - current_moment
-                if not is_cycle_done:
-                    new_value = int(passed_time / timedelta(seconds=10) * 1000)
-                else:
-                    before_value = self._window.progressBar_2.value()
-                    remaining = 1000 - before_value
-                    new_value = before_value + math.ceil(remaining * 0.2)
-                self._window.progressBar_2.setValue(new_value)
-                await sleep(0.01)
-
-        spawn(play_progress_bar())
-
-        # ■■■■■ Check if the data exists ■■■■■
-
-        async with team.collector.candle_data.read_lock as cell:
-            if len(cell.data) == 0:
-                # case when the app is executed for the first time
-                return
-
-        # ■■■■■ Wait for the latest data to be added ■■■■■
-
-        for _ in range(50):
-            async with team.collector.candle_data.read_lock as cell:
-                last_index = cell.data.index[-1]
-                if last_index == before_moment:
-                    break
-            await sleep(0.1)
-
-        # ■■■■■ Get the candle data ■■■■■
-
-        slice_from = datetime.now(timezone.utc) - timedelta(days=28)
-        async with team.collector.candle_data.read_lock as cell:
-            candle_data = cell.data[slice_from:].copy()
-
-        # ■■■■■ Make decision ■■■■■
-
-        target_symbols = self._window.data_settings.target_symbols
-
-        strategy_index = self._transaction_settings.strategy_index
-        strategy = team.strategist.strategies[strategy_index]
-
-        # Split the candle data by symbol before calculation to reduct UI lags
-        columns = [str(s) for s in cell.data.columns]
+    async def _calculate_indicators(
+        self,
+        candle_data: pd.DataFrame,
+        all_columns: pd.Index,
+        target_symbols: list[str],
+        strategy: Any,
+    ) -> IndicatorData:
+        """Calculate indicators and extract current values."""
+        columns = [str(s) for s in all_columns]
         coroutines: list[Coroutine[Any, Any, pd.DataFrame]] = []
         for symbol in target_symbols:
             chosen_columns = [s for s in columns if s.startswith(symbol)]
@@ -1087,23 +914,85 @@ class Transactor:
             for k in record_row.dtype.names or ()
             if k != "index"
         }
+        return IndicatorData(
+            current_candle_data=current_candle_data,
+            current_indicators=current_indicators,
+        )
 
-        decisions = make_decisions(
+    async def _perform_transaction(self) -> None:
+        self._window.progressBar_2.setValue(0)
+
+        if not internet_connected():
+            return
+
+        if not self._transaction_settings.should_transact:
+            return
+
+        if not self._is_key_restrictions_satisfied:
+            return
+
+        cumulation_rate = await team.collector.check_candle_data_cumulation_rate()
+        if cumulation_rate < 1:
+            return
+
+        duration_recorder = DurationRecorder("PERFORM_TRANSACTION")
+        current_moment = to_moment(datetime.now(timezone.utc))
+        before_moment = current_moment - timedelta(seconds=10)
+
+        is_cycle_done = False
+
+        async def play_progress_bar() -> None:
+            passed_time = timedelta(seconds=0)
+            while passed_time < timedelta(seconds=10):
+                passed_time = datetime.now(timezone.utc) - current_moment
+                if not is_cycle_done:
+                    new_value = int(passed_time / timedelta(seconds=10) * 1000)
+                else:
+                    before_value = self._window.progressBar_2.value()
+                    remaining = 1000 - before_value
+                    new_value = before_value + math.ceil(remaining * 0.2)
+                self._window.progressBar_2.setValue(new_value)
+                await sleep(0.01)
+
+        spawn(play_progress_bar())
+
+        async with team.collector.candle_data.read_lock as cell:
+            if len(cell.data) == 0:
+                # case when the app is executed for the first time
+                return
+
+        for _ in range(50):
+            async with team.collector.candle_data.read_lock as cell:
+                last_index = cell.data.index[-1]
+                if last_index == before_moment:
+                    break
+            await sleep(0.1)
+
+        slice_from = datetime.now(timezone.utc) - timedelta(days=28)
+        async with team.collector.candle_data.read_lock as cell:
+            candle_data = cell.data[slice_from:].copy()
+
+        target_symbols = self._window.data_settings.target_symbols
+        strategy_index = self._transaction_settings.strategy_index
+        strategy = team.strategist.strategies[strategy_index]
+
+        indicator_data = await self._calculate_indicators(
+            candle_data, cell.data.columns, target_symbols, strategy
+        )
+
+        decision_context = DecisionContext(
             strategy=strategy,
             target_symbols=target_symbols,
             current_moment=current_moment,
-            current_candle_data=current_candle_data,
-            current_indicators=current_indicators,
+            current_candle_data=indicator_data.current_candle_data,
+            current_indicators=indicator_data.current_indicators,
             account_state=self._account_state,
             scribbles=self._scribbles,
         )
-
-        # ■■■■■ Record task duration ■■■■■
+        decisions = make_decisions(decision_context)
 
         is_cycle_done = True
         duration_recorder.record()
-
-        # ■■■■■ Place order ■■■■■
 
         await self.place_orders(decisions)
 
@@ -1125,12 +1014,10 @@ class Transactor:
         desired_leverage = self._window.spinBox.value()
         self._transaction_settings.desired_leverage = desired_leverage
 
-        # ■■■■■ tell if some symbol's leverage cannot be set as desired ■■■■■
-
         target_symbols = self._window.data_settings.target_symbols
         target_max_leverages: dict[str, int] = {}
         for symbol in target_symbols:
-            max_leverage = self._maximum_leverages.get(symbol, 125)
+            max_leverage = self._exchange_config.maximum_leverages.get(symbol, 125)
             target_max_leverages[symbol] = max_leverage
         lowest_max_leverage = min(target_max_leverages.values())
 
@@ -1155,728 +1042,18 @@ class Transactor:
                     ["Okay"],
                 )
 
-        # ■■■■■ save ■■■■■
-
         await self._save_transaction_settings()
 
     async def watch_binance(self) -> None:
-        # ■■■■■ Basic data ■■■■■
-
-        target_symbols = self._window.data_settings.target_symbols
-        asset_token = self._window.data_settings.asset_token
-
-        # ■■■■■ Check internet connection ■■■■■
-
-        if not internet_connected():
-            return
-
-        # ■■■■■ Moment ■■■■■
-
-        current_moment = to_moment(datetime.now(timezone.utc))
-        before_moment = current_moment - timedelta(seconds=10)
-
-        # ■■■■■ Request exchange information ■■■■■
-
-        payload: dict[str, Any] = {}
-        response = await self._api_requester.binance(
-            http_method="GET",
-            path="/fapi/v1/exchangeInfo",
-            payload=payload,
+        await self._binance_watcher.watch(self.place_orders)
+        self._is_key_restrictions_satisfied = (
+            self._binance_watcher.is_key_restrictions_satisfied
         )
-        about_exchange = response
-
-        for about_symbol in about_exchange["symbols"]:
-            symbol = about_symbol["symbol"]
-
-            about_filters = about_symbol["filters"]
-            about_filters_keyed = list_to_dict(about_filters, "filterType")
-
-            minimum_notional = float(about_filters_keyed["MIN_NOTIONAL"]["notional"])
-            self._minimum_notionals[symbol] = minimum_notional
-
-            maximum_quantity = min(
-                float(about_filters_keyed["LOT_SIZE"]["maxQty"]),
-                float(about_filters_keyed["MARKET_LOT_SIZE"]["maxQty"]),
-            )
-            self._maximum_quantities[symbol] = maximum_quantity
-
-            ticksize = float(about_filters_keyed["PRICE_FILTER"]["tickSize"])
-            price_precision = int(math.log10(1 / ticksize))
-            self._price_precisions[symbol] = price_precision
-
-            stepsize = float(about_filters_keyed["LOT_SIZE"]["stepSize"])
-            quantity_precision = int(math.log10(1 / stepsize))
-            self._quantity_precisions[symbol] = quantity_precision
-
-        # ■■■■■ Request leverage bracket information ■■■■■
-
-        try:
-            payload = {
-                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-            }
-            response = await self._api_requester.binance(
-                http_method="GET",
-                path="/fapi/v1/leverageBracket",
-                payload=payload,
-            )
-            about_brackets = response
-
-            for about_bracket in about_brackets:
-                symbol = about_bracket["symbol"]
-                max_leverage = about_bracket["brackets"][0]["initialLeverage"]
-                self._maximum_leverages[symbol] = max_leverage
-        except ApiRequestError:
-            # when the key is not ready
-            return
-
-        # ■■■■■ Request account information ■■■■■
-
-        try:
-            payload = {
-                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-            }
-            response = await self._api_requester.binance(
-                http_method="GET",
-                path="/fapi/v2/account",
-                payload=payload,
-            )
-            about_account = response
-        except ApiRequestError:
-            # when the key is not ready
-            return
-
-        about_open_orders: dict[str, list[dict[str, Any]]] = {}
-
-        async def job(symbol) -> None:
-            payload = {
-                "symbol": symbol,
-                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-            }
-            response = await self._api_requester.binance(
-                http_method="GET",
-                path="/fapi/v1/openOrders",
-                payload=payload,
-            )
-            about_open_orders[symbol] = response
-
-        await gather(*(job(s) for s in target_symbols))
-
-        # ■■■■■ Update account state ■■■■■
-
-        # observed until
-        self._account_state.observed_until = current_moment
-
-        # wallet_balance
-        about_assets = about_account["assets"]
-        about_assets_keyed = list_to_dict(about_assets, "asset")
-        about_asset = about_assets_keyed[asset_token]
-        wallet_balance = float(about_asset["walletBalance"])
-        self._account_state.wallet_balance = wallet_balance
-
-        about_positions = about_account["positions"]
-        about_positions_keyed = list_to_dict(about_positions, "symbol")
-
-        # positions
-        for symbol in target_symbols:
-            about_position = about_positions_keyed[symbol]
-
-            if float(about_position["notional"]) > 0.0:
-                direction = PositionDirection.LONG
-            elif float(about_position["notional"]) < 0.0:
-                direction = PositionDirection.SHORT
-            else:
-                direction = PositionDirection.NONE
-
-            entry_price = float(about_position["entryPrice"])
-            update_time = int(float(about_position["updateTime"]) / 1000)
-            update_time = datetime.fromtimestamp(update_time, tz=timezone.utc)
-            leverage = int(about_position["leverage"])
-            amount = float(about_position["positionAmt"])
-            margin = abs(amount) * entry_price / leverage
-
-            position = self._account_state.positions[symbol]
-            position.margin = margin
-            position.direction = direction
-            position.entry_price = entry_price
-            position.update_time = update_time
-
-        # open orders
-        open_orders: dict[str, dict[int, OpenOrder]] = {}
-        for symbol in target_symbols:
-            open_orders[symbol] = {}
-
-        for symbol in target_symbols:
-            about_position = about_positions_keyed[symbol]
-            leverage = int(about_position["leverage"])
-
-            for about_open_order in about_open_orders[symbol]:
-                order_id = about_open_order["orderId"]
-                order_type = about_open_order["type"]
-
-                side = about_open_order["side"]
-                close_position = about_open_order["closePosition"]
-
-                price = float(about_open_order["price"])
-                stop_price = float(about_open_order["stopPrice"])
-                origianal_quantity = float(about_open_order["origQty"])
-                executed_quantity = float(about_open_order["executedQty"])
-
-                if order_type == "STOP_MARKET":
-                    if close_position:
-                        if side == "BUY":
-                            order_type = OrderType.LATER_UP_CLOSE
-                            boundary = stop_price
-                            left_margin = None
-                        elif side == "SELL":
-                            order_type = OrderType.LATER_DOWN_CLOSE
-                            boundary = stop_price
-                            left_margin = None
-                        else:
-                            raise ValueError("Cannot order with this side")
-                    elif side == "BUY":
-                        order_type = OrderType.LATER_UP_BUY
-                        boundary = stop_price
-                        left_quantity = origianal_quantity
-                        left_margin = left_quantity * boundary / leverage
-                    elif side == "SELL":
-                        order_type = OrderType.LATER_DOWN_SELL
-                        boundary = stop_price
-                        left_quantity = origianal_quantity
-                        left_margin = left_quantity * boundary / leverage
-                    else:
-                        raise ValueError("Cannot order with this side")
-                elif order_type == "TAKE_PROFIT_MARKET":
-                    if close_position:
-                        if side == "BUY":
-                            order_type = OrderType.LATER_DOWN_CLOSE
-                            boundary = stop_price
-                            left_margin = None
-                        elif side == "SELL":
-                            order_type = OrderType.LATER_UP_CLOSE
-                            boundary = stop_price
-                            left_margin = None
-                        else:
-                            raise ValueError("Cannot order with this side")
-                    elif side == "BUY":
-                        order_type = OrderType.LATER_DOWN_BUY
-                        boundary = stop_price
-                        left_quantity = origianal_quantity
-                        left_margin = left_quantity * boundary / leverage
-                    elif side == "SELL":
-                        order_type = OrderType.LATER_UP_SELL
-                        boundary = stop_price
-                        left_quantity = origianal_quantity
-                        left_margin = left_quantity * boundary / leverage
-                    else:
-                        raise ValueError("Cannot order with this side")
-                elif order_type == "LIMIT":
-                    if side == "BUY":
-                        order_type = OrderType.BOOK_BUY
-                        boundary = price
-                        left_quantity = origianal_quantity - executed_quantity
-                        left_margin = left_quantity * boundary / leverage
-                    elif side == "SELL":
-                        order_type = OrderType.BOOK_SELL
-                        boundary = price
-                        left_quantity = origianal_quantity - executed_quantity
-                        left_margin = left_quantity * boundary / leverage
-                    else:
-                        raise ValueError("Cannot order with this side")
-                else:
-                    order_type = OrderType.OTHER
-                    boundary = max(price, stop_price)
-                    left_quantity = origianal_quantity - executed_quantity
-                    left_margin = left_quantity * boundary / leverage
-
-                open_orders[symbol][order_id] = OpenOrder(
-                    order_type=order_type,
-                    boundary=boundary,
-                    left_margin=left_margin,
-                )
-
-        self._account_state.open_orders = open_orders
-
-        # ■■■■■ Update hidden state ■■■■■
-
-        for symbol in target_symbols:
-            about_position = about_positions_keyed[symbol]
-            leverage = int(about_position["leverage"])
-            self._leverages[symbol] = leverage
-
-        # ■■■■■ Record unrealized change ■■■■■
-
-        # unrealized profit is not included in walletBalance
-        wallet_balance = float(about_asset["walletBalance"])
-        if wallet_balance != 0:
-            unrealized_profit = float(about_asset["unrealizedProfit"])
-            unrealized_change = unrealized_profit / wallet_balance
-        else:
-            unrealized_change = 0
-
-        async with self._unrealized_changes.write_lock as cell:
-            cell.data[before_moment] = unrealized_change
-            if not cell.data.index.is_monotonic_increasing:
-                cell.data = await spawn_blocking(sort_series, cell.data)
-
-        # ■■■■■ Make an asset trace if it's blank ■■■■■
-
-        async with self._asset_record.write_lock as cell:
-            if len(cell.data) == 0:
-                wallet_balance = float(about_asset["walletBalance"])
-                current_time = datetime.now(timezone.utc)
-                cell.data.loc[current_time, "CAUSE"] = "OTHER"
-                cell.data.loc[current_time, "RESULT_ASSET"] = wallet_balance
-
-        # ■■■■■ When the wallet balance changed for no good reason ■■■■■
-
-        wallet_balance = float(about_asset["walletBalance"])
-
-        async with self._asset_record.read_lock as cell:
-            last_index = cell.data.index[-1]
-            last_asset = float(cell.data.loc[last_index, "RESULT_ASSET"])  # type:ignore
-
-        if wallet_balance == 0:
-            pass
-        elif abs(wallet_balance - last_asset) / wallet_balance > 10**-9:
-            # when the difference is bigger than a billionth
-            # referal fee, funding fee, wallet transfer, etc..
-            async with self._asset_record.write_lock as cell:
-                current_time = datetime.now(timezone.utc)
-                cell.data.loc[current_time, "CAUSE"] = "OTHER"
-                cell.data.loc[current_time, "RESULT_ASSET"] = wallet_balance
-                if not cell.data.index.is_monotonic_increasing:
-                    cell.data = await spawn_blocking(sort_data_frame, cell.data)
-        else:
-            # when the difference is small enough to consider as an numeric error
-            async with self._asset_record.write_lock as cell:
-                last_index = cell.data.index[-1]
-                cell.data.loc[last_index, "RESULT_ASSET"] = wallet_balance
-
-        # ■■■■■ Correct mode of the account market if automation is turned on ■■■■■
-
-        if self._transaction_settings.should_transact:
-
-            async def job_1(symbol) -> None:
-                about_position = about_positions_keyed[symbol]
-                current_leverage = int(about_position["leverage"])
-
-                desired_leverage = self._transaction_settings.desired_leverage
-                maximum_leverages = self._maximum_leverages
-                max_leverage = maximum_leverages.get(symbol, 125)
-                goal_leverage = min(desired_leverage, max_leverage)
-
-                if current_leverage != goal_leverage:
-                    timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
-                    payload = {
-                        "symbol": symbol,
-                        "timestamp": timestamp,
-                        "leverage": goal_leverage,
-                    }
-                    await self._api_requester.binance(
-                        http_method="POST",
-                        path="/fapi/v1/leverage",
-                        payload=payload,
-                    )
-
-            await gather(*(job_1(s) for s in target_symbols))
-
-            async def job_2(symbol) -> None:
-                about_position = about_positions_keyed[symbol]
-
-                isolated = about_position["isolated"]
-                notional = float(about_position["notional"])
-
-                if isolated:
-                    # close position if exists
-                    if notional != 0:
-                        decisions = {symbol: {OrderType.NOW_CLOSE: Decision()}}
-                        await self.place_orders(decisions)
-
-                    # change to crossed margin mode
-                    timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
-                    payload = {
-                        "symbol": symbol,
-                        "timestamp": timestamp,
-                        "marginType": "CROSSED",
-                    }
-                    await self._api_requester.binance(
-                        http_method="POST",
-                        path="/fapi/v1/marginType",
-                        payload=payload,
-                    )
-
-            await gather(*(job_2(s) for s in target_symbols))
-
-            try:
-                timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
-                payload = {
-                    "timestamp": timestamp,
-                    "multiAssetsMargin": "false",
-                }
-                await self._api_requester.binance(
-                    http_method="POST",
-                    path="/fapi/v1/multiAssetsMargin",
-                    payload=payload,
-                )
-            except ApiRequestError:
-                pass
-
-            try:
-                timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
-                payload = {
-                    "timestamp": timestamp,
-                    "dualSidePosition": "false",
-                }
-                await self._api_requester.binance(
-                    http_method="POST",
-                    path="/fapi/v1/positionSide/dual",
-                    payload=payload,
-                )
-            except ApiRequestError:
-                pass
-
-        # ■■■■■ check API key restrictions ■■■■■
-
-        payload = {
-            "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-        }
-        response = await self._api_requester.binance(
-            http_method="GET",
-            path="/sapi/v1/account/apiRestrictions",
-            payload=payload,
-            server="spot",
-        )
-        api_restrictions = response
-
-        is_satisfied = True
-        enable_required_restrictions = [
-            "enableFutures",
-        ]
-        for restriction_name in enable_required_restrictions:
-            is_enabled = api_restrictions[restriction_name]
-            if not is_enabled:
-                is_satisfied = False
-        self._is_key_restrictions_satisfied = is_satisfied
 
     async def place_orders(
         self, decisions: dict[str, dict[OrderType, Decision]]
     ) -> None:
-        target_symbols = self._window.data_settings.target_symbols
-        current_timestamp = to_moment(datetime.now(timezone.utc)).timestamp() * 1000
-
-        current_prices: dict[str, float] = {}
-        recent_aggregate_trades = slice_deque(
-            team.collector.aggregate_trades, 2 ** (10 + 6)
-        )
-        for symbol in target_symbols:
-            for aggregate_trade in reversed(recent_aggregate_trades):
-                if aggregate_trade.symbol != symbol:
-                    continue
-                if aggregate_trade.timestamp < current_timestamp - 60 * 1000:
-                    raise ValueError("Recent price is not available for placing orders")
-                current_prices[symbol] = aggregate_trade.price
-                break
-
-        # ■■■■■ Prepare closure functions ■■■■■
-
-        async def job_cancel_order(payload) -> None:
-            await self._api_requester.binance(
-                http_method="DELETE",
-                path="/fapi/v1/allOpenOrders",
-                payload=payload,
-            )
-
-        async def job_new_order(payload) -> None:
-            response = await self._api_requester.binance(
-                http_method="POST",
-                path="/fapi/v1/order",
-                payload=payload,
-            )
-            order_symbol = response["symbol"]
-            order_id = response["orderId"]
-            timestamp = response["updateTime"] / 1000
-            update_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-            async with self._auto_order_record.write_lock as cell:
-                while update_time in cell.data.index:
-                    update_time += timedelta(milliseconds=1)
-                cell.data.loc[update_time, "SYMBOL"] = order_symbol
-                cell.data.loc[update_time, "ORDER_ID"] = order_id
-                if not cell.data.index.is_monotonic_increasing:
-                    cell.data = await spawn_blocking(sort_data_frame, cell.data)
-
-        # ■■■■■ Do cancel orders ■■■■■
-
-        # These orders must be executed one after another.
-        # For example, some `later_orders` expect a position made from `now_orders`
-        cancel_orders: list[dict[str, Any]] = []
-
-        for symbol in target_symbols:
-            if symbol not in decisions:
-                continue
-
-            if OrderType.CANCEL_ALL in decisions[symbol]:
-                cancel_order: dict[str, Any] = {
-                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                    "symbol": symbol,
-                }
-                cancel_orders.append(cancel_order)
-
-        if cancel_orders:
-            await gather(*(job_cancel_order(o) for o in cancel_orders))
-
-        # ■■■■■ Do now orders ■■■■■
-
-        now_orders: list[dict[str, Any]] = []
-
-        for symbol in target_symbols:
-            if symbol not in decisions:
-                continue
-
-            current_price = current_prices[symbol]
-            leverage = self._leverages[symbol]
-            maximum_quantity = self._maximum_quantities[symbol]
-            minimum_notional = self._minimum_notionals[symbol]
-            quantity_precision = self._quantity_precisions[symbol]
-            current_direction = self._account_state.positions[symbol].direction
-
-            if OrderType.NOW_CLOSE in decisions[symbol]:
-                quantity = maximum_quantity
-                if current_direction != PositionDirection.NONE:
-                    order_side = (
-                        "SELL" if current_direction == PositionDirection.LONG else "BUY"
-                    )
-                    new_order: dict[str, Any] = {
-                        "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                        "symbol": symbol,
-                        "type": "MARKET",
-                        "side": order_side,
-                        "quantity": quantity,
-                        "reduceOnly": True,
-                        "newOrderRespType": "RESULT",
-                    }
-                    now_orders.append(new_order)
-                else:
-                    text = "Cannot close position when there isn't any"
-                    logger.warning(text)
-
-            if OrderType.NOW_BUY in decisions[symbol]:
-                decision = decisions[symbol][OrderType.NOW_BUY]
-                notional = max(minimum_notional, decision.margin * leverage)
-                quantity = min(maximum_quantity, notional / current_price)
-                new_order: dict[str, Any] = {
-                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                    "symbol": symbol,
-                    "type": "MARKET",
-                    "side": "BUY",
-                    "quantity": ball_ceil(quantity, quantity_precision),
-                    "newOrderRespType": "RESULT",
-                }
-                now_orders.append(new_order)
-
-            if OrderType.NOW_SELL in decisions[symbol]:
-                decision = decisions[symbol][OrderType.NOW_SELL]
-                notional = max(minimum_notional, decision.margin * leverage)
-                quantity = min(maximum_quantity, notional / current_price)
-                new_order: dict[str, Any] = {
-                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                    "symbol": symbol,
-                    "type": "MARKET",
-                    "side": "SELL",
-                    "quantity": ball_ceil(quantity, quantity_precision),
-                    "newOrderRespType": "RESULT",
-                }
-                now_orders.append(new_order)
-
-        if now_orders:
-            await gather(*(job_new_order(o) for o in now_orders))
-
-        # ■■■■■ Do book orders ■■■■■
-
-        book_orders: list[dict[str, Any]] = []
-
-        for symbol in target_symbols:
-            if symbol not in decisions:
-                continue
-
-            leverage = self._leverages[symbol]
-            maximum_quantity = self._maximum_quantities[symbol]
-            minimum_notional = self._minimum_notionals[symbol]
-            price_precision = self._price_precisions[symbol]
-            quantity_precision = self._quantity_precisions[symbol]
-
-            if OrderType.BOOK_BUY in decisions[symbol]:
-                decision = decisions[symbol][OrderType.BOOK_BUY]
-                notional = max(minimum_notional, decision.margin * leverage)
-                boundary = decision.boundary
-                quantity = min(maximum_quantity, notional / boundary)
-                new_order: dict[str, Any] = {
-                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                    "symbol": symbol,
-                    "type": "LIMIT",
-                    "side": "BUY",
-                    "quantity": ball_ceil(quantity, quantity_precision),
-                    "price": round(boundary, price_precision),
-                    "timeInForce": "GTC",
-                }
-                book_orders.append(new_order)
-
-            if OrderType.BOOK_SELL in decisions[symbol]:
-                decision = decisions[symbol][OrderType.BOOK_SELL]
-                notional = max(minimum_notional, decision.margin * leverage)
-                boundary = decision.boundary
-                quantity = min(maximum_quantity, notional / boundary)
-                new_order: dict[str, Any] = {
-                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                    "symbol": symbol,
-                    "type": "LIMIT",
-                    "side": "SELL",
-                    "quantity": ball_ceil(quantity, quantity_precision),
-                    "price": round(boundary, price_precision),
-                    "timeInForce": "GTC",
-                }
-                book_orders.append(new_order)
-
-        if book_orders:
-            await gather(*(job_new_order(o) for o in book_orders))
-
-        # ■■■■■ Do later orders ■■■■■
-
-        later_orders: list[dict[str, Any]] = []
-
-        for symbol in target_symbols:
-            if symbol not in decisions:
-                continue
-
-            leverage = self._leverages[symbol]
-            maximum_quantity = self._maximum_quantities[symbol]
-            minimum_notional = self._minimum_notionals[symbol]
-            price_precision = self._price_precisions[symbol]
-            quantity_precision = self._quantity_precisions[symbol]
-            current_direction = self._account_state.positions[symbol].direction
-
-            # Even if there's no open position analyzed yet
-            # due to user data stream from Binance being slow,
-            # it's possible to assume that a position would have already been created
-            # if there was a `now_buy` or `now_sell` order.
-            if current_direction == PositionDirection.NONE:
-                if OrderType.NOW_BUY in decisions[symbol]:
-                    current_direction = PositionDirection.LONG
-                elif OrderType.NOW_SELL in decisions[symbol]:
-                    current_direction = PositionDirection.SHORT
-
-            # Even if there's open position analyzed,
-            # it's possible to assume that a position would have already been closed
-            # if there was a `now_close` order.
-            if current_direction != PositionDirection.NONE:
-                if OrderType.NOW_CLOSE in decisions[symbol]:
-                    current_direction = PositionDirection.NONE
-
-            if OrderType.LATER_UP_CLOSE in decisions[symbol]:
-                decision = decisions[symbol][OrderType.LATER_UP_CLOSE]
-                if current_direction != PositionDirection.NONE:
-                    if current_direction == PositionDirection.LONG:
-                        order_side = "SELL"
-                        order_type = "TAKE_PROFIT_MARKET"
-                    else:
-                        order_side = "BUY"
-                        order_type = "STOP_MARKET"
-                    new_order: dict[str, Any] = {
-                        "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                        "symbol": symbol,
-                        "type": order_type,
-                        "side": order_side,
-                        "stopPrice": round(decision.boundary, price_precision),
-                        "closePosition": True,
-                    }
-                    later_orders.append(new_order)
-                else:
-                    text = "Cannot place `later_up_close` with no open position"
-                    logger.warning(text)
-
-            if OrderType.LATER_DOWN_CLOSE in decisions[symbol]:
-                decision = decisions[symbol][OrderType.LATER_DOWN_CLOSE]
-                if current_direction != PositionDirection.NONE:
-                    if current_direction == PositionDirection.LONG:
-                        order_side = "SELL"
-                        order_type = "STOP_MARKET"
-                    else:
-                        order_side = "BUY"
-                        order_type = "TAKE_PROFIT_MARKET"
-                    new_order: dict[str, Any] = {
-                        "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                        "symbol": symbol,
-                        "type": order_type,
-                        "side": order_side,
-                        "stopPrice": round(decision.boundary, price_precision),
-                        "closePosition": True,
-                    }
-                    later_orders.append(new_order)
-                else:
-                    text = "Cannot place `later_down_close` with no open position"
-                    logger.warning(text)
-
-            if OrderType.LATER_UP_BUY in decisions[symbol]:
-                decision = decisions[symbol][OrderType.LATER_UP_BUY]
-                notional = max(minimum_notional, decision.margin * leverage)
-                boundary = decision.boundary
-                quantity = min(maximum_quantity, notional / boundary)
-                new_order: dict[str, Any] = {
-                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                    "symbol": symbol,
-                    "type": "STOP_MARKET",
-                    "side": "BUY",
-                    "quantity": ball_ceil(quantity, quantity_precision),
-                    "stopPrice": round(boundary, price_precision),
-                }
-                later_orders.append(new_order)
-
-            if OrderType.LATER_DOWN_BUY in decisions[symbol]:
-                decision = decisions[symbol][OrderType.LATER_DOWN_BUY]
-                notional = max(minimum_notional, decision.margin * leverage)
-                boundary = decision.boundary
-                quantity = min(maximum_quantity, notional / boundary)
-                new_order: dict[str, Any] = {
-                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                    "symbol": symbol,
-                    "type": "TAKE_PROFIT_MARKET",
-                    "side": "BUY",
-                    "quantity": ball_ceil(quantity, quantity_precision),
-                    "stopPrice": round(boundary, price_precision),
-                }
-                later_orders.append(new_order)
-
-            if OrderType.LATER_UP_SELL in decisions[symbol]:
-                decision = decisions[symbol][OrderType.LATER_UP_SELL]
-                notional = max(minimum_notional, decision.margin * leverage)
-                boundary = decision.boundary
-                quantity = min(maximum_quantity, notional / boundary)
-                new_order: dict[str, Any] = {
-                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                    "symbol": symbol,
-                    "type": "TAKE_PROFIT_MARKET",
-                    "side": "SELL",
-                    "quantity": ball_ceil(quantity, quantity_precision),
-                    "stopPrice": round(boundary, price_precision),
-                }
-                later_orders.append(new_order)
-
-            if OrderType.LATER_DOWN_SELL in decisions[symbol]:
-                decision = decisions[symbol][OrderType.LATER_DOWN_SELL]
-                notional = max(minimum_notional, decision.margin * leverage)
-                boundary = decision.boundary
-                quantity = min(maximum_quantity, notional / boundary)
-                new_order: dict[str, Any] = {
-                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
-                    "symbol": symbol,
-                    "type": "STOP_MARKET",
-                    "side": "SELL",
-                    "quantity": ball_ceil(quantity, quantity_precision),
-                    "stopPrice": round(boundary, price_precision),
-                }
-                later_orders.append(new_order)
-
-        if later_orders:
-            await gather(*(job_new_order(o) for o in later_orders))
+        await self._order_placer.place(decisions)
 
     async def _clear_positions_and_open_orders(self) -> None:
         decisions: dict[str, dict[OrderType, Decision]] = {}

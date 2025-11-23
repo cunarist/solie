@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 from xdialog import directory
 
 from solie.common import outsource, spawn_blocking
+from solie.utility import Cell
 from solie.widget import HorizontalDivider, ask
 
 
@@ -25,134 +26,126 @@ class DatapathInput:
     done_event = Event()
 
     def __init__(self) -> None:
-        # ■■■■■ the basic ■■■■■
-
         super().__init__()
         self.widget = QWidget()
         self.result: Path
 
-        # ■■■■■ full layout ■■■■■
-
+        # Create main layout
         full_layout = QHBoxLayout(self.widget)
         cards_layout = QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
-        # ■■■■■ spacing ■■■■■
+        # Add top spacer
+        self._add_spacer(cards_layout)
 
-        # spacing
+        # Create selection card
+        folder_label = self._create_selection_card(cards_layout)
+
+        # Create confirm card
+        self._create_confirm_card(cards_layout, folder_label)
+
+        # Add bottom spacer
+        self._add_spacer(cards_layout)
+
+    def _add_spacer(self, layout: QVBoxLayout) -> None:
+        """Add expanding spacer to layout."""
         spacer = QSpacerItem(
-            0,
-            0,
-            QSizePolicy.Policy.Minimum,
-            QSizePolicy.Policy.Expanding,
+            0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
         )
-        cards_layout.addItem(spacer)
+        layout.addItem(spacer)
 
-        # ■■■■■ a card ■■■■■
-
-        # card structure
+    def _create_selection_card(self, parent_layout: QVBoxLayout) -> QLabel:
+        """Create folder selection card and return the folder label."""
         card = QGroupBox()
         card.setFixedWidth(720)
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
-        cards_layout.addWidget(card)
+        parent_layout.addWidget(card)
 
-        # explanation
+        # Description text
         detail_text = QLabel()
         detail_text.setText("All the data that Solie produces will go in this folder.")
         detail_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
         detail_text.setWordWrap(True)
         card_layout.addWidget(detail_text)
 
-        # spacing
-        spacing_text = QLabel("")
-        spacing_text_font = QFont()
-        spacing_text_font.setPointSize(3)
-        spacing_text.setFont(spacing_text_font)
-        card_layout.addWidget(spacing_text)
+        # Spacing
+        self._add_text_spacing(card_layout, 3)
 
-        # divider
+        # Divider
         divider = HorizontalDivider(self.widget)
         card_layout.addWidget(divider)
 
-        # spacing
-        spacing_text = QLabel("")
-        spacing_text_font = QFont()
-        spacing_text_font.setPointSize(3)
-        spacing_text.setFont(spacing_text_font)
-        card_layout.addWidget(spacing_text)
+        # Spacing
+        self._add_text_spacing(card_layout, 3)
 
-        # chosen folder label
+        # Folder path label
         folder_label = QLabel()
         folder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         folder_label.setWordWrap(True)
         card_layout.addWidget(folder_label)
 
-        # spacing
+        # Spacing
+        self._add_text_spacing(card_layout, 3)
+
+        # Choose folder button
+        self._add_choose_button(card, card_layout, folder_label)
+
+        return folder_label
+
+    def _add_text_spacing(self, layout: QVBoxLayout, point_size: int) -> None:
+        """Add text spacing widget."""
         spacing_text = QLabel("")
         spacing_text_font = QFont()
-        spacing_text_font.setPointSize(3)
+        spacing_text_font.setPointSize(point_size)
         spacing_text.setFont(spacing_text_font)
-        card_layout.addWidget(spacing_text)
+        layout.addWidget(spacing_text)
 
-        datapath: Path | None = None
+    def _add_choose_button(
+        self, card: QGroupBox, card_layout: QVBoxLayout, folder_label: QLabel
+    ) -> None:
+        """Add choose folder button."""
+        datapath = Cell[Path | None](None)
 
         async def job_dp() -> None:
-            nonlocal datapath
             str_path = await spawn_blocking(directory, title="Data folder")
-            datapath = Path(str_path)
-            folder_label.setText(str(datapath))
+            path = Path(str_path)
+            folder_label.setText(str(path))
+            datapath.value = path
+            self.result = path
 
-        # choose button
         this_layout = QHBoxLayout()
         card_layout.addLayout(this_layout)
         choose_button = QPushButton("Choose folder", card)
         outsource(choose_button.clicked, job_dp)
-        choose_button.setSizePolicy(
-            QSizePolicy.Policy.Fixed,
-            QSizePolicy.Policy.Fixed,
-        )
+        choose_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         this_layout.addWidget(choose_button)
 
-        # ■■■■■ a card ■■■■■
+    def _create_confirm_card(
+        self, parent_layout: QVBoxLayout, folder_label: QLabel
+    ) -> None:
+        """Create confirm button card."""
 
         async def job_ac() -> None:
-            if datapath is None:
+            if not hasattr(self, "result"):
                 await ask(
                     "Data folder is not chosen",
                     "Choose your data folder first.",
                     ["Okay"],
                 )
             else:
-                self.result = datapath
                 self.done_event.set()
 
-        # card structure
         card = QGroupBox()
         card.setFixedWidth(720)
         card_layout = QHBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
-        cards_layout.addWidget(card)
+        parent_layout.addWidget(card)
 
-        # confirm button
         confirm_button = QPushButton("Okay", card)
         outsource(confirm_button.clicked, job_ac)
-        confirm_button.setSizePolicy(
-            QSizePolicy.Policy.Fixed,
-            QSizePolicy.Policy.Fixed,
-        )
+        confirm_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         card_layout.addWidget(confirm_button)
-
-        # ■■■■■ spacing ■■■■■
-
-        # spacing
-        spacer = QSpacerItem(
-            0,
-            0,
-            QSizePolicy.Policy.Minimum,
-            QSizePolicy.Policy.Expanding,
-        )
-        cards_layout.addItem(spacer)
 
     async def confirm_closing(self) -> bool:
         return True

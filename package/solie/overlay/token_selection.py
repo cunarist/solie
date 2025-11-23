@@ -1,4 +1,5 @@
 from asyncio import Event
+from typing import NamedTuple
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QPixmap
@@ -20,6 +21,11 @@ from solie.utility import ApiRequester
 from solie.widget import HorizontalDivider, ask
 
 
+class Availables(NamedTuple):
+    tokens: set[str]
+    symbols: set[str]
+
+
 class TokenSelection:
     title = "Choose a token to treat as your asset"
     close_button = False
@@ -36,17 +42,27 @@ class TokenSelection:
     async def confirm_closing(self) -> bool:
         return True
 
-    async def fill(self, done_event) -> None:
-        # ■■■■■ for remembering ■■■■■
-
-        token_radioboxes: dict[str, QRadioButton] = {}
-
-        # ■■■■■ prepare the api requester ■■■■■
-
+    async def fill(self, done_event: Event) -> None:
+        """Fill the token selection UI with available tokens."""
         api_requester = ApiRequester()
 
-        # ■■■■■ get all symbols ■■■■■
+        # Fetch token and coin data
+        available_tokens, available_symbols = await self._fetch_availables(
+            api_requester
+        )
+        coin_icon_urls = await self._fetch_coin_metadata(api_requester)
+        number_of_markets = self._calculate_market_counts(
+            available_tokens, available_symbols
+        )
 
+        # Build UI
+        token_icon_labels = self._build_ui(available_tokens, number_of_markets)
+
+        # Load coin icons asynchronously
+        self._load_coin_icons_async(api_requester, token_icon_labels, coin_icon_urls)
+
+    async def _fetch_availables(self, api_requester: ApiRequester) -> Availables:
+        """Fetch available tokens and symbols from Binance."""
         available_tokens = set[str]()
         available_symbols = set[str]()
 
@@ -62,8 +78,10 @@ class TokenSelection:
             symbol = about_symbol["symbol"]
             available_symbols.add(symbol)
 
-        # ■■■■■ get coin informations ■■■■■
+        return Availables(available_tokens, available_symbols)
 
+    async def _fetch_coin_metadata(self, api_requester: ApiRequester) -> dict[str, str]:
+        """Fetch coin metadata from CoinGecko."""
         response = await api_requester.coingecko(
             "GET",
             "/api/v3/coins/markets",
@@ -72,19 +90,18 @@ class TokenSelection:
             },
         )
 
-        coin_names: dict[str, str] = {}
         coin_icon_urls: dict[str, str] = {}
-        coin_ranks: dict[str, int] = {}
-
         for about_coin in response:
             raw_symbol: str = about_coin["symbol"]
             coin_symbol = raw_symbol.upper()
-            coin_names[coin_symbol] = about_coin["name"]
             coin_icon_urls[coin_symbol] = about_coin["image"]
-            coin_ranks[coin_symbol] = about_coin["market_cap_rank"]
 
-        # ■■■■■ set things ■■■■■
+        return coin_icon_urls
 
+    def _calculate_market_counts(
+        self, available_tokens: set[str], available_symbols: set[str]
+    ) -> dict[str, int]:
+        """Calculate number of markets for each token."""
         number_of_markets = {token: 0 for token in available_tokens}
 
         for symbol in available_symbols:
@@ -92,69 +109,104 @@ class TokenSelection:
                 if symbol.endswith(token):
                     number_of_markets[token] += 1
 
-        # ■■■■■ full layout ■■■■■
+        return number_of_markets
+
+    def _build_ui(
+        self, available_tokens: set[str], number_of_markets: dict[str, int]
+    ) -> dict[str, QLabel]:
+        """Build the main UI layout."""
+        token_radioboxes: dict[str, QRadioButton] = {}
+        token_icon_labels: dict[str, QLabel] = {}
+        """Build the main UI layout."""
+        token_radioboxes: dict[str, QRadioButton] = {}
+        token_icon_labels: dict[str, QLabel] = {}
 
         full_layout = QHBoxLayout(self.widget)
         cards_layout = QVBoxLayout()
         full_layout.addLayout(cards_layout)
 
-        # ■■■■■ spacing ■■■■■
+        # Top spacer
+        self._add_spacer(cards_layout, vertical=True)
 
-        spacer = QSpacerItem(
-            0,
-            0,
-            QSizePolicy.Policy.Minimum,
-            QSizePolicy.Policy.Expanding,
+        # Build token selection card
+        self._build_token_selection_card(
+            cards_layout,
+            available_tokens,
+            number_of_markets,
+            token_radioboxes,
+            token_icon_labels,
         )
-        cards_layout.addItem(spacer)
 
-        # ■■■■■ a card ■■■■■
+        # Build confirmation card
+        self._build_confirmation_card(cards_layout, token_radioboxes)
 
-        # card structure
+        # Bottom spacer
+        self._add_spacer(cards_layout, vertical=True)
+
+        return token_icon_labels
+
+    def _add_spacer(
+        self, layout: QVBoxLayout | QHBoxLayout, vertical: bool = False
+    ) -> None:
+        """Add a spacer to the layout."""
+        if vertical:
+            spacer = QSpacerItem(
+                0,
+                0,
+                QSizePolicy.Policy.Minimum,
+                QSizePolicy.Policy.Expanding,
+            )
+        else:
+            spacer = QSpacerItem(
+                0,
+                0,
+                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Minimum,
+            )
+        layout.addItem(spacer)
+
+    def _build_token_selection_card(
+        self,
+        cards_layout: QVBoxLayout,
+        available_tokens: set[str],
+        number_of_markets: dict[str, int],
+        token_radioboxes: dict[str, QRadioButton],
+        token_icon_labels: dict[str, QLabel],
+    ) -> None:
+        """Build the card with token radio buttons."""
         card = QGroupBox()
         card.setFixedWidth(720)
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
         cards_layout.addWidget(card)
 
-        # explanation
         detail_text = QLabel()
         detail_text.setText("These are all the available tokens on Binance.")
         detail_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
         detail_text.setWordWrap(True)
         card_layout.addWidget(detail_text)
 
-        # spacing
-        spacing_text = QLabel("")
-        spacing_text_font = QFont()
-        spacing_text_font.setPointSize(3)
-        spacing_text.setFont(spacing_text_font)
-        card_layout.addWidget(spacing_text)
+        self._add_small_spacing(card_layout)
 
-        # divider
         divider = HorizontalDivider(self.widget)
         card_layout.addWidget(divider)
 
-        # spacing
-        spacing_text = QLabel("")
-        spacing_text_font = QFont()
-        spacing_text_font.setPointSize(3)
-        spacing_text.setFont(spacing_text_font)
-        card_layout.addWidget(spacing_text)
+        self._add_small_spacing(card_layout)
 
-        # input
-        token_icon_labels: dict[str, QLabel] = {}
         input_layout = QGridLayout()
         blank_coin_pixmap = QPixmap()
         blank_coin_pixmap.load(str(PACKAGE_PATH / "static" / "icon/blank_coin.png"))
+
         for turn, token in enumerate(sorted(available_tokens)):
             this_layout = QHBoxLayout()
             row = turn // 2
             column = turn % 2
             input_layout.addLayout(this_layout, row, column)
+
             radiobutton = QRadioButton(card)
             token_radioboxes[token] = radiobutton
             this_layout.addWidget(radiobutton)
+
             icon_label = QLabel("", card)
             icon_label.setPixmap(blank_coin_pixmap)
             icon_label.setScaledContents(True)
@@ -162,33 +214,43 @@ class TokenSelection:
             icon_label.setMargin(5)
             this_layout.addWidget(icon_label)
             token_icon_labels[token] = icon_label
+
             text = f"{token} ({number_of_markets[token]} coins available)"
             text_label = QLabel(text, card)
             this_layout.addWidget(text_label)
-            spacer = QSpacerItem(
-                0,
-                0,
-                QSizePolicy.Policy.Expanding,
-                QSizePolicy.Policy.Minimum,
-            )
-            this_layout.addItem(spacer)
+
+            self._add_spacer(this_layout, vertical=False)
+
         card_layout.addItem(input_layout)
 
-        # ■■■■■ a card ■■■■■
+    def _add_small_spacing(self, layout: QVBoxLayout) -> None:
+        """Add small vertical spacing."""
+        spacing_text = QLabel("")
+        spacing_text_font = QFont()
+        spacing_text_font.setPointSize(3)
+        spacing_text.setFont(spacing_text_font)
+        layout.addWidget(spacing_text)
 
-        # confirm function
+    def _build_confirmation_card(
+        self, cards_layout: QVBoxLayout, token_radioboxes: dict[str, QRadioButton]
+    ) -> None:
+        """Build the confirmation button card."""
+
         async def job_cf() -> None:
             selected_tokens: list[str] = []
             for symbol, radiobox in token_radioboxes.items():
                 is_selected = radiobox.isChecked()
                 if is_selected:
                     selected_tokens.append(symbol)
+
             if len(selected_tokens) == 0:
                 await ask(
                     "Nothing selected",
                     "Choose one of the tokens.",
                     ["Okay"],
                 )
+                return
+
             if len(selected_tokens) == 1:
                 answer = await ask(
                     "Okay to proceed?",
@@ -201,14 +263,12 @@ class TokenSelection:
                 self.result = selected_tokens[0]
                 self.done_event.set()
 
-        # card structure
         card = QGroupBox()
         card.setFixedWidth(720)
         card_layout = QHBoxLayout(card)
         card_layout.setContentsMargins(80, 40, 80, 40)
         cards_layout.addWidget(card)
 
-        # confirm button
         confirm_button = QPushButton("Okay", card)
         outsource(confirm_button.clicked, job_cf)
         confirm_button.setSizePolicy(
@@ -217,17 +277,13 @@ class TokenSelection:
         )
         card_layout.addWidget(confirm_button)
 
-        # ■■■■■ spacing ■■■■■
-
-        spacer = QSpacerItem(
-            0,
-            0,
-            QSizePolicy.Policy.Minimum,
-            QSizePolicy.Policy.Expanding,
-        )
-        cards_layout.addItem(spacer)
-
-        # ■■■■■ draw coin icons from another task ■■■■■
+    def _load_coin_icons_async(
+        self,
+        api_requester: ApiRequester,
+        token_icon_labels: dict[str, QLabel],
+        coin_icon_urls: dict[str, str],
+    ) -> None:
+        """Load coin icons asynchronously."""
 
         async def job_dc() -> None:
             for token, icon_label in token_icon_labels.items():

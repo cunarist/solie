@@ -14,6 +14,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from solie.common import PROCESS_COUNT, outsource, spawn, spawn_blocking
 from solie.utility import (
+    MIN_SERVER_TIME_SAMPLES,
     ApiRequester,
     BoardLockOptions,
     DurationRecorder,
@@ -31,15 +32,9 @@ logger = getLogger(__name__)
 
 class Manager:
     def __init__(self, window: Window, scheduler: AsyncIOScheduler) -> None:
-        # ■■■■■ for data management ■■■■■
-
         self._window = window
         self._scheduler = scheduler
         self._workerpath = window.datapath / "manager"
-
-        # ■■■■■ internal memory ■■■■■
-
-        # ■■■■■ remember and display ■■■■■
 
         self._api_requester = ApiRequester()
 
@@ -52,8 +47,6 @@ class Manager:
         time_traveller = time_machine.travel(datetime.now(timezone.utc))
         time_traveller.start()
         self._time_traveller = time_traveller
-
-        # ■■■■■ repetitive schedules ■■■■■
 
         self._scheduler.add_job(
             self._lock_board,
@@ -81,29 +74,27 @@ class Manager:
             hour="*",
         )
 
-        # ■■■■■ websocket streamings ■■■■■
+        self._connect_ui_events()
 
-        # ■■■■■ invoked by the internet connection status change ■■■■■
-
-        # ■■■■■ connect UI events ■■■■■
+    def _connect_ui_events(self):
+        window = self._window
 
         job = self._run_script
-        outsource(self._window.pushButton.clicked, job)
+        outsource(window.pushButton.clicked, job)
         job = self._open_datapath
-        outsource(self._window.pushButton_8.clicked, job)
+        outsource(window.pushButton_8.clicked, job)
         job = self._deselect_log_output
-        outsource(self._window.pushButton_6.clicked, job)
+        outsource(window.pushButton_6.clicked, job)
         job = self._reset_datapath
-        outsource(self._window.pushButton_22.clicked, job)
+        outsource(window.pushButton_22.clicked, job)
         job = self._open_documentation
-        outsource(self._window.pushButton_7.clicked, job)
+        outsource(window.pushButton_7.clicked, job)
         job = self._change_settings
-        outsource(self._window.comboBox_3.currentIndexChanged, job)
+        outsource(window.comboBox_3.currentIndexChanged, job)
 
     async def load_work(self) -> None:
         await aiofiles.os.makedirs(self._workerpath, exist_ok=True)
 
-        # settings
         filepath = self._workerpath / "management_settings.json"
         if await aiofiles.os.path.isfile(filepath):
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
@@ -113,7 +104,6 @@ class Manager:
         board_lock_index = self._management_settings.lock_board.value
         self._window.comboBox_3.setCurrentIndex(board_lock_index)
 
-        # python script
         filepath = self._workerpath / "python_script.txt"
         if await aiofiles.os.path.isfile(filepath):
             async with aiofiles.open(filepath, "r", encoding="utf8") as file:
@@ -147,74 +137,104 @@ class Manager:
         self._window.listWidget.clearSelection()
 
     async def display_internal_status(self) -> None:
+        """Display internal status information on the UI."""
         while True:
-            texts: list[str] = []
-            tasks = all_tasks()
-            tasks_not_done = 0
-            for task in tasks:
-                if not task.done():
-                    tasks_not_done += 1
-                    text = task.get_name()
-                    texts.append(text)
-            max_tasks_shown = 8
-            if len(texts) <= max_tasks_shown:
-                list_text = "\n".join(texts)
-            else:
-                list_text = "\n".join(texts[:max_tasks_shown]) + "\n..."
-            self._window.label_12.setText(f"{tasks_not_done} total\n\n{list_text}")
-
-            self._window.label_32.setText(f"Process count: {PROCESS_COUNT}")
-
-            texts: list[str] = []
-            texts.append("Limits")
-            for limit_type, limit_value in self._binance_limits.items():
-                text = f"{limit_type}: {limit_value}"
-                texts.append(text)
-            used_rates = self._api_requester.used_rates
-            if len(used_rates) > 0:
-                texts.append("")
-                texts.append("Usage")
-                for used_type, used_tuple in used_rates.items():
-                    time_string = used_tuple[1].strftime("%m-%d %H:%M:%S")
-                    text = f"{used_type}: {used_tuple[0]}({time_string})"
-                    texts.append(text)
-            text = "\n".join(texts)
-            self._window.label_35.setText(text)
-
-            texts: list[str] = []
-            task_durations = DurationRecorder.task_durations
-            for data_name, deque_data in task_durations.items():
-                if len(deque_data) > 0:
-                    text = data_name
-                    text += "\n"
-                    data_value = sum(d.duration for d in deque_data) / len(deque_data)
-                    text += f"Mean {data_value:.6f}s "
-                    data_value = statistics.median(d.duration for d in deque_data)
-                    text += f"Median {data_value:.6f}s "
-                    text += "\n"
-                    data_value = min(deque_data).duration
-                    text += f"Minimum {data_value:.6f}s "
-                    data_value = max(deque_data).duration
-                    text += f"Maximum {data_value:.6f}s "
-                    texts.append(text)
-            text = "\n\n".join(texts)
-            self._window.label_33.setText(text)
-
-            texts: list[str] = []
-            async with team.collector.candle_data.read_lock as cell:
-                candle_data_len = len(cell.data)
-            texts.append(f"CANDLE_DATA {candle_data_len}")
-            texts.append(f"REALTIME_DATA {len(team.collector.realtime_data)}")
-            texts.append(f"AGGREGATE_TRADES {len(team.collector.aggregate_trades)}")
-            text = "\n".join(texts)
-            self._window.label_34.setText(text)
-
-            block_sizes = team.collector.aggtrade_candle_sizes
-            lines = (f"{symbol} {count}" for (symbol, count) in block_sizes.items())
-            text = "\n".join(lines)
-            self._window.label_36.setText(text)
-
+            self._display_task_status()
+            self._display_process_count()
+            self._display_api_limits_and_usage()
+            self._display_task_durations()
+            await self._display_data_sizes()
+            self._display_block_sizes()
             await sleep(0.1)
+
+    def _display_task_status(self) -> None:
+        """Display current task status."""
+        texts: list[str] = []
+        tasks = all_tasks()
+        tasks_not_done = 0
+
+        for task in tasks:
+            if not task.done():
+                tasks_not_done += 1
+                text = task.get_name()
+                texts.append(text)
+
+        max_tasks_shown = 8
+        if len(texts) <= max_tasks_shown:
+            list_text = "\n".join(texts)
+        else:
+            list_text = "\n".join(texts[:max_tasks_shown]) + "\n..."
+
+        self._window.label_12.setText(f"{tasks_not_done} total\n\n{list_text}")
+
+    def _display_process_count(self) -> None:
+        """Display process count."""
+        self._window.label_32.setText(f"Process count: {PROCESS_COUNT}")
+
+    def _display_api_limits_and_usage(self) -> None:
+        """Display API limits and usage information."""
+        texts: list[str] = []
+        texts.append("Limits")
+
+        for limit_type, limit_value in self._binance_limits.items():
+            text = f"{limit_type}: {limit_value}"
+            texts.append(text)
+
+        used_rates = self._api_requester.used_rates
+        if len(used_rates) > 0:
+            texts.append("")
+            texts.append("Usage")
+            for used_type, used_tuple in used_rates.items():
+                time_string = used_tuple[1].strftime("%m-%d %H:%M:%S")
+                text = f"{used_type}: {used_tuple[0]}({time_string})"
+                texts.append(text)
+
+        text = "\n".join(texts)
+        self._window.label_35.setText(text)
+
+    def _display_task_durations(self) -> None:
+        """Display task duration statistics."""
+        texts: list[str] = []
+        task_durations = DurationRecorder.task_durations
+
+        for data_name, deque_data in task_durations.items():
+            if len(deque_data) > 0:
+                text = data_name
+                text += "\n"
+                data_value = sum(d.duration for d in deque_data) / len(deque_data)
+                text += f"Mean {data_value:.6f}s "
+                data_value = statistics.median(d.duration for d in deque_data)
+                text += f"Median {data_value:.6f}s "
+                text += "\n"
+                data_value = min(deque_data).duration
+                text += f"Minimum {data_value:.6f}s "
+                data_value = max(deque_data).duration
+                text += f"Maximum {data_value:.6f}s "
+                texts.append(text)
+
+        text = "\n\n".join(texts)
+        self._window.label_33.setText(text)
+
+    async def _display_data_sizes(self) -> None:
+        """Display data structure sizes."""
+        texts: list[str] = []
+
+        async with team.collector.candle_data.read_lock as cell:
+            candle_data_len = len(cell.data)
+
+        texts.append(f"CANDLE_DATA {candle_data_len}")
+        texts.append(f"REALTIME_DATA {len(team.collector.realtime_data)}")
+        texts.append(f"AGGREGATE_TRADES {len(team.collector.aggregate_trades)}")
+
+        text = "\n".join(texts)
+        self._window.label_34.setText(text)
+
+    def _display_block_sizes(self) -> None:
+        """Display block sizes for each symbol."""
+        block_sizes = team.collector.aggtrade_candle_sizes
+        lines = (f"{symbol} {count}" for (symbol, count) in block_sizes.items())
+        text = "\n".join(lines)
+        self._window.label_36.setText(text)
 
     async def _run_script(self) -> None:
         script_text = self._window.plainTextEdit.toPlainText()
@@ -278,7 +298,7 @@ class Manager:
 
     async def _correct_time(self) -> None:
         server_time_differences = self._server_time_differences
-        if len(server_time_differences) < 30:
+        if len(server_time_differences) < MIN_SERVER_TIME_SAMPLES:
             return
         mean_difference = sum(server_time_differences) / len(server_time_differences)
         new_time = datetime.now(timezone.utc) + timedelta(seconds=mean_difference)

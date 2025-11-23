@@ -21,18 +21,12 @@ class StrategyInfoView:
     result = None
 
     def __init__(self, strategy: Strategy) -> None:
-        # ■■■■■ the basic ■■■■■
-
         super().__init__()
         self.widget = QWidget()
-
-        # ■■■■■ full layout ■■■■■
 
         full_layout = QHBoxLayout(self.widget)
         cards_layout = QVBoxLayout()
         full_layout.addLayout(cards_layout)
-
-        # ■■■■■ spacing ■■■■■
 
         # spacing
         spacer = QSpacerItem(
@@ -42,8 +36,6 @@ class StrategyInfoView:
             QSizePolicy.Policy.Expanding,
         )
         cards_layout.addItem(spacer)
-
-        # ■■■■■ a card ■■■■■
 
         # card structure
         card = QGroupBox()
@@ -81,8 +73,6 @@ class StrategyInfoView:
         detail_text = QLabel(strategy.description)
         detail_text.setWordWrap(True)
         card_layout.addWidget(detail_text)
-
-        # ■■■■■ spacing ■■■■■
 
         # spacing
         spacer = QSpacerItem(

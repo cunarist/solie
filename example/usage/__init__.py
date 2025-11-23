@@ -13,6 +13,8 @@ from solie import (
     RiskLevel,
 )
 
+WILDNESS_CAP = 1.5
+
 
 class SilentStrategy:
     code_name = "SILENT"
@@ -64,7 +66,7 @@ class ExampleStrategy:
 
             # Abstract scale indicators
             wildness = volume_sma_one / volume_sma_two
-            wildness[wildness > 1.5] = 1.5
+            wildness[wildness > WILDNESS_CAP] = WILDNESS_CAP
             new_indicators[f"{symbol}/ABSTRACT/WILDNESS"] = wildness
 
     def create_decisions(self, given: DecisionInput):
