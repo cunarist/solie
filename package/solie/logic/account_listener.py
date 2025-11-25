@@ -83,8 +83,8 @@ class AccountListener:
         window: Window,
         account_state: AccountState,
         leverages: dict[str, int],
-        asset_record: RWLock,
-        auto_order_record: RWLock,
+        asset_record: RWLock[pd.DataFrame],
+        auto_order_record: RWLock[pd.DataFrame],
     ) -> None:
         self._window = window
         self._account_state = account_state

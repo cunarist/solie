@@ -5,6 +5,8 @@ from datetime import datetime, timedelta, timezone
 from logging import getLogger
 from typing import Any, NamedTuple
 
+import pandas as pd
+
 from solie.common import spawn_blocking
 from solie.utility import (
     AccountState,
@@ -29,7 +31,7 @@ class OrderPlacerConfig(NamedTuple):
     """Configuration for OrderPlacer."""
 
     account_state: AccountState
-    auto_order_record: RWLock
+    auto_order_record: RWLock[pd.DataFrame]
     aggregate_trades_queue: Any
 
 

@@ -77,7 +77,7 @@ class Collector:
         # Candle data.
         # It's expected to have only the data of current year,
         # while data of previous years are stored in the disk.
-        self.candle_data = RWLock(
+        self.candle_data = RWLock[pd.DataFrame](
             create_empty_candle_data(window.data_settings.target_symbols)
         )
 

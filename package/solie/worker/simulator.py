@@ -394,8 +394,10 @@ class Simulator:
             self._window.data_settings.target_symbols
         )
         self._raw_scribbles = {}
-        self._raw_asset_record = RWLock(create_empty_asset_record())
-        self._raw_unrealized_changes = RWLock(create_empty_unrealized_changes())
+        self._raw_asset_record = RWLock[pd.DataFrame](create_empty_asset_record())
+        self._raw_unrealized_changes = RWLock[pd.Series](
+            create_empty_unrealized_changes()
+        )
         self._simulation_summary = None
 
         await self.present()
@@ -560,8 +562,8 @@ class Simulator:
 
         result = await calculator.calculate()
 
-        self._raw_asset_record = RWLock(result.asset_record)
-        self._raw_unrealized_changes = RWLock(result.unrealized_changes)
+        self._raw_asset_record = RWLock[pd.DataFrame](result.asset_record)
+        self._raw_unrealized_changes = RWLock[pd.Series](result.unrealized_changes)
         self._raw_scribbles = result.scribbles
         self._raw_account_state = result.account_state
         self._simulation_summary = SimulationSummary(

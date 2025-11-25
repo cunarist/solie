@@ -47,8 +47,8 @@ class StateConfig(NamedTuple):
 
     account_state: AccountState
     transaction_settings: TransactionSettings
-    unrealized_changes: RWLock
-    asset_record: RWLock
+    unrealized_changes: RWLock[pd.Series]
+    asset_record: RWLock[pd.DataFrame]
 
 
 class BinanceWatcher:
@@ -357,7 +357,7 @@ class BinanceWatcher:
             if len(cell.data) == 0:
                 return
             last_index = cell.data.index[-1]
-            last_asset = float(cell.data.loc[last_index, "RESULT_ASSET"])
+            last_asset = float(cell.data.loc[last_index, "RESULT_ASSET"])  # type:ignore
 
         if wallet_balance == 0:
             pass
