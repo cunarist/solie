@@ -111,13 +111,15 @@ class RWLockCore:
         self._read_waiters.append(fut)
         try:
             await fut
-            self._owning.append((me, self._RL))
-            return True
 
         except CancelledError:
             self._r_state -= 1
             self._wake_up()
             raise
+
+        else:
+            self._owning.append((me, self._RL))
+            return True
 
         finally:
             self._read_waiters.remove(fut)
@@ -147,13 +149,15 @@ class RWLockCore:
         self._write_waiters.append(fut)
         try:
             await fut
-            self._owning.append((me, self._WL))
-            return True
 
         except CancelledError:
             self._w_state -= 1
             self._wake_up()
             raise
+
+        else:
+            self._owning.append((me, self._WL))
+            return True
 
         finally:
             self._write_waiters.remove(fut)

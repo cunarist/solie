@@ -20,7 +20,7 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["TC", "BLE", "PGH", "ANN401", "S102", "S301", "TRY", "FBT"]
+ignore = ["TC", "BLE", "PGH", "ANN401", "S102", "S301", "FBT"]
 exclude = ["package/solie/window/compiled.py"]
 
 [tool.ruff.lint.per-file-ignores]
