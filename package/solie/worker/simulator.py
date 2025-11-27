@@ -1,7 +1,6 @@
 """Trading strategy simulation worker."""
 
 import pickle
-from asyncio import sleep
 from datetime import UTC, datetime, timedelta
 from typing import Any, NamedTuple
 
@@ -342,11 +341,7 @@ class Simulator:
         if periodic:
             current_moment = to_moment(datetime.now(UTC))
             before_moment = current_moment - timedelta(seconds=10)
-            for _ in range(50):
-                async with team.collector.candle_data.read_lock as cell:
-                    if cell.data.index[-1] == before_moment:
-                        break
-                await sleep(0.1)
+            await team.collector.wait_for_candle_data_ready(before_moment)
 
         duration_recorder = DurationRecorder("DISPLAY_SIMULATION_LINES")
 

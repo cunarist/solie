@@ -6,6 +6,7 @@ from typing import NamedTuple
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QPixmap
 from PySide6.QtWidgets import (
+    QBoxLayout,
     QCheckBox,
     QGridLayout,
     QGroupBox,
@@ -169,7 +170,7 @@ class CoinSelection:
 
         return symbol_icon_labels
 
-    def _add_spacer(self, layout: QVBoxLayout, vertical: bool = False) -> None:
+    def _add_spacer(self, layout: QBoxLayout, vertical: bool = False) -> None:
         """Add a spacer to the layout."""
         if vertical:
             spacer = QSpacerItem(

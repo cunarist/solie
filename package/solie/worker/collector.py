@@ -498,6 +498,19 @@ class Collector:
         needed_moments = 6 * 60 * 24
         return cumulated / needed_moments
 
+    async def wait_for_candle_data_ready(self, before_moment: datetime) -> bool:
+        """Wait for candle data to be ready up to the specified moment.
+
+        Returns True when data is ready or after timeout.
+        """
+        for _ in range(50):
+            async with self.candle_data.read_lock as cell:
+                last_index = cell.data.index[-1]
+                if last_index == before_moment:
+                    return True
+            await sleep(0.1)
+        return True
+
     async def _open_binance_data_page(self) -> None:
         await spawn_blocking(webbrowser.open, "https://www.binance.com/en/landing/data")
 

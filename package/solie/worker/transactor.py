@@ -34,6 +34,7 @@ from solie.utility import (
     ApiRequestError,
     ApiStreamer,
     BookTicker,
+    Cell,
     Decision,
     DurationRecorder,
     OrderType,
@@ -766,11 +767,7 @@ class Transactor:
         if periodic:
             current_moment = to_moment(datetime.now(UTC))
             before_moment = current_moment - timedelta(seconds=10)
-            for _ in range(50):
-                async with team.collector.candle_data.read_lock as cell:
-                    if cell.data.index[-1] == before_moment:
-                        break
-                await sleep(0.1)
+            await team.collector.wait_for_candle_data_ready(before_moment)
 
         duration_recorder = DurationRecorder("DISPLAY_TRANSACTION_LINES")
 
@@ -944,6 +941,24 @@ class Transactor:
             current_indicators=current_indicators,
         )
 
+    async def _run_progress_bar(
+        self,
+        current_moment: datetime,
+        is_cycle_done: Cell[bool],
+    ) -> None:
+        """Run the progress bar animation during transaction processing."""
+        passed_time = timedelta(seconds=0)
+        while passed_time < timedelta(seconds=10):
+            passed_time = datetime.now(UTC) - current_moment
+            if not is_cycle_done.value:
+                new_value = int(passed_time / timedelta(seconds=10) * 1000)
+            else:
+                before_value = self._window.progressBar_2.value()
+                remaining = 1000 - before_value
+                new_value = before_value + math.ceil(remaining * 0.2)
+            self._window.progressBar_2.setValue(new_value)
+            await sleep(0.01)
+
     async def _perform_transaction(self) -> None:
         self._window.progressBar_2.setValue(0)
 
@@ -964,34 +979,16 @@ class Transactor:
         current_moment = to_moment(datetime.now(UTC))
         before_moment = current_moment - timedelta(seconds=10)
 
-        is_cycle_done = False
+        is_cycle_done = Cell(False)
 
-        async def play_progress_bar() -> None:
-            passed_time = timedelta(seconds=0)
-            while passed_time < timedelta(seconds=10):
-                passed_time = datetime.now(UTC) - current_moment
-                if not is_cycle_done:
-                    new_value = int(passed_time / timedelta(seconds=10) * 1000)
-                else:
-                    before_value = self._window.progressBar_2.value()
-                    remaining = 1000 - before_value
-                    new_value = before_value + math.ceil(remaining * 0.2)
-                self._window.progressBar_2.setValue(new_value)
-                await sleep(0.01)
-
-        spawn(play_progress_bar())
+        spawn(self._run_progress_bar(current_moment, is_cycle_done))
 
         async with team.collector.candle_data.read_lock as cell:
             if len(cell.data) == 0:
                 # case when the app is executed for the first time
                 return
 
-        for _ in range(50):
-            async with team.collector.candle_data.read_lock as cell:
-                last_index = cell.data.index[-1]
-                if last_index == before_moment:
-                    break
-            await sleep(0.1)
+        await team.collector.wait_for_candle_data_ready(before_moment)
 
         slice_from = datetime.now(UTC) - timedelta(days=28)
         async with team.collector.candle_data.read_lock as cell:
@@ -1019,7 +1016,7 @@ class Transactor:
         )
         decisions = make_decisions(decision_context)
 
-        is_cycle_done = True
+        is_cycle_done.value = True
         duration_recorder.record()
 
         await self.place_orders(decisions)
@@ -1096,6 +1093,39 @@ class Transactor:
             }
         await self.place_orders(decisions)
 
+    def _group_open_orders_by_type(
+        self,
+        symbol_open_orders: dict[int, Any],
+    ) -> dict[OrderType, list[int]]:
+        """Group open orders by order type."""
+        grouped_open_orders: dict[OrderType, list[int]] = {}
+        for order_id, open_order_state in symbol_open_orders.items():
+            order_type = open_order_state.order_type
+            if order_type not in grouped_open_orders:
+                grouped_open_orders[order_type] = [order_id]
+            else:
+                grouped_open_orders[order_type].append(order_id)
+        return grouped_open_orders
+
+    def _identify_conflicting_orders(
+        self,
+        grouped_open_orders: dict[OrderType, list[int]],
+        symbol: str,
+    ) -> list[tuple[str, int]]:
+        """Identify orders that should be cancelled (duplicates or OTHER type)."""
+        conflicting_order_tuples: list[tuple[str, int]] = []
+        for order_type, group in grouped_open_orders.items():
+            if order_type == OrderType.OTHER:
+                conflicting_order_tuples.extend(
+                    (symbol, order_id) for order_id in group
+                )
+            elif len(group) > 1:
+                latest_id = max(group)
+                conflicting_order_tuples.extend(
+                    (symbol, order_id) for order_id in group if order_id != latest_id
+                )
+        return conflicting_order_tuples
+
     async def _cancel_conflicting_orders(self) -> None:
         if not self._transaction_settings.should_transact:
             return
@@ -1103,25 +1133,10 @@ class Transactor:
         conflicting_order_tuples: list[tuple[str, int]] = []
         for symbol in self._window.data_settings.target_symbols:
             symbol_open_orders = self._account_state.open_orders[symbol]
-            grouped_open_orders: dict[OrderType, list[int]] = {}
-            for order_id, open_order_state in symbol_open_orders.items():
-                order_type = open_order_state.order_type
-                if order_type not in grouped_open_orders:
-                    grouped_open_orders[order_type] = [order_id]
-                else:
-                    grouped_open_orders[order_type].append(order_id)
-            for order_type, group in grouped_open_orders.items():
-                if order_type == OrderType.OTHER:
-                    conflicting_order_tuples.extend(
-                        (symbol, order_id) for order_id in group
-                    )
-                elif len(group) > 1:
-                    latest_id = max(group)
-                    conflicting_order_tuples.extend(
-                        (symbol, order_id)
-                        for order_id in group
-                        if order_id != latest_id
-                    )
+            grouped_open_orders = self._group_open_orders_by_type(symbol_open_orders)
+            conflicting_order_tuples.extend(
+                self._identify_conflicting_orders(grouped_open_orders, symbol),
+            )
 
         async def job(conflicting_order_tuple: tuple[str, int]) -> None:
             try:

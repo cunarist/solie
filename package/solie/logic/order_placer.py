@@ -3,7 +3,7 @@
 from asyncio import gather
 from datetime import UTC, datetime, timedelta
 from logging import getLogger
-from typing import Any, NamedTuple
+from typing import Any, ClassVar, NamedTuple
 
 import pandas as pd
 
@@ -57,8 +57,42 @@ class EntryOrderParams(NamedTuple):
     quantity_precision: int
 
 
+class SymbolConfig(NamedTuple):
+    """Configuration parameters for a specific trading symbol."""
+
+    leverage: int
+    maximum_quantity: float
+    minimum_notional: float
+    price_precision: int
+    quantity_precision: int
+
+
+class LaterCloseContext(NamedTuple):
+    """Context for processing a later close order."""
+
+    symbol: str
+    decision: Decision
+    current_direction: PositionDirection
+    price_precision: int
+    is_up_close: bool
+
+
 class OrderPlacer:
     """Places orders on Binance futures exchange."""
+
+    # Configuration for later entry orders: (order_type_str, side)
+    LATER_ENTRY_ORDERS: ClassVar[dict[OrderType, tuple[str, str]]] = {
+        OrderType.LATER_UP_BUY: ("STOP_MARKET", "BUY"),
+        OrderType.LATER_DOWN_BUY: ("TAKE_PROFIT_MARKET", "BUY"),
+        OrderType.LATER_UP_SELL: ("TAKE_PROFIT_MARKET", "SELL"),
+        OrderType.LATER_DOWN_SELL: ("STOP_MARKET", "SELL"),
+    }
+
+    # Configuration for later close orders: is_up_close flag
+    LATER_CLOSE_ORDERS: ClassVar[dict[OrderType, bool]] = {
+        OrderType.LATER_UP_CLOSE: True,
+        OrderType.LATER_DOWN_CLOSE: False,
+    }
 
     def __init__(
         self,
@@ -358,6 +392,58 @@ class OrderPlacer:
 
         return current_direction
 
+    def _handle_later_close_order(
+        self,
+        later_orders: list[dict[str, Any]],
+        context: LaterCloseContext,
+    ) -> None:
+        """Handle LATER_UP_CLOSE or LATER_DOWN_CLOSE order."""
+        if context.current_direction == PositionDirection.NONE:
+            order_name = "later_up_close" if context.is_up_close else "later_down_close"
+            logger.warning(
+                "Cannot place `%s` with no open position",
+                order_name,
+            )
+            return
+
+        is_long = context.current_direction == PositionDirection.LONG
+        if context.is_up_close:
+            order_type_str = "TAKE_PROFIT_MARKET" if is_long else "STOP_MARKET"
+        else:
+            order_type_str = "STOP_MARKET" if is_long else "TAKE_PROFIT_MARKET"
+
+        self._add_close_order(
+            later_orders,
+            CloseOrderParams(
+                symbol=context.symbol,
+                order_type_str=order_type_str,
+                side="SELL" if is_long else "BUY",
+                stop_price=context.decision.boundary,
+                price_precision=context.price_precision,
+            ),
+        )
+
+    def _create_later_entry_order(
+        self,
+        symbol: str,
+        decision: Decision,
+        config: SymbolConfig,
+        order_type_str: str,
+        side: str,
+    ) -> EntryOrderParams:
+        """Create parameters for LATER_UP/DOWN_BUY and LATER_UP/DOWN_SELL orders."""
+        notional = max(config.minimum_notional, decision.margin * config.leverage)
+        quantity = min(config.maximum_quantity, notional / decision.boundary)
+        return EntryOrderParams(
+            symbol=symbol,
+            order_type_str=order_type_str,
+            side=side,
+            quantity=quantity,
+            stop_price=decision.boundary,
+            price_precision=config.price_precision,
+            quantity_precision=config.quantity_precision,
+        )
+
     def _prepare_later_orders(
         self,
         target_symbols: list[str],
@@ -370,127 +456,37 @@ class OrderPlacer:
             if symbol not in decisions:
                 continue
 
-            leverage = self._exchange_config.leverages[symbol]
-            maximum_quantity = self._exchange_config.maximum_quantities[symbol]
-            minimum_notional = self._exchange_config.minimum_notionals[symbol]
-            price_precision = self._exchange_config.price_precisions[symbol]
-            quantity_precision = self._exchange_config.quantity_precisions[symbol]
+            config = SymbolConfig(
+                leverage=self._exchange_config.leverages[symbol],
+                maximum_quantity=self._exchange_config.maximum_quantities[symbol],
+                minimum_notional=self._exchange_config.minimum_notionals[symbol],
+                price_precision=self._exchange_config.price_precisions[symbol],
+                quantity_precision=self._exchange_config.quantity_precisions[symbol],
+            )
             current_direction = self._get_assumed_direction(symbol, decisions)
 
-            # LATER_UP_CLOSE
-            if OrderType.LATER_UP_CLOSE in decisions[symbol]:
-                decision = decisions[symbol][OrderType.LATER_UP_CLOSE]
-                if current_direction != PositionDirection.NONE:
-                    is_long = current_direction == PositionDirection.LONG
-                    self._add_close_order(
-                        later_orders,
-                        CloseOrderParams(
-                            symbol=symbol,
-                            order_type_str="TAKE_PROFIT_MARKET"
-                            if is_long
-                            else "STOP_MARKET",
-                            side="SELL" if is_long else "BUY",
-                            stop_price=decision.boundary,
-                            price_precision=price_precision,
-                        ),
-                    )
-                else:
-                    logger.warning(
-                        "Cannot place `later_up_close` with no open position",
-                    )
-
-            # LATER_DOWN_CLOSE
-            if OrderType.LATER_DOWN_CLOSE in decisions[symbol]:
-                decision = decisions[symbol][OrderType.LATER_DOWN_CLOSE]
-                if current_direction != PositionDirection.NONE:
-                    is_long = current_direction == PositionDirection.LONG
-                    self._add_close_order(
-                        later_orders,
-                        CloseOrderParams(
-                            symbol=symbol,
-                            order_type_str="STOP_MARKET"
-                            if is_long
-                            else "TAKE_PROFIT_MARKET",
-                            side="SELL" if is_long else "BUY",
-                            stop_price=decision.boundary,
-                            price_precision=price_precision,
-                        ),
-                    )
-                else:
-                    logger.warning(
-                        "Cannot place `later_down_close` with no open position",
-                    )
-
-            # LATER_UP_BUY
-            if OrderType.LATER_UP_BUY in decisions[symbol]:
-                decision = decisions[symbol][OrderType.LATER_UP_BUY]
-                notional = max(minimum_notional, decision.margin * leverage)
-                quantity = min(maximum_quantity, notional / decision.boundary)
-                self._add_entry_order(
-                    later_orders,
-                    EntryOrderParams(
+            # Handle later close orders
+            for order_type, is_up_close in self.LATER_CLOSE_ORDERS.items():
+                if order_type in decisions[symbol]:
+                    context = LaterCloseContext(
                         symbol=symbol,
-                        order_type_str="STOP_MARKET",
-                        side="BUY",
-                        quantity=quantity,
-                        stop_price=decision.boundary,
-                        price_precision=price_precision,
-                        quantity_precision=quantity_precision,
-                    ),
-                )
+                        decision=decisions[symbol][order_type],
+                        current_direction=current_direction,
+                        price_precision=config.price_precision,
+                        is_up_close=is_up_close,
+                    )
+                    self._handle_later_close_order(later_orders, context)
 
-            # LATER_DOWN_BUY
-            if OrderType.LATER_DOWN_BUY in decisions[symbol]:
-                decision = decisions[symbol][OrderType.LATER_DOWN_BUY]
-                notional = max(minimum_notional, decision.margin * leverage)
-                quantity = min(maximum_quantity, notional / decision.boundary)
-                self._add_entry_order(
-                    later_orders,
-                    EntryOrderParams(
-                        symbol=symbol,
-                        order_type_str="TAKE_PROFIT_MARKET",
-                        side="BUY",
-                        quantity=quantity,
-                        stop_price=decision.boundary,
-                        price_precision=price_precision,
-                        quantity_precision=quantity_precision,
-                    ),
-                )
-
-            # LATER_UP_SELL
-            if OrderType.LATER_UP_SELL in decisions[symbol]:
-                decision = decisions[symbol][OrderType.LATER_UP_SELL]
-                notional = max(minimum_notional, decision.margin * leverage)
-                quantity = min(maximum_quantity, notional / decision.boundary)
-                self._add_entry_order(
-                    later_orders,
-                    EntryOrderParams(
-                        symbol=symbol,
-                        order_type_str="TAKE_PROFIT_MARKET",
-                        side="SELL",
-                        quantity=quantity,
-                        stop_price=decision.boundary,
-                        price_precision=price_precision,
-                        quantity_precision=quantity_precision,
-                    ),
-                )
-
-            # LATER_DOWN_SELL
-            if OrderType.LATER_DOWN_SELL in decisions[symbol]:
-                decision = decisions[symbol][OrderType.LATER_DOWN_SELL]
-                notional = max(minimum_notional, decision.margin * leverage)
-                quantity = min(maximum_quantity, notional / decision.boundary)
-                self._add_entry_order(
-                    later_orders,
-                    EntryOrderParams(
-                        symbol=symbol,
-                        order_type_str="STOP_MARKET",
-                        side="SELL",
-                        quantity=quantity,
-                        stop_price=decision.boundary,
-                        price_precision=price_precision,
-                        quantity_precision=quantity_precision,
-                    ),
-                )
+            # Handle later entry orders
+            for order_type, (order_type_str, side) in self.LATER_ENTRY_ORDERS.items():
+                if order_type in decisions[symbol]:
+                    params = self._create_later_entry_order(
+                        symbol,
+                        decisions[symbol][order_type],
+                        config,
+                        order_type_str,
+                        side,
+                    )
+                    self._add_entry_order(later_orders, params)
 
         return later_orders
