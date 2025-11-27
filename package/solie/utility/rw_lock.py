@@ -17,6 +17,30 @@ from typing import Any
 logger = getLogger(__name__)
 
 
+class NoTaskError(Exception):
+    """Exception raised when no current task is found."""
+
+    def __init__(self) -> None:
+        """Initialize NoTaskError with message."""
+        super().__init__("Cannot acquire lock outside of a task")
+
+
+class LockUpgradeError(Exception):
+    """Exception raised when attempting to upgrade from read to write lock."""
+
+    def __init__(self) -> None:
+        """Initialize LockUpgradeError with message."""
+        super().__init__("Cannot upgrade RWLock from read to write")
+
+
+class LockReleaseError(Exception):
+    """Exception raised when attempting to release an un-acquired lock."""
+
+    def __init__(self) -> None:
+        """Initialize LockReleaseError with message."""
+        super().__init__("Cannot release an un-acquired lock")
+
+
 # The internal lock object managing the RWLock state.
 class RWLockCore:
     """Core read-write lock implementation."""
@@ -69,7 +93,7 @@ class RWLockCore:
         """Acquire lock in read mode."""
         me = current_task()
         if me is None:
-            raise RuntimeError("Cannot acquire lock outside of a task")
+            raise NoTaskError
 
         if (me, self._RL) in self._owning or (me, self._WL) in self._owning:
             self._r_state += 1
@@ -104,15 +128,14 @@ class RWLockCore:
         """Acquire lock in write mode."""
         me = current_task()
         if me is None:
-            raise RuntimeError("Cannot acquire lock outside of a task")
+            raise NoTaskError
         if (me, self._WL) in self._owning:
             self._w_state += 1
             self._owning.append((me, self._WL))
             await self._yield_after_acquire(self._WL)
             return True
         if (me, self._RL) in self._owning and self._r_state > 0:
-            msg = "Cannot upgrade RWLock from read to write"
-            raise RuntimeError(msg)
+            raise LockUpgradeError
 
         if self._r_state == 0 and self._w_state == 0:
             self._w_state += 1
@@ -146,12 +169,11 @@ class RWLockCore:
     def _release(self, lock_type: int) -> None:
         me = current_task(loop=self._loop)
         if me is None:
-            raise RuntimeError("Cannot release lock outside of a task")
+            raise NoTaskError
         try:
             self._owning.remove((me, lock_type))
         except ValueError as err:
-            msg = "Cannot release an un-acquired lock"
-            raise RuntimeError(msg) from err
+            raise LockReleaseError from err
         if lock_type == self._RL:
             self._r_state -= 1
         else:

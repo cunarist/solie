@@ -32,7 +32,6 @@ ignore = [
     "PD",
     "TRY",
     "FBT",
-    "EM",
 ]
 exclude = ["package/solie/window/compiled.py"]
 
