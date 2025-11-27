@@ -355,19 +355,17 @@ class Manager:
     async def _lock_board(self) -> None:
         lock_board = self._management_settings.lock_board
 
-        if lock_board == BoardLockOptions.NEVER:
-            return
-        if lock_board == BoardLockOptions.SECONDS_10:
-            wait_time = timedelta(seconds=10)
-        elif lock_board == BoardLockOptions.MINUTE_1:
-            wait_time = timedelta(minutes=1)
-        elif lock_board == BoardLockOptions.MINUTE_10:
-            wait_time = timedelta(minutes=10)
-        elif lock_board == BoardLockOptions.HOUR_1:
-            wait_time = timedelta(hours=1)
-        else:
-            msg = "Invalid duration value for locking the window"
-            raise ValueError(msg)
+        match lock_board:
+            case BoardLockOptions.NEVER:
+                return
+            case BoardLockOptions.SECONDS_10:
+                wait_time = timedelta(seconds=10)
+            case BoardLockOptions.MINUTE_1:
+                wait_time = timedelta(minutes=1)
+            case BoardLockOptions.MINUTE_10:
+                wait_time = timedelta(minutes=10)
+            case BoardLockOptions.HOUR_1:
+                wait_time = timedelta(hours=1)
 
         last_interaction_time = self._window.last_interaction
         if datetime.now(UTC) < last_interaction_time + wait_time:

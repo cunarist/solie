@@ -866,12 +866,13 @@ class Transactor:
             return
 
         position = self._account_state.positions[self._viewing_symbol]
-        if position.direction == PositionDirection.LONG:
-            direction_text = "long"
-        elif position.direction == PositionDirection.SHORT:
-            direction_text = "short"
-        else:
-            direction_text = "none"
+        match position.direction:
+            case PositionDirection.LONG:
+                direction_text = "long"
+            case PositionDirection.SHORT:
+                direction_text = "short"
+            case PositionDirection.NONE:
+                direction_text = "none"
         margin_sum = 0
         for each_position in self._account_state.positions.values():
             margin_sum += each_position.margin

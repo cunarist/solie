@@ -20,6 +20,7 @@ from solie.utility import (
     OrderType,
     PositionDirection,
     RWLock,
+    ServerType,
     TransactionSettings,
     internet_connected,
     list_to_dict,
@@ -499,7 +500,7 @@ class BinanceWatcher:
             http_method="GET",
             path="/sapi/v1/account/apiRestrictions",
             payload=payload,
-            server="spot",
+            server_type=ServerType.SPOT,
         )
 
         self.is_key_restrictions_satisfied = response.get("enableFutures", False)

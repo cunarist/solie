@@ -113,15 +113,13 @@ class Strategiest:
 
         # Update strategy list view.
         for strategy in self.strategies:
-            if strategy.risk_level == RiskLevel.HIGH:
-                icon_pixmap = self._red_pixmap
-            elif strategy.risk_level == RiskLevel.MIDDLE:
-                icon_pixmap = self._yellow_pixmap
-            elif strategy.risk_level == RiskLevel.LOW:
-                icon_pixmap = self._green_pixmap
-            else:
-                msg = "Invalid risk level for drawing an icon"
-                raise ValueError(msg)
+            match strategy.risk_level:
+                case RiskLevel.HIGH:
+                    icon_pixmap = self._red_pixmap
+                case RiskLevel.MIDDLE:
+                    icon_pixmap = self._yellow_pixmap
+                case RiskLevel.LOW:
+                    icon_pixmap = self._green_pixmap
             traffic_light_icon = QIcon()
             traffic_light_icon.addPixmap(icon_pixmap)
 

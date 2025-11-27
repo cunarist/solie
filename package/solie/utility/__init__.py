@@ -1,6 +1,6 @@
 """Utility functions and helper classes."""
 
-from .api_requester import ApiRequester, ApiRequestError
+from .api_requester import ApiRequester, ApiRequestError, ServerType
 from .api_streamer import ApiStreamer
 from .ball import ball_ceil, ball_floor
 from .check_internet import (
@@ -134,6 +134,7 @@ __all__ = [
     "RiskLevel",
     "SavedStrategies",
     "SavedStrategy",
+    "ServerType",
     "SimulationSettings",
     "SimulationSummary",
     "SolieConfig",

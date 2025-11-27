@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import json
 from datetime import UTC, datetime
+from enum import Enum
 from typing import Any, ClassVar
 from urllib.parse import urlencode
 
@@ -12,6 +13,13 @@ from aiohttp import ClientSession
 from solie.common import spawn
 
 OK_CODE = 200
+
+
+class ServerType(Enum):
+    """Enum for server types."""
+
+    SPOT = 0
+    FUTURES = 1
 
 
 class ApiRequestError(Exception):
@@ -51,7 +59,7 @@ class ApiRequester:
         http_method: str,
         path: str,
         payload: dict[str, Any] | None = None,
-        server: str = "futures",
+        server_type: ServerType = ServerType.FUTURES,
     ) -> Any:
         """Make request to Binance API."""
         query_string = urlencode(payload or {})
@@ -65,13 +73,11 @@ class ApiRequester:
         ).hexdigest()
         headers = {"X-MBX-APIKEY": self._binance_api_key}
 
-        if server == "spot":
-            url = "https://api.binance.com"
-        elif server == "futures":
-            url = "https://fapi.binance.com"
-        else:
-            msg = "This Binance server is not supported"
-            raise ValueError(msg)
+        match server_type:
+            case ServerType.SPOT:
+                url = "https://api.binance.com"
+            case ServerType.FUTURES:
+                url = "https://fapi.binance.com"
         url += path
         url += "?" + query_string + "&signature=" + signature
 
