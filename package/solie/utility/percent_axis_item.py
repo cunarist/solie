@@ -12,8 +12,8 @@ class PercentAxisItem(AxisItem):
     @override
     def tickValues(
         self,
-        minVal: float,  # noqa
-        maxVal: float,  # noqa
+        minVal: float,
+        maxVal: float,
         size: float,
     ) -> list[tuple[float, list[float]]]:
         min_value = minVal

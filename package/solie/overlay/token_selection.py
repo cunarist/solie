@@ -113,7 +113,7 @@ class TokenSelection:
         available_symbols: set[str],
     ) -> dict[str, int]:
         """Calculate number of markets for each token."""
-        number_of_markets = {token: 0 for token in available_tokens}
+        number_of_markets = dict.fromkeys(available_tokens, 0)
 
         for symbol in available_symbols:
             for token in available_tokens:

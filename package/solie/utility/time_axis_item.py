@@ -29,8 +29,8 @@ class TimeAxisItem(AxisItem):
     @override
     def tickValues(
         self,
-        minVal: float,  # noqa
-        maxVal: float,  # noqa
+        minVal: float,
+        maxVal: float,
         size: float,
     ) -> list[tuple[float, list[float]]]:
         """Calculate tick values based on time range."""

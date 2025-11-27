@@ -1,5 +1,5 @@
 [dependency-groups]
-dev = ["ruff~=0.9.3", "pyright~=1.1.392"]
+dev = ["ruff>=0.14.6", "pyright>=1.1.407"]
 
 [tool.uv.workspace]
 members = ["documentation", "package", "example"]

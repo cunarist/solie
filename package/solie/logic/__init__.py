@@ -1,6 +1,6 @@
 """Core trading logic and algorithms."""
 
-from .account_listener import AccountListener
+from .account_listener import AccountListener, ParseOrderTypeParams
 from .analyze_market import (
     CalculationInput,
     CalculationOutput,
@@ -39,6 +39,7 @@ __all__ = [
     "ExchangeConfig",
     "OrderPlacer",
     "OrderPlacerConfig",
+    "ParseOrderTypeParams",
     "SimulationCalculator",
     "SimulationError",
     "StateConfig",

@@ -10,7 +10,7 @@ from typing import Any, NamedTuple
 import pandas as pd
 
 from solie.common import spawn_blocking
-from solie.logic import AccountListener
+from solie.logic import AccountListener, ParseOrderTypeParams
 from solie.utility import (
     AccountState,
     ApiRequester,
@@ -296,8 +296,6 @@ class BinanceWatcher:
             leverage = int(about_positions_keyed[symbol]["leverage"])
 
             for about_open_order in about_open_orders[symbol]:
-                from solie.logic.account_listener import ParseOrderTypeParams
-
                 params = ParseOrderTypeParams(
                     order_type=str(about_open_order["type"]),
                     side=str(about_open_order["side"]),
