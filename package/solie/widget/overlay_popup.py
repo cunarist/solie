@@ -1,4 +1,6 @@
 # https://stackoverflow.com/questions/67029993/pyqt-creating-a-popup-in-the-window
+"""Overlay popup system."""
+
 from asyncio import Event
 from typing import Protocol, override
 
@@ -22,6 +24,8 @@ from .transparent_scroll_area import TransparentScrollArea
 
 
 class OverlayContent[T](Protocol):
+    """Protocol for overlay content."""
+
     # Class members
     title: str
     close_button: bool
@@ -32,12 +36,13 @@ class OverlayContent[T](Protocol):
     result: T
 
     async def confirm_closing(self) -> bool:
-        """Shows a closing confirmation dialog if needed."""
+        """Show a closing confirmation dialog if needed."""
         ...
 
 
 # show an mainpulatable overlap popup
 async def overlay[T](content: OverlayContent[T]) -> T:
+    """Show overlay popup with content and wait for result."""
     overlay_box = OverlayBox(content)
     overlay_box.show()
 
@@ -48,6 +53,8 @@ async def overlay[T](content: OverlayContent[T]) -> T:
 
 
 class OverlayBox[T](QWidget):
+    """Widget that displays overlay content."""
+
     installed_window: QMainWindow
 
     @override
@@ -67,9 +74,11 @@ class OverlayBox[T](QWidget):
 
     @classmethod
     def install_window(cls, window: QMainWindow) -> None:
+        """Install parent window for overlay."""
         cls.installed_window = window
 
     def __init__(self, content: OverlayContent[T]) -> None:
+        """Initialize overlay box."""
         super().__init__(self.installed_window)
 
         # needed for filling the window when resized

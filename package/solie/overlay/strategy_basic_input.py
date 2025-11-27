@@ -1,3 +1,5 @@
+"""Strategy basic information input overlay."""
+
 from asyncio import Event
 from re import fullmatch
 
@@ -26,6 +28,8 @@ from solie.widget import HorizontalDivider, ask
 
 
 class StrategyBasicInput:
+    """Overlay for editing strategy basic information."""
+
     title = "Edit your strategy's basic information"
     close_button = True
     done_event = Event()
@@ -43,7 +47,7 @@ class StrategyBasicInput:
         # Build cards
         self._build_about_card(cards_layout, strategy)
         self._build_simulation_card(cards_layout, strategy)
-        self._build_confirmation_card(cards_layout, strategy)
+        self._build_confirmation_card(cards_layout)
 
     def _create_main_layout(self) -> QVBoxLayout:
         """Create the main layout structure."""
@@ -56,7 +60,7 @@ class StrategyBasicInput:
 
         return cards_layout
 
-    def _add_spacer(self, layout, vertical=False) -> None:
+    def _add_spacer(self, layout: QVBoxLayout, vertical: bool = False) -> None:
         """Add a spacer to the layout."""
         if vertical:
             spacer = QSpacerItem(
@@ -74,7 +78,7 @@ class StrategyBasicInput:
             )
         layout.addItem(spacer)
 
-    def _add_small_spacing(self, layout) -> None:
+    def _add_small_spacing(self, layout: QVBoxLayout) -> None:
         """Add small vertical spacing."""
         spacing_text = QLabel("")
         spacing_text_font = QFont()
@@ -82,7 +86,7 @@ class StrategyBasicInput:
         spacing_text.setFont(spacing_text_font)
         layout.addWidget(spacing_text)
 
-    def _build_about_card(self, cards_layout, strategy: Strategy) -> None:
+    def _build_about_card(self, cards_layout: QVBoxLayout, strategy: Strategy) -> None:
         """Build the 'About' information card."""
         card = QGroupBox()
         card.setFixedWidth(720)
@@ -146,7 +150,11 @@ class StrategyBasicInput:
 
         return risk_level_input
 
-    def _build_simulation_card(self, cards_layout, strategy: Strategy) -> None:
+    def _build_simulation_card(
+        self,
+        cards_layout: QVBoxLayout,
+        strategy: Strategy,
+    ) -> None:
         """Build the 'Simulation' settings card."""
         card = QGroupBox()
         card.setFixedWidth(720)
@@ -172,7 +180,7 @@ class StrategyBasicInput:
 
         self.parallelized_input = QCheckBox()
         self.parallelized_input.setChecked(
-            bool(strategy.parallel_simulation_chunk_days)
+            bool(strategy.parallel_simulation_chunk_days),
         )
         this_layout.addRow("Parallelized", self.parallelized_input)
 
@@ -184,7 +192,7 @@ class StrategyBasicInput:
         self.chunk_division_input.setValue(strategy.parallel_simulation_chunk_days or 0)
         this_layout.addRow("Chunk division", self.chunk_division_input)
 
-    def _build_confirmation_card(self, cards_layout, strategy: Strategy) -> None:
+    def _build_confirmation_card(self, cards_layout: QVBoxLayout) -> None:
         """Build the confirmation button card."""
         card = QGroupBox()
         card.setFixedWidth(720)
@@ -243,4 +251,5 @@ class StrategyBasicInput:
         self.done_event.set()
 
     async def confirm_closing(self) -> bool:
+        """Confirm if overlay can be closed."""
         return True

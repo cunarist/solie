@@ -1,9 +1,11 @@
+"""Market data collection worker."""
+
 import math
 import random
 import webbrowser
 from asyncio import Lock, gather, sleep
 from collections import deque
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from logging import getLogger
 from pathlib import Path
 from typing import Any
@@ -58,7 +60,10 @@ logger = getLogger(__name__)
 
 
 class Collector:
+    """Worker for collecting market data from Binance."""
+
     def __init__(self, window: Window, scheduler: AsyncIOScheduler) -> None:
+        """Initialize market data collector."""
         self._window = window
         self._scheduler = scheduler
         self._workerpath = window.datapath / "collector"
@@ -78,7 +83,7 @@ class Collector:
         # It's expected to have only the data of current year,
         # while data of previous years are stored in the disk.
         self.candle_data = RWLock[pd.DataFrame](
-            create_empty_candle_data(window.data_settings.target_symbols)
+            create_empty_candle_data(window.data_settings.target_symbols),
         )
 
         # Realtime data
@@ -140,7 +145,7 @@ class Collector:
 
         self._connect_ui_events()
 
-    def _connect_ui_events(self):
+    def _connect_ui_events(self) -> None:
         window = self._window
 
         job = self._guide_donation
@@ -161,9 +166,10 @@ class Collector:
         outsource(new_action.triggered, job)
 
     async def load_work(self) -> None:
+        """Load saved candle data from disk."""
         await aiofiles.os.makedirs(self._workerpath, exist_ok=True)
 
-        current_year = datetime.now(timezone.utc).year
+        current_year = datetime.now(UTC).year
         async with self.candle_data.write_lock as cell:
             filepath = self._workerpath / f"candle_data_{current_year}.pickle"
             if await aiofiles.os.path.isfile(filepath):
@@ -173,6 +179,7 @@ class Collector:
                 cell.data = df
 
     async def dump_work(self) -> None:
+        """Save candle data to disk."""
         await self._save_candle_data()
 
     async def _organize_data(self) -> None:
@@ -189,7 +196,7 @@ class Collector:
         duration_recorder.record()
 
     async def _save_candle_data(self) -> None:
-        current_year = datetime.now(timezone.utc).year
+        current_year = datetime.now(UTC).year
         filepath = self._workerpath / f"candle_data_{current_year}.pickle"
         filepath_new = self._workerpath / f"candle_data_{current_year}.pickle.new"
         filepath_backup = self._workerpath / f"candle_data_{current_year}.pickle.backup"
@@ -208,6 +215,7 @@ class Collector:
             await aiofiles.os.rename(filepath_new, filepath)
 
     async def get_exchange_information(self) -> None:
+        """Fetch exchange information from Binance."""
         if not internet_connected():
             return
 
@@ -223,9 +231,9 @@ class Collector:
             symbol = about_symbol["symbol"]
 
             about_filter: dict[str, Any] = {}
-            for filter in about_symbol["filters"]:
-                if filter["filterType"] == "PRICE_FILTER":
-                    about_filter = filter
+            for symbol_filter in about_symbol["filters"]:
+                if symbol_filter["filterType"] == "PRICE_FILTER":
+                    about_filter = symbol_filter
                     break
 
             ticksize = float(about_filter["tickSize"])
@@ -237,7 +245,7 @@ class Collector:
         if not internet_connected():
             return
 
-        current_moment = to_moment(datetime.now(timezone.utc))
+        current_moment = to_moment(datetime.now(UTC))
         split_moment = current_moment - timedelta(days=2)
         target_symbols = self._window.data_settings.target_symbols
 
@@ -246,7 +254,9 @@ class Collector:
             recent_candle_data = cell.data[cell.data.index >= split_moment].copy()
 
         did_fill = await self._find_full_symbols(
-            recent_candle_data, current_moment, target_symbols
+            recent_candle_data,
+            current_moment,
+            target_symbols,
         )
 
         if not did_fill:
@@ -275,7 +285,10 @@ class Collector:
                     continue
 
                 filled = await self._fill_symbol_holes(
-                    symbol, recent_candle_data, current_moment, needed_moments
+                    symbol,
+                    recent_candle_data,
+                    current_moment,
+                    needed_moments,
                 )
                 if filled is None:
                     # Symbol is complete
@@ -338,7 +351,8 @@ class Collector:
         # Fill the gaps
         last_fetched_id = max(aggtrades.keys())
         last_fetched_time = datetime.fromtimestamp(
-            aggtrades[last_fetched_id].timestamp / 1000, tz=timezone.utc
+            aggtrades[last_fetched_id].timestamp / 1000,
+            tz=UTC,
         )
 
         await spawn_blocking(
@@ -352,7 +366,9 @@ class Collector:
         return True
 
     async def _fetch_aggtrades_for_gap(
-        self, symbol: str, moment_to_fill_from: datetime
+        self,
+        symbol: str,
+        moment_to_fill_from: datetime,
     ) -> dict[int, AggregateTrade] | None:
         """Fetch aggregate trades to fill a data gap."""
         aggtrades: dict[int, AggregateTrade] = {}
@@ -387,13 +403,16 @@ class Collector:
 
             last_fetched_id = max(aggtrades.keys())
             last_fetched_time = datetime.fromtimestamp(
-                aggtrades[last_fetched_id].timestamp / 1000, tz=timezone.utc
+                aggtrades[last_fetched_id].timestamp / 1000,
+                tz=UTC,
             )
 
         return aggtrades
 
     async def _merge_filled_data(
-        self, recent_candle_data: pd.DataFrame, split_moment: datetime
+        self,
+        recent_candle_data: pd.DataFrame,
+        split_moment: datetime,
     ) -> None:
         """Merge filled candle data back into main dataframe."""
         async with self.candle_data.write_lock as cell:
@@ -467,7 +486,8 @@ class Collector:
         self._window.label_6.setText(text)
 
     async def check_candle_data_cumulation_rate(self) -> float:
-        current_moment = to_moment(datetime.now(timezone.utc))
+        """Calculate percentage of collected candle data."""
+        current_moment = to_moment(datetime.now(UTC))
         count_end_moment = current_moment - timedelta(seconds=10)
         count_start_moment = count_end_moment - timedelta(hours=24)
 
@@ -476,9 +496,7 @@ class Collector:
         async with self.candle_data.read_lock as cell:
             cumulated = len(cell.data[count_start_moment:count_end_moment].dropna())
         needed_moments = 6 * 60 * 24
-        cumulation_rate = cumulated / needed_moments
-
-        return cumulation_rate
+        return cumulated / needed_moments
 
     async def _open_binance_data_page(self) -> None:
         await spawn_blocking(webbrowser.open, "https://www.binance.com/en/landing/data")
@@ -489,7 +507,7 @@ class Collector:
             return
         unique_task = self._download_fill_task
         unique_task.spawn(
-            self._download_fill_candle_data_real(unique_task, fill_option)
+            self._download_fill_candle_data_real(unique_task, fill_option),
         )
 
     def _create_download_presets(
@@ -502,66 +520,67 @@ class Collector:
             case DownloadYearRange(start=year_from, end=year_to):
                 for year in range(year_from, year_to + 1):
                     for month in range(1, 12 + 1):
-                        for symbol in target_symbols:
-                            download_presets.append(
-                                DownloadPreset(
-                                    symbol=symbol,
-                                    unit_size=DownloadUnitSize.MONTHLY,
-                                    year=year,
-                                    month=month,
-                                )
-                            )
-            case DownloadFillOption.FROM_YEAR_START_TO_LAST_MONTH:
-                current_year = datetime.now(timezone.utc).year
-                current_month = datetime.now(timezone.utc).month
-                for month in range(1, current_month):
-                    for symbol in target_symbols:
-                        download_presets.append(
+                        download_presets.extend(
                             DownloadPreset(
-                                symbol=symbol,
+                                symbol=s,
                                 unit_size=DownloadUnitSize.MONTHLY,
-                                year=current_year,
+                                year=year,
                                 month=month,
                             )
+                            for s in target_symbols
                         )
+            case DownloadFillOption.FROM_YEAR_START_TO_LAST_MONTH:
+                current_year = datetime.now(UTC).year
+                current_month = datetime.now(UTC).month
+                for month in range(1, current_month):
+                    download_presets.extend(
+                        DownloadPreset(
+                            symbol=s,
+                            unit_size=DownloadUnitSize.MONTHLY,
+                            year=current_year,
+                            month=month,
+                        )
+                        for s in target_symbols
+                    )
             case DownloadFillOption.THIS_MONTH:
-                current_year = datetime.now(timezone.utc).year
-                current_month = datetime.now(timezone.utc).month
-                current_day = datetime.now(timezone.utc).day
+                current_year = datetime.now(UTC).year
+                current_month = datetime.now(UTC).month
+                current_day = datetime.now(UTC).day
                 for target_day in range(1, current_day):
-                    for symbol in target_symbols:
-                        download_presets.append(
-                            DownloadPreset(
-                                symbol=symbol,
-                                unit_size=DownloadUnitSize.DAILY,
-                                year=current_year,
-                                month=current_month,
-                                day=target_day,
-                            )
+                    download_presets.extend(
+                        DownloadPreset(
+                            symbol=s,
+                            unit_size=DownloadUnitSize.DAILY,
+                            year=current_year,
+                            month=current_month,
+                            day=target_day,
                         )
+                        for s in target_symbols
+                    )
             case DownloadFillOption.LAST_TWO_DAYS:
-                now = datetime.now(timezone.utc)
+                now = datetime.now(UTC)
                 yesterday = now - timedelta(hours=24)
                 day_before_yesterday = yesterday - timedelta(hours=24)
-                for symbol in target_symbols:
-                    download_presets.append(
-                        DownloadPreset(
-                            symbol=symbol,
-                            unit_size=DownloadUnitSize.DAILY,
-                            year=day_before_yesterday.year,
-                            month=day_before_yesterday.month,
-                            day=day_before_yesterday.day,
-                        ),
+                download_presets.extend(
+                    DownloadPreset(
+                        symbol=s,
+                        unit_size=DownloadUnitSize.DAILY,
+                        year=day_before_yesterday.year,
+                        month=day_before_yesterday.month,
+                        day=day_before_yesterday.day,
                     )
-                    download_presets.append(
-                        DownloadPreset(
-                            symbol=symbol,
-                            unit_size=DownloadUnitSize.DAILY,
-                            year=yesterday.year,
-                            month=yesterday.month,
-                            day=yesterday.day,
-                        ),
+                    for s in target_symbols
+                )
+                download_presets.extend(
+                    DownloadPreset(
+                        symbol=s,
+                        unit_size=DownloadUnitSize.DAILY,
+                        year=yesterday.year,
+                        month=yesterday.month,
+                        day=yesterday.day,
                     )
+                    for s in target_symbols
+                )
 
         return download_presets
 
@@ -597,7 +616,7 @@ class Collector:
         bar_task.add_done_callback(lambda _: self._window.progressBar_3.setValue(0))
         unique_task.add_done_callback(lambda _: bar_task.cancel())
 
-        current_year = datetime.now(timezone.utc).year
+        current_year = datetime.now(UTC).year
         classified_download_presets = self._classify_presets_by_year(download_presets)
 
         for preset_year, download_presets in classified_download_presets.items():
@@ -608,11 +627,14 @@ class Collector:
             )
             if combined_df is not None:
                 await self._save_or_merge_downloaded_data(
-                    preset_year, current_year, combined_df
+                    preset_year,
+                    current_year,
+                    combined_df,
                 )
 
     def _classify_presets_by_year(
-        self, download_presets: list[DownloadPreset]
+        self,
+        download_presets: list[DownloadPreset],
     ) -> dict[int, list[DownloadPreset]]:
         """Classify download presets by year."""
         all_years = sorted({t.year for t in download_presets})
@@ -670,12 +692,14 @@ class Collector:
 
         if len(downloaded_dfs) > 0:
             return await spawn_blocking(combine_candle_data, downloaded_dfs)
-        else:
-            logger.info(f"No data downloaded for the year {preset_year}")
-            return None
+        logger.info("No data downloaded for the year %d", preset_year)
+        return None
 
     async def _save_or_merge_downloaded_data(
-        self, preset_year: int, current_year: int, combined_df: pd.DataFrame
+        self,
+        preset_year: int,
+        current_year: int,
+        combined_df: pd.DataFrame,
     ) -> None:
         """Save downloaded data to disk or merge with current data."""
         if preset_year < current_year:
@@ -683,7 +707,7 @@ class Collector:
                 combined_df.to_pickle,
                 self._workerpath / f"candle_data_{preset_year}.pickle",
             )
-            logger.info(f"Saved candle data of year {preset_year}")
+            logger.info("Saved candle data of year %d to disk", preset_year)
         else:
             async with self.candle_data.write_lock as cell_worker:
                 cell_worker.data = await spawn_blocking(
@@ -757,7 +781,7 @@ class Collector:
     async def _add_candle_data(self) -> None:
         duration_recorder = DurationRecorder("ADD_CANDLE_DATA")
 
-        current_moment = to_moment(datetime.now(timezone.utc))
+        current_moment = to_moment(datetime.now(UTC))
         before_moment = current_moment - timedelta(seconds=10.0)
         collect_from = int(before_moment.timestamp()) * 1000
         collect_to = int(current_moment.timestamp()) * 1000
@@ -831,14 +855,15 @@ class Collector:
         await overlay(DonationGuide())
 
     async def check_saved_years(self) -> list[int]:
-        years = [
+        """Get list of years with saved candle data."""
+        return [
             int(format_numeric(filename))
             for filename in await aiofiles.os.listdir(self._workerpath)
             if filename.startswith("candle_data_") and filename.endswith(".pickle")
         ]
-        return years
 
     async def read_saved_candle_data(self, year: int) -> pd.DataFrame:
+        """Read saved candle data for specific year."""
         filepath = self._workerpath / f"candle_data_{year}.pickle"
         candle_data: pd.DataFrame = await spawn_blocking(pd.read_pickle, filepath)
         return candle_data

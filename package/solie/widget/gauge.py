@@ -1,3 +1,5 @@
+"""Gauge button widget with hover effects."""
+
 from typing import override
 
 from PySide6.QtCore import QEvent
@@ -6,7 +8,10 @@ from PySide6.QtWidgets import QPushButton, QWidget
 
 
 class Gauge(QPushButton):
+    """Circular gauge button widget."""
+
     def __init__(self, parent: QWidget) -> None:
+        """Initialize gauge button."""
         super().__init__(parent)
         self.is_mouse_over = False
         self.normal_text = ""

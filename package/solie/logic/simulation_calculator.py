@@ -3,7 +3,7 @@
 import math
 import pickle
 from asyncio import gather, sleep
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, NamedTuple
 
@@ -96,7 +96,8 @@ class SimulationCalculator:
         workerpath: Path,
         year_candle_data: pd.DataFrame,
         widgets: WidgetReferences,
-    ):
+    ) -> None:
+        """Initialize simulation calculator."""
         self.unique_task = unique_task
         self.config = config
         self.workerpath = workerpath
@@ -124,14 +125,16 @@ class SimulationCalculator:
         self.virtual_state_path = workerpath / f"{prefix}_virtual_state.pickle"
 
         # Time range
-        self.slice_from = datetime(self.year, 1, 1, tzinfo=timezone.utc)
-        if self.year == datetime.now(timezone.utc).year:
-            self.slice_until = datetime.now(timezone.utc)
+        self.slice_from = datetime(self.year, 1, 1, tzinfo=UTC)
+        if self.year == datetime.now(UTC).year:
+            self.slice_until = datetime.now(UTC)
             self.slice_until = self.slice_until.replace(
-                minute=0, second=0, microsecond=0
+                minute=0,
+                second=0,
+                microsecond=0,
             )
         else:
-            self.slice_until = datetime(self.year + 1, 1, 1, tzinfo=timezone.utc)
+            self.slice_until = datetime(self.year + 1, 1, 1, tzinfo=UTC)
         self.slice_until -= timedelta(seconds=1)
 
     async def calculate(self) -> CalculationResult:
@@ -163,7 +166,8 @@ class SimulationCalculator:
                 "OTHER"
             )
             previous_state.asset_record.loc[
-                previous_state.calculate_from, "RESULT_ASSET"
+                previous_state.calculate_from,
+                "RESULT_ASSET",
             ] = 1.0
 
         self.prepare_step = 5
@@ -177,7 +181,9 @@ class SimulationCalculator:
         self.prepare_step = 6
 
         calculation_output_data = await self._run_calculation(
-            should_calculate, calculation_inputs, previous_state
+            should_calculate,
+            calculation_inputs,
+            previous_state,
         )
 
         self.calculate_step.value = 1000
@@ -195,7 +201,10 @@ class SimulationCalculator:
 
         if not self.only_visible and should_calculate:
             await self._save_calculation_results(
-                asset_record, unrealized_changes, scribbles, account_state
+                asset_record,
+                unrealized_changes,
+                scribbles,
+                account_state,
             )
 
         return CalculationResult(
@@ -230,7 +239,7 @@ class SimulationCalculator:
             if before_value < PROGRESS_BAR_MAX:
                 remaining = (
                     math.ceil(
-                        PROGRESS_BAR_MAX / MAX_PREPARATION_STEPS * self.prepare_step
+                        PROGRESS_BAR_MAX / MAX_PREPARATION_STEPS * self.prepare_step,
                     )
                     - before_value
                 )
@@ -273,7 +282,8 @@ class SimulationCalculator:
         )
 
     async def _load_or_create_previous_state(
-        self, blank_states: BlankStates
+        self,
+        blank_states: BlankStates,
     ) -> PreviousState:
         """Load previous calculation state or create blank state."""
         if self.only_visible:
@@ -285,8 +295,8 @@ class SimulationCalculator:
 
             graph_widget = self.widgets.simulation_graph.price_widget
             view_range = graph_widget.getAxis("bottom").range
-            view_start = datetime.fromtimestamp(view_range[0], tz=timezone.utc)
-            view_end = datetime.fromtimestamp(view_range[1], tz=timezone.utc)
+            view_start = datetime.fromtimestamp(view_range[0], tz=UTC)
+            view_end = datetime.fromtimestamp(view_range[1], tz=UTC)
 
             if self.should_draw_all_years:
                 calculate_from = view_start
@@ -322,10 +332,10 @@ class SimulationCalculator:
                 previous_unrealized_changes = blank_states.unrealized_changes.copy()
                 previous_scribbles = blank_states.scribbles.copy()
                 previous_account_state = blank_states.account_state.model_copy(
-                    deep=True
+                    deep=True,
                 )
                 previous_virtual_state = blank_states.virtual_state.model_copy(
-                    deep=True
+                    deep=True,
                 )
 
                 calculate_from = self.slice_from
@@ -395,7 +405,7 @@ class SimulationCalculator:
             chunk_candle_data_list = [
                 chunk_candle_data
                 for _, chunk_candle_data in needed_candle_data.groupby(
-                    pd.Grouper(freq=division, origin="epoch")  # type:ignore
+                    pd.Grouper(freq=division, origin="epoch"),  # type:ignore
                 )
             ]
 
@@ -465,16 +475,14 @@ class SimulationCalculator:
                     return
                 total_progress = sum(progress_list)
                 self.calculate_step.value = math.ceil(
-                    total_progress * 1000 / total_seconds
+                    total_progress * 1000 / total_seconds,
                 )
                 await sleep(0.01)
 
         step_task = spawn(update_calculation_step())
         self.unique_task.add_done_callback(lambda _: step_task.cancel())
 
-        calculation_output_data = await gathered
-
-        return calculation_output_data
+        return await gathered
 
     async def _merge_calculation_results(
         self,
@@ -503,7 +511,8 @@ class SimulationCalculator:
             unrealized_changes = unrealized_changes[mask]
             if not unrealized_changes.index.is_monotonic_increasing:
                 unrealized_changes = await spawn_blocking(
-                    sort_series, unrealized_changes
+                    sort_series,
+                    unrealized_changes,
                 )
 
             scribbles = calculation_output_data[-1].chunk_scribbles

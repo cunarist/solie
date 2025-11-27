@@ -1,3 +1,5 @@
+"""Donation guide overlay."""
+
 from asyncio import Event
 
 from PySide6.QtCore import Qt
@@ -14,11 +16,14 @@ from PySide6.QtWidgets import (
 
 
 class DonationGuide:
+    """Overlay displaying donation information and support options."""
+
     title = "Support Solie"
     close_button = True
     done_event = Event()
 
     def __init__(self) -> None:
+        """Initialize donation guide overlay."""
         super().__init__()
         self.widget = QWidget()
         self.result = None
@@ -72,4 +77,5 @@ class DonationGuide:
         cards_layout.addItem(spacer)
 
     async def confirm_closing(self) -> bool:
+        """Confirm if overlay can be closed."""
         return True

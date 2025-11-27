@@ -1,3 +1,5 @@
+"""Real-time graph plotting for market data and trading results."""
+
 import re
 from asyncio import sleep
 from datetime import datetime, timedelta
@@ -26,12 +28,17 @@ from solie.utility import (
 
 
 class LinePair(NamedTuple):
+    """Pair of plot lines for visualization."""
+
     line_a: PlotDataItem
     line_b: PlotDataItem
 
 
 class GraphLines:
+    """Widget for plotting price, volume, and asset graphs."""
+
     def __init__(self) -> None:
+        """Initialize graph lines widget."""
         # Create widgets.
         self.price_widget = PlotWidget()
         self.volume_widget = PlotWidget()
@@ -44,13 +51,17 @@ class GraphLines:
         abstract_plot = self.abstract_widget.plotItem
         asset_plot = self.asset_widget.plotItem
         if not isinstance(price_plot, PlotItem):
-            raise ValueError("Plot item is invalid")
+            msg = "Plot item is invalid"
+            raise TypeError(msg)
         if not isinstance(volume_plot, PlotItem):
-            raise ValueError("Plot item is invalid")
+            msg = "Plot item is invalid"
+            raise TypeError(msg)
         if not isinstance(abstract_plot, PlotItem):
-            raise ValueError("Plot item is invalid")
+            msg = "Plot item is invalid"
+            raise TypeError(msg)
         if not isinstance(asset_plot, PlotItem):
-            raise ValueError("Plot item is invalid")
+            msg = "Plot item is invalid"
+            raise TypeError(msg)
         self.price_plot = price_plot
         self.volume_plot = volume_plot
         self.abstract_plot = abstract_plot
@@ -214,7 +225,7 @@ class GraphLines:
                 "bottom": TimeAxisItem(orientation="bottom"),
                 "left": PercentAxisItem(orientation="left"),
                 "right": PercentAxisItem(orientation="right"),
-            }
+            },
         )
 
         # Volume plot with standard axes
@@ -224,7 +235,7 @@ class GraphLines:
                 "bottom": TimeAxisItem(orientation="bottom"),
                 "left": AxisItem(orientation="left"),
                 "right": AxisItem(orientation="right"),
-            }
+            },
         )
 
         # Abstract plot with standard axes
@@ -234,7 +245,7 @@ class GraphLines:
                 "bottom": TimeAxisItem(orientation="bottom"),
                 "left": AxisItem(orientation="left"),
                 "right": AxisItem(orientation="right"),
-            }
+            },
         )
 
         # Asset plot with percent axes
@@ -244,7 +255,7 @@ class GraphLines:
                 "bottom": TimeAxisItem(orientation="bottom"),
                 "left": PercentAxisItem(orientation="left"),
                 "right": PercentAxisItem(orientation="right"),
-            }
+            },
         )
 
     def _set_tick_fonts(self) -> None:
@@ -291,6 +302,7 @@ class GraphLines:
         entry_price: float | None,
         observed_until: datetime,
     ) -> None:
+        """Update price and volume lines."""
         data_y = [d.mark_price for d in mark_prices]
         data_x = [d.timestamp / 10**3 for d in mark_prices]
         self.mark_price.setData(data_x, data_y)
@@ -361,7 +373,9 @@ class GraphLines:
         await self._update_asset_lines(symbol, asset_record, unrealized_changes)
 
     def _prepare_candle_arrays(
-        self, symbol: str, candle_data: pd.DataFrame
+        self,
+        symbol: str,
+        candle_data: pd.DataFrame,
     ) -> dict[str, np.ndarray]:
         """Prepare numpy arrays from candle data."""
         index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
@@ -398,7 +412,9 @@ class GraphLines:
             await sleep(0.0)
 
     def _create_candlestick_data(
-        self, arrays: dict[str, np.ndarray], mask: np.ndarray
+        self,
+        arrays: dict[str, np.ndarray],
+        mask: np.ndarray,
     ) -> tuple[np.ndarray, np.ndarray]:
         """Create candlestick data arrays for a given condition mask."""
         idx = arrays["index"][mask]
@@ -441,7 +457,9 @@ class GraphLines:
         return data_x, data_y
 
     async def _update_wobbles_and_volume(
-        self, symbol: str, candle_data: pd.DataFrame
+        self,
+        symbol: str,
+        candle_data: pd.DataFrame,
     ) -> None:
         """Update wobbles and volume lines."""
         # High wobble
@@ -509,6 +527,7 @@ class GraphLines:
         await sleep(0.0)
 
     async def update_custom_lines(self, symbol: str, indicators: pd.DataFrame) -> None:
+        """Update custom indicator lines."""
         columns = [str(n) for n in indicators.columns]
         data_x = indicators.index.to_numpy(dtype=np.int64) / 10**9
         data_x += 5
@@ -522,10 +541,7 @@ class GraphLines:
             sr = indicators[column]
             data_y = sr.to_numpy(dtype=np.float32)
             inside_strings = re.findall(r"\(([^)]+)", column)
-            if len(inside_strings) == 0:
-                color = "#AAAAAA"
-            else:
-                color = inside_strings[0]
+            color = "#AAAAAA" if len(inside_strings) == 0 else inside_strings[0]
             widget.setPen(color)
             widget.setData(data_x, data_y)
             await sleep(0.0)
@@ -539,10 +555,7 @@ class GraphLines:
             sr = indicators[column]
             data_y = sr.to_numpy(dtype=np.float32)
             inside_strings = re.findall(r"\(([^)]+)", column)
-            if len(inside_strings) == 0:
-                color = "#AAAAAA"
-            else:
-                color = inside_strings[0]
+            color = "#AAAAAA" if len(inside_strings) == 0 else inside_strings[0]
             widget.setPen(color)
             widget.setData(data_x, data_y)
             await sleep(0.0)
@@ -556,10 +569,7 @@ class GraphLines:
             sr = indicators[column]
             data_y = sr.to_numpy(dtype=np.float32)
             inside_strings = re.findall(r"\(([^)]+)", column)
-            if len(inside_strings) == 0:
-                color = "#AAAAAA"
-            else:
-                color = inside_strings[0]
+            color = "#AAAAAA" if len(inside_strings) == 0 else inside_strings[0]
             widget.setPen(color)
             widget.setData(data_x, data_y)
             await sleep(0.0)

@@ -1,3 +1,5 @@
+"""Example trading strategies."""
+
 from typing import Any
 
 import pandas as pd
@@ -17,6 +19,8 @@ WILDNESS_CAP = 1.5
 
 
 class SilentStrategy:
+    """Passive strategy that takes no trading actions."""
+
     code_name = "SILENT"
     readable_name = "Silent Strategy"
     version = "0.1"
@@ -24,14 +28,16 @@ class SilentStrategy:
     risk_level = RiskLevel.LOW
     parallel_simulation_chunk_days: int | None = 30
 
-    def create_indicators(self, given: IndicatorInput):
-        pass
+    def create_indicators(self, given: IndicatorInput) -> None:
+        """Generate no indicators."""
 
-    def create_decisions(self, given: DecisionInput):
-        pass
+    def create_decisions(self, given: DecisionInput) -> None:
+        """Make no trading decisions."""
 
 
 class ExampleStrategy:
+    """Trend-following strategy using SMA crossovers."""
+
     code_name = "EXAMPL"
     readable_name = "Fixed Strategy"
     version = "1.2"
@@ -39,7 +45,8 @@ class ExampleStrategy:
     risk_level = RiskLevel.HIGH
     parallel_simulation_chunk_days: int | None = 30
 
-    def create_indicators(self, given: IndicatorInput):
+    def create_indicators(self, given: IndicatorInput) -> None:
+        """Calculate SMA indicators for price and volume."""
         target_symbols: list[str] = given.target_symbols
         candle_data: pd.DataFrame = given.candle_data
         new_indicators: dict[str, pd.Series] = given.new_indicators
@@ -69,7 +76,8 @@ class ExampleStrategy:
             wildness[wildness > WILDNESS_CAP] = WILDNESS_CAP
             new_indicators[f"{symbol}/ABSTRACT/WILDNESS"] = wildness
 
-    def create_decisions(self, given: DecisionInput):
+    def create_decisions(self, given: DecisionInput) -> None:
+        """Execute trades based on SMA crossover signals."""
         target_symbols: list[str] = given.target_symbols
         account_state: AccountState = given.account_state
         current_candle_data: dict[str, float] = given.current_candle_data
@@ -93,23 +101,25 @@ class ExampleStrategy:
             if position.direction == PositionDirection.NONE:
                 if price_sma_one > price_sma_two:
                     new_decisions[symbol][OrderType.NOW_BUY] = Decision(
-                        margin=acquire_ratio * wallet_balance
+                        margin=acquire_ratio * wallet_balance,
                     )
                 elif price_sma_one < price_sma_two:
                     new_decisions[symbol][OrderType.NOW_SELL] = Decision(
-                        margin=acquire_ratio * wallet_balance
+                        margin=acquire_ratio * wallet_balance,
                     )
 
             elif position.direction == PositionDirection.LONG:
                 if price_sma_one < price_sma_two:
                     # Flip
                     new_decisions[symbol][OrderType.NOW_SELL] = Decision(
-                        margin=position.margin + acquire_ratio * wallet_balance
+                        margin=position.margin + acquire_ratio * wallet_balance,
                     )
 
-            elif position.direction == PositionDirection.SHORT:
-                if price_sma_one > price_sma_two:
-                    # Flip
-                    new_decisions[symbol][OrderType.NOW_BUY] = Decision(
-                        margin=position.margin + acquire_ratio * wallet_balance
-                    )
+            elif (
+                position.direction == PositionDirection.SHORT
+                and price_sma_one > price_sma_two
+            ):
+                # Flip
+                new_decisions[symbol][OrderType.NOW_BUY] = Decision(
+                    margin=position.margin + acquire_ratio * wallet_balance,
+                )

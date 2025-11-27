@@ -1,3 +1,5 @@
+"""Confirmation dialog popup widget."""
+
 from asyncio import Event
 from typing import override
 
@@ -23,6 +25,7 @@ from .popup_box import PopupBox
 
 # show an ask popup and blocks the stack
 async def ask(main_text: str, detail_text: str, options: list[str]) -> int:
+    """Show popup asking user to choose from options."""
     ask_popup = AskPopup(main_text, detail_text, options)
     ask_popup.show()
 
@@ -33,6 +36,8 @@ async def ask(main_text: str, detail_text: str, options: list[str]) -> int:
 
 
 class AskPopup(QWidget):
+    """Popup widget for asking user to choose an option."""
+
     done_event = Event()
     result = None
     installed_window: QMainWindow
@@ -54,6 +59,7 @@ class AskPopup(QWidget):
 
     @classmethod
     def install_window(cls, window: QMainWindow) -> None:
+        """Install parent window for popup."""
         cls.installed_window = window
 
     def __init__(
@@ -62,6 +68,7 @@ class AskPopup(QWidget):
         detail_text: str,
         options: list[str],
     ) -> None:
+        """Initialize ask popup."""
         super().__init__(self.installed_window)
 
         # needed for filling the window when resized
@@ -102,7 +109,10 @@ class AskPopup(QWidget):
         """Add close button to the top right."""
         this_layout = QHBoxLayout()
         widget = QSpacerItem(
-            0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
+            0,
+            0,
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum,
         )
         this_layout.addItem(widget)
 
@@ -119,12 +129,18 @@ class AskPopup(QWidget):
         layout.addLayout(this_layout)
 
     def _add_text_content(
-        self, layout: QVBoxLayout, main_text: str, detail_text: str
+        self,
+        layout: QVBoxLayout,
+        main_text: str,
+        detail_text: str,
     ) -> None:
         """Add main and detail text widgets."""
         # Top spacer
         widget = QSpacerItem(
-            0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+            0,
+            0,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding,
         )
         layout.addItem(widget)
 
@@ -154,19 +170,25 @@ class AskPopup(QWidget):
 
         # Bottom spacer
         widget = QSpacerItem(
-            0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+            0,
+            0,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding,
         )
         layout.addItem(widget)
 
     def _add_option_buttons(
-        self, content_box: PopupBox, layout: QVBoxLayout, options: list[str]
+        self,
+        content_box: PopupBox,
+        layout: QVBoxLayout,
+        options: list[str],
     ) -> None:
         """Add option buttons."""
         this_layout = QHBoxLayout()
         for turn, option in enumerate(options):
             option_button = QPushButton(option, content_box)
 
-            async def job(answer=turn + 1) -> None:
+            async def job(answer: int = turn + 1) -> None:
                 self.answer = answer
                 self.done_event.set()
 

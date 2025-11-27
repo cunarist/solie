@@ -1,3 +1,5 @@
+"""Custom Qt widgets for the UI."""
+
 from .ask_popup import AskPopup, ask
 from .brand_label import BrandLabel
 from .gauge import Gauge

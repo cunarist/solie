@@ -1,3 +1,5 @@
+"""Overlay UI components for user interactions."""
+
 from .coin_selection import CoinSelection
 from .datapath_input import DatapathInput
 from .donation_guide import DonationGuide

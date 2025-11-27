@@ -1,3 +1,5 @@
+"""Strategy development overlay."""
+
 import webbrowser
 from asyncio import Event
 
@@ -21,11 +23,14 @@ from solie.widget import ScriptEditor, VerticalDivider, ask
 
 
 class StrategyDevelopInput:
+    """Overlay for developing trading strategies."""
+
     title = "Develop your strategy"
     close_button = True
     done_event = Event()
 
     def __init__(self, strategy: SavedStrategy) -> None:
+        """Initialize strategy development input overlay."""
         super().__init__()
         self.widget = QWidget()
         self.strategy = strategy
@@ -39,17 +44,24 @@ class StrategyDevelopInput:
         full_layout.addLayout(this_layout)
 
         self.indicator_script_input = self._create_script_editor(
-            this_layout, "Indicator script", strategy.indicator_script
+            this_layout,
+            "Indicator script",
+            strategy.indicator_script,
         )
         self.decision_script_input = self._create_script_editor(
-            this_layout, "Decision script", strategy.decision_script
+            this_layout,
+            "Decision script",
+            strategy.decision_script,
         )
 
         # Create button card
         self._create_button_card(full_layout)
 
     def _create_script_editor(
-        self, parent_layout: QHBoxLayout, title: str, content: str
+        self,
+        parent_layout: QHBoxLayout,
+        title: str,
+        content: str,
     ) -> ScriptEditor:
         """Create a script editor column."""
         column_layout = QVBoxLayout()
@@ -83,7 +95,7 @@ class StrategyDevelopInput:
         card_layout.addWidget(divider)
 
         # Action menu
-        self._add_action_menu(card, card_layout)
+        self._add_action_menu(card_layout)
 
         # Right spacer
         self._add_horizontal_spacer(card_layout)
@@ -91,7 +103,10 @@ class StrategyDevelopInput:
     def _add_horizontal_spacer(self, layout: QHBoxLayout) -> None:
         """Add horizontal expanding spacer."""
         spacer = QSpacerItem(
-            0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
+            0,
+            0,
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum,
         )
         layout.addItem(spacer)
 
@@ -108,7 +123,7 @@ class StrategyDevelopInput:
         button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         layout.addWidget(button)
 
-    def _add_action_menu(self, card: QGroupBox, layout: QHBoxLayout) -> None:
+    def _add_action_menu(self, layout: QHBoxLayout) -> None:
         """Add action menu with documentation links and sample scripts."""
         action_menu = QMenu(self.widget)
         action_button = QPushButton()
@@ -129,12 +144,12 @@ class StrategyDevelopInput:
     async def _apply_sample_scripts(self) -> None:
         """Load and apply sample scripts."""
         filepath = PACKAGE_PATH / "static" / "sample_indicator_script.txt"
-        async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+        async with aiofiles.open(filepath, encoding="utf8") as file:
             script = await file.read()
         self.indicator_script_input.setPlainText(script)
 
         filepath = PACKAGE_PATH / "static" / "sample_decision_script.txt"
-        async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+        async with aiofiles.open(filepath, encoding="utf8") as file:
             script = await file.read()
         self.decision_script_input.setPlainText(script)
 
@@ -160,13 +175,14 @@ class StrategyDevelopInput:
 
         for title, url in docs:
 
-            async def job_open(url=url) -> None:
+            async def job_open(url: str = url) -> None:
                 await spawn_blocking(webbrowser.open, url)
 
             new_action = menu.addAction(title)
             outsource(new_action.triggered, job_open)
 
     async def confirm_closing(self) -> bool:
+        """Confirm if strategy can be closed, saving if modified."""
         strategy = self.strategy
 
         written_decision = self.decision_script_input.toPlainText()

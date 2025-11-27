@@ -1,3 +1,5 @@
+"""Qt signal to async function connector."""
+
 from collections.abc import Callable, Coroutine
 from typing import Any
 
@@ -10,7 +12,9 @@ def outsource(
     signal: SignalInstance,
     target_function: Callable[[], Coroutine[None, None, Any]],
 ) -> None:
-    def job(*args, **kwargs) -> None:
+    """Connect Qt signal to async function."""
+
+    def job(*_args: Any, **_kwargs: Any) -> None:
         spawn(target_function())
 
     signal.connect(job)

@@ -1,3 +1,5 @@
+"""Strategy information display overlay."""
+
 from asyncio import Event
 
 from PySide6.QtCore import Qt
@@ -17,10 +19,13 @@ from solie.widget import HorizontalDivider
 
 
 class StrategyInfoView:
+    """Overlay for viewing strategy information."""
+
     done_event = Event()
     result = None
 
     def __init__(self, strategy: Strategy) -> None:
+        """Initialize strategy info view overlay."""
         super().__init__()
         self.widget = QWidget()
 
@@ -84,4 +89,5 @@ class StrategyInfoView:
         cards_layout.addItem(spacer)
 
     async def confirm_closing(self) -> bool:
+        """Confirm if overlay can be closed."""
         return True

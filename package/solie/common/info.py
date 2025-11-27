@@ -1,3 +1,5 @@
+"""Package information and metadata."""
+
 from importlib import import_module, metadata
 from inspect import getfile
 from pathlib import Path

@@ -1,9 +1,11 @@
+"""Application manager worker."""
+
 import os
 import statistics
 import webbrowser
 from asyncio import all_tasks, sleep
 from collections import deque
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from logging import getLogger
 from typing import Any
 
@@ -31,7 +33,10 @@ logger = getLogger(__name__)
 
 
 class Manager:
+    """Worker for managing application state and UI."""
+
     def __init__(self, window: Window, scheduler: AsyncIOScheduler) -> None:
+        """Initialize application manager."""
         self._window = window
         self._scheduler = scheduler
         self._workerpath = window.datapath / "manager"
@@ -44,7 +49,7 @@ class Manager:
 
         self._management_settings = ManagementSettings()
 
-        time_traveller = time_machine.travel(datetime.now(timezone.utc))
+        time_traveller = time_machine.travel(datetime.now(UTC))
         time_traveller.start()
         self._time_traveller = time_traveller
 
@@ -76,7 +81,7 @@ class Manager:
 
         self._connect_ui_events()
 
-    def _connect_ui_events(self):
+    def _connect_ui_events(self) -> None:
         window = self._window
 
         job = self._run_script
@@ -93,27 +98,28 @@ class Manager:
         outsource(window.comboBox_3.currentIndexChanged, job)
 
     async def load_work(self) -> None:
+        """Load management settings from disk."""
         await aiofiles.os.makedirs(self._workerpath, exist_ok=True)
 
         filepath = self._workerpath / "management_settings.json"
         if await aiofiles.os.path.isfile(filepath):
-            async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+            async with aiofiles.open(filepath, encoding="utf8") as file:
                 self._management_settings = ManagementSettings.model_validate_json(
-                    await file.read()
+                    await file.read(),
                 )
         board_lock_index = self._management_settings.lock_board.value
         self._window.comboBox_3.setCurrentIndex(board_lock_index)
 
         filepath = self._workerpath / "python_script.txt"
         if await aiofiles.os.path.isfile(filepath):
-            async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+            async with aiofiles.open(filepath, encoding="utf8") as file:
                 script = await file.read()
         else:
             script = "from solie.worker import team\n\nlogger.info(team)"
         self._window.plainTextEdit.setPlainText(script)
 
     async def dump_work(self) -> None:
-        pass
+        """Save management settings to disk."""
 
     async def _change_settings(self) -> None:
         current_index = self._window.comboBox_3.currentIndex()
@@ -249,27 +255,27 @@ class Manager:
             return
 
         async def job() -> None:
-            request_time = datetime.now(timezone.utc)
+            request_time = datetime.now(UTC)
             payload: dict[str, Any] = {}
             response = await self._api_requester.binance(
                 http_method="GET",
                 path="/fapi/v1/time",
                 payload=payload,
             )
-            response_time = datetime.now(timezone.utc)
+            response_time = datetime.now(UTC)
             ping = (response_time - request_time).total_seconds()
             self._ping = ping
 
             server_timestamp = response["serverTime"] / 1000
-            server_time = datetime.fromtimestamp(server_timestamp, tz=timezone.utc)
-            local_time = datetime.now(timezone.utc)
+            server_time = datetime.fromtimestamp(server_timestamp, tz=UTC)
+            local_time = datetime.now(UTC)
             time_difference = (server_time - local_time).total_seconds() - ping / 2
             self._server_time_differences.append(time_difference)
 
         spawn(job())
 
     async def _display_system_status(self) -> None:
-        time = datetime.now(timezone.utc)
+        time = datetime.now(UTC)
         time_text = time.strftime("%Y-%m-%d %H:%M:%S")
         is_internet_connected = internet_connected()
         ping = self._ping
@@ -301,7 +307,7 @@ class Manager:
         if len(server_time_differences) < MIN_SERVER_TIME_SAMPLES:
             return
         mean_difference = sum(server_time_differences) / len(server_time_differences)
-        new_time = datetime.now(timezone.utc) + timedelta(seconds=mean_difference)
+        new_time = datetime.now(UTC) + timedelta(seconds=mean_difference)
 
         self._time_traveller.stop()
         time_traveller = time_machine.travel(new_time)
@@ -309,6 +315,7 @@ class Manager:
         self._time_traveller = time_traveller
 
     async def check_binance_limits(self) -> None:
+        """Check Binance API rate limits."""
         if not internet_connected():
             return
 
@@ -350,7 +357,7 @@ class Manager:
 
         if lock_board == BoardLockOptions.NEVER:
             return
-        elif lock_board == BoardLockOptions.SECONDS_10:
+        if lock_board == BoardLockOptions.SECONDS_10:
             wait_time = timedelta(seconds=10)
         elif lock_board == BoardLockOptions.MINUTE_1:
             wait_time = timedelta(minutes=1)
@@ -359,10 +366,11 @@ class Manager:
         elif lock_board == BoardLockOptions.HOUR_1:
             wait_time = timedelta(hours=1)
         else:
-            raise ValueError("Invalid duration value for locking the window")
+            msg = "Invalid duration value for locking the window"
+            raise ValueError(msg)
 
         last_interaction_time = self._window.last_interaction
-        if datetime.now(timezone.utc) < last_interaction_time + wait_time:
+        if datetime.now(UTC) < last_interaction_time + wait_time:
             return
 
         is_enabled = self._window.board.isEnabled()

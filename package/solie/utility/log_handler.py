@@ -1,10 +1,12 @@
+"""Custom logging handler."""
+
 import time
 from asyncio import Lock
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from logging import Formatter, Handler
 from pathlib import Path
-from typing import override
+from typing import Any, override
 
 import aiofiles
 
@@ -12,9 +14,12 @@ from solie.common import spawn
 
 
 class LogHandler(Handler):
+    """Custom log handler for file and callback."""
+
     file_lock = Lock()
 
     def __init__(self, log_path: Path, callback: Callable[[str, str], None]) -> None:
+        """Initialize log handler."""
         super().__init__()
 
         self.log_path = log_path
@@ -26,15 +31,15 @@ class LogHandler(Handler):
         log_formatter.converter = time.gmtime
         self.setFormatter(log_formatter)
 
-        now = datetime.now(timezone.utc).replace(microsecond=0)
+        now = datetime.now(UTC).replace(microsecond=0)
         self.filename = (
             f"{now.year:04}-{now.month:02}-{now.day:02}"
-            + f".{now.hour:02}-{now.minute:02}-{now.second:02}"
-            + f".{now.tzinfo}.txt"
+            f".{now.hour:02}-{now.minute:02}-{now.second:02}"
+            f".{now.tzinfo}.txt"
         )
 
     @override
-    def emit(self, record) -> None:
+    def emit(self, record: Any) -> None:
         formatted = self.format(record)
 
         if record.exc_info is not None:
@@ -64,7 +69,9 @@ class LogHandler(Handler):
 
         # save to file
         filepath = self.log_path / self.filename
-        async with self.file_lock:
-            async with aiofiles.open(filepath, "a", encoding="utf8") as file:
-                line_divider = "-" * 80
-                await file.write(f"{log_content}\n\n{line_divider}\n\n")
+        async with (
+            self.file_lock,
+            aiofiles.open(filepath, "a", encoding="utf8") as file,
+        ):
+            line_divider = "-" * 80
+            await file.write(f"{log_content}\n\n{line_divider}\n\n")

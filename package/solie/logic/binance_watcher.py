@@ -2,7 +2,8 @@
 
 import math
 from asyncio import gather
-from datetime import datetime, timedelta, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 from logging import getLogger
 from typing import Any, NamedTuple
 
@@ -61,6 +62,7 @@ class BinanceWatcher:
         state_config: StateConfig,
         exchange_config: ExchangeConfig,
     ) -> None:
+        """Initialize Binance watcher."""
         self._window = window
         self._api_requester = api_requester
         self._account_state = state_config.account_state
@@ -71,7 +73,10 @@ class BinanceWatcher:
 
         self.is_key_restrictions_satisfied = True
 
-    async def watch(self, place_orders_callback) -> None:
+    async def watch(
+        self,
+        place_orders_callback: Callable[[dict[str, dict[OrderType, Decision]]], Any],
+    ) -> None:
         """Watch Binance and update all account state."""
         target_symbols = self._window.data_settings.target_symbols
         asset_token = self._window.data_settings.asset_token
@@ -79,7 +84,7 @@ class BinanceWatcher:
         if not internet_connected():
             return
 
-        current_moment = to_moment(datetime.now(timezone.utc))
+        current_moment = to_moment(datetime.now(UTC))
         before_moment = current_moment - timedelta(seconds=10)
 
         # Fetch exchange information
@@ -123,7 +128,9 @@ class BinanceWatcher:
         # Correct account mode if automation is on
         if self._transaction_settings.should_transact:
             await self._correct_account_mode(
-                target_symbols, about_account, place_orders_callback
+                target_symbols,
+                about_account,
+                place_orders_callback,
             )
 
         # Check API restrictions
@@ -146,7 +153,7 @@ class BinanceWatcher:
             about_filters_keyed = list_to_dict(about_filters, "filterType")
 
             self._exchange_config.minimum_notionals[symbol] = float(
-                about_filters_keyed["MIN_NOTIONAL"]["notional"]
+                about_filters_keyed["MIN_NOTIONAL"]["notional"],
             )
             self._exchange_config.maximum_quantities[symbol] = min(
                 float(about_filters_keyed["LOT_SIZE"]["maxQty"]),
@@ -155,18 +162,18 @@ class BinanceWatcher:
 
             ticksize = float(about_filters_keyed["PRICE_FILTER"]["tickSize"])
             self._exchange_config.price_precisions[symbol] = int(
-                math.log10(1 / ticksize)
+                math.log10(1 / ticksize),
             )
 
             stepsize = float(about_filters_keyed["LOT_SIZE"]["stepSize"])
             self._exchange_config.quantity_precisions[symbol] = int(
-                math.log10(1 / stepsize)
+                math.log10(1 / stepsize),
             )
 
     async def _fetch_leverage_brackets(self) -> list[dict[str, Any]]:
         """Fetch leverage bracket information."""
         payload = {
-            "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+            "timestamp": int(datetime.now(UTC).timestamp() * 1000),
         }
         return await self._api_requester.binance(
             http_method="GET",
@@ -184,7 +191,7 @@ class BinanceWatcher:
     async def _fetch_account_info(self) -> dict[str, Any]:
         """Fetch account information."""
         payload = {
-            "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+            "timestamp": int(datetime.now(UTC).timestamp() * 1000),
         }
         return await self._api_requester.binance(
             http_method="GET",
@@ -193,7 +200,8 @@ class BinanceWatcher:
         )
 
     async def _fetch_open_orders(
-        self, target_symbols: list[str]
+        self,
+        target_symbols: list[str],
     ) -> dict[str, list[dict[str, Any]]]:
         """Fetch open orders for all symbols."""
         about_open_orders: dict[str, list[dict[str, Any]]] = {}
@@ -201,7 +209,7 @@ class BinanceWatcher:
         async def job(symbol: str) -> None:
             payload = {
                 "symbol": symbol,
-                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                "timestamp": int(datetime.now(UTC).timestamp() * 1000),
             }
             about_open_orders[symbol] = await self._api_requester.binance(
                 http_method="GET",
@@ -246,7 +254,7 @@ class BinanceWatcher:
 
             entry_price = float(about_position["entryPrice"])
             update_time = int(float(about_position["updateTime"]) / 1000)
-            update_time = datetime.fromtimestamp(update_time, tz=timezone.utc)
+            update_time = datetime.fromtimestamp(update_time, tz=UTC)
             leverage = int(about_position["leverage"])
             amount = float(about_position["positionAmt"])
             margin = abs(amount) * entry_price / leverage
@@ -261,7 +269,9 @@ class BinanceWatcher:
 
         # Update open orders
         self._update_open_orders(
-            target_symbols, about_positions_keyed, about_open_orders
+            target_symbols,
+            about_positions_keyed,
+            about_open_orders,
         )
 
     def _update_open_orders(
@@ -271,7 +281,6 @@ class BinanceWatcher:
         about_open_orders: dict[str, list[dict[str, Any]]],
     ) -> None:
         """Update open orders from API response."""
-
         open_orders: dict[str, dict[int, OpenOrder]] = {s: {} for s in target_symbols}
 
         # Create temporary listener for parsing
@@ -311,7 +320,10 @@ class BinanceWatcher:
         self._account_state.open_orders = open_orders
 
     async def _record_unrealized_change(
-        self, asset_token: str, about_account: dict[str, Any], before_moment: datetime
+        self,
+        asset_token: str,
+        about_account: dict[str, Any],
+        before_moment: datetime,
     ) -> None:
         """Record unrealized profit change."""
         about_assets = about_account["assets"]
@@ -331,7 +343,9 @@ class BinanceWatcher:
                 cell.data = await spawn_blocking(sort_series, cell.data)
 
     async def _initialize_asset_record(
-        self, asset_token: str, about_account: dict[str, Any]
+        self,
+        asset_token: str,
+        about_account: dict[str, Any],
     ) -> None:
         """Initialize asset record if blank."""
         async with self._asset_record.write_lock as cell:
@@ -340,12 +354,14 @@ class BinanceWatcher:
                 about_assets_keyed = list_to_dict(about_assets, "asset")
                 about_asset = about_assets_keyed[asset_token]
                 wallet_balance = float(about_asset["walletBalance"])
-                current_time = datetime.now(timezone.utc)
+                current_time = datetime.now(UTC)
                 cell.data.loc[current_time, "CAUSE"] = "OTHER"
                 cell.data.loc[current_time, "RESULT_ASSET"] = wallet_balance
 
     async def _handle_wallet_balance_changes(
-        self, asset_token: str, about_account: dict[str, Any]
+        self,
+        asset_token: str,
+        about_account: dict[str, Any],
     ) -> None:
         """Handle wallet balance changes."""
         about_assets = about_account["assets"]
@@ -363,7 +379,7 @@ class BinanceWatcher:
             pass
         elif abs(wallet_balance - last_asset) / wallet_balance > 10**-9:
             async with self._asset_record.write_lock as cell:
-                current_time = datetime.now(timezone.utc)
+                current_time = datetime.now(UTC)
                 cell.data.loc[current_time, "CAUSE"] = "OTHER"
                 cell.data.loc[current_time, "RESULT_ASSET"] = wallet_balance
                 if not cell.data.index.is_monotonic_increasing:
@@ -377,7 +393,7 @@ class BinanceWatcher:
         self,
         target_symbols: list[str],
         about_account: dict[str, Any],
-        place_orders_callback,
+        place_orders_callback: Callable[[dict[str, dict[OrderType, Decision]]], Any],
     ) -> None:
         """Correct account mode when automation is on."""
         about_positions = about_account["positions"]
@@ -385,12 +401,16 @@ class BinanceWatcher:
 
         await self._correct_leverage(target_symbols, about_positions_keyed)
         await self._correct_margin_type(
-            target_symbols, about_positions_keyed, place_orders_callback
+            target_symbols,
+            about_positions_keyed,
+            place_orders_callback,
         )
         await self._set_account_settings()
 
     async def _correct_leverage(
-        self, target_symbols: list[str], about_positions_keyed: dict[str, Any]
+        self,
+        target_symbols: list[str],
+        about_positions_keyed: dict[str, Any],
     ) -> None:
         """Correct leverage for all symbols."""
 
@@ -403,7 +423,7 @@ class BinanceWatcher:
             if current_leverage != goal_leverage:
                 payload = {
                     "symbol": symbol,
-                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                    "timestamp": int(datetime.now(UTC).timestamp() * 1000),
                     "leverage": goal_leverage,
                 }
                 await self._api_requester.binance(
@@ -418,7 +438,7 @@ class BinanceWatcher:
         self,
         target_symbols: list[str],
         about_positions_keyed: dict[str, Any],
-        place_orders_callback,
+        place_orders_callback: Callable[[dict[str, dict[OrderType, Decision]]], Any],
     ) -> None:
         """Correct margin type for all symbols."""
 
@@ -433,7 +453,7 @@ class BinanceWatcher:
                 # Change to crossed margin
                 payload = {
                     "symbol": symbol,
-                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                    "timestamp": int(datetime.now(UTC).timestamp() * 1000),
                     "marginType": "CROSSED",
                 }
                 await self._api_requester.binance(
@@ -448,7 +468,7 @@ class BinanceWatcher:
         """Set multi-asset margin and position side mode."""
         try:
             payload = {
-                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                "timestamp": int(datetime.now(UTC).timestamp() * 1000),
                 "multiAssetsMargin": "false",
             }
             await self._api_requester.binance(
@@ -461,7 +481,7 @@ class BinanceWatcher:
 
         try:
             payload = {
-                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                "timestamp": int(datetime.now(UTC).timestamp() * 1000),
                 "dualSidePosition": "false",
             }
             await self._api_requester.binance(
@@ -475,7 +495,7 @@ class BinanceWatcher:
     async def _check_api_restrictions(self) -> None:
         """Check API key restrictions."""
         payload = {
-            "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+            "timestamp": int(datetime.now(UTC).timestamp() * 1000),
         }
         response = await self._api_requester.binance(
             http_method="GET",

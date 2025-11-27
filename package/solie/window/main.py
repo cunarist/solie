@@ -1,7 +1,9 @@
+"""Main application window."""
+
 import math
 import os
 from asyncio import Event, sleep
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from logging import getLogger
 from pathlib import Path
 from typing import Any, NamedTuple, override
@@ -65,7 +67,10 @@ class SymbolBoxParams(NamedTuple):
 
 
 class Window(QMainWindow, Ui_MainWindow):
+    """Main application window."""
+
     def __init__(self, close_event: Event, config: SolieConfig) -> None:
+        """Initialize main window."""
         super().__init__()
 
         self._close_event = close_event
@@ -74,7 +79,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.datapath: Path
         self.data_settings: DataSettings
 
-        self.last_interaction = datetime.now(timezone.utc)
+        self.last_interaction = datetime.now(UTC)
         self._splash_screen: SplashScreen
         self.price_labels: dict[str, QLabel] = {}
 
@@ -110,7 +115,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
     @override
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
-        self.last_interaction = datetime.now(timezone.utc)
+        self.last_interaction = datetime.now(UTC)
 
         if self.board.isEnabled():
             return
@@ -148,7 +153,7 @@ class Window(QMainWindow, Ui_MainWindow):
         await self._setup_logging()
 
     def _setup_ui(self) -> None:
-        """Setup basic UI elements and sizes."""
+        """Set up basic UI elements and sizes."""
         self.setupUi(self)
         self.setMouseTracking(True)
         self.resize(0, 0)  # To smallest size possible
@@ -162,13 +167,14 @@ class Window(QMainWindow, Ui_MainWindow):
         self._splash_screen = SplashScreen()
         central_layout = self.centralWidget().layout()
         if central_layout is None:
-            raise ValueError("There's no central layout")
+            msg = "There's no central layout"
+            raise ValueError(msg)
         central_layout.addWidget(self._splash_screen)
         self.show()
 
     def _configure_global_settings(self) -> None:
         """Configure global settings for libraries."""
-        os.get_terminal_size = lambda *args: os.terminal_size((150, 90))
+        os.get_terminal_size = lambda *_: os.terminal_size((150, 90))
         pd.set_option("display.precision", 6)
         pd.set_option("display.min_rows", 100)
         pd.set_option("display.max_rows", 100)
@@ -264,7 +270,7 @@ class Window(QMainWindow, Ui_MainWindow):
         target_symbols: list[str],
         coin_info: dict[str, dict[str, Any]],
     ) -> None:
-        """Setup all UI widgets based on data settings."""
+        """Set up all UI widgets based on data settings."""
         coin_icon_urls = coin_info["urls"]
         coin_ranks = coin_info["ranks"]
 
@@ -303,14 +309,17 @@ class Window(QMainWindow, Ui_MainWindow):
 
         # Setup symbol boxes
         self._setup_symbol_boxes(
-            asset_token, target_symbols, symbol_pixmaps, coin_ranks
+            asset_token,
+            target_symbols,
+            symbol_pixmaps,
+            coin_ranks,
         )
 
         # Setup product branding
         await self._setup_product_branding()
 
     def _setup_token_display(self, asset_token: str, token_pixmap: QPixmap) -> None:
-        """Setup the token display area."""
+        """Set up the token display area."""
         token_text_size = 14
 
         icon_label = QLabel()
@@ -348,9 +357,11 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.verticalLayout_14.addWidget(spacing_text)
 
     def _setup_combo_boxes(
-        self, target_symbols: list[str], symbol_pixmaps: dict[str, QPixmap]
+        self,
+        target_symbols: list[str],
+        symbol_pixmaps: dict[str, QPixmap],
     ) -> None:
-        """Setup combo boxes with symbol icons."""
+        """Set up combo boxes with symbol icons."""
         for symbol in target_symbols:
             icon = QIcon()
             icon.addPixmap(symbol_pixmaps[symbol])
@@ -365,7 +376,7 @@ class Window(QMainWindow, Ui_MainWindow):
         symbol_pixmaps: dict[str, QPixmap],
         coin_ranks: dict[str, int],
     ) -> None:
-        """Setup symbol boxes for each trading symbol."""
+        """Set up symbol boxes for each trading symbol."""
         name_text_size = 11
         price_text_size = 9
         detail_text_size = 7
@@ -375,7 +386,10 @@ class Window(QMainWindow, Ui_MainWindow):
         # Add spacers
         for layout in [self.horizontalLayout_20, self.horizontalLayout_17]:
             spacer = QSpacerItem(
-                0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
+                0,
+                0,
+                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Minimum,
             )
             layout.addItem(spacer)
 
@@ -406,7 +420,10 @@ class Window(QMainWindow, Ui_MainWindow):
         # Add trailing spacers
         for layout in [self.horizontalLayout_20, self.horizontalLayout_17]:
             spacer = QSpacerItem(
-                0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
+                0,
+                0,
+                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Minimum,
             )
             layout.addItem(spacer)
 
@@ -420,7 +437,10 @@ class Window(QMainWindow, Ui_MainWindow):
 
         # Top spacer
         spacer = QSpacerItem(
-            0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+            0,
+            0,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding,
         )
         inside_layout.addItem(spacer)
 
@@ -473,12 +493,15 @@ class Window(QMainWindow, Ui_MainWindow):
 
         # Bottom spacer
         spacer = QSpacerItem(
-            0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+            0,
+            0,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding,
         )
         inside_layout.addItem(spacer)
 
     async def _setup_product_branding(self) -> None:
-        """Setup product icon and title."""
+        """Set up product icon and title."""
         this_layout = self.horizontalLayout_13
 
         # Product icon
@@ -509,7 +532,7 @@ class Window(QMainWindow, Ui_MainWindow):
         this_layout.addWidget(label)
 
     async def _setup_graphs(self) -> None:
-        """Setup transaction and simulation graph widgets."""
+        """Set up transaction and simulation graph widgets."""
         graph_lines = GraphLines()
         self.horizontalLayout_7.addWidget(graph_lines.price_widget)
         self.horizontalLayout_16.addWidget(graph_lines.volume_widget)
@@ -525,7 +548,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.simulation_graph = graph_lines
 
     async def _setup_logging(self) -> None:
-        """Setup logging system."""
+        """Set up logging system."""
 
         def log_callback(summarization: str, log_content: str) -> None:
             self.listWidget.add_item(summarization, log_content)
@@ -536,6 +559,7 @@ class Window(QMainWindow, Ui_MainWindow):
         getLogger().addHandler(log_handler)
 
     def reveal(self) -> None:
+        """Show window and enable closing confirmation."""
         self.should_confirm_closing = True
 
         self._splash_screen.hide()

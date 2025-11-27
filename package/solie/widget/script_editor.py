@@ -1,3 +1,5 @@
+"""Python script editor with syntax highlighting and auto-formatting."""
+
 from typing import override
 
 from PySide6.QtCore import Qt
@@ -10,7 +12,10 @@ from solie.utility import SyntaxHighlighter
 
 
 class ScriptEditor(QPlainTextEdit):
+    """Code editor widget with syntax highlighting."""
+
     def __init__(self, parent: QWidget) -> None:
+        """Initialize script editor."""
         super().__init__(parent)
         self.fixed_width_font = QFont("Source Code Pro", 9)
         self.setFont(self.fixed_width_font)
@@ -55,7 +60,7 @@ class ScriptEditor(QPlainTextEdit):
                 text_cursor.setPosition(select_to, QTextCursor.MoveMode.KeepAnchor)
             self.setTextCursor(text_cursor)
             self.verticalScrollBar().setValue(scroll_position)
-            return
+            return None
         return super().keyPressEvent(event)
 
     @override

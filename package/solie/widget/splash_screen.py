@@ -1,3 +1,5 @@
+"""Splash screen widget."""
+
 import aiofiles
 from PySide6.QtGui import QFont, QPixmap
 from PySide6.QtWidgets import (
@@ -15,7 +17,10 @@ from .brand_label import BrandLabel
 
 
 class SplashScreen(QFrame):
+    """Initial loading screen widget."""
+
     def __init__(self) -> None:
+        """Initialize splash screen."""
         super().__init__()
 
         self.full_layout = QHBoxLayout()
@@ -24,6 +29,7 @@ class SplashScreen(QFrame):
         spawn(self.fill())
 
     async def fill(self) -> None:
+        """Fill splash screen with branding."""
         full_layout = self.full_layout
 
         spacer = QSpacerItem(

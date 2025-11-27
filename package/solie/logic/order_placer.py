@@ -1,7 +1,7 @@
 """Order placer for Binance futures trading."""
 
 from asyncio import gather
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from logging import getLogger
 from typing import Any, NamedTuple
 
@@ -67,6 +67,7 @@ class OrderPlacer:
         config: OrderPlacerConfig,
         exchange_config: ExchangeConfig,
     ) -> None:
+        """Initialize order placer."""
         self._window = window
         self._api_requester = api_requester
         self._account_state = config.account_state
@@ -101,7 +102,7 @@ class OrderPlacer:
 
     async def _get_current_prices(self, target_symbols: list[str]) -> dict[str, float]:
         """Get current prices from recent aggregate trades."""
-        current_timestamp = to_moment(datetime.now(timezone.utc)).timestamp() * 1000
+        current_timestamp = to_moment(datetime.now(UTC)).timestamp() * 1000
         current_prices: dict[str, float] = {}
         recent_trades = slice_deque(self._aggregate_trades_queue, 2 ** (10 + 6))
 
@@ -110,7 +111,8 @@ class OrderPlacer:
                 if trade.symbol != symbol:
                     continue
                 if trade.timestamp < current_timestamp - 60 * 1000:
-                    raise ValueError("Recent price is not available for placing orders")
+                    msg = "Recent price is not available for placing orders"
+                    raise ValueError(msg)
                 current_prices[symbol] = trade.price
                 break
 
@@ -134,7 +136,7 @@ class OrderPlacer:
         order_symbol = response["symbol"]
         order_id = response["orderId"]
         timestamp = response["updateTime"] / 1000
-        update_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+        update_time = datetime.fromtimestamp(timestamp, tz=UTC)
 
         async with self._auto_order_record.write_lock as cell:
             while update_time in cell.data.index:
@@ -145,7 +147,9 @@ class OrderPlacer:
                 cell.data = await spawn_blocking(sort_data_frame, cell.data)
 
     def _prepare_cancel_orders(
-        self, target_symbols: list[str], decisions: dict[str, dict[OrderType, Decision]]
+        self,
+        target_symbols: list[str],
+        decisions: dict[str, dict[OrderType, Decision]],
     ) -> list[dict[str, Any]]:
         """Prepare cancel order payloads."""
         cancel_orders: list[dict[str, Any]] = []
@@ -156,9 +160,9 @@ class OrderPlacer:
             if OrderType.CANCEL_ALL in decisions[symbol]:
                 cancel_orders.append(
                     {
-                        "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                        "timestamp": int(datetime.now(UTC).timestamp() * 1000),
                         "symbol": symbol,
-                    }
+                    },
                 )
 
         return cancel_orders
@@ -192,7 +196,7 @@ class OrderPlacer:
                     now_orders.append(
                         {
                             "timestamp": int(
-                                datetime.now(timezone.utc).timestamp() * 1000
+                                datetime.now(UTC).timestamp() * 1000,
                             ),
                             "symbol": symbol,
                             "type": "MARKET",
@@ -200,7 +204,7 @@ class OrderPlacer:
                             "quantity": maximum_quantity,
                             "reduceOnly": True,
                             "newOrderRespType": "RESULT",
-                        }
+                        },
                     )
                 else:
                     logger.warning("Cannot close position when there isn't any")
@@ -212,13 +216,13 @@ class OrderPlacer:
                 quantity = min(maximum_quantity, notional / current_price)
                 now_orders.append(
                     {
-                        "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                        "timestamp": int(datetime.now(UTC).timestamp() * 1000),
                         "symbol": symbol,
                         "type": "MARKET",
                         "side": "BUY",
                         "quantity": ball_ceil(quantity, quantity_precision),
                         "newOrderRespType": "RESULT",
-                    }
+                    },
                 )
 
             # NOW_SELL
@@ -228,19 +232,21 @@ class OrderPlacer:
                 quantity = min(maximum_quantity, notional / current_price)
                 now_orders.append(
                     {
-                        "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                        "timestamp": int(datetime.now(UTC).timestamp() * 1000),
                         "symbol": symbol,
                         "type": "MARKET",
                         "side": "SELL",
                         "quantity": ball_ceil(quantity, quantity_precision),
                         "newOrderRespType": "RESULT",
-                    }
+                    },
                 )
 
         return now_orders
 
     def _prepare_book_orders(
-        self, target_symbols: list[str], decisions: dict[str, dict[OrderType, Decision]]
+        self,
+        target_symbols: list[str],
+        decisions: dict[str, dict[OrderType, Decision]],
     ) -> list[dict[str, Any]]:
         """Prepare limit orders."""
         exchange_config = self._exchange_config
@@ -264,14 +270,14 @@ class OrderPlacer:
                 quantity = min(maximum_quantity, notional / boundary)
                 book_orders.append(
                     {
-                        "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                        "timestamp": int(datetime.now(UTC).timestamp() * 1000),
                         "symbol": symbol,
                         "type": "LIMIT",
                         "side": "BUY",
                         "quantity": ball_ceil(quantity, quantity_precision),
                         "price": round(boundary, price_precision),
                         "timeInForce": "GTC",
-                    }
+                    },
                 )
 
             # BOOK_SELL
@@ -282,14 +288,14 @@ class OrderPlacer:
                 quantity = min(maximum_quantity, notional / boundary)
                 book_orders.append(
                     {
-                        "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                        "timestamp": int(datetime.now(UTC).timestamp() * 1000),
                         "symbol": symbol,
                         "type": "LIMIT",
                         "side": "SELL",
                         "quantity": ball_ceil(quantity, quantity_precision),
                         "price": round(boundary, price_precision),
                         "timeInForce": "GTC",
-                    }
+                    },
                 )
 
         return book_orders
@@ -302,13 +308,13 @@ class OrderPlacer:
         """Add a close position order to the orders list."""
         orders.append(
             {
-                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                "timestamp": int(datetime.now(UTC).timestamp() * 1000),
                 "symbol": params.symbol,
                 "type": params.order_type_str,
                 "side": params.side,
                 "stopPrice": round(params.stop_price, params.price_precision),
                 "closePosition": True,
-            }
+            },
         )
 
     def _add_entry_order(
@@ -319,17 +325,19 @@ class OrderPlacer:
         """Add an entry order to the orders list."""
         orders.append(
             {
-                "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                "timestamp": int(datetime.now(UTC).timestamp() * 1000),
                 "symbol": params.symbol,
                 "type": params.order_type_str,
                 "side": params.side,
                 "quantity": ball_ceil(params.quantity, params.quantity_precision),
                 "stopPrice": round(params.stop_price, params.price_precision),
-            }
+            },
         )
 
     def _get_assumed_direction(
-        self, symbol: str, decisions: dict[str, dict[OrderType, Decision]]
+        self,
+        symbol: str,
+        decisions: dict[str, dict[OrderType, Decision]],
     ) -> PositionDirection:
         """Get the assumed position direction after now orders."""
         current_direction = self._account_state.positions[symbol].direction
@@ -338,18 +346,22 @@ class OrderPlacer:
         if current_direction == PositionDirection.NONE:
             if OrderType.NOW_BUY in decisions.get(symbol, {}):
                 return PositionDirection.LONG
-            elif OrderType.NOW_SELL in decisions.get(symbol, {}):
+            if OrderType.NOW_SELL in decisions.get(symbol, {}):
                 return PositionDirection.SHORT
 
         # Assume position closed from now_close
-        if current_direction != PositionDirection.NONE:
-            if OrderType.NOW_CLOSE in decisions.get(symbol, {}):
-                return PositionDirection.NONE
+        if (
+            current_direction != PositionDirection.NONE
+            and OrderType.NOW_CLOSE in decisions.get(symbol, {})
+        ):
+            return PositionDirection.NONE
 
         return current_direction
 
     def _prepare_later_orders(
-        self, target_symbols: list[str], decisions: dict[str, dict[OrderType, Decision]]
+        self,
+        target_symbols: list[str],
+        decisions: dict[str, dict[OrderType, Decision]],
     ) -> list[dict[str, Any]]:
         """Prepare stop/take-profit orders."""
         later_orders: list[dict[str, Any]] = []
@@ -384,7 +396,7 @@ class OrderPlacer:
                     )
                 else:
                     logger.warning(
-                        "Cannot place `later_up_close` with no open position"
+                        "Cannot place `later_up_close` with no open position",
                     )
 
             # LATER_DOWN_CLOSE
@@ -406,7 +418,7 @@ class OrderPlacer:
                     )
                 else:
                     logger.warning(
-                        "Cannot place `later_down_close` with no open position"
+                        "Cannot place `later_down_close` with no open position",
                     )
 
             # LATER_UP_BUY

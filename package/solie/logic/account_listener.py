@@ -1,6 +1,6 @@
 """Account event listener for Binance user data stream."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from logging import getLogger
 from typing import Any, NamedTuple
 
@@ -22,12 +22,16 @@ logger = getLogger(__name__)
 
 
 class OrderParseResult(NamedTuple):
+    """Parsed order information from Binance event."""
+
     order_type: OrderType
     boundary: float
     left_margin: float | None
 
 
 class TradeExecutionInfo(NamedTuple):
+    """Trade execution details from Binance."""
+
     symbol: str
     order_id: int
     side: str
@@ -42,6 +46,8 @@ class TradeExecutionInfo(NamedTuple):
 
 
 class UpdateTradeRecordInfo(NamedTuple):
+    """Information for updating existing trade record."""
+
     data: pd.DataFrame
     symbol_df: pd.DataFrame
     order_id: int
@@ -51,6 +57,8 @@ class UpdateTradeRecordInfo(NamedTuple):
 
 
 class CreateTradeRecordInfo(NamedTuple):
+    """Information for creating new trade record."""
+
     data: pd.DataFrame
     symbol: str
     order_id: int
@@ -65,6 +73,8 @@ class CreateTradeRecordInfo(NamedTuple):
 
 
 class ParseOrderTypeParams(NamedTuple):
+    """Parameters for parsing order type from Binance data."""
+
     order_type: str
     side: str
     close_position: bool
@@ -86,6 +96,7 @@ class AccountListener:
         asset_record: RWLock[pd.DataFrame],
         auto_order_record: RWLock[pd.DataFrame],
     ) -> None:
+        """Initialize account listener."""
         self._window = window
         self._account_state = account_state
         self._leverages = leverages
@@ -96,7 +107,7 @@ class AccountListener:
         """Process account update events from Binance."""
         event_type = str(received["e"])
         event_timestamp = int(received["E"]) / 1000
-        event_time = datetime.fromtimestamp(event_timestamp, tz=timezone.utc)
+        event_time = datetime.fromtimestamp(event_timestamp, tz=UTC)
 
         self._account_state.observed_until = event_time
 
@@ -104,14 +115,16 @@ class AccountListener:
             logger.warning("Binance user data stream listen key has expired")
             return
 
-        elif event_type == "ACCOUNT_UPDATE":
+        if event_type == "ACCOUNT_UPDATE":
             await self._handle_account_update(received, event_time)
 
         elif event_type == "ORDER_TRADE_UPDATE":
             await self._handle_order_trade_update(received, event_time)
 
     async def _handle_account_update(
-        self, received: dict[str, Any], event_time: datetime
+        self,
+        received: dict[str, Any],
+        event_time: datetime,
     ) -> None:
         """Handle ACCOUNT_UPDATE event."""
         about_update = received["a"]
@@ -155,7 +168,9 @@ class AccountListener:
         position.update_time = event_time
 
     async def _handle_order_trade_update(
-        self, received: dict[str, Any], event_time: datetime
+        self,
+        received: dict[str, Any],
+        event_time: datetime,
     ) -> None:
         """Handle ORDER_TRADE_UPDATE event."""
         about_update = received["o"]
@@ -187,9 +202,11 @@ class AccountListener:
         wallet_balance = self._account_state.wallet_balance
 
         # Remove order if no longer active
-        if order_status not in ("NEW", "PARTIALLY_FILLED"):
-            if order_id in self._account_state.open_orders[symbol].keys():
-                self._account_state.open_orders[symbol].pop(order_id)
+        if (
+            order_status not in ("NEW", "PARTIALLY_FILLED")
+            and order_id in self._account_state.open_orders[symbol]
+        ):
+            self._account_state.open_orders[symbol].pop(order_id)
 
         # Update or create order
         if order_status in ("NEW", "PARTIALLY_FILLED"):
@@ -241,7 +258,7 @@ class AccountListener:
                 params.origianal_quantity,
                 params.leverage,
             )
-        elif params.order_type == "TAKE_PROFIT_MARKET":
+        if params.order_type == "TAKE_PROFIT_MARKET":
             return self._parse_take_profit_market(
                 params.side,
                 params.close_position,
@@ -249,7 +266,7 @@ class AccountListener:
                 params.origianal_quantity,
                 params.leverage,
             )
-        elif params.order_type == "LIMIT":
+        if params.order_type == "LIMIT":
             return self._parse_limit_order(
                 params.side,
                 params.price,
@@ -257,12 +274,11 @@ class AccountListener:
                 params.executed_quantity,
                 params.leverage,
             )
-        else:
-            # Other order types
-            boundary = max(params.price, params.stop_price)
-            left_quantity = params.origianal_quantity - params.executed_quantity
-            left_margin = left_quantity * boundary / params.leverage
-            return OrderParseResult(OrderType.OTHER, boundary, left_margin)
+        # Other order types
+        boundary = max(params.price, params.stop_price)
+        left_quantity = params.origianal_quantity - params.executed_quantity
+        left_margin = left_quantity * boundary / params.leverage
+        return OrderParseResult(OrderType.OTHER, boundary, left_margin)
 
     def _parse_stop_market(
         self,
@@ -276,18 +292,18 @@ class AccountListener:
         if close_position:
             if side == "BUY":
                 return OrderParseResult(OrderType.LATER_UP_CLOSE, stop_price, None)
-            elif side == "SELL":
+            if side == "SELL":
                 return OrderParseResult(OrderType.LATER_DOWN_CLOSE, stop_price, None)
-            else:
-                raise ValueError("Cannot order with this side")
-        elif side == "BUY":
+            msg = "Cannot order with this side"
+            raise ValueError(msg)
+        if side == "BUY":
             left_margin = origianal_quantity * stop_price / leverage
             return OrderParseResult(OrderType.LATER_UP_BUY, stop_price, left_margin)
-        elif side == "SELL":
+        if side == "SELL":
             left_margin = origianal_quantity * stop_price / leverage
             return OrderParseResult(OrderType.LATER_DOWN_SELL, stop_price, left_margin)
-        else:
-            raise ValueError("Cannot order with this side")
+        msg = "Cannot order with this side"
+        raise ValueError(msg)
 
     def _parse_take_profit_market(
         self,
@@ -301,18 +317,18 @@ class AccountListener:
         if close_position:
             if side == "BUY":
                 return OrderParseResult(OrderType.LATER_DOWN_CLOSE, stop_price, None)
-            elif side == "SELL":
+            if side == "SELL":
                 return OrderParseResult(OrderType.LATER_UP_CLOSE, stop_price, None)
-            else:
-                raise ValueError("Cannot order with this side")
-        elif side == "BUY":
+            msg = "Cannot order with this side"
+            raise ValueError(msg)
+        if side == "BUY":
             left_margin = origianal_quantity * stop_price / leverage
             return OrderParseResult(OrderType.LATER_DOWN_BUY, stop_price, left_margin)
-        elif side == "SELL":
+        if side == "SELL":
             left_margin = origianal_quantity * stop_price / leverage
             return OrderParseResult(OrderType.LATER_UP_SELL, stop_price, left_margin)
-        else:
-            raise ValueError("Cannot order with this side")
+        msg = "Cannot order with this side"
+        raise ValueError(msg)
 
     def _parse_limit_order(
         self,
@@ -327,10 +343,10 @@ class AccountListener:
         left_margin = left_quantity * price / leverage
         if side == "BUY":
             return OrderParseResult(OrderType.BOOK_BUY, price, left_margin)
-        elif side == "SELL":
+        if side == "SELL":
             return OrderParseResult(OrderType.BOOK_SELL, price, left_margin)
-        else:
-            raise ValueError("Cannot order with this side")
+        msg = "Cannot order with this side"
+        raise ValueError(msg)
 
     async def _record_trade_execution(
         self,
@@ -361,7 +377,7 @@ class AccountListener:
                         added_margin_ratio=added_margin_ratio,
                         added_revenue=added_revenue,
                         last_index=last_index,
-                    )
+                    ),
                 )
             else:
                 await self._create_new_trade_record(
@@ -377,7 +393,7 @@ class AccountListener:
                         unique_order_ids=unique_order_ids,
                         event_time=info.event_time,
                         last_index=last_index,
-                    )
+                    ),
                 )
 
             if not cell.data.index.is_monotonic_increasing:

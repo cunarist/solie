@@ -1,3 +1,5 @@
+"""Asset token selection overlay."""
+
 from asyncio import Event
 from typing import NamedTuple
 
@@ -22,37 +24,44 @@ from solie.widget import HorizontalDivider, ask
 
 
 class Availables(NamedTuple):
+    """Available tokens and symbols for selection."""
+
     tokens: set[str]
     symbols: set[str]
 
 
 class TokenSelection:
+    """Overlay for selecting asset token."""
+
     title = "Choose a token to treat as your asset"
     close_button = False
     done_event = Event()
 
     def __init__(self) -> None:
+        """Initialize token selection overlay."""
         super().__init__()
         self.widget = QWidget()
         self.result: str
 
         self.is_closed = False
-        spawn(self.fill(self.done_event))
+        spawn(self.fill())
 
     async def confirm_closing(self) -> bool:
+        """Confirm if overlay can be closed."""
         return True
 
-    async def fill(self, done_event: Event) -> None:
+    async def fill(self) -> None:
         """Fill the token selection UI with available tokens."""
         api_requester = ApiRequester()
 
         # Fetch token and coin data
         available_tokens, available_symbols = await self._fetch_availables(
-            api_requester
+            api_requester,
         )
         coin_icon_urls = await self._fetch_coin_metadata(api_requester)
         number_of_markets = self._calculate_market_counts(
-            available_tokens, available_symbols
+            available_tokens,
+            available_symbols,
         )
 
         # Build UI
@@ -99,7 +108,9 @@ class TokenSelection:
         return coin_icon_urls
 
     def _calculate_market_counts(
-        self, available_tokens: set[str], available_symbols: set[str]
+        self,
+        available_tokens: set[str],
+        available_symbols: set[str],
     ) -> dict[str, int]:
         """Calculate number of markets for each token."""
         number_of_markets = {token: 0 for token in available_tokens}
@@ -112,7 +123,9 @@ class TokenSelection:
         return number_of_markets
 
     def _build_ui(
-        self, available_tokens: set[str], number_of_markets: dict[str, int]
+        self,
+        available_tokens: set[str],
+        number_of_markets: dict[str, int],
     ) -> dict[str, QLabel]:
         """Build the main UI layout."""
         token_radioboxes: dict[str, QRadioButton] = {}
@@ -146,7 +159,9 @@ class TokenSelection:
         return token_icon_labels
 
     def _add_spacer(
-        self, layout: QVBoxLayout | QHBoxLayout, vertical: bool = False
+        self,
+        layout: QVBoxLayout | QHBoxLayout,
+        vertical: bool = False,
     ) -> None:
         """Add a spacer to the layout."""
         if vertical:
@@ -232,7 +247,9 @@ class TokenSelection:
         layout.addWidget(spacing_text)
 
     def _build_confirmation_card(
-        self, cards_layout: QVBoxLayout, token_radioboxes: dict[str, QRadioButton]
+        self,
+        cards_layout: QVBoxLayout,
+        token_radioboxes: dict[str, QRadioButton],
     ) -> None:
         """Build the confirmation button card."""
 

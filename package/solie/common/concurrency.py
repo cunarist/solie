@@ -1,3 +1,5 @@
+"""Asynchronous task management and concurrency utilities."""
+
 from asyncio import Task, create_task
 from collections.abc import Callable, Coroutine
 from typing import Any
@@ -7,8 +9,7 @@ all_tasks = set[Task[Any]]()
 
 
 def spawn[T](coroutine: Coroutine[None, None, T]) -> Task[T]:
-    """
-    Spawns an asynchronous task from the given coroutine and manages its lifecycle.
+    """Spawns an asynchronous task from the given coroutine and manages its lifecycle.
 
     This function creates a new `asyncio.Task` from the provided coroutine and
     adds it to a global set to maintain a strong reference. This
@@ -17,7 +18,6 @@ def spawn[T](coroutine: Coroutine[None, None, T]) -> Task[T]:
     Once the task completes, it automatically removes itself from the set to
     avoid memory leaks.
     """
-
     task = create_task(coroutine)
 
     # Add task to the set. This creates a strong reference.
@@ -39,29 +39,26 @@ def spawn[T](coroutine: Coroutine[None, None, T]) -> Task[T]:
 
 
 class UniqueTask:
-    """
-    A class to manage spawning unique async tasks,
-    ensuring only the latest one is running.
+    """A class to manage spawning unique async tasks.
+
+    Ensures only the latest task is running.
     """
 
     def __init__(self) -> None:
+        """Initialize the unique task manager."""
         self._task: Task[Any] | None = None
 
     def spawn(self, coro: Coroutine[None, None, Any]) -> None:
-        """
-        Spawns a new task, canceling the previous one if it exists.
-        """
+        """Spawns a new task, canceling the previous one if it exists."""
         self.cancel()
         self._task = create_task(coro)
 
     def cancel(self) -> None:
-        """Cancels the previous task if it exists."""
+        """Cancel the previous task if it exists."""
         if self._task is not None and not self._task.done():
             self._task.cancel()
 
     def add_done_callback(self, callback: Callable[[Task[Any]], Any]) -> None:
-        """
-        Adds a callback to be called when the current task is done.
-        """
+        """Add a callback to be called when the current task is done."""
         if self._task is not None:
             self._task.add_done_callback(callback)

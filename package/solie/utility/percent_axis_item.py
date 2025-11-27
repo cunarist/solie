@@ -1,3 +1,5 @@
+"""Custom percentage-based axis item for PyQtGraph."""
+
 import math
 from typing import override
 
@@ -5,6 +7,8 @@ from pyqtgraph import AxisItem
 
 
 class PercentAxisItem(AxisItem):
+    """Axis item that displays values as percentages."""
+
     @override
     def tickValues(
         self,
@@ -36,7 +40,10 @@ class PercentAxisItem(AxisItem):
 
     @override
     def tickStrings(
-        self, values: list[float], scale: float, spacing: float
+        self,
+        values: list[float],
+        scale: float,
+        spacing: float,
     ) -> list[str]:
         optimal_count = max(2, math.ceil(self.size().height() / 20))
         distance = spacing / optimal_count
@@ -55,7 +62,13 @@ class PercentAxisItem(AxisItem):
 
         return strings
 
-    def format_fixed_float(self, number: float, width=4, positive_sign=False) -> str:
+    def format_fixed_float(
+        self,
+        number: float,
+        width: int = 4,
+        positive_sign: bool = False,
+    ) -> str:
+        """Format float with fixed width."""
         width = max(width, 4)
 
         if number < 0 or (positive_sign and number >= 0):
@@ -72,6 +85,4 @@ class PercentAxisItem(AxisItem):
         if positive_sign and number >= 0:
             string = "+" + string
 
-        string = string[:width]
-
-        return string
+        return string[:width]

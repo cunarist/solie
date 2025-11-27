@@ -1,3 +1,5 @@
+"""Utility functions and helper classes."""
+
 from .api_requester import ApiRequester, ApiRequestError
 from .api_streamer import ApiStreamer
 from .ball import ball_ceil, ball_floor

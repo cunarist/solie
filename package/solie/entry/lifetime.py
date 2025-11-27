@@ -1,5 +1,7 @@
+"""Application lifecycle management and initialization."""
+
 from asyncio import Event, gather, sleep
-from logging import getLogger
+from logging import INFO, getLogger
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6.QtGui import QColor, QFont, QFontDatabase, QPalette
@@ -23,7 +25,8 @@ logger = getLogger(__name__)
 
 
 async def keep_processing_events(app: QApplication) -> None:
-    """
+    """Periodically process UI events.
+
     `Qt` does not have proper async support, as it is focused on threads.
     To use async-based concurrency, we need to periodically process UI events.
     Third-party polling libraries are not very reliable.
@@ -35,7 +38,7 @@ async def keep_processing_events(app: QApplication) -> None:
 
 
 async def live(app: QApplication, config: SolieConfig) -> None:
-    """Main application lifecycle management."""
+    """Manage main application lifecycle."""
     setup_fonts(app)
     setup_dark_theme(app)
 
@@ -45,7 +48,7 @@ async def live(app: QApplication, config: SolieConfig) -> None:
     window = create_and_setup_window(close_event, config)
     spawn(keep_processing_events(app))
 
-    getLogger(PACKAGE_NAME).setLevel("DEBUG")
+    getLogger(PACKAGE_NAME).setLevel(INFO)
     await window.boot()
     logger.info("Started up")
 

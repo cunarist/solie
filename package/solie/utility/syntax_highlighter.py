@@ -1,3 +1,5 @@
+"""Python syntax highlighter for Qt."""
+
 from typing import override
 
 from pygments import lex
@@ -7,6 +9,8 @@ from PySide6.QtWidgets import QWidget
 
 
 class SyntaxHighlighter(QSyntaxHighlighter):
+    """Python syntax highlighter for code editor."""
+
     @override
     def highlightBlock(self, text: str) -> None:
         current_position = 0
@@ -14,7 +18,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
         for token, text_block in lex(text, self._lexer):
             length = len(text_block)
             text_format = None
-            for text_type in self._mapping.keys():
+            for text_type in self._mapping:
                 if str(token).startswith(text_type):
                     text_format = self._mapping[text_type]
                     break
@@ -23,6 +27,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
             current_position += length
 
     def __init__(self, parent: QWidget) -> None:
+        """Initialize syntax highlighter."""
         super().__init__(parent)
 
         self._lexer = get_lexer_by_name("python")

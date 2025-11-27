@@ -1,3 +1,5 @@
+"""Core trading logic and algorithms."""
+
 from .account_listener import AccountListener
 from .analyze_market import (
     CalculationInput,

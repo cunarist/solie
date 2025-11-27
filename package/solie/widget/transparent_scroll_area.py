@@ -1,5 +1,8 @@
+"""Transparent scroll area widget."""
+
 from PySide6.QtWidgets import QScrollArea
 
 
 class TransparentScrollArea(QScrollArea):
-    pass
+    """Scroll area with transparent background."""
+

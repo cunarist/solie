@@ -1,3 +1,5 @@
+"""Background workers for data collection, simulation, and trading."""
+
 from .collector import Collector
 from .manager import Manager
 from .simulator import Simulator

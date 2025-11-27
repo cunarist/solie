@@ -1,3 +1,5 @@
+"""An algorithmic trading machine for Binance futures."""
+
 from .entry import bring_to_life
 from .utility import (
     AccountState,

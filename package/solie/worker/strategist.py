@@ -1,3 +1,5 @@
+"""Trading strategy management worker."""
+
 import aiofiles
 import aiofiles.os
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -26,7 +28,10 @@ from solie.window import Window
 
 
 class Strategiest:
+    """Worker for managing trading strategies."""
+
     def __init__(self, window: Window, scheduler: AsyncIOScheduler) -> None:
+        """Initialize strategy manager."""
         self._window = window
         self._scheduler = scheduler
         self._workerpath = window.datapath / "strategist"
@@ -47,34 +52,37 @@ class Strategiest:
 
         self._connect_ui_events()
 
-    def _connect_ui_events(self):
+    def _connect_ui_events(self) -> None:
         window = self._window
 
         job = self._add_blank_strategy
         outsource(window.pushButton_5.clicked, job)
 
     async def load_work(self) -> None:
+        """Load saved strategies from disk."""
         await aiofiles.os.makedirs(self._workerpath, exist_ok=True)
 
         filepath = self._workerpath / "soft_strategies.json"
         if await aiofiles.os.path.isfile(filepath):
-            async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+            async with aiofiles.open(filepath, encoding="utf8") as file:
                 self._saved_strategies = SavedStrategies.model_validate_json(
-                    await file.read()
+                    await file.read(),
                 )
         else:
             first_strategy = SavedStrategy(
                 code_name="SLIESS",
                 readable_name="Sample Strategy",
-                description="Not for real investment."
-                + " This strategy is only for demonstration purposes.",
+                description=(
+                    "Not for real investment."
+                    " This strategy is only for demonstration purposes."
+                ),
             )
             filepath = PACKAGE_PATH / "static" / "sample_indicator_script.txt"
-            async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+            async with aiofiles.open(filepath, encoding="utf8") as file:
                 read_data = await file.read()
                 first_strategy.indicator_script = read_data
             filepath = PACKAGE_PATH / "static" / "sample_decision_script.txt"
-            async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+            async with aiofiles.open(filepath, encoding="utf8") as file:
                 read_data = await file.read()
                 first_strategy.decision_script = read_data
             self._saved_strategies = SavedStrategies(all=[first_strategy])
@@ -82,6 +90,7 @@ class Strategiest:
         self._combine_strategies()
 
     async def dump_work(self) -> None:
+        """Save strategies to disk."""
         await self._save_strategies()
 
     def _combine_strategies(self) -> None:
@@ -95,6 +104,7 @@ class Strategiest:
             await file.write(self._saved_strategies.model_dump_json(indent=2))
 
     async def display_strategies(self) -> None:
+        """Update UI with strategy list."""
         self._window.comboBox_2.clear()
         self._window.comboBox.clear()
         for strategy_card in self._strategy_cards:
@@ -110,7 +120,8 @@ class Strategiest:
             elif strategy.risk_level == RiskLevel.LOW:
                 icon_pixmap = self._green_pixmap
             else:
-                raise ValueError("Invalid risk level for drawing an icon")
+                msg = "Invalid risk level for drawing an icon"
+                raise ValueError(msg)
             traffic_light_icon = QIcon()
             traffic_light_icon.addPixmap(icon_pixmap)
 
@@ -153,9 +164,11 @@ class Strategiest:
             await self._create_reorder_buttons(strategy, card_layout)
 
     async def _create_basic_buttons(
-        self, strategy: SavedStrategy, card_layout: QHBoxLayout
-    ):
-        async def job_bs(strategy=strategy) -> None:
+        self,
+        strategy: SavedStrategy,
+        card_layout: QHBoxLayout,
+    ) -> None:
+        async def job_bs(strategy: SavedStrategy = strategy) -> None:
             await self._remember_strategy_selections()
             await overlay(StrategyDevelopInput(strategy))
             spawn(self.display_strategies())
@@ -166,7 +179,7 @@ class Strategiest:
         card_layout.addWidget(edit_button)
         outsource(edit_button.clicked, job_bs)
 
-        async def job_eb(strategy=strategy) -> None:
+        async def job_eb(strategy: SavedStrategy = strategy) -> None:
             await self._remember_strategy_selections()
             await overlay(StrategyBasicInput(strategy))
             spawn(self.display_strategies())
@@ -178,15 +191,17 @@ class Strategiest:
         outsource(edit_button.clicked, job_eb)
 
     async def _create_menu_button(
-        self, strategy: SavedStrategy, card_layout: QHBoxLayout
-    ):
+        self,
+        strategy: SavedStrategy,
+        card_layout: QHBoxLayout,
+    ) -> None:
         action_menu = QMenu(self._window)
         action_button = QPushButton()
         action_button.setText("☰")
         action_button.setMenu(action_menu)
         card_layout.addWidget(action_button)
 
-        async def job_rs(strategy=strategy) -> None:
+        async def job_rs(strategy: SavedStrategy = strategy) -> None:
             answer = await ask(
                 "Remove this strategy?",
                 "Once you remove this, it cannot be recovered.",
@@ -204,7 +219,7 @@ class Strategiest:
         new_action = action_menu.addAction("Remove")
         outsource(new_action.triggered, job_rs)
 
-        async def job_dp(strategy=strategy) -> None:
+        async def job_dp(strategy: SavedStrategy = strategy) -> None:
             await self._remember_strategy_selections()
             duplicated = strategy.model_copy(deep=True)
             duplicated.code_name = create_strategy_code_name()
@@ -218,9 +233,11 @@ class Strategiest:
         outsource(new_action.triggered, job_dp)
 
     async def _create_reorder_buttons(
-        self, strategy: SavedStrategy, card_layout: QHBoxLayout
-    ):
-        async def job_ss(strategy=strategy) -> None:
+        self,
+        strategy: SavedStrategy,
+        card_layout: QHBoxLayout,
+    ) -> None:
+        async def job_ss(strategy: SavedStrategy = strategy) -> None:
             await self._remember_strategy_selections()
             original_index = self._saved_strategies.all.index(strategy)
             after_index = original_index + 1
@@ -235,7 +252,7 @@ class Strategiest:
         card_layout.addWidget(edit_button)
         outsource(edit_button.clicked, job_ss)
 
-        async def job_us(strategy=strategy) -> None:
+        async def job_us(strategy: SavedStrategy = strategy) -> None:
             await self._remember_strategy_selections()
             original_index = self._saved_strategies.all.index(strategy)
             after_index = original_index - 1

@@ -1,3 +1,6 @@
+"""Read-write lock implementation for async operations."""
+
+import types
 from asyncio import (
     AbstractEventLoop,
     CancelledError,
@@ -8,15 +11,21 @@ from asyncio import (
     sleep,
 )
 from collections import deque
+from logging import getLogger
 from typing import Any
+
+logger = getLogger(__name__)
 
 
 # The internal lock object managing the RWLock state.
 class RWLockCore:
+    """Core read-write lock implementation."""
+
     _RL = 1
     _WL = 2
 
     def __init__(self, fast: bool, loop: AbstractEventLoop) -> None:
+        """Initialize RWLock core."""
         self._do_yield = not fast
         self._loop = loop
         self._read_waiters = deque[Future[None]]()
@@ -28,18 +37,22 @@ class RWLockCore:
 
     @property
     def r_state(self) -> int:
+        """Get read lock state count."""
         return self._r_state
 
     @property
     def w_state(self) -> int:
+        """Get write lock state count."""
         return self._w_state
 
     @property
     def read_locked(self) -> bool:
+        """Check if read lock is held."""
         return self._r_state > 0
 
     @property
     def write_locked(self) -> bool:
+        """Check if write lock is held."""
         return self._w_state > 0
 
     async def _yield_after_acquire(self, lock_type: int) -> None:
@@ -53,8 +66,10 @@ class RWLockCore:
 
     # Acquire the lock in read mode.
     async def acquire_read(self) -> bool:
+        """Acquire lock in read mode."""
         me = current_task()
-        assert me is not None  # nosec
+        if me is None:
+            raise RuntimeError("Cannot acquire lock outside of a task")
 
         if (me, self._RL) in self._owning or (me, self._WL) in self._owning:
             self._r_state += 1
@@ -86,17 +101,18 @@ class RWLockCore:
     # Acquire the lock in write mode.  A 'waiting' count is maintained,
     # ensuring that 'readers' will yield to writers.
     async def acquire_write(self) -> bool:
+        """Acquire lock in write mode."""
         me = current_task()
-        assert me is not None  # nosec
-
+        if me is None:
+            raise RuntimeError("Cannot acquire lock outside of a task")
         if (me, self._WL) in self._owning:
             self._w_state += 1
             self._owning.append((me, self._WL))
             await self._yield_after_acquire(self._WL)
             return True
-        elif (me, self._RL) in self._owning:
-            if self._r_state > 0:
-                raise RuntimeError("Cannot upgrade RWLock from read to write")
+        if (me, self._RL) in self._owning and self._r_state > 0:
+            msg = "Cannot upgrade RWLock from read to write"
+            raise RuntimeError(msg)
 
         if self._r_state == 0 and self._w_state == 0:
             self._w_state += 1
@@ -120,20 +136,22 @@ class RWLockCore:
             self._write_waiters.remove(fut)
 
     def release_read(self) -> None:
+        """Release read lock."""
         self._release(self._RL)
 
     def release_write(self) -> None:
+        """Release write lock."""
         self._release(self._WL)
 
     def _release(self, lock_type: int) -> None:
-        # assert lock_type in (self._RL, self._WL)
         me = current_task(loop=self._loop)
-        assert me is not None  # nosec
-
+        if me is None:
+            raise RuntimeError("Cannot release lock outside of a task")
         try:
             self._owning.remove((me, lock_type))
         except ValueError as err:
-            raise RuntimeError("Cannot release an un-acquired lock") from err
+            msg = "Cannot release an un-acquired lock"
+            raise RuntimeError(msg) from err
         if lock_type == self._RL:
             self._r_state -= 1
         else:
@@ -162,61 +180,91 @@ class RWLockCore:
 
 
 class Cell[T]:
+    """Mutable cell holding data protected by RWLock."""
+
     def __init__(self, data: T) -> None:
+        """Initialize cell with data."""
         self.data: T = data
 
 
 # Lock objects to access the _RWLockCore in reader or writer mode
 class ReadLock[T]:
+    """Read lock for shared access to data."""
+
     def __init__(self, lock: RWLockCore, wrapper: Cell[T]) -> None:
+        """Initialize read lock."""
         self._wrapper = wrapper
         self._lock = lock
 
     @property
     def locked(self) -> bool:
+        """Check if read lock is held."""
         return self._lock.read_locked
 
     async def __aenter__(self) -> Cell[T]:
+        """Acquire read lock on enter."""
         await self._lock.acquire_read()
         return self._wrapper
 
-    async def __aexit__(self, exc_type, exc, tb) -> None:
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: types.TracebackType | None,
+    ) -> None:
+        """Release read lock on exit."""
         self._lock.release_read()
 
     def __repr__(self) -> str:
+        """Return string representation of read lock."""
         status = "locked" if self._lock.r_state > 0 else "unlocked"
-        return "<ReaderLock: [{}]>".format(status)
+        return f"<ReaderLock: [{status}]>"
 
 
 class WriteLock[T]:
+    """Write lock for exclusive access to data."""
+
     def __init__(self, lock: RWLockCore, wrapper: Cell[T]) -> None:
+        """Initialize write lock."""
         self._wrapper = wrapper
         self._lock = lock
 
     @property
     def locked(self) -> bool:
+        """Check if write lock is held."""
         return self._lock.write_locked
 
     async def __aenter__(self) -> Cell[T]:
+        """Acquire write lock on enter."""
         await self._lock.acquire_write()
         return self._wrapper
 
-    async def __aexit__(self, exc_type, exc, tb) -> None:
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: types.TracebackType | None,
+    ) -> None:
+        """Release write lock on exit."""
         self._lock.release_write()
 
     def __repr__(self) -> str:
+        """Return string representation of write lock."""
         status = "locked" if self._lock.w_state > 0 else "unlocked"
-        return "<WriterLock: [{}]>".format(status)
+        return f"<WriterLock: [{status}]>"
 
 
 class RWLock[T]:
-    """A RWLock maintains a pair of associated locks, one for read-only
+    """Read-write lock for concurrent access control.
+
+    A RWLock maintains a pair of associated locks, one for read-only
     operations and one for writing. The read lock may be held simultaneously
     by multiple reader tasks, so long as there are no writers. The write
     lock is exclusive.
     """
 
     def __init__(self, cell_data: T, fast: bool = True) -> None:
+        """Initialize read-write lock."""
         loop = get_running_loop()
         self._wrapper = Cell(cell_data)
         self._loop = loop
@@ -225,9 +273,11 @@ class RWLock[T]:
         self.write_lock = WriteLock(core, self._wrapper)
 
     def __repr__(self) -> str:
+        """Return string representation of RWLock."""
         rl = self.read_lock.__repr__()
         wl = self.write_lock.__repr__()
-        return "<RWLock: {} {}>".format(rl, wl)
+        return f"<RWLock: {rl} {wl}>"
 
     def replace(self, new: T) -> None:
+        """Replace data in cell."""
         self._wrapped = new

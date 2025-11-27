@@ -1,5 +1,7 @@
+"""Time axis item for PyQtGraph."""
+
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import override
 
 from pyqtgraph import AxisItem
@@ -22,6 +24,8 @@ from .constants import (
 
 
 class TimeAxisItem(AxisItem):
+    """Axis item that displays datetime values."""
+
     @override
     def tickValues(
         self,
@@ -36,8 +40,8 @@ class TimeAxisItem(AxisItem):
         if min_value <= 0:  # use standard implementation from parent
             return AxisItem.tickValues(self, min_value, max_value, size)
 
-        dt1 = datetime.fromtimestamp(min_value, tz=timezone.utc)
-        dt2 = datetime.fromtimestamp(max_value, tz=timezone.utc)
+        dt1 = datetime.fromtimestamp(min_value, tz=UTC)
+        dt2 = datetime.fromtimestamp(max_value, tz=UTC)
         box_seconds = (max_value - min_value) / size * 1000
 
         majticks = self._calculate_major_ticks(dt1, dt2, box_seconds)
@@ -48,7 +52,10 @@ class TimeAxisItem(AxisItem):
         return [(1, majticks)]
 
     def _calculate_major_ticks(
-        self, dt1: datetime, dt2: datetime, box_seconds: float
+        self,
+        dt1: datetime,
+        dt2: datetime,
+        box_seconds: float,
     ) -> list[float]:
         """Calculate major tick positions based on time scale."""
         # Define time ranges and their corresponding tick generators
@@ -73,7 +80,7 @@ class TimeAxisItem(AxisItem):
         """Generate ticks for yearly intervals."""
         majticks = []
         for year in range(dt1.year + 1, dt2.year + 1):
-            dt = datetime(year=year, month=1, day=1, tzinfo=timezone.utc)
+            dt = datetime(year=year, month=1, day=1, tzinfo=UTC)
             majticks.append(dt.timestamp())
         return majticks
 
@@ -149,9 +156,12 @@ class TimeAxisItem(AxisItem):
 
     @override
     def tickStrings(
-        self, values: list[float], scale: float, spacing: float
+        self,
+        values: list[float],
+        scale: float,
+        spacing: float,
     ) -> list[str]:
-        """Reimplemented from PlotItem to adjust to the range"""
+        """Reimplemented from PlotItem to adjust to the range."""
         if not values:
             return []
 
@@ -192,7 +202,11 @@ class TimeAxisItem(AxisItem):
         return "[+%fms]"  # explicitly relative to last second
 
     def _generate_tick_strings(
-        self, values: list[float], fmt: str, sample: int, offset: int
+        self,
+        values: list[float],
+        fmt: str,
+        sample: int,
+        offset: int,
     ) -> list[str]:
         """Generate formatted tick strings from values."""
         return_data: list[str] = []
@@ -200,7 +214,7 @@ class TimeAxisItem(AxisItem):
         for turn, tick_value in enumerate(values):
             if (turn - offset) % sample == 0:
                 try:
-                    tick_time = datetime.fromtimestamp(tick_value, tz=timezone.utc)
+                    tick_time = datetime.fromtimestamp(tick_value, tz=UTC)
                     return_data.append(tick_time.strftime(fmt))
                 except (ValueError, OSError):
                     # Windows can't handle dates before 1970

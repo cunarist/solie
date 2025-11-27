@@ -1,3 +1,5 @@
+"""Common utilities and shared functionality."""
+
 from .concurrency import UniqueTask, spawn
 from .connect_event import outsource
 from .info import PACKAGE_NAME, PACKAGE_PATH, PACKAGE_VERSION

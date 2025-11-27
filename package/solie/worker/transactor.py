@@ -1,9 +1,11 @@
+"""Live trading execution and account management worker."""
+
 import math
 import pickle
 import webbrowser
 from asyncio import gather, sleep
 from collections.abc import Coroutine
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from logging import getLogger
 from typing import Any, NamedTuple
 
@@ -37,6 +39,7 @@ from solie.utility import (
     OrderType,
     PositionDirection,
     RWLock,
+    Strategy,
     TransactionSettings,
     create_empty_account_state,
     create_empty_asset_record,
@@ -102,7 +105,10 @@ class IndicatorData(NamedTuple):
 
 
 class Transactor:
+    """Worker for executing live trades on Binance."""
+
     def __init__(self, window: Window, scheduler: AsyncIOScheduler) -> None:
+        """Initialize live transactor."""
         self._window = window
         self._scheduler = scheduler
         self._workerpath = window.datapath / "transactor"
@@ -127,7 +133,7 @@ class Transactor:
         self._should_draw_frequently = True
 
         self._account_state = create_empty_account_state(
-            window.data_settings.target_symbols
+            window.data_settings.target_symbols,
         )
 
         self._scribbles: dict[Any, Any] = {}
@@ -138,7 +144,7 @@ class Transactor:
             pd.DataFrame(
                 columns=["SYMBOL", "ORDER_ID"],
                 index=pd.DatetimeIndex([], tz="UTC"),
-            )
+            ),
         )
 
         self._account_listener = AccountListener(
@@ -239,7 +245,7 @@ class Transactor:
 
         self._connect_ui_events()
 
-    def _connect_ui_events(self):
+    def _connect_ui_events(self) -> None:
         window = self._window
 
         # Special widgets
@@ -293,6 +299,7 @@ class Transactor:
         outsource(new_action.triggered, job)
 
     async def load_work(self) -> None:
+        """Load transaction data from disk."""
         await aiofiles.os.makedirs(self._workerpath, exist_ok=True)
 
         # scribbles
@@ -305,7 +312,7 @@ class Transactor:
         # transaction settings
         filepath = self._workerpath / "transaction_settings.json"
         if await aiofiles.os.path.isfile(filepath):
-            async with aiofiles.open(filepath, "r", encoding="utf8") as file:
+            async with aiofiles.open(filepath, encoding="utf8") as file:
                 read_data = TransactionSettings.model_validate_json(await file.read())
             self._transaction_settings = read_data
             state = read_data.should_transact
@@ -319,7 +326,8 @@ class Transactor:
             text = read_data.binance_api_secret
             self._window.lineEdit_6.setText(text)
             self._api_requester.update_keys(
-                read_data.binance_api_key, read_data.binance_api_secret
+                read_data.binance_api_key,
+                read_data.binance_api_secret,
             )
 
         # unrealized changes
@@ -341,6 +349,7 @@ class Transactor:
             self._auto_order_record = RWLock(df)
 
     async def dump_work(self) -> None:
+        """Save transaction data to disk."""
         await self._save_large_data()
         await self._save_scribbles()
 
@@ -398,9 +407,9 @@ class Transactor:
             await file.write(content)
 
     async def update_user_data_stream(self) -> None:
-        """
-        Prepares the WebSocket user data stream from Binance,
-        providing updates on account changes and market order results.
+        """Prepare WebSocket user data stream from Binance.
+
+        Providing updates on account changes and market order results.
 
         Although rare, the listen key may change over time.
         Additionally, the Binance API documentation recommends
@@ -435,9 +444,8 @@ class Transactor:
             if new_url == self.user_data_streamer.url:
                 # If the listen key hasn't changed, do nothing.
                 return
-            else:
-                # If the listen key has changed, close the previous session.
-                await self.user_data_streamer.close()
+            # If the listen key has changed, close the previous session.
+            await self.user_data_streamer.close()
 
         self.user_data_streamer = ApiStreamer(
             new_url,
@@ -549,14 +557,14 @@ class Transactor:
         price_widget = self._window.transaction_graph.price_widget
 
         range_start_timestamp = max(price_widget.getAxis("bottom").range[0], 0.0)
-        range_start = datetime.fromtimestamp(range_start_timestamp, tz=timezone.utc)
+        range_start = datetime.fromtimestamp(range_start_timestamp, tz=UTC)
 
         range_end_timestamp = price_widget.getAxis("bottom").range[1]
         if range_end_timestamp < 0.0:
             range_end_timestamp = 9223339636.0
         else:
             range_end_timestamp = min(range_end_timestamp, 9223339636.0)
-        range_end = datetime.fromtimestamp(range_end_timestamp, tz=timezone.utc)
+        range_end = datetime.fromtimestamp(range_end_timestamp, tz=UTC)
 
         range_length = range_end - range_start
         range_days = range_length.days
@@ -578,7 +586,9 @@ class Transactor:
         symbol_mask = asset_record["SYMBOL"] == symbol
 
         metrics = self._calculate_trade_metrics(
-            asset_record, asset_changes, symbol_mask
+            asset_record,
+            asset_changes,
+            symbol_mask,
         )
 
         min_unrealized_change = (
@@ -595,12 +605,15 @@ class Transactor:
         text += "Visible price range"
         text += f" {price_range_height:.2f}%"
         text += "  ⦁  "
-        text += f"Transaction count {metrics.symbol_change_count}({metrics.total_change_count})"
+        text += f"Transaction count {metrics.symbol_change_count}"
+        text += f"({metrics.total_change_count})"
         text += "  ⦁  "
         text += "Transaction amount"
-        text += f" *{metrics.symbol_margin_ratio:.4f}({metrics.total_margin_ratio:.4f})"
+        text += f" *{metrics.symbol_margin_ratio:.4f}"
+        text += f"({metrics.total_margin_ratio:.4f})"
         text += "  ⦁  "
-        text += f"Total realized profit {metrics.symbol_yield:+.4f}({metrics.total_yield:+.4f})%"
+        text += f"Total realized profit {metrics.symbol_yield:+.4f}"
+        text += f"({metrics.total_yield:+.4f})%"
         text += "  ⦁  "
         text += "Lowest unrealized profit"
         text += f" {min_unrealized_change * 100:+.4f}%"
@@ -615,26 +628,34 @@ class Transactor:
         widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
 
     async def display_strategy_index(self) -> None:
+        """Update UI with current strategy selection."""
         strategy_index = self._transaction_settings.strategy_index
         self._window.comboBox_2.setCurrentIndex(strategy_index)
 
-    async def display_lines(self, periodic=False, frequent=False) -> None:
+    async def display_lines(
+        self,
+        periodic: bool = False,
+        frequent: bool = False,
+    ) -> None:
+        """Update transaction graph lines."""
         self._line_display_task.spawn(self._display_lines_real(periodic, frequent))
 
     def _get_transaction_time_range(self) -> DisplayTimeRange:
         """Calculate time range for transaction display."""
         if self._should_draw_frequently:
-            get_from = datetime.now(timezone.utc) - timedelta(days=28)
-            slice_from = datetime.now(timezone.utc) - timedelta(hours=24)
-            slice_until = datetime.now(timezone.utc)
+            get_from = datetime.now(UTC) - timedelta(days=28)
+            slice_from = datetime.now(UTC) - timedelta(hours=24)
+            slice_until = datetime.now(UTC)
         else:
-            current_year = datetime.now(timezone.utc).year
-            get_from = datetime(current_year, 1, 1, tzinfo=timezone.utc)
-            slice_from = datetime(current_year, 1, 1, tzinfo=timezone.utc)
-            slice_until = datetime.now(timezone.utc)
+            current_year = datetime.now(UTC).year
+            get_from = datetime(current_year, 1, 1, tzinfo=UTC)
+            slice_from = datetime(current_year, 1, 1, tzinfo=UTC)
+            slice_until = datetime.now(UTC)
         slice_until -= timedelta(seconds=1)
         return DisplayTimeRange(
-            get_from=get_from, slice_from=slice_from, slice_until=slice_until
+            get_from=get_from,
+            slice_from=slice_from,
+            slice_until=slice_until,
         )
 
     def _collect_realtime_data(self, symbol: str) -> RealtimeData:
@@ -661,7 +682,9 @@ class Transactor:
         )
 
     async def _load_transaction_asset_data(
-        self, symbol: str, time_range: DisplayTimeRange
+        self,
+        symbol: str,
+        time_range: DisplayTimeRange,
     ) -> TransactionAssetData:
         """Load candle and asset data for transaction display."""
         async with team.collector.candle_data.read_lock as cell:
@@ -709,14 +732,16 @@ class Transactor:
         """Update asset record with latest observations."""
         if last_asset is not None:
             observed_until = self._account_state.observed_until
-            if len(asset_record) == 0 or asset_record.index[-1] < observed_until:
-                if slice_from < observed_until:
-                    asset_record.loc[observed_until, "CAUSE"] = "OTHER"
-                    asset_record.loc[observed_until, "RESULT_ASSET"] = last_asset
-                    if not asset_record.index.is_monotonic_increasing:
-                        asset_record = await spawn_blocking(
-                            sort_data_frame, asset_record
-                        )
+            if (
+                len(asset_record) == 0 or asset_record.index[-1] < observed_until
+            ) and slice_from < observed_until:
+                asset_record.loc[observed_until, "CAUSE"] = "OTHER"
+                asset_record.loc[observed_until, "RESULT_ASSET"] = last_asset
+                if not asset_record.index.is_monotonic_increasing:
+                    asset_record = await spawn_blocking(
+                        sort_data_frame,
+                        asset_record,
+                    )
 
         if before_asset is not None:
             asset_record.loc[slice_from, "CAUSE"] = "OTHER"
@@ -739,7 +764,7 @@ class Transactor:
                 return
 
         if periodic:
-            current_moment = to_moment(datetime.now(timezone.utc))
+            current_moment = to_moment(datetime.now(UTC))
             before_moment = current_moment - timedelta(seconds=10)
             for _ in range(50):
                 async with team.collector.candle_data.read_lock as cell:
@@ -816,7 +841,7 @@ class Transactor:
         spawn(self._display_range_information())
 
     async def _display_status_information(self) -> None:
-        time_passed = datetime.now(timezone.utc) - self._account_state.observed_until
+        time_passed = datetime.now(UTC) - self._account_state.observed_until
         if time_passed > timedelta(seconds=30):
             text = (
                 "Couldn't get the latest info on your Binance account due to a problem"
@@ -883,7 +908,7 @@ class Transactor:
         candle_data: pd.DataFrame,
         all_columns: pd.Index,
         target_symbols: list[str],
-        strategy: Any,
+        strategy: Strategy,
     ) -> IndicatorData:
         """Calculate indicators and extract current values."""
         columns = [str(s) for s in all_columns]
@@ -896,7 +921,7 @@ class Transactor:
                     strategy=strategy,
                     target_symbols=[symbol],
                     candle_data=candle_data[chosen_columns],
-                )
+                ),
             )
             await sleep(0.0)
         symbol_indicators = await gather(*coroutines)
@@ -936,7 +961,7 @@ class Transactor:
             return
 
         duration_recorder = DurationRecorder("PERFORM_TRANSACTION")
-        current_moment = to_moment(datetime.now(timezone.utc))
+        current_moment = to_moment(datetime.now(UTC))
         before_moment = current_moment - timedelta(seconds=10)
 
         is_cycle_done = False
@@ -944,7 +969,7 @@ class Transactor:
         async def play_progress_bar() -> None:
             passed_time = timedelta(seconds=0)
             while passed_time < timedelta(seconds=10):
-                passed_time = datetime.now(timezone.utc) - current_moment
+                passed_time = datetime.now(UTC) - current_moment
                 if not is_cycle_done:
                     new_value = int(passed_time / timedelta(seconds=10) * 1000)
                 else:
@@ -968,7 +993,7 @@ class Transactor:
                     break
             await sleep(0.1)
 
-        slice_from = datetime.now(timezone.utc) - timedelta(days=28)
+        slice_from = datetime.now(UTC) - timedelta(days=28)
         async with team.collector.candle_data.read_lock as cell:
             candle_data = cell.data[slice_from:].copy()
 
@@ -977,7 +1002,10 @@ class Transactor:
         strategy = team.strategist.strategies[strategy_index]
 
         indicator_data = await self._calculate_indicators(
-            candle_data, cell.data.columns, target_symbols, strategy
+            candle_data,
+            cell.data.columns,
+            target_symbols,
+            strategy,
         )
 
         decision_context = DecisionContext(
@@ -997,8 +1025,9 @@ class Transactor:
         await self.place_orders(decisions)
 
     async def display_day_range(self) -> None:
-        range_start = (datetime.now(timezone.utc) - timedelta(hours=24)).timestamp()
-        range_end = datetime.now(timezone.utc).timestamp()
+        """Display 24-hour time range."""
+        range_start = (datetime.now(UTC) - timedelta(hours=24)).timestamp()
+        range_end = datetime.now(UTC).timestamp()
         widget = self._window.transaction_graph.price_widget
         widget.setXRange(range_start, range_end)
 
@@ -1045,14 +1074,17 @@ class Transactor:
         await self._save_transaction_settings()
 
     async def watch_binance(self) -> None:
+        """Watch Binance for account updates."""
         await self._binance_watcher.watch(self.place_orders)
         self._is_key_restrictions_satisfied = (
             self._binance_watcher.is_key_restrictions_satisfied
         )
 
     async def place_orders(
-        self, decisions: dict[str, dict[OrderType, Decision]]
+        self,
+        decisions: dict[str, dict[OrderType, Decision]],
     ) -> None:
+        """Place orders based on strategy decisions."""
         await self._order_placer.place(decisions)
 
     async def _clear_positions_and_open_orders(self) -> None:
@@ -1074,24 +1106,27 @@ class Transactor:
             grouped_open_orders: dict[OrderType, list[int]] = {}
             for order_id, open_order_state in symbol_open_orders.items():
                 order_type = open_order_state.order_type
-                if order_type not in grouped_open_orders.keys():
+                if order_type not in grouped_open_orders:
                     grouped_open_orders[order_type] = [order_id]
                 else:
                     grouped_open_orders[order_type].append(order_id)
             for order_type, group in grouped_open_orders.items():
                 if order_type == OrderType.OTHER:
-                    for order_id in group:
-                        conflicting_order_tuples.append((symbol, order_id))
+                    conflicting_order_tuples.extend(
+                        (symbol, order_id) for order_id in group
+                    )
                 elif len(group) > 1:
                     latest_id = max(group)
-                    for order_id in group:
-                        if order_id != latest_id:
-                            conflicting_order_tuples.append((symbol, order_id))
+                    conflicting_order_tuples.extend(
+                        (symbol, order_id)
+                        for order_id in group
+                        if order_id != latest_id
+                    )
 
-        async def job(conflicting_order_tuple) -> None:
+        async def job(conflicting_order_tuple: tuple[str, int]) -> None:
             try:
                 payload = {
-                    "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+                    "timestamp": int(datetime.now(UTC).timestamp() * 1000),
                     "symbol": conflicting_order_tuple[0],
                     "orderId": conflicting_order_tuple[1],
                 }
@@ -1123,7 +1158,7 @@ class Transactor:
     async def _show_raw_account_state_object(self) -> None:
         text = ""
 
-        now_time = datetime.now(timezone.utc)
+        now_time = datetime.now(UTC)
         time_text = now_time.strftime("%Y-%m-%d %H:%M:%S")
         text += f"At UTC {time_text}"
 

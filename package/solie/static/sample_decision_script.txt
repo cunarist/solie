@@ -1,5 +1,5 @@
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from solie import Decision, OrderType, PositionDirection
 
 acquire_ratio = 0.8 / len(target_symbols)  # Split asset by symbol count

@@ -1,3 +1,5 @@
+"""Coin selection overlay for choosing trading pairs."""
+
 from asyncio import Event
 from typing import NamedTuple
 
@@ -22,17 +24,22 @@ from solie.widget import HorizontalDivider, ask
 
 
 class CoinMetadata(NamedTuple):
+    """Metadata for coins including names, icons, and rankings."""
+
     coin_names: dict[str, str]
     coin_icon_urls: dict[str, str]
     coin_ranks: dict[str, int]
 
 
 class CoinSelection:
+    """Overlay for selecting coins to trade."""
+
     title = "Choose coins to observe and trade"
     close_button = False
     done_event = Event()
 
     def __init__(self, asset_token: str) -> None:
+        """Initialize coin selection overlay."""
         super().__init__()
         self.widget = QWidget()
         self.result: list[str]
@@ -42,6 +49,7 @@ class CoinSelection:
         spawn(self.fill())
 
     async def confirm_closing(self) -> bool:
+        """Confirm if overlay can be closed."""
         return True
 
     async def fill(self) -> None:
@@ -129,7 +137,9 @@ class CoinSelection:
         return available_symbols
 
     def _build_ui(
-        self, sorted_symbols: list[str], coin_metadata: CoinMetadata
+        self,
+        sorted_symbols: list[str],
+        coin_metadata: CoinMetadata,
     ) -> dict[str, QLabel]:
         """Build the main UI layout."""
         symbol_checkboxes: dict[str, QCheckBox] = {}
@@ -159,7 +169,7 @@ class CoinSelection:
 
         return symbol_icon_labels
 
-    def _add_spacer(self, layout, vertical=False) -> None:
+    def _add_spacer(self, layout: QVBoxLayout, vertical: bool = False) -> None:
         """Add a spacer to the layout."""
         if vertical:
             spacer = QSpacerItem(
@@ -179,7 +189,7 @@ class CoinSelection:
 
     def _build_coin_selection_card(
         self,
-        cards_layout,
+        cards_layout: QVBoxLayout,
         sorted_symbols: list[str],
         coin_metadata: CoinMetadata,
         symbol_checkboxes: dict[str, QCheckBox],
@@ -198,7 +208,7 @@ class CoinSelection:
         detail_text = QLabel()
         detail_text.setText(
             "These are all the available coins from the token you chose."
-            "\nYou can select a minimum of 1 and a maximum of 12."
+            "\nYou can select a minimum of 1 and a maximum of 12.",
         )
         detail_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
         detail_text.setWordWrap(True)
@@ -248,7 +258,7 @@ class CoinSelection:
 
         card_layout.addItem(input_layout)
 
-    def _add_small_spacing(self, layout) -> None:
+    def _add_small_spacing(self, layout: QVBoxLayout) -> None:
         """Add small vertical spacing."""
         spacing_text = QLabel("")
         spacing_text_font = QFont()
@@ -257,7 +267,9 @@ class CoinSelection:
         layout.addWidget(spacing_text)
 
     def _build_confirmation_card(
-        self, cards_layout, symbol_checkboxes: dict[str, QCheckBox]
+        self,
+        cards_layout: QVBoxLayout,
+        symbol_checkboxes: dict[str, QCheckBox],
     ) -> None:
         """Build the confirmation button card."""
 

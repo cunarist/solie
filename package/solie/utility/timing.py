@@ -1,3 +1,5 @@
+"""Performance timing and duration recording utilities."""
+
 from collections import deque
 from datetime import datetime, timedelta
 from time import perf_counter
@@ -5,22 +7,29 @@ from typing import ClassVar, NamedTuple
 
 
 class DurationRecord(NamedTuple):
+    """Record of task duration with timestamp."""
+
     duration: float
     written_at: float
 
 
 class DurationRecorder:
+    """Records and tracks task execution durations."""
+
     task_durations: ClassVar[dict[str, deque[DurationRecord]]] = {}
 
     def __init__(self, task_name: str) -> None:
+        """Initialize duration recorder."""
         self._task_name = task_name
         self._start_time = perf_counter()
         self._did_record = False
 
     def record(self) -> None:
+        """Record task completion time."""
         # Check that this is the first time.
         if self._did_record:
-            raise RuntimeError("Cannot record more than once")
+            msg = "Cannot record more than once"
+            raise RuntimeError(msg)
         self._did_record = True
 
         # Get the task name and current time.
@@ -47,10 +56,10 @@ class DurationRecorder:
 
 
 def to_moment(exact_time: datetime) -> datetime:
-    """
-    In Solie's terminlogy, moment refers to a time on a 10-second unit.
+    """Convert exact time to moment (10-second unit).
+
+    In Solie's terminology, moment refers to a time on a 10-second unit.
     This is because one candlestick holds 10 seconds of information.
     """
     moment = exact_time.replace(microsecond=0)
-    moment = moment - timedelta(seconds=moment.second % 10)
-    return moment
+    return moment - timedelta(seconds=moment.second % 10)

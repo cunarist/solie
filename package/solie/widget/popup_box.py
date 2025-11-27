@@ -1,5 +1,8 @@
+"""Styled popup box widget."""
+
 from PySide6.QtWidgets import QGroupBox
 
 
 class PopupBox(QGroupBox):
-    pass
+    """Styled group box for popups."""
+

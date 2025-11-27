@@ -1,3 +1,5 @@
+"""User settings and saved strategies management."""
+
 from pathlib import Path
 from types import CodeType
 
@@ -19,18 +21,18 @@ DATAPATH_FILE = PACKAGE_PATH / "datapath.txt"
 
 
 async def read_datapath() -> Path | None:
+    """Read saved datapath from file."""
     if await aiofiles.os.path.isfile(DATAPATH_FILE):
-        async with aiofiles.open(DATAPATH_FILE, "r", encoding="utf8") as file:
+        async with aiofiles.open(DATAPATH_FILE, encoding="utf8") as file:
             datapath = Path(await file.read())
         if await aiofiles.os.path.isdir(datapath):
             return datapath
-        else:
-            return None
-    else:
         return None
+    return None
 
 
 async def save_datapath(datapath: Path | None) -> None:
+    """Save datapath to file."""
     if datapath:
         async with aiofiles.open(DATAPATH_FILE, "w", encoding="utf8") as file:
             await file.write(str(datapath))
@@ -39,22 +41,24 @@ async def save_datapath(datapath: Path | None) -> None:
 
 
 async def read_data_settings(datapath: Path) -> DataSettings | None:
+    """Read data settings from file."""
     filepath = datapath / "data_settings.json"
     if await aiofiles.os.path.isfile(filepath):
-        async with aiofiles.open(filepath, "r", encoding="utf8") as file:
-            data_settings = DataSettings.model_validate_json(await file.read())
-        return data_settings
-    else:
-        return None
+        async with aiofiles.open(filepath, encoding="utf8") as file:
+            return DataSettings.model_validate_json(await file.read())
+    return None
 
 
 async def save_data_settings(data_settings: DataSettings, datapath: Path) -> None:
+    """Save data settings to file."""
     filepath = datapath / "data_settings.json"
     async with aiofiles.open(filepath, "w", encoding="utf8") as file:
         await file.write(data_settings.model_dump_json(indent=2))
 
 
 class SavedStrategy(BaseModel):
+    """User-saved trading strategy with code."""
+
     code_name: str
     readable_name: str = "New Blank Strategy"
     version: str = "0.1"
@@ -68,6 +72,7 @@ class SavedStrategy(BaseModel):
     _compiled_decision_script: CodeType | None = None
 
     def create_indicators(self, given: IndicatorInput) -> None:
+        """Create technical indicators from candle data."""
         target_symbols = given.target_symbols
         candle_data = given.candle_data
         new_indicators = given.new_indicators
@@ -85,6 +90,7 @@ class SavedStrategy(BaseModel):
         exec(code, namespace)
 
     def create_decisions(self, given: DecisionInput) -> None:
+        """Create trading decisions from indicators."""
         target_symbols = given.target_symbols
         account_state = given.account_state
         current_moment = given.current_moment
@@ -110,34 +116,46 @@ class SavedStrategy(BaseModel):
         exec(code, namespace)
 
     def compile_code(self) -> None:
-        """
-        Enables faster execution of the strategy code
-        by precompiling the text-based script.
+        """Compile strategy code for faster execution.
+
+        Precompiles the text-based script.
         This is needed for high-performance simulation.
         After this method is called, the instance becomes unpicklable.
         """
         self._compiled_indicator_script = compile(
-            self.indicator_script, "<string>", "exec"
+            self.indicator_script,
+            "<string>",
+            "exec",
         )
         self._compiled_decision_script = compile(
-            self.decision_script, "<string>", "exec"
+            self.decision_script,
+            "<string>",
+            "exec",
         )
 
 
 class SavedStrategies(BaseModel):
+    """Collection of all saved strategies."""
+
     all: list[SavedStrategy]
 
 
 class SolieConfig:
+    """Configuration for Solie application."""
+
     def __init__(self) -> None:
+        """Initialize Solie configuration."""
         self._strategies: list[Strategy] = []
 
     def add_strategy(self, strategy: Strategy) -> None:
+        """Add strategy to configuration."""
         if not isinstance(strategy, Strategy):
             # This prevents developers from
             # registering an invalid strategy at runtime.
-            raise TypeError(f"{strategy} is not a `Strategy`")
+            msg = f"{strategy} is not a `Strategy`"
+            raise TypeError(msg)
         self._strategies.append(strategy)
 
     def get_strategies(self) -> list[Strategy]:
+        """Get copy of strategies list."""
         return self._strategies.copy()

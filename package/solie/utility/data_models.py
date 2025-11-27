@@ -1,3 +1,5 @@
+"""Data models for trading, account state, and strategy definitions."""
+
 from datetime import datetime
 from enum import Enum
 from typing import Any, NamedTuple, Protocol, runtime_checkable
@@ -10,11 +12,15 @@ from pydantic import BaseModel
 
 
 class DataSettings(BaseModel):
+    """Settings for data collection and symbols."""
+
     asset_token: str
     target_symbols: list[str]
 
 
 class TransactionSettings(BaseModel):
+    """Settings for live trading transactions."""
+
     strategy_index: int = 0
     should_transact: bool = False
     desired_leverage: int = 1
@@ -23,6 +29,8 @@ class TransactionSettings(BaseModel):
 
 
 class SimulationSettings(BaseModel):
+    """Settings for backtesting simulation."""
+
     year: int
     strategy_index: int = 0
     maker_fee: float = 0.02
@@ -31,12 +39,16 @@ class SimulationSettings(BaseModel):
 
 
 class SimulationSummary(BaseModel):
+    """Summary of simulation results."""
+
     year: int
     strategy_code_name: str
     strategy_version: str
 
 
 class BoardLockOptions(Enum):
+    """Options for board locking duration."""
+
     NEVER = 0
     SECONDS_10 = 1
     MINUTE_1 = 2
@@ -45,10 +57,14 @@ class BoardLockOptions(Enum):
 
 
 class ManagementSettings(BaseModel):
+    """Settings for application management."""
+
     lock_board: BoardLockOptions = BoardLockOptions.NEVER
 
 
 class BookTicker(NamedTuple):
+    """Book ticker data from exchange."""
+
     timestamp: int  # In milliseconds
     symbol: str
     best_bid_price: float
@@ -56,12 +72,16 @@ class BookTicker(NamedTuple):
 
 
 class MarkPrice(NamedTuple):
+    """Mark price data from exchange."""
+
     timestamp: int  # In milliseconds
     symbol: str
     mark_price: float
 
 
 class AggregateTrade(NamedTuple):
+    """Aggregate trade data from exchange."""
+
     timestamp: int  # In milliseconds
     symbol: str
     price: float
@@ -69,6 +89,8 @@ class AggregateTrade(NamedTuple):
 
 
 class OrderType(Enum):
+    """Types of trading orders."""
+
     NOW_BUY = 0
     NOW_SELL = 1
     NOW_CLOSE = 2
@@ -84,6 +106,7 @@ class OrderType(Enum):
     OTHER = 12
 
     def is_now(self) -> bool:
+        """Check if order is market order."""
         return self in (
             OrderType.NOW_BUY,
             OrderType.NOW_SELL,
@@ -91,12 +114,14 @@ class OrderType(Enum):
         )
 
     def is_book(self) -> bool:
+        """Check if order is limit order."""
         return self in (
             OrderType.BOOK_BUY,
             OrderType.BOOK_SELL,
         )
 
     def is_later(self) -> bool:
+        """Check if order is stop order."""
         return self in (
             OrderType.LATER_UP_BUY,
             OrderType.LATER_UP_SELL,
@@ -108,17 +133,23 @@ class OrderType(Enum):
 
 
 class PositionDirection(Enum):
+    """Direction of trading position."""
+
     SHORT = -1
     NONE = 0
     LONG = 1
 
 
 class Decision(BaseModel):
+    """Trading decision with boundary and margin."""
+
     boundary: float = 0.0
     margin: float = 0.0
 
 
 class OpenOrder(BaseModel):
+    """Open order on the exchange."""
+
     order_type: OrderType
     boundary: float
     """The price where this order gains effect"""
@@ -127,6 +158,8 @@ class OpenOrder(BaseModel):
 
 
 class Position(BaseModel):
+    """Trading position with margin and direction."""
+
     margin: float
     direction: PositionDirection
     entry_price: float
@@ -135,6 +168,8 @@ class Position(BaseModel):
 
 
 class AccountState(BaseModel):
+    """Current state of trading account."""
+
     observed_until: datetime
     wallet_balance: float
     """Total assets, in dollars"""
@@ -144,14 +179,14 @@ class AccountState(BaseModel):
 
 
 class VirtualPosition(BaseModel):
-    """Virtual position inside simulation"""
+    """Virtual position inside simulation."""
 
     amount: float
     entry_price: float
 
 
 class VirtualPlacement(BaseModel):
-    """Virtual order that has been placed during simulation"""
+    """Virtual order that has been placed during simulation."""
 
     boundary: float
     """The price where this order gains effect"""
@@ -161,7 +196,7 @@ class VirtualPlacement(BaseModel):
 
 
 class VirtualState(BaseModel):
-    """Virtual account state used in simulation"""
+    """Virtual account state used in simulation."""
 
     available_balance: float
     positions: dict[str, VirtualPosition]
@@ -169,18 +204,24 @@ class VirtualState(BaseModel):
 
 
 class RiskLevel(Enum):
+    """Risk level of trading strategy."""
+
     LOW = 0
     MIDDLE = 1
     HIGH = 2
 
 
 class IndicatorInput(NamedTuple):
+    """Input data for creating indicators."""
+
     target_symbols: list[str]
     candle_data: pd.DataFrame
     new_indicators: dict[str, pd.Series]
 
 
 class DecisionInput(NamedTuple):
+    """Input data for making trading decisions."""
+
     target_symbols: list[str]
     account_state: AccountState
     current_moment: datetime
@@ -192,6 +233,8 @@ class DecisionInput(NamedTuple):
 
 @runtime_checkable
 class Strategy(Protocol):
+    """Protocol for trading strategy implementation."""
+
     code_name: str
     readable_name: str
     version: str
@@ -199,5 +242,10 @@ class Strategy(Protocol):
     risk_level: RiskLevel
     parallel_simulation_chunk_days: int | None
 
-    def create_indicators(self, given: IndicatorInput) -> None: ...
-    def create_decisions(self, given: DecisionInput) -> None: ...
+    def create_indicators(self, given: IndicatorInput) -> None:
+        """Create technical indicators from candle data."""
+        ...
+
+    def create_decisions(self, given: DecisionInput) -> None:
+        """Create trading decisions from indicators."""
+        ...

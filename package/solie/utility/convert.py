@@ -1,9 +1,13 @@
+"""Data structure conversion utilities."""
+
 from collections import deque
 
 
 def list_to_dict[F, K](
-    input_list: list[dict[F, K]], key_for_key: F
+    input_list: list[dict[F, K]],
+    key_for_key: F,
 ) -> dict[K, dict[F, K]]:
+    """Convert list of dicts to dict of dicts keyed by specified field."""
     new_dict: dict[K, dict[F, K]] = {}
     for item in input_list:
         if key_for_key in item:
@@ -13,18 +17,14 @@ def list_to_dict[F, K](
 
 
 def slice_deque[T](original: deque[T], size: int, front: bool = False) -> list[T]:
-    """
-    Efficiently slices a `deque` from the specified size.
-    """
+    """Efficiently slices a `deque` from the specified size."""
     if front:
-        # Slice from the beginning
+        # Slice from the front
         sliced: list[T] = []
-        current_index = 0
-        for each in original:
+        for current_index, each in enumerate(original):
             if current_index >= size:
                 break
             sliced.append(each)
-            current_index += 1
     else:
         # Slice from the end
         sliced: list[T] = []

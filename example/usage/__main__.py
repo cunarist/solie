@@ -1,9 +1,12 @@
+"""Example usage entry point."""
+
 from solie import SolieConfig, bring_to_life
 
 from usage import ExampleStrategy, SilentStrategy
 
 
-def main():
+def main() -> None:
+    """Run Solie with example strategies."""
     # Optionally provide configuration.
     config = SolieConfig()
     config.add_strategy(SilentStrategy())

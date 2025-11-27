@@ -1,6 +1,9 @@
+"""Historical market data download from Binance."""
+
 from asyncio import sleep
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
+from logging import getLogger
 from pathlib import Path
 from typing import NamedTuple
 from zipfile import ZipFile, is_zipfile
@@ -14,6 +17,8 @@ import pandas as pd
 from solie.common import spawn_blocking
 from solie.utility import AggregateTrade, to_moment
 
+logger = getLogger(__name__)
+
 BYTE_CHUNK = 1024 * 1024
 RETRY_COUNT = 10
 RETRY_INTERVAL = 2
@@ -22,12 +27,16 @@ COMMA_BYTE = b","
 
 
 class CsvRow(NamedTuple):
+    """Single row from Binance aggregate trade CSV."""
+
     price: float
     quantity: float
     transact_time: int
 
 
 class Candle(NamedTuple):
+    """Candlestick data aggregated from trades."""
+
     time: int
     open: float
     high: float
@@ -37,11 +46,15 @@ class Candle(NamedTuple):
 
 
 class DownloadUnitSize(Enum):
+    """Time unit for historical data downloads."""
+
     DAILY = 0
     MONTHLY = 1
 
 
 class DownloadPreset(NamedTuple):
+    """Configuration for downloading historical data."""
+
     symbol: str
     unit_size: DownloadUnitSize
     year: int
@@ -50,10 +63,12 @@ class DownloadPreset(NamedTuple):
 
 
 class UnsortedCsvError(Exception):
-    pass
+    """Exception raised when CSV file has unsorted timestamps."""
 
 
 class LastTickStatus(NamedTuple):
+    """Status of the last processed tick during CSV parsing."""
+
     current_tick_start: int
     prev_transact_time: int
 
@@ -64,8 +79,8 @@ def process_csv_line(
     agg_trades: list[Candle],
     last_tick_status: LastTickStatus | None,
 ) -> LastTickStatus:
-    """
-    Process a single CSV line and return the new tick status.
+    """Process a single CSV line and return the new tick status.
+
     We use raw byte parsing for performance.
     """
     if last_tick_status is None:
@@ -124,7 +139,7 @@ def finalize_tick(
             low=low_price,
             close=close_price,
             volume=volume,
-        )
+        ),
     )
 
     # Fill gaps if there are missing ticks
@@ -152,10 +167,7 @@ async def download_aggtrade_csv(
     download_target: DownloadPreset,
     download_dir: Path,
 ) -> Path | None:
-    """
-    Download the aggtrade CSV file from Binance
-    and return the ZIP file path.
-    """
+    """Download the aggtrade CSV file from Binance and return the ZIP file path."""
     symbol = download_target.symbol
     unit_size = download_target.unit_size
 
@@ -189,17 +201,20 @@ async def download_aggtrade_csv(
     did_download = False
     for _ in range(RETRY_COUNT):
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as response:
-                    async with aiofiles.open(download_file_path, "wb") as f:
-                        while True:
-                            chunk = await response.content.read(BYTE_CHUNK)
-                            if not chunk:
-                                break
-                            await f.write(chunk)
+            async with (
+                aiohttp.ClientSession() as session,
+                session.get(url) as response,
+                aiofiles.open(download_file_path, "wb") as file,
+            ):
+                while True:
+                    chunk = await response.content.read(BYTE_CHUNK)
+                    if not chunk:
+                        break
+                    await file.write(chunk)
             did_download = True
             break
         except Exception:
+            logger.debug("Download attempt failed, retrying")
             await sleep(RETRY_INTERVAL)
             continue
 
@@ -218,8 +233,8 @@ async def download_aggtrade_csv(
 
 
 def sort_aggtrade_csv(zip_file_path: Path, has_header: bool) -> None:
-    """
-    Sort CSV by transact_time and overwrite in ZIP.
+    """Sort CSV by transact_time and overwrite in ZIP.
+
     Rarely, Binance provides unsorted CSV files with mixed transact time order.
     """
     # Read CSV from ZIP
@@ -232,14 +247,16 @@ def sort_aggtrade_csv(zip_file_path: Path, has_header: bool) -> None:
     df = df.sort_values(by=df.columns[5])
 
     # Write sorted CSV back to ZIP
-    with ZipFile(zip_file_path, "w") as zip_ref:
-        with zip_ref.open(csv_filename, "w", force_zip64=True) as csv_file:
-            df.to_csv(csv_file, index=False, header=has_header)
+    with (
+        ZipFile(zip_file_path, "w") as zip_ref,
+        zip_ref.open(csv_filename, "w", force_zip64=True) as csv_file,
+    ):
+        df.to_csv(csv_file, index=False, header=has_header)
 
 
 def check_header(zip_file_path: Path) -> bool:
-    """
-    Check if the CSV file inside the ZIP has a header.
+    """Check if the CSV file inside the ZIP has a header.
+
     Some Binance CSV files include headers, while others do not.
     """
     with ZipFile(zip_file_path, "r") as zip_ref:
@@ -254,9 +271,7 @@ def process_csv_lines(
     has_header: bool,
     preset: DownloadPreset,
 ) -> pd.DataFrame | None:
-    """
-    Process CSV lines and check for sorting.
-    """
+    """Process CSV lines and check for sorting."""
     with ZipFile(zip_file_path, "r") as zip_ref:
         csv_filename = zip_ref.namelist()[0]
         with zip_ref.open(csv_filename, "r") as csv_file:
@@ -270,7 +285,10 @@ def process_csv_lines(
             last_tick_status: LastTickStatus | None = None
             for line in csv_file:
                 last_tick_status = process_csv_line(
-                    line, csv_rows, agg_trades, last_tick_status
+                    line,
+                    csv_rows,
+                    agg_trades,
+                    last_tick_status,
                 )
 
             # Process the last tick
@@ -298,24 +316,22 @@ def process_csv_lines(
                     "low": f"{symbol}/LOW",
                     "close": f"{symbol}/CLOSE",
                     "volume": f"{symbol}/VOLUME",
-                }
+                },
             )
 
             # Convert to float32 for memory efficiency
-            df = df.astype(np.float32)
-            return df
+            return df.astype(np.float32)
 
 
 def process_aggtrade_csv(
     preset: DownloadPreset,
     zip_file_path: Path,
 ) -> pd.DataFrame | None:
-    """
-    Process the downloaded aggtrade CSV file from Binance
-    and convert it into a DataFrame of aggregated trades.
+    """Process the downloaded aggtrade CSV file from Binance.
+
+    Convert it into a DataFrame of aggregated trades.
     This is a blocking function that can take tens of minutes.
     """
-
     has_header = check_header(zip_file_path)
     try:
         df = process_csv_lines(zip_file_path, has_header, preset)
@@ -333,6 +349,7 @@ def fill_holes_with_aggtrades(
     moment_to_fill_from: datetime,
     last_fetched_time: datetime,
 ) -> pd.DataFrame:
+    """Fill missing candle data using aggregate trade information."""
     fill_moment = moment_to_fill_from
 
     last_fetched_moment = to_moment(last_fetched_time)
@@ -345,7 +362,8 @@ def fill_holes_with_aggtrades(
         for _, aggtrade in sorted(aggtrades.items()):
             # sorted by time
             aggtrade_time = datetime.fromtimestamp(
-                aggtrade.timestamp / 1000, tz=timezone.utc
+                aggtrade.timestamp / 1000,
+                tz=UTC,
             )
             if block_start <= aggtrade_time < block_end:
                 aggtrade_prices.append(aggtrade.price)
@@ -392,6 +410,4 @@ def fill_holes_with_aggtrades(
         fill_moment += timedelta(seconds=10)
 
     recent_candle_data = recent_candle_data.sort_index(axis="index")
-    recent_candle_data = recent_candle_data.sort_index(axis="columns")
-
-    return recent_candle_data
+    return recent_candle_data.sort_index(axis="columns")

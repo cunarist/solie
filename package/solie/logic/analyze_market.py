@@ -1,6 +1,8 @@
+"""Market analysis and trading simulation logic."""
+
 import math
-import random
-from datetime import datetime, timedelta, timezone
+import secrets
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from itertools import product
 from multiprocessing.managers import ListProxy
@@ -68,12 +70,13 @@ def make_indicators(
     candle_data: pd.DataFrame,
     only_last_index: bool = False,
 ) -> pd.DataFrame:
+    """Calculate technical indicators using strategy's indicator script."""
     candle_data = candle_data.interpolate()
 
     if len(candle_data) > 0:
         dummy_index = candle_data.index[-1] + timedelta(seconds=1)
     else:
-        dummy_index = datetime.fromtimestamp(0.0, tz=timezone.utc)
+        dummy_index = datetime.fromtimestamp(0.0, tz=UTC)
 
     candle_data.loc[dummy_index, :] = 0.0
 
@@ -91,12 +94,12 @@ def make_indicators(
             dtype=np.float32,
         )
 
-    input = IndicatorInput(
+    indicator_input = IndicatorInput(
         target_symbols=target_symbols,
         candle_data=candle_data,
         new_indicators=new_indicators,
     )
-    strategy.create_indicators(input)
+    strategy.create_indicators(indicator_input)
 
     for column_name, new_indicator in new_indicators.items():
         # Validate the name format.
@@ -123,8 +126,7 @@ def make_indicators(
 
     if only_last_index:
         return indicators.tail(1)
-    else:
-        return indicators
+    return indicators
 
 
 def make_decisions(context: DecisionContext) -> dict[str, dict[OrderType, Decision]]:
@@ -133,7 +135,7 @@ def make_decisions(context: DecisionContext) -> dict[str, dict[OrderType, Decisi
     for symbol in context.target_symbols:
         new_decisions[symbol] = {}
 
-    input = DecisionInput(
+    decision_input = DecisionInput(
         target_symbols=context.target_symbols,
         account_state=context.account_state,
         current_moment=context.current_moment,
@@ -142,7 +144,7 @@ def make_decisions(context: DecisionContext) -> dict[str, dict[OrderType, Decisi
         scribbles=context.scribbles,
         new_decisions=new_decisions,
     )
-    context.strategy.create_decisions(input)
+    context.strategy.create_decisions(decision_input)
 
     blank_symbols: list[str] = []
     for symbol, symbol_decisions in new_decisions.items():
@@ -155,10 +157,12 @@ def make_decisions(context: DecisionContext) -> dict[str, dict[OrderType, Decisi
 
 
 class SimulationError(Exception):
-    pass
+    """Exception raised during trading simulation."""
 
 
 class OrderRole(Enum):
+    """Role of trader in order execution."""
+
     MAKER = "MAKER"
     TAKER = "TAKER"
 
@@ -175,6 +179,8 @@ class OrderHandlerResult(NamedTuple):
 
 
 class CalculationInput(NamedTuple):
+    """Input data for simulation calculation."""
+
     strategy: Strategy
     progress_list: ListProxy
     target_progress: int
@@ -190,6 +196,8 @@ class CalculationInput(NamedTuple):
 
 
 class CalculationOutput(NamedTuple):
+    """Output data from simulation calculation."""
+
     chunk_asset_record: pd.DataFrame
     chunk_unrealized_changes: pd.Series
     chunk_scribbles: dict[Any, Any]
@@ -201,14 +209,15 @@ ORDER_ID_MIN, ORDER_ID_MAX = 10**18, 10**19 - 1
 
 
 class ChunkSimulator:
-    """
-    Encapsulates the logic for simulating trading over a chunk of time.
+    """Simulate trading over a chunk of time.
+
     This class eliminates the need for multiple NamedTuples by using instance
     variables to hold state, making method signatures cleaner and reducing
     parameter passing overhead.
     """
 
-    def __init__(self, calculation_input: CalculationInput):
+    def __init__(self, calculation_input: CalculationInput) -> None:
+        """Initialize the chunk simulator with calculation input."""
         # Input parameters
         self.strategy = calculation_input.strategy
         self.progress_list = calculation_input.progress_list
@@ -285,7 +294,10 @@ class ChunkSimulator:
         return self._create_output()
 
     def _process_symbol(
-        self, symbol: str, current_moment: datetime, before_moment: datetime
+        self,
+        symbol: str,
+        current_moment: datetime,
+        before_moment: datetime,
     ) -> None:
         """Process orders and trades for a single symbol."""
         open_price = float(self.candle_data_ar[self.cycle][f"{symbol}/OPEN"])
@@ -319,14 +331,20 @@ class ChunkSimulator:
 
         # Validate and execute trade
         if is_margin_negative:
-            raise SimulationError(
+            msg = (
                 "Got an order with a negative margin "
                 f"while calculating {symbol} market at {current_moment}"
             )
-        if is_margin_nan:
             raise SimulationError(
+                msg,
+            )
+        if is_margin_nan:
+            msg = (
                 "Got an order with a non-numeric margin "
                 f"while calculating {symbol} market at {current_moment}"
+            )
+            raise SimulationError(
+                msg,
             )
 
         if would_trade_happen:
@@ -342,28 +360,38 @@ class ChunkSimulator:
 
     def _handle_cancel_all(self, symbol: str) -> None:
         """Cancel all pending orders for a symbol."""
-        cancel_placement_names: list[OrderType] = []
-        for order_type in self.chunk_virtual_state.placements[symbol].keys():
-            if order_type.is_later() or order_type.is_book():
-                cancel_placement_names.append(order_type)
+        cancel_placement_names = [
+            order_type
+            for order_type in self.chunk_virtual_state.placements[symbol]
+            if order_type.is_later() or order_type.is_book()
+        ]
         for cancel_placement_name in cancel_placement_names:
             self.chunk_virtual_state.placements[symbol].pop(cancel_placement_name)
         self.chunk_virtual_state.placements[symbol].pop(OrderType.CANCEL_ALL)
 
     def _try_order_types(
-        self, symbol: str, open_price: float, price_speed: float
+        self,
+        symbol: str,
+        open_price: float,
+        price_speed: float,
     ) -> OrderHandlerResult | None:
         """Try processing each order type, returning first match."""
         # NOW orders
         now_handlers = {
             OrderType.NOW_CLOSE: lambda: self._handle_now_close(
-                symbol, open_price, price_speed
+                symbol,
+                open_price,
+                price_speed,
             ),
             OrderType.NOW_BUY: lambda: self._handle_now_buy(
-                symbol, open_price, price_speed
+                symbol,
+                open_price,
+                price_speed,
             ),
             OrderType.NOW_SELL: lambda: self._handle_now_sell(
-                symbol, open_price, price_speed
+                symbol,
+                open_price,
+                price_speed,
             ),
         }
         for order_type, handler in now_handlers.items():
@@ -375,22 +403,32 @@ class ChunkSimulator:
         # LATER orders
         later_handlers = {
             OrderType.LATER_UP_CLOSE: lambda: self._handle_later_close(
-                symbol, OrderType.LATER_UP_CLOSE
+                symbol,
+                OrderType.LATER_UP_CLOSE,
             ),
             OrderType.LATER_DOWN_CLOSE: lambda: self._handle_later_close(
-                symbol, OrderType.LATER_DOWN_CLOSE
+                symbol,
+                OrderType.LATER_DOWN_CLOSE,
             ),
             OrderType.LATER_UP_BUY: lambda: self._handle_later_buy_sell(
-                symbol, OrderType.LATER_UP_BUY, False
+                symbol,
+                OrderType.LATER_UP_BUY,
+                False,
             ),
             OrderType.LATER_DOWN_BUY: lambda: self._handle_later_buy_sell(
-                symbol, OrderType.LATER_DOWN_BUY, False
+                symbol,
+                OrderType.LATER_DOWN_BUY,
+                False,
             ),
             OrderType.LATER_UP_SELL: lambda: self._handle_later_buy_sell(
-                symbol, OrderType.LATER_UP_SELL, True
+                symbol,
+                OrderType.LATER_UP_SELL,
+                True,
             ),
             OrderType.LATER_DOWN_SELL: lambda: self._handle_later_buy_sell(
-                symbol, OrderType.LATER_DOWN_SELL, True
+                symbol,
+                OrderType.LATER_DOWN_SELL,
+                True,
             ),
         }
         for order_type, handler in later_handlers.items():
@@ -402,10 +440,14 @@ class ChunkSimulator:
         # BOOK orders
         book_handlers = {
             OrderType.BOOK_BUY: lambda: self._handle_book_order(
-                symbol, OrderType.BOOK_BUY, False
+                symbol,
+                OrderType.BOOK_BUY,
+                False,
             ),
             OrderType.BOOK_SELL: lambda: self._handle_book_order(
-                symbol, OrderType.BOOK_SELL, True
+                symbol,
+                OrderType.BOOK_SELL,
+                True,
             ),
         }
         for order_type, handler in book_handlers.items():
@@ -417,7 +459,10 @@ class ChunkSimulator:
         return None
 
     def _handle_now_close(
-        self, symbol: str, open_price: float, price_speed: float
+        self,
+        symbol: str,
+        open_price: float,
+        price_speed: float,
     ) -> OrderHandlerResult:
         """Handle NOW_CLOSE order."""
         role = OrderRole.TAKER
@@ -427,7 +472,10 @@ class ChunkSimulator:
         return OrderHandlerResult(True, role, fill_price, amount_shift, False, False)
 
     def _handle_now_buy(
-        self, symbol: str, open_price: float, price_speed: float
+        self,
+        symbol: str,
+        open_price: float,
+        price_speed: float,
     ) -> OrderHandlerResult:
         """Handle NOW_BUY order."""
         placement = self.chunk_virtual_state.placements[symbol][OrderType.NOW_BUY]
@@ -439,11 +487,19 @@ class ChunkSimulator:
         amount_shift = fill_margin / fill_price
         self.chunk_virtual_state.placements[symbol].pop(OrderType.NOW_BUY)
         return OrderHandlerResult(
-            True, role, fill_price, amount_shift, is_margin_negative, is_margin_nan
+            True,
+            role,
+            fill_price,
+            amount_shift,
+            is_margin_negative,
+            is_margin_nan,
         )
 
     def _handle_now_sell(
-        self, symbol: str, open_price: float, price_speed: float
+        self,
+        symbol: str,
+        open_price: float,
+        price_speed: float,
     ) -> OrderHandlerResult:
         """Handle NOW_SELL order."""
         placement = self.chunk_virtual_state.placements[symbol][OrderType.NOW_SELL]
@@ -455,11 +511,18 @@ class ChunkSimulator:
         amount_shift = -fill_margin / fill_price
         self.chunk_virtual_state.placements[symbol].pop(OrderType.NOW_SELL)
         return OrderHandlerResult(
-            True, role, fill_price, amount_shift, is_margin_negative, is_margin_nan
+            True,
+            role,
+            fill_price,
+            amount_shift,
+            is_margin_negative,
+            is_margin_nan,
         )
 
     def _handle_later_close(
-        self, symbol: str, order_type: OrderType
+        self,
+        symbol: str,
+        order_type: OrderType,
     ) -> OrderHandlerResult | None:
         """Handle LATER_*_CLOSE orders."""
         placement = self.chunk_virtual_state.placements[symbol][order_type]
@@ -473,12 +536,20 @@ class ChunkSimulator:
             amount_shift = -self.chunk_virtual_state.positions[symbol].amount
             self.chunk_virtual_state.placements[symbol].pop(order_type)
             return OrderHandlerResult(
-                True, role, fill_price, amount_shift, False, False
+                True,
+                role,
+                fill_price,
+                amount_shift,
+                False,
+                False,
             )
         return None
 
     def _handle_later_buy_sell(
-        self, symbol: str, order_type: OrderType, is_sell: bool
+        self,
+        symbol: str,
+        order_type: OrderType,
+        is_sell: bool,
     ) -> OrderHandlerResult | None:
         """Handle LATER_*_BUY/SELL orders."""
         placement = self.chunk_virtual_state.placements[symbol][order_type]
@@ -505,7 +576,10 @@ class ChunkSimulator:
         return None
 
     def _handle_book_order(
-        self, symbol: str, order_type: OrderType, is_sell: bool
+        self,
+        symbol: str,
+        order_type: OrderType,
+        is_sell: bool,
     ) -> OrderHandlerResult | None:
         """Handle BOOK_BUY/SELL orders."""
         placement = self.chunk_virtual_state.placements[symbol][order_type]
@@ -596,9 +670,11 @@ class ChunkSimulator:
             )
 
         if self.chunk_virtual_state.available_balance < 0.0:
-            raise SimulationError(
-                f"Available balance went below zero while calculating {symbol} market at {current_moment}"
+            msg = (
+                f"Available balance went below zero while calculating "
+                f"{symbol} market at {current_moment}"
             )
+            raise SimulationError(msg)
 
         # Record the trade
         if role is not None:
@@ -636,12 +712,14 @@ class ChunkSimulator:
             wallet_balance += current_margin
 
         margin_ratio = abs(amount_shift) * open_price / wallet_balance
-        order_id = random.randint(ORDER_ID_MIN, ORDER_ID_MAX)
+        order_id = ORDER_ID_MIN + secrets.randbelow(ORDER_ID_MAX - ORDER_ID_MIN + 1)
 
         if amount_shift == 0.0:
-            raise ValueError("Amount of asset shift cannot be zero")
+            msg = "Amount of asset shift cannot be zero"
+            raise ValueError(msg)
         if fill_price <= 0.0:
-            raise ValueError("The fill price should be bigger than zero")
+            msg = "The fill price should be bigger than zero"
+            raise ValueError(msg)
 
         original_size = self.asset_record_ar.shape[0]
         self.asset_record_ar.resize(original_size + 1)
@@ -655,7 +733,7 @@ class ChunkSimulator:
         self.asset_record_ar[-1]["ORDER_ID"] = order_id
         self.asset_record_ar[-1]["RESULT_ASSET"] = wallet_balance
 
-        update_time = fill_time_np.astype(datetime).replace(tzinfo=timezone.utc)
+        update_time = fill_time_np.astype(datetime).replace(tzinfo=UTC)
         self.chunk_account_state.positions[symbol].update_time = update_time
 
     def _update_account_state_for_symbol(self, symbol: str) -> None:
@@ -675,7 +753,7 @@ class ChunkSimulator:
             margin=current_margin,
             direction=current_direction,
             entry_price=current_entry_price,
-            update_time=datetime.fromtimestamp(0.0),
+            update_time=datetime.fromtimestamp(0.0, tz=UTC),
         )
         self.chunk_account_state.positions[symbol] = symbol_position
 
@@ -690,7 +768,9 @@ class ChunkSimulator:
         self.chunk_account_state.open_orders[symbol] = symbol_open_orders
 
     def _update_unrealized_state(
-        self, before_moment: datetime, current_moment: datetime
+        self,
+        before_moment: datetime,
+        current_moment: datetime,
     ) -> None:
         """Calculate and record unrealized profit/loss."""
         wallet_balance = self.chunk_virtual_state.available_balance
@@ -707,21 +787,21 @@ class ChunkSimulator:
 
             # Assume mark price doesn't wobble more than 5%
             key_open_price = float(
-                self.candle_data_ar[self.cycle][f"{symbol_key}/OPEN"]
+                self.candle_data_ar[self.cycle][f"{symbol_key}/OPEN"],
             )
             key_close_price = float(
-                self.candle_data_ar[self.cycle][f"{symbol_key}/CLOSE"]
+                self.candle_data_ar[self.cycle][f"{symbol_key}/CLOSE"],
             )
             if location.amount < 0.0:
                 basic_price = max(key_open_price, key_close_price) * 1.05
                 key_high_price = float(
-                    self.candle_data_ar[self.cycle][f"{symbol_key}/HIGH"]
+                    self.candle_data_ar[self.cycle][f"{symbol_key}/HIGH"],
                 )
                 extreme_price = min(basic_price, key_high_price)
             else:
                 basic_price = min(key_open_price, key_close_price) * 0.95
                 key_low_price = float(
-                    self.candle_data_ar[self.cycle][f"{symbol_key}/LOW"]
+                    self.candle_data_ar[self.cycle][f"{symbol_key}/LOW"],
                 )
                 extreme_price = max(basic_price, key_low_price)
             price_difference = extreme_price - location.entry_price
@@ -761,20 +841,23 @@ class ChunkSimulator:
                 current_indicators=current_indicators,
                 account_state=self.chunk_account_state.model_copy(deep=True),
                 scribbles=self.chunk_scribbles,
-            )
+            ),
         )
 
         for symbol_key, symbol_decisions in decisions.items():
             for order_type, decision in symbol_decisions.items():
                 placement = VirtualPlacement(
-                    order_id=random.randint(ORDER_ID_MIN, ORDER_ID_MAX),
+                    order_id=ORDER_ID_MIN
+                    + secrets.randbelow(ORDER_ID_MAX - ORDER_ID_MIN + 1),
                     boundary=decision.boundary,
                     margin=decision.margin,
                 )
                 self.chunk_virtual_state.placements[symbol_key][order_type] = placement
 
     def _update_progress(
-        self, current_moment: datetime, first_calculation_moment: datetime
+        self,
+        current_moment: datetime,
+        first_calculation_moment: datetime,
     ) -> None:
         """Update progress reporting."""
         progress_in_time = current_moment - first_calculation_moment
@@ -793,7 +876,8 @@ class ChunkSimulator:
         chunk_unrealized_changes_df = chunk_unrealized_changes_df.set_index("index")
         chunk_unrealized_changes_df.index.name = None
         chunk_unrealized_changes_df.index = pd.to_datetime(
-            chunk_unrealized_changes_df.index, utc=True
+            chunk_unrealized_changes_df.index,
+            utc=True,
         )
         chunk_unrealized_changes = chunk_unrealized_changes_df["0"]
 
@@ -807,8 +891,6 @@ class ChunkSimulator:
 
 
 def simulate_chunk(calculation_input: CalculationInput) -> CalculationOutput:
-    """
-    Simulates trading for a chunk of time.
-    """
+    """Simulate trading for a chunk of time."""
     simulator = ChunkSimulator(calculation_input)
     return simulator.simulate()

@@ -1,3 +1,5 @@
+"""Data folder path selection overlay."""
+
 from asyncio import Event
 from pathlib import Path
 
@@ -21,11 +23,14 @@ from solie.widget import HorizontalDivider, ask
 
 
 class DatapathInput:
+    """Overlay for selecting data storage directory."""
+
     title = "Choose your data folder"
     close_button = False
     done_event = Event()
 
     def __init__(self) -> None:
+        """Initialize data path input overlay."""
         super().__init__()
         self.widget = QWidget()
         self.result: Path
@@ -39,10 +44,10 @@ class DatapathInput:
         self._add_spacer(cards_layout)
 
         # Create selection card
-        folder_label = self._create_selection_card(cards_layout)
+        self._create_selection_card(cards_layout)
 
         # Create confirm card
-        self._create_confirm_card(cards_layout, folder_label)
+        self._create_confirm_card(cards_layout)
 
         # Add bottom spacer
         self._add_spacer(cards_layout)
@@ -50,11 +55,14 @@ class DatapathInput:
     def _add_spacer(self, layout: QVBoxLayout) -> None:
         """Add expanding spacer to layout."""
         spacer = QSpacerItem(
-            0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+            0,
+            0,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding,
         )
         layout.addItem(spacer)
 
-    def _create_selection_card(self, parent_layout: QVBoxLayout) -> QLabel:
+    def _create_selection_card(self, parent_layout: QVBoxLayout) -> None:
         """Create folder selection card and return the folder label."""
         card = QGroupBox()
         card.setFixedWidth(720)
@@ -91,8 +99,6 @@ class DatapathInput:
         # Choose folder button
         self._add_choose_button(card, card_layout, folder_label)
 
-        return folder_label
-
     def _add_text_spacing(self, layout: QVBoxLayout, point_size: int) -> None:
         """Add text spacing widget."""
         spacing_text = QLabel("")
@@ -102,7 +108,10 @@ class DatapathInput:
         layout.addWidget(spacing_text)
 
     def _add_choose_button(
-        self, card: QGroupBox, card_layout: QVBoxLayout, folder_label: QLabel
+        self,
+        card: QGroupBox,
+        card_layout: QVBoxLayout,
+        folder_label: QLabel,
     ) -> None:
         """Add choose folder button."""
         datapath = Cell[Path | None](None)
@@ -122,7 +131,8 @@ class DatapathInput:
         this_layout.addWidget(choose_button)
 
     def _create_confirm_card(
-        self, parent_layout: QVBoxLayout, folder_label: QLabel
+        self,
+        parent_layout: QVBoxLayout,
     ) -> None:
         """Create confirm button card."""
 
@@ -148,4 +158,5 @@ class DatapathInput:
         card_layout.addWidget(confirm_button)
 
     async def confirm_closing(self) -> bool:
+        """Confirm if overlay can be closed."""
         return True

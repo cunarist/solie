@@ -1,3 +1,5 @@
+"""Application entry point."""
+
 import sys
 from asyncio import run
 from typing import NoReturn
@@ -11,6 +13,7 @@ from .lifetime import live
 
 
 def bring_to_life(config: SolieConfig | None = None) -> NoReturn:
+    """Start Solie application and show main window."""
     prepare_process_pool()
 
     if config is None:
