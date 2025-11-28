@@ -543,8 +543,9 @@ class Collector:
                             for s in target_symbols
                         )
             case DownloadFillOption.FROM_YEAR_START_TO_LAST_MONTH:
-                current_year = datetime.now(UTC).year
-                current_month = datetime.now(UTC).month
+                now = datetime.now(UTC)
+                current_year = now.year
+                current_month = now.month
                 for month in range(1, current_month):
                     download_presets.extend(
                         DownloadPreset(
@@ -556,9 +557,10 @@ class Collector:
                         for s in target_symbols
                     )
             case DownloadFillOption.THIS_MONTH:
-                current_year = datetime.now(UTC).year
-                current_month = datetime.now(UTC).month
-                current_day = datetime.now(UTC).day
+                now = datetime.now(UTC)
+                current_year = now.year
+                current_month = now.month
+                current_day = now.day
                 for target_day in range(1, current_day):
                     download_presets.extend(
                         DownloadPreset(
