@@ -1,6 +1,7 @@
 """Order placer for Binance futures trading."""
 
 from asyncio import gather
+from collections import deque
 from datetime import UTC, datetime, timedelta
 from logging import getLogger
 from typing import Any, ClassVar, NamedTuple
@@ -10,6 +11,7 @@ import pandas as pd
 from solie.common import spawn_blocking
 from solie.utility import (
     AccountState,
+    AggregateTrade,
     ApiRequester,
     Decision,
     OrderType,
@@ -32,7 +34,7 @@ class OrderPlacerConfig(NamedTuple):
 
     account_state: AccountState
     auto_order_record: RWLock[pd.DataFrame]
-    aggregate_trades_queue: Any
+    aggregate_trades_queue: deque[AggregateTrade]
 
 
 class CloseOrderParams(NamedTuple):

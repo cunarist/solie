@@ -4,9 +4,9 @@ import time
 from asyncio import Lock
 from collections.abc import Callable
 from datetime import UTC, datetime
-from logging import Formatter, Handler
+from logging import Formatter, Handler, LogRecord
 from pathlib import Path
-from typing import Any, override
+from typing import override
 
 import aiofiles
 
@@ -39,7 +39,7 @@ class LogHandler(Handler):
         )
 
     @override
-    def emit(self, record: Any) -> None:
+    def emit(self, record: LogRecord) -> None:
         formatted = self.format(record)
 
         if record.exc_info is not None:

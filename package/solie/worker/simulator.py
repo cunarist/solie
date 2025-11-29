@@ -289,9 +289,10 @@ class Simulator:
             asset_record = cell.data[slice_from:].copy()
 
         if len(candle_data) > 0:
-            last_written_moment = candle_data.index[-1]
+            df_index: pd.DatetimeIndex = candle_data.index  # type:ignore
+            last_written_moment = df_index[-1]
             new_moment = last_written_moment + timedelta(seconds=10)
-            new_index = candle_data.index.union([new_moment])
+            new_index = df_index.union([new_moment])
             candle_data = candle_data.reindex(new_index)
 
         return AssetRecordData(

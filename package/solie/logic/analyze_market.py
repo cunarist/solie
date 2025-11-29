@@ -74,7 +74,8 @@ def make_indicators(
     candle_data = candle_data.interpolate()
 
     if len(candle_data) > 0:
-        dummy_index = candle_data.index[-1] + timedelta(seconds=1)
+        candle_index: pd.DatetimeIndex = candle_data.index  # type:ignore
+        dummy_index = candle_index[-1].to_pydatetime() + timedelta(seconds=1)
     else:
         dummy_index = datetime.fromtimestamp(0.0, tz=UTC)
 

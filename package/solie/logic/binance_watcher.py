@@ -371,7 +371,8 @@ class BinanceWatcher:
         async with self._asset_record.read_lock as cell:
             if len(cell.data) == 0:
                 return
-            last_index = cell.data.index[-1]
+            df_index: pd.DatetimeIndex = cell.data.index  # type:ignore
+            last_index = df_index[-1]
             last_asset = float(cell.data.loc[last_index, "RESULT_ASSET"])  # type:ignore
 
         if wallet_balance == 0:
@@ -385,7 +386,8 @@ class BinanceWatcher:
                     cell.data = await spawn_blocking(sort_data_frame, cell.data)
         else:
             async with self._asset_record.write_lock as cell:
-                last_index = cell.data.index[-1]
+                df_index: pd.DatetimeIndex = cell.data.index  # type:ignore
+                last_index = df_index[-1]
                 cell.data.loc[last_index, "RESULT_ASSET"] = wallet_balance
 
     async def _correct_account_mode(

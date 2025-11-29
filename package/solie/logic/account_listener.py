@@ -53,7 +53,7 @@ class UpdateTradeRecordInfo(NamedTuple):
     order_id: int
     added_margin_ratio: float
     added_revenue: float
-    last_index: Any
+    last_index: datetime
 
 
 class CreateTradeRecordInfo(NamedTuple):
@@ -67,9 +67,9 @@ class CreateTradeRecordInfo(NamedTuple):
     last_filled_price: float
     added_margin_ratio: float
     added_revenue: float
-    unique_order_ids: Any
+    unique_order_ids: set[int]
     event_time: datetime
-    last_index: Any
+    last_index: datetime
 
 
 class ParseOrderTypeParams(NamedTuple):
@@ -360,13 +360,14 @@ class AccountListener:
 
         async with self._auto_order_record.read_lock as cell:
             symbol_df = cell.data[cell.data["SYMBOL"] == info.symbol]
-            unique_order_ids = symbol_df["ORDER_ID"].unique()
+            unique_order_ids = {int(i) for i in symbol_df["ORDER_ID"].unique()}
 
         async with self._asset_record.write_lock as cell:
             symbol_df = cell.data[cell.data["SYMBOL"] == info.symbol]
             recorded_id_list = symbol_df["ORDER_ID"].tolist()
             does_record_exist = info.order_id in recorded_id_list
-            last_index = cell.data.index[-1]
+            df_index: pd.DatetimeIndex = cell.data.index  # type:ignore
+            last_index = df_index[-1].to_pydatetime()
 
             if does_record_exist:
                 await self._update_existing_trade_record(
@@ -405,7 +406,8 @@ class AccountListener:
     ) -> None:
         """Update existing trade record."""
         mask_sr = info.symbol_df["ORDER_ID"] == info.order_id
-        rec_time = info.symbol_df.index[mask_sr][0]
+        df_index: pd.DatetimeIndex = info.symbol_df.index  # type:ignore
+        rec_time = df_index[mask_sr][0].to_pydatetime()
         rec_value = float(info.symbol_df.loc[rec_time, "MARGIN_RATIO"])  # type:ignore
         new_value = rec_value + info.added_margin_ratio
         info.data.loc[rec_time, "MARGIN_RATIO"] = new_value

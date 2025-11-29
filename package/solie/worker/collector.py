@@ -505,7 +505,8 @@ class Collector:
         """
         for _ in range(50):
             async with self.candle_data.read_lock as cell:
-                last_index = cell.data.index[-1]
+                df_index: pd.DatetimeIndex = cell.data.index  # type:ignore
+                last_index = df_index[-1].to_pydatetime()
                 if last_index == before_moment:
                     return True
             await sleep(0.1)
