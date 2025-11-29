@@ -698,7 +698,7 @@ class ChunkSimulator:
         amount_shift = trade_details.amount_shift
         open_price = trade_details.open_price
         fill_time = before_moment + timedelta(milliseconds=self.decision_lag)
-        fill_time_np = np.datetime64(fill_time)
+        fill_time_np = np.datetime64(int(fill_time.timestamp() * 1000), "ms")
         while fill_time_np in self.asset_record_ar["index"]:
             fill_time_np += np.timedelta64(1, "ms")
 
@@ -734,7 +734,7 @@ class ChunkSimulator:
         self.asset_record_ar[-1]["ORDER_ID"] = order_id
         self.asset_record_ar[-1]["RESULT_ASSET"] = wallet_balance
 
-        update_time = fill_time_np.astype(datetime).replace(tzinfo=UTC)
+        update_time = fill_time_np.item().replace(tzinfo=UTC)
         self.chunk_account_state.positions[symbol].update_time = update_time
 
     def _update_account_state_for_symbol(self, symbol: str) -> None:
