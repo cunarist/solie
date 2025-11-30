@@ -37,6 +37,7 @@ from solie.utility import (
     Cell,
     Decision,
     DurationRecorder,
+    Implements,
     OrderType,
     PositionDirection,
     RWLock,
@@ -56,7 +57,7 @@ from solie.utility import (
 from solie.widget import ask, overlay
 from solie.window import Window
 
-from .united import team
+from .united import Worker, team
 
 logger = getLogger(__name__)
 
@@ -103,6 +104,9 @@ class IndicatorData(NamedTuple):
 
     current_candle_data: dict[str, float]
     current_indicators: dict[str, float]
+
+
+lambda: Implements[Worker](Transactor)
 
 
 class Transactor:

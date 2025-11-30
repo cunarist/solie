@@ -23,8 +23,10 @@ from PySide6.QtWidgets import (
 )
 
 from solie.common import PACKAGE_PATH, outsource
-from solie.utility import RiskLevel, Strategy, is_left_version_higher
-from solie.widget import HorizontalDivider, ask
+from solie.utility import Implements, RiskLevel, Strategy, is_left_version_higher
+from solie.widget import HorizontalDivider, OverlayContent, ask
+
+lambda: Implements[OverlayContent](StrategyBasicInput)
 
 
 class StrategyBasicInput:

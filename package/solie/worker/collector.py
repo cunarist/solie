@@ -40,6 +40,7 @@ from solie.utility import (
     BookTicker,
     Cell,
     DurationRecorder,
+    Implements,
     MarkPrice,
     RWLock,
     combine_candle_data,
@@ -54,9 +55,12 @@ from solie.utility import (
 from solie.widget import overlay
 from solie.window import Window
 
-from .united import team
+from .united import Worker, team
 
 logger = getLogger(__name__)
+
+
+lambda: Implements[Worker](Collector)
 
 
 class Collector:

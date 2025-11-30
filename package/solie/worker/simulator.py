@@ -23,6 +23,7 @@ from solie.utility import (
     MIN_PEAK_COUNT,
     AccountState,
     DurationRecorder,
+    Implements,
     PositionDirection,
     RWLock,
     SimulationSettings,
@@ -37,7 +38,7 @@ from solie.utility import (
 from solie.widget import ask
 from solie.window import Window
 
-from .united import team
+from .united import Worker, team
 
 
 class DisplayTimeRange(NamedTuple):
@@ -80,6 +81,9 @@ class ChunkList(NamedTuple):
 
     chunks: list[pd.DataFrame]
     chunk_count: int
+
+
+lambda: Implements[Worker](Simulator)
 
 
 class Simulator:

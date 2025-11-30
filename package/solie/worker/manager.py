@@ -20,6 +20,7 @@ from solie.utility import (
     ApiRequester,
     BoardLockOptions,
     DurationRecorder,
+    Implements,
     ManagementSettings,
     internet_connected,
     save_datapath,
@@ -27,9 +28,12 @@ from solie.utility import (
 from solie.widget import ask
 from solie.window import Window
 
-from .united import team
+from .united import Worker, team
 
 logger = getLogger(__name__)
+
+
+lambda: Implements[Worker](Manager)
 
 
 class Manager:

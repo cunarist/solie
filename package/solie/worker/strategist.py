@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 from solie.common import PACKAGE_PATH, outsource, spawn
 from solie.overlay import StrategyBasicInput, StrategyDevelopInput
 from solie.utility import (
+    Implements,
     RiskLevel,
     SavedStrategies,
     SavedStrategy,
@@ -25,6 +26,10 @@ from solie.utility import (
 )
 from solie.widget import ask, overlay
 from solie.window import Window
+
+from .united import Worker
+
+lambda: Implements[Worker](Strategiest)
 
 
 class Strategiest:

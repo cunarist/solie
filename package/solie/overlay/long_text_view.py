@@ -5,6 +5,11 @@ from asyncio import Event
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
+from solie.utility import Implements
+from solie.widget import OverlayContent
+
+lambda: Implements[OverlayContent](LongTextView)
+
 
 class LongTextView:
     """Overlay for viewing long text content."""

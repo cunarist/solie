@@ -20,8 +20,13 @@ from PySide6.QtWidgets import (
 )
 
 from solie.common import PACKAGE_PATH, outsource, spawn
-from solie.utility import MAX_SELECTED_COINS, MIN_SELECTED_COINS, ApiRequester
-from solie.widget import HorizontalDivider, ask
+from solie.utility import (
+    MAX_SELECTED_COINS,
+    MIN_SELECTED_COINS,
+    ApiRequester,
+    Implements,
+)
+from solie.widget import HorizontalDivider, OverlayContent, ask
 
 
 class CoinMetadata(NamedTuple):
@@ -30,6 +35,9 @@ class CoinMetadata(NamedTuple):
     coin_names: dict[str, str]
     coin_icon_urls: dict[str, str]
     coin_ranks: dict[str, int]
+
+
+lambda: Implements[OverlayContent](CoinSelection)
 
 
 class CoinSelection:

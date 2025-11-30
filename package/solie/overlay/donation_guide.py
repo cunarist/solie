@@ -14,6 +14,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from solie.utility import Implements
+from solie.widget import OverlayContent
+
+lambda: Implements[OverlayContent](DonationGuide)
+
 
 class DonationGuide:
     """Overlay displaying donation information and support options."""
