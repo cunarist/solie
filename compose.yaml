@@ -1,7 +1,7 @@
 services:
   documentation:
     build:
-      context: .
+      context: ./documentation
       dockerfile: Dockerfile
     ports:
       - "3002:80"
