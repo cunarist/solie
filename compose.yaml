@@ -4,5 +4,5 @@ services:
       context: ./documentation
       dockerfile: Dockerfile
     ports:
-      - "3002:80"
-    container_name: solie-documentation
+      - "${PORT}:80"
+    container_name: solie-docs
