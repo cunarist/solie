@@ -20,7 +20,6 @@ from solie.utility import (
     ApiRequester,
     BoardLockOptions,
     DurationRecorder,
-    Implements,
     ManagementSettings,
     internet_connected,
     save_datapath,
@@ -28,12 +27,9 @@ from solie.utility import (
 from solie.widget import ask
 from solie.window import Window
 
-from .united import Worker, team
+from .united import team
 
 logger = getLogger(__name__)
-
-
-lambda: Implements[Worker](Manager)
 
 
 class Manager:
@@ -47,7 +43,7 @@ class Manager:
 
         self._api_requester = ApiRequester()
 
-        self._ping = 0
+        self._ping = 0.0
         self._server_time_differences = deque[float](maxlen=60)
         self._binance_limits: dict[str, int] = {}
 

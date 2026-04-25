@@ -1,5 +1,5 @@
 [dependency-groups]
-dev = ["ruff>=0.14.6", "pyright>=1.1.407"]
+dev = ["ruff>=0.14.6", "ty>=0.0.32"]
 
 [tool.uv.workspace]
 members = ["documentation", "package", "example"]
@@ -9,11 +9,14 @@ solie = { workspace = true }
 documentation = { workspace = true }
 usage = { workspace = true }
 
-[tool.pyright]
-typeCheckingMode = "standard"
-reportUnnecessaryTypeIgnoreComment = true
-ignore = ["package/solie/window/compiled.py"]
-extraPaths = ["package"]
+[tool.ty.rules]
+all = "error"
+
+[tool.ty.environment]
+extra-paths = ["package"]
+
+[tool.ty.src]
+exclude = ["package/solie/window/compiled.py"]
 
 [tool.ruff]
 target-version = "py312"

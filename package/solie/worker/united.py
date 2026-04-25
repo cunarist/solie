@@ -4,10 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-
-from solie.window import Window
-
 if TYPE_CHECKING:
     from .collector import Collector
     from .manager import Manager
@@ -22,10 +18,6 @@ class Worker(Protocol):
     A worker owns its tasks and data.
     Each worker has a single responsibility.
     """
-
-    def __init__(self, window: Window, scheduler: AsyncIOScheduler) -> None:
-        """Initialize worker."""
-        ...
 
     async def load_work(self) -> None:
         """Read work data from disk."""

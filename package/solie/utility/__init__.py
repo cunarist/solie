@@ -75,7 +75,6 @@ from .standardize import (
 from .syntax_highlighter import SyntaxHighlighter
 from .time_axis_item import TimeAxisItem
 from .timing import DurationRecorder, to_moment
-from .type_safety import Implements
 from .user_settings import (
     DataSettings,
     SavedStrategies,
@@ -122,7 +121,6 @@ __all__ = [
     "Decision",
     "DecisionInput",
     "DurationRecorder",
-    "Implements",
     "IndicatorInput",
     "LogHandler",
     "ManagementSettings",

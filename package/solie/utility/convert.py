@@ -28,12 +28,10 @@ def slice_deque[T](original: deque[T], size: int, front: bool = False) -> list[T
     else:
         # Slice from the end
         sliced: list[T] = []
-        current_index = 0
-        for each in reversed(original):
+        for current_index, each in enumerate(reversed(original)):
             if current_index >= size:
                 break
             sliced.append(each)
-            current_index += 1
         sliced.reverse()
 
     return sliced

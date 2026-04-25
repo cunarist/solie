@@ -18,10 +18,8 @@ from PySide6.QtWidgets import (
 from xdialog import directory
 
 from solie.common import outsource, spawn_blocking
-from solie.utility import Cell, Implements
-from solie.widget import HorizontalDivider, OverlayContent, ask
-
-lambda: Implements[OverlayContent](DatapathInput)
+from solie.utility import Cell
+from solie.widget import HorizontalDivider, ask
 
 
 class DatapathInput:

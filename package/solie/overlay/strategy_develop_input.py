@@ -18,10 +18,8 @@ from PySide6.QtWidgets import (
 )
 
 from solie.common import PACKAGE_PATH, outsource, spawn_blocking
-from solie.utility import EXIT_DIALOG_ANSWER, Implements, SavedStrategy
-from solie.widget import OverlayContent, ScriptEditor, VerticalDivider, ask
-
-lambda: Implements[OverlayContent](StrategyDevelopInput)
+from solie.utility import EXIT_DIALOG_ANSWER, SavedStrategy
+from solie.widget import ScriptEditor, VerticalDivider, ask
 
 
 class StrategyDevelopInput:

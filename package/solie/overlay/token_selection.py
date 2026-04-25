@@ -19,8 +19,8 @@ from PySide6.QtWidgets import (
 )
 
 from solie.common import PACKAGE_PATH, outsource, spawn
-from solie.utility import ApiRequester, Implements
-from solie.widget import HorizontalDivider, OverlayContent, ask
+from solie.utility import ApiRequester
+from solie.widget import HorizontalDivider, ask
 
 
 class Availables(NamedTuple):
@@ -28,9 +28,6 @@ class Availables(NamedTuple):
 
     tokens: set[str]
     symbols: set[str]
-
-
-lambda: Implements[OverlayContent](TokenSelection)
 
 
 class TokenSelection:

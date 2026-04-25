@@ -2,7 +2,7 @@
 """Overlay popup system."""
 
 from asyncio import Event
-from typing import Protocol, override
+from typing import ClassVar, Protocol, override
 
 from PySide6.QtCore import QEvent, QObject, Qt
 from PySide6.QtGui import QFont, QShowEvent
@@ -27,9 +27,9 @@ class OverlayContent[T](Protocol):
     """Protocol for overlay content."""
 
     # Class members
-    title: str
-    close_button: bool
-    done_event: Event
+    title: ClassVar[str]
+    close_button: ClassVar[bool]
+    done_event: ClassVar[Event]
 
     # Instance members
     widget: QWidget

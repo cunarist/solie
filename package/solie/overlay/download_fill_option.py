@@ -18,8 +18,7 @@ from PySide6.QtWidgets import (
 )
 
 from solie.common import outsource
-from solie.utility import Implements
-from solie.widget import HorizontalDivider, OverlayContent, ask
+from solie.widget import HorizontalDivider, ask
 
 MIN_YEAR = 2009
 
@@ -44,9 +43,6 @@ FILL_OPTIONS_TEXTS = (
     "This month",
     "Yesterday and the day before yesterday",
 )
-
-
-lambda: Implements[OverlayContent](DownloadFillOptionChooser)
 
 
 class DownloadFillOptionChooser:

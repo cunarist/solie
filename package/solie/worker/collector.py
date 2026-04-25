@@ -40,7 +40,6 @@ from solie.utility import (
     BookTicker,
     Cell,
     DurationRecorder,
-    Implements,
     MarkPrice,
     RWLock,
     combine_candle_data,
@@ -55,12 +54,9 @@ from solie.utility import (
 from solie.widget import overlay
 from solie.window import Window
 
-from .united import Worker, team
+from .united import team
 
 logger = getLogger(__name__)
-
-
-lambda: Implements[Worker](Collector)
 
 
 class Collector:
@@ -326,7 +322,7 @@ class Collector:
             from_moment:until_moment
         ]
         base_index = inspect_df.dropna().index
-        temp_sr = pd.Series(0, index=base_index)
+        temp_sr = pd.Series(0.0, index=base_index)
         written_moments = len(temp_sr)
 
         if written_moments == needed_moments:
@@ -334,9 +330,9 @@ class Collector:
 
         # Find gaps
         if from_moment not in temp_sr.index:
-            temp_sr[from_moment] = np.nan
+            temp_sr[from_moment] = np.nan  # type:ignore
         if until_moment not in temp_sr.index:
-            temp_sr[until_moment] = np.nan
+            temp_sr[until_moment] = np.nan  # type:ignore
         temp_sr = await spawn_blocking(temp_sr.asfreq, "10s")
         isnan_sr = await spawn_blocking(temp_sr.isna)
         nan_index = isnan_sr[isnan_sr == 1].index

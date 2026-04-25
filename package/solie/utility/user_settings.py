@@ -16,7 +16,6 @@ from .data_models import (
     RiskLevel,
     Strategy,
 )
-from .type_safety import Implements
 
 DATAPATH_FILE = PACKAGE_PATH / "datapath.txt"
 
@@ -55,9 +54,6 @@ async def save_data_settings(data_settings: DataSettings, datapath: Path) -> Non
     filepath = datapath / "data_settings.json"
     async with aiofiles.open(filepath, "w", encoding="utf8") as file:
         await file.write(data_settings.model_dump_json(indent=2))
-
-
-lambda: Implements[Strategy](SavedStrategy)
 
 
 class SavedStrategy(BaseModel):

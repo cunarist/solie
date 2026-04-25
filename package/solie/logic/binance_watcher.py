@@ -337,7 +337,7 @@ class BinanceWatcher:
             unrealized_change = 0
 
         async with self._unrealized_changes.write_lock as cell:
-            cell.data[before_moment] = unrealized_change
+            cell.data[before_moment] = unrealized_change  # type:ignore
             if not cell.data.index.is_monotonic_increasing:
                 cell.data = await spawn_blocking(sort_series, cell.data)
 

@@ -84,10 +84,14 @@ class Window(QMainWindow, Ui_MainWindow):
         self.price_labels: dict[str, QLabel] = {}
 
         self.should_confirm_closing = False
+        self._is_closing = False
 
     @override
     def closeEvent(self, event: QCloseEvent) -> None:
         event.ignore()
+
+        if self._is_closing:
+            return
 
         async def job_close() -> None:
             if self.should_confirm_closing:
@@ -106,7 +110,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
             self.gauge.hide()
             self.board.hide()
-            self.closeEvent = lambda event: event.ignore()
+            self._is_closing = True
 
             self._splash_screen.show()
             self._close_event.set()
@@ -174,7 +178,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def _configure_global_settings(self) -> None:
         """Configure global settings for libraries."""
-        os.get_terminal_size = lambda *_: os.terminal_size((150, 90))
+        os.get_terminal_size = lambda *_: os.terminal_size((150, 90))  # type:ignore
         pd.set_option("display.precision", 6)
         pd.set_option("display.min_rows", 100)
         pd.set_option("display.max_rows", 100)
@@ -260,7 +264,7 @@ class Window(QMainWindow, Ui_MainWindow):
         for symbol in target_symbols:
             coin_symbol = symbol.removesuffix(asset_token)
             coin_name = coin_names.get(coin_symbol, "")
-            alias = coin_name if coin_name else coin_symbol
+            alias = coin_name or coin_symbol
             self.alias_to_symbol[alias] = symbol
             self.symbol_to_alias[symbol] = alias
 
