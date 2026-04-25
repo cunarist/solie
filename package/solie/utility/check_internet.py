@@ -1,11 +1,10 @@
 """Internet connectivity monitoring."""
 
+import asyncio
 from asyncio import sleep
 from collections.abc import Callable, Coroutine
 from logging import getLogger
 from typing import Any, ClassVar
-
-from aiohttp import ClientSession
 
 from solie.common import spawn
 
@@ -51,18 +50,21 @@ async def keep_monitoring_internet() -> None:
 
 async def monitor_internet() -> None:
     """Check internet status and trigger callbacks."""
-    # Try to connect to DNS servers and analyze internet connection.
+    # Try to connect to DNS servers on port 53 (TCP) to check internet.
     was_connected = StatusHolder.is_connected
     analyzed = False
-    async with ClientSession() as session:
-        for attempt_ip in ATTEMPT_IP:
-            try:
-                async with session.get(f"http://{attempt_ip}") as response:
-                    if response.ok:
-                        analyzed = True
-                        break
-            except Exception:
-                logger.debug("Failed to connect to %s", attempt_ip)
+    for attempt_ip in ATTEMPT_IP:
+        try:
+            _, writer = await asyncio.wait_for(
+                asyncio.open_connection(attempt_ip, 53),
+                timeout=3,
+            )
+            writer.close()
+            await writer.wait_closed()
+            analyzed = True
+            break
+        except Exception:
+            logger.debug("Failed to connect to %s", attempt_ip)
     StatusHolder.is_connected = analyzed
 
     # Detect changes.
