@@ -1,6 +1,5 @@
 # Solie
 datapath.txt
-.vscode/
 .ruff_cache/
 *.lock
 

@@ -81,12 +81,12 @@ pyside6-uic craft/window.ui -o package/solie/window/compiled.py
 ```shell
 uv sync
 uv run ruff check
-uv run pyright
+uv run ty check
 ```
 
 - Solie is written entirely in Python and utilizes [uv](https://docs.astral.sh/uv/) as the primary tool for managing packages.
 - Use the Ruff formatter for organizing code and identifying issues.
-- Employ Pyright for type safety. If you're using Visual Studio Code, Pylance extends Pyright’s capabilities.
+- Employ Ty for type safety.
 - It should be user-friendly, allowing general users to navigate with just a few clicks.
 - Development targets compatibility across Windows, Linux, and macOS without relying on platform-specific packages like `win32api`.
 - UTC timezone information must be included in `datetime.datetime` objects. Also, include UTC timezone information wherever feasible, such as in `pandas.DatetimeIndex`.
