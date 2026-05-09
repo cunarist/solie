@@ -9,6 +9,7 @@ from typing import Any, NamedTuple
 
 import aiofiles
 import pandas as pd
+from pandas import DataFrame, DatetimeIndex, Grouper, Series
 from PySide6.QtWidgets import QProgressBar
 
 from solie.common import UniqueTask, get_sync_manager, spawn, spawn_blocking
@@ -39,8 +40,8 @@ from .analyze_market import (
 class BlankStates(NamedTuple):
     """Blank initial states for calculation."""
 
-    asset_record: pd.DataFrame
-    unrealized_changes: pd.Series
+    asset_record: DataFrame
+    unrealized_changes: Series
     scribbles: dict[Any, Any]
     account_state: AccountState
     virtual_state: VirtualState
@@ -49,8 +50,8 @@ class BlankStates(NamedTuple):
 class PreviousState(NamedTuple):
     """Previous calculation state."""
 
-    asset_record: pd.DataFrame
-    unrealized_changes: pd.Series
+    asset_record: DataFrame
+    unrealized_changes: Series
     scribbles: dict[Any, Any]
     account_state: AccountState
     virtual_state: VirtualState
@@ -79,8 +80,8 @@ class CalculationConfig(NamedTuple):
 class CalculationResult(NamedTuple):
     """Result of simulation calculation."""
 
-    asset_record: pd.DataFrame
-    unrealized_changes: pd.Series
+    asset_record: DataFrame
+    unrealized_changes: Series
     scribbles: dict[Any, Any]
     account_state: AccountState
 
@@ -94,7 +95,7 @@ class SimulationCalculator:
         unique_task: UniqueTask,
         config: CalculationConfig,
         workerpath: Path,
-        year_candle_data: pd.DataFrame,
+        year_candle_data: DataFrame,
         widgets: WidgetReferences,
     ) -> None:
         """Initialize simulation calculator."""
@@ -307,11 +308,11 @@ class SimulationCalculator:
 
         else:
             try:
-                previous_asset_record: pd.DataFrame = await spawn_blocking(
+                previous_asset_record: DataFrame = await spawn_blocking(
                     pd.read_pickle,
                     self.asset_record_path,
                 )
-                previous_unrealized_changes: pd.Series = await spawn_blocking(
+                previous_unrealized_changes: Series = await spawn_blocking(
                     pd.read_pickle,
                     self.unrealized_changes_path,
                 )
@@ -377,7 +378,7 @@ class SimulationCalculator:
         )
 
         needed_candle_data = self.year_candle_data[calculate_from:calculate_until]
-        needed_index: pd.DatetimeIndex = needed_candle_data.index  # type:ignore
+        needed_index: DatetimeIndex = needed_candle_data.index  # type:ignore
         needed_indicators = year_indicators.reindex(needed_index)
 
         parallel_chunk_days = self.strategy.parallel_simulation_chunk_days
@@ -405,7 +406,7 @@ class SimulationCalculator:
             chunk_candle_data_list = [
                 chunk_candle_data
                 for _, chunk_candle_data in needed_candle_data.groupby(
-                    pd.Grouper(freq=division, origin="epoch"),  # type:ignore
+                    Grouper(freq=division, origin="epoch"),  # type:ignore
                 )
             ]
 
@@ -413,7 +414,7 @@ class SimulationCalculator:
             progress_list = sync_manager.list([0.0] * chunk_count)
 
             for turn, chunk_candle_data in enumerate(chunk_candle_data_list):
-                chunk_index: pd.DatetimeIndex = chunk_candle_data.index  # type:ignore
+                chunk_index: DatetimeIndex = chunk_candle_data.index  # type:ignore
                 chunk_indicators = needed_indicators.reindex(chunk_index)
                 chunk_asset_record = previous_state.asset_record.iloc[0:0]
                 chunk_unrealized_changes = previous_state.unrealized_changes.iloc[0:0]
@@ -496,7 +497,7 @@ class SimulationCalculator:
             for chunk_ouput_data in calculation_output_data:
                 chunk_asset_record = chunk_ouput_data.chunk_asset_record
                 concat_data = [asset_record, chunk_asset_record]
-                asset_record: pd.DataFrame = pd.concat(concat_data)
+                asset_record: DataFrame = pd.concat(concat_data)
             mask = ~asset_record.index.duplicated()
             asset_record = asset_record[mask]
             if not asset_record.index.is_monotonic_increasing:
@@ -506,7 +507,7 @@ class SimulationCalculator:
             for chunk_ouput_data in calculation_output_data:
                 chunk_unrealized_changes = chunk_ouput_data.chunk_unrealized_changes
                 concat_data = [unrealized_changes, chunk_unrealized_changes]
-                unrealized_changes: pd.Series = pd.concat(concat_data)
+                unrealized_changes: Series = pd.concat(concat_data)
             mask = ~unrealized_changes.index.duplicated()
             unrealized_changes = unrealized_changes[mask]
             if not unrealized_changes.index.is_monotonic_increasing:
@@ -533,8 +534,8 @@ class SimulationCalculator:
 
     async def _save_calculation_results(
         self,
-        asset_record: pd.DataFrame,
-        unrealized_changes: pd.Series,
+        asset_record: DataFrame,
+        unrealized_changes: Series,
         scribbles: dict[Any, Any],
         account_state: AccountState,
     ) -> None:

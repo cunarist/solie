@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 from logging import getLogger
 from typing import Any, NamedTuple
 
-import pandas as pd
+from pandas import DataFrame, DatetimeIndex, Series
 
 from solie.common import spawn_blocking
 from solie.logic import AccountListener, ParseOrderTypeParams
@@ -49,8 +49,8 @@ class StateConfig(NamedTuple):
 
     account_state: AccountState
     transaction_settings: TransactionSettings
-    unrealized_changes: RWLock[pd.Series]
-    asset_record: RWLock[pd.DataFrame]
+    unrealized_changes: RWLock[Series]
+    asset_record: RWLock[DataFrame]
 
 
 class BinanceWatcher:
@@ -290,7 +290,7 @@ class BinanceWatcher:
             account_state=self._account_state,
             leverages=self._exchange_config.leverages,
             asset_record=self._asset_record,
-            auto_order_record=RWLock(pd.DataFrame()),
+            auto_order_record=RWLock(DataFrame()),
         )
 
         for symbol in target_symbols:
@@ -371,7 +371,7 @@ class BinanceWatcher:
         async with self._asset_record.read_lock as cell:
             if len(cell.data) == 0:
                 return
-            df_index: pd.DatetimeIndex = cell.data.index  # type:ignore
+            df_index: DatetimeIndex = cell.data.index  # type:ignore
             last_index = df_index[-1]
             last_asset = float(cell.data.loc[last_index, "RESULT_ASSET"])  # type:ignore
 
@@ -386,7 +386,7 @@ class BinanceWatcher:
                     cell.data = await spawn_blocking(sort_data_frame, cell.data)
         else:
             async with self._asset_record.write_lock as cell:
-                df_index: pd.DatetimeIndex = cell.data.index  # type:ignore
+                df_index: DatetimeIndex = cell.data.index  # type:ignore
                 last_index = df_index[-1]
                 cell.data.loc[last_index, "RESULT_ASSET"] = wallet_balance
 

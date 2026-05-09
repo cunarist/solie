@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 from logging import getLogger
 from typing import Any, NamedTuple
 
-import pandas as pd
+from pandas import DataFrame, DatetimeIndex
 
 from solie.common import spawn_blocking
 from solie.utility import (
@@ -48,8 +48,8 @@ class TradeExecutionInfo(NamedTuple):
 class UpdateTradeRecordInfo(NamedTuple):
     """Information for updating existing trade record."""
 
-    data: pd.DataFrame
-    symbol_df: pd.DataFrame
+    data: DataFrame
+    symbol_df: DataFrame
     order_id: int
     added_margin_ratio: float
     added_revenue: float
@@ -59,7 +59,7 @@ class UpdateTradeRecordInfo(NamedTuple):
 class CreateTradeRecordInfo(NamedTuple):
     """Information for creating new trade record."""
 
-    data: pd.DataFrame
+    data: DataFrame
     symbol: str
     order_id: int
     side: str
@@ -93,8 +93,8 @@ class AccountListener:
         window: Window,
         account_state: AccountState,
         leverages: dict[str, int],
-        asset_record: RWLock[pd.DataFrame],
-        auto_order_record: RWLock[pd.DataFrame],
+        asset_record: RWLock[DataFrame],
+        auto_order_record: RWLock[DataFrame],
     ) -> None:
         """Initialize account listener."""
         self._window = window
@@ -366,7 +366,7 @@ class AccountListener:
             symbol_df = cell.data[cell.data["SYMBOL"] == info.symbol]
             recorded_id_list = symbol_df["ORDER_ID"].tolist()
             does_record_exist = info.order_id in recorded_id_list
-            df_index: pd.DatetimeIndex = cell.data.index  # type:ignore
+            df_index: DatetimeIndex = cell.data.index  # type:ignore
             last_index = df_index[-1].to_pydatetime()
 
             if does_record_exist:
@@ -406,7 +406,7 @@ class AccountListener:
     ) -> None:
         """Update existing trade record."""
         mask_sr = info.symbol_df["ORDER_ID"] == info.order_id
-        df_index: pd.DatetimeIndex = info.symbol_df.index  # type:ignore
+        df_index: DatetimeIndex = info.symbol_df.index  # type:ignore
         rec_time = df_index[mask_sr][0].to_pydatetime()
         rec_value = float(info.symbol_df.loc[rec_time, "MARGIN_RATIO"])  # type:ignore
         new_value = rec_value + info.added_margin_ratio

@@ -10,6 +10,7 @@ from typing import Any, NamedTuple
 
 import numpy as np
 import pandas as pd
+from pandas import DataFrame, DatetimeIndex, Series
 
 from solie.utility import (
     COLUMN_PARTS_COUNT,
@@ -67,14 +68,14 @@ class TradeDetails(NamedTuple):
 def make_indicators(
     strategy: Strategy,
     target_symbols: list[str],
-    candle_data: pd.DataFrame,
+    candle_data: DataFrame,
     only_last_index: bool = False,
-) -> pd.DataFrame:
+) -> DataFrame:
     """Calculate technical indicators using strategy's indicator script."""
     candle_data = candle_data.interpolate()
 
     if len(candle_data) > 0:
-        candle_index: pd.DatetimeIndex = candle_data.index  # type:ignore
+        candle_index: DatetimeIndex = candle_data.index  # type:ignore
         dummy_index = candle_index[-1].to_pydatetime() + timedelta(seconds=1)
     else:
         dummy_index = datetime.fromtimestamp(0.0, tz=UTC)
@@ -86,10 +87,10 @@ def make_indicators(
         ("PRICE", "VOLUME", "ABSTRACT"),
         ("BLANK",),
     )
-    new_indicators: dict[str, pd.Series] = {}
+    new_indicators: dict[str, Series] = {}
     base_index = candle_data.index
     for blank_column in ("/".join(t) for t in blank_column_trios):
-        new_indicators[blank_column] = pd.Series(
+        new_indicators[blank_column] = Series(
             np.nan,
             index=base_index,
             dtype=np.float32,
@@ -113,7 +114,7 @@ def make_indicators(
         if symbol not in target_symbols or category not in GRAPH_TYPES:
             continue
         # Validate the indicator format.
-        if not isinstance(new_indicator, pd.Series):
+        if not isinstance(new_indicator, Series):
             continue
         if not pd.api.types.is_numeric_dtype(new_indicator):
             continue
@@ -186,11 +187,11 @@ class CalculationInput(NamedTuple):
     progress_list: ListProxy
     target_progress: int
     target_symbols: list[str]
-    calculation_index: pd.DatetimeIndex
-    chunk_candle_data: pd.DataFrame
-    chunk_indicators: pd.DataFrame
-    chunk_asset_record: pd.DataFrame
-    chunk_unrealized_changes: pd.Series
+    calculation_index: DatetimeIndex
+    chunk_candle_data: DataFrame
+    chunk_indicators: DataFrame
+    chunk_asset_record: DataFrame
+    chunk_unrealized_changes: Series
     chunk_scribbles: dict[Any, Any]
     chunk_account_state: AccountState
     chunk_virtual_state: VirtualState
@@ -199,8 +200,8 @@ class CalculationInput(NamedTuple):
 class CalculationOutput(NamedTuple):
     """Output data from simulation calculation."""
 
-    chunk_asset_record: pd.DataFrame
-    chunk_unrealized_changes: pd.Series
+    chunk_asset_record: DataFrame
+    chunk_unrealized_changes: Series
     chunk_scribbles: dict[Any, Any]
     chunk_account_state: AccountState
     chunk_virtual_state: VirtualState
@@ -868,12 +869,12 @@ class ChunkSimulator:
 
     def _create_output(self) -> CalculationOutput:
         """Convert arrays back to DataFrames and create output."""
-        chunk_asset_record = pd.DataFrame(self.asset_record_ar)
+        chunk_asset_record = DataFrame(self.asset_record_ar)
         chunk_asset_record = chunk_asset_record.set_index("index")
         chunk_asset_record.index.name = None
         chunk_asset_record.index = pd.to_datetime(chunk_asset_record.index, utc=True)
 
-        chunk_unrealized_changes_df = pd.DataFrame(self.chunk_unrealized_changes_ar)
+        chunk_unrealized_changes_df = DataFrame(self.chunk_unrealized_changes_ar)
         chunk_unrealized_changes_df = chunk_unrealized_changes_df.set_index("index")
         chunk_unrealized_changes_df.index.name = None
         chunk_unrealized_changes_df.index = pd.to_datetime(

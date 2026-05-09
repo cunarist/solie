@@ -15,6 +15,7 @@ import aioshutil
 import numpy as np
 import pandas as pd
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from pandas import DataFrame, DatetimeIndex, Series
 from PySide6.QtWidgets import QMenu
 
 from solie.common import UniqueTask, outsource, spawn, spawn_blocking
@@ -82,7 +83,7 @@ class Collector:
         # Candle data.
         # It's expected to have only the data of current year,
         # while data of previous years are stored in the disk.
-        self.candle_data = RWLock[pd.DataFrame](
+        self.candle_data = RWLock[DataFrame](
             create_empty_candle_data(window.data_settings.target_symbols),
         )
 
@@ -173,7 +174,7 @@ class Collector:
         async with self.candle_data.write_lock as cell:
             filepath = self._workerpath / f"candle_data_{current_year}.pickle"
             if await aiofiles.os.path.isfile(filepath):
-                df: pd.DataFrame = await spawn_blocking(pd.read_pickle, filepath)
+                df: DataFrame = await spawn_blocking(pd.read_pickle, filepath)
                 if not df.index.is_monotonic_increasing:
                     df = await spawn_blocking(sort_data_frame, df)
                 cell.data = df
@@ -203,7 +204,7 @@ class Collector:
 
         async with self.candle_data.read_lock as cell:
             mask = cell.data.index.year == current_year  # type:ignore
-            year_df: pd.DataFrame = cell.data[mask].copy()
+            year_df: DataFrame = cell.data[mask].copy()
 
         await spawn_blocking(year_df.to_pickle, filepath_new)
 
@@ -266,7 +267,7 @@ class Collector:
 
     async def _find_full_symbols(
         self,
-        recent_candle_data: pd.DataFrame,
+        recent_candle_data: DataFrame,
         current_moment: datetime,
         target_symbols: list[str],
     ) -> bool:
@@ -304,7 +305,7 @@ class Collector:
     async def _fill_symbol_holes(
         self,
         symbol: str,
-        recent_candle_data: pd.DataFrame,
+        recent_candle_data: DataFrame,
         current_moment: datetime,
         needed_moments: int,
     ) -> bool | None:
@@ -318,11 +319,11 @@ class Collector:
         # Check current data completeness
         columns = [str(s) for s in recent_candle_data.columns]
         chosen_columns = [s for s in columns if s.startswith(symbol)]
-        inspect_df: pd.DataFrame = recent_candle_data[chosen_columns][
+        inspect_df: DataFrame = recent_candle_data[chosen_columns][
             from_moment:until_moment
         ]
         base_index = inspect_df.dropna().index
-        temp_sr = pd.Series(0.0, index=base_index)
+        temp_sr = Series(0.0, index=base_index)
         written_moments = len(temp_sr)
 
         if written_moments == needed_moments:
@@ -411,7 +412,7 @@ class Collector:
 
     async def _merge_filled_data(
         self,
-        recent_candle_data: pd.DataFrame,
+        recent_candle_data: DataFrame,
         split_moment: datetime,
     ) -> None:
         """Merge filled candle data back into main dataframe."""
@@ -505,7 +506,7 @@ class Collector:
         """
         for _ in range(50):
             async with self.candle_data.read_lock as cell:
-                df_index: pd.DatetimeIndex = cell.data.index  # type:ignore
+                df_index: DatetimeIndex = cell.data.index  # type:ignore
                 last_index = df_index[-1].to_pydatetime()
                 if last_index == before_moment:
                     return True
@@ -666,19 +667,19 @@ class Collector:
         preset_year: int,
         download_presets: list[DownloadPreset],
         done_steps: Cell[int],
-    ) -> pd.DataFrame | None:
+    ) -> DataFrame | None:
         """Download CSV files for presets and combine them."""
         download_dir = self._workerpath / f"downloaded_csv_{preset_year}"
         await aioshutil.rmtree(download_dir, ignore_errors=True)
         await aiofiles.os.makedirs(download_dir, exist_ok=True)
 
-        downloaded_dfs: list[pd.DataFrame] = []
+        downloaded_dfs: list[DataFrame] = []
 
         async def download_fill(
             download_preset: DownloadPreset,
             download_lock: Lock,
             download_dir: Path,
-            downloaded_dfs: list[pd.DataFrame],
+            downloaded_dfs: list[DataFrame],
         ) -> None:
             async with download_lock:
                 zip_file_path = await download_aggtrade_csv(
@@ -715,7 +716,7 @@ class Collector:
         self,
         preset_year: int,
         current_year: int,
-        combined_df: pd.DataFrame,
+        combined_df: DataFrame,
     ) -> None:
         """Save downloaded data to disk or merge with current data."""
         if preset_year < current_year:
@@ -878,8 +879,8 @@ class Collector:
             if filename.startswith("candle_data_") and filename.endswith(".pickle")
         ]
 
-    async def read_saved_candle_data(self, year: int) -> pd.DataFrame:
+    async def read_saved_candle_data(self, year: int) -> DataFrame:
         """Read saved candle data for specific year."""
         filepath = self._workerpath / f"candle_data_{year}.pickle"
-        candle_data: pd.DataFrame = await spawn_blocking(pd.read_pickle, filepath)
+        candle_data: DataFrame = await spawn_blocking(pd.read_pickle, filepath)
         return candle_data

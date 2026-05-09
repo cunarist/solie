@@ -87,14 +87,14 @@ Candle data exists internally in the form of a tabular `DataFrame`.
 You can extract partial `Series` from `candle_data` which is a `DataFrame`.
 
 ```python
-import pandas as pd
+from pandas import Series
 
 for symbol in target_symbols:
-    open_sr: pd.Series = candle_data[f"{symbol}/OPEN"]
-    high_sr: pd.Series = candle_data[f"{symbol}/HIGH"]
-    low_sr: pd.Series = candle_data[f"{symbol}/LOW"]
-    close_sr: pd.Series = candle_data[f"{symbol}/CLOSE"]
-    volume_sr: pd.Series = candle_data[f"{symbol}/VOLUME"]
+    open_sr: Series = candle_data[f"{symbol}/OPEN"]
+    high_sr: Series = candle_data[f"{symbol}/HIGH"]
+    low_sr: Series = candle_data[f"{symbol}/LOW"]
+    close_sr: Series = candle_data[f"{symbol}/CLOSE"]
+    volume_sr: Series = candle_data[f"{symbol}/VOLUME"]
 ```
 
 The `Series` object has the following form. A one-dimensional array containing values ​​over time.
@@ -129,7 +129,7 @@ import pandas_ta as ta
 
 for symbol in target_symbols:
     close_sr = candle_data[f"{symbol}/CLOSE"]
-    sma_sr: pd.Series = ta.sma(close_sr, 60)
+    sma_sr: Series = ta.sma(close_sr, 60)
     # 60 candles represent 600 seconds(10 minutes)
 ```
 

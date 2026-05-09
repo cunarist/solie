@@ -9,6 +9,7 @@ import aiofiles.os
 import numpy as np
 import pandas as pd
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from pandas import DataFrame, DatetimeIndex, Grouper, Series
 from PySide6.QtWidgets import QMenu
 from scipy.signal import find_peaks
 
@@ -51,14 +52,14 @@ class DisplayTimeRange(NamedTuple):
 class CandleDataPair(NamedTuple):
     """Pair of original and sliced candle data."""
 
-    original: pd.DataFrame
-    sliced: pd.DataFrame
+    original: DataFrame
+    sliced: DataFrame
 
 
 class AssetRecordData(NamedTuple):
     """Asset record with historical values."""
 
-    record: pd.DataFrame
+    record: DataFrame
     last_asset: float | None
     before_asset: float | None
 
@@ -78,7 +79,7 @@ class RangeMetrics(NamedTuple):
 class ChunkList(NamedTuple):
     """List of chunks and their count."""
 
-    chunks: list[pd.DataFrame]
+    chunks: list[DataFrame]
     chunk_count: int
 
 
@@ -257,7 +258,7 @@ class Simulator:
         slice_from: datetime,
     ) -> CandleDataPair:
         """Load candle data for specified years."""
-        divided_datas: list[pd.DataFrame] = []
+        divided_datas: list[DataFrame] = []
         for year in years:
             more_df = await team.collector.read_saved_candle_data(year)
             divided_datas.append(more_df)
@@ -273,7 +274,7 @@ class Simulator:
     async def _prepare_asset_record(
         self,
         slice_from: datetime,
-        candle_data: pd.DataFrame,
+        candle_data: DataFrame,
     ) -> AssetRecordData:
         """Prepare asset record with historical data."""
         async with self._asset_record.read_lock as cell:
@@ -289,7 +290,7 @@ class Simulator:
             asset_record = cell.data[slice_from:].copy()
 
         if len(candle_data) > 0:
-            df_index: pd.DatetimeIndex = candle_data.index  # type:ignore
+            df_index: DatetimeIndex = candle_data.index  # type:ignore
             last_written_moment = df_index[-1]
             new_moment = last_written_moment + timedelta(seconds=10)
             new_index = df_index.union([new_moment])
@@ -303,11 +304,11 @@ class Simulator:
 
     async def _update_asset_record_with_observations(
         self,
-        asset_record: pd.DataFrame,
+        asset_record: DataFrame,
         last_asset: float | None,
         before_asset: float | None,
         slice_from: datetime,
-    ) -> pd.DataFrame:
+    ) -> DataFrame:
         """Update asset record with latest observations."""
         if last_asset is not None:
             observed_until = self._account_state.observed_until
@@ -410,8 +411,8 @@ class Simulator:
             self._window.data_settings.target_symbols,
         )
         self._raw_scribbles = {}
-        self._raw_asset_record = RWLock[pd.DataFrame](create_empty_asset_record())
-        self._raw_unrealized_changes = RWLock[pd.Series](
+        self._raw_asset_record = RWLock[DataFrame](create_empty_asset_record())
+        self._raw_unrealized_changes = RWLock[Series](
             create_empty_unrealized_changes(),
         )
         self._simulation_summary = None
@@ -439,10 +440,10 @@ class Simulator:
 
     def _calculate_range_metrics(
         self,
-        asset_record: pd.DataFrame,
-        asset_changes: pd.Series,
-        symbol_mask: pd.Series,
-        unrealized_changes: pd.Series,
+        asset_record: DataFrame,
+        asset_changes: Series,
+        symbol_mask: Series,
+        unrealized_changes: Series,
     ) -> RangeMetrics:
         """Calculate various metrics for the visible range."""
         total_change_count = len(asset_changes)
@@ -587,8 +588,8 @@ class Simulator:
 
         result = await calculator.calculate()
 
-        self._raw_asset_record = RWLock[pd.DataFrame](result.asset_record)
-        self._raw_unrealized_changes = RWLock[pd.Series](result.unrealized_changes)
+        self._raw_asset_record = RWLock[DataFrame](result.asset_record)
+        self._raw_unrealized_changes = RWLock[Series](result.unrealized_changes)
         self._raw_scribbles = result.scribbles
         self._raw_account_state = result.account_state
         self._simulation_summary = SimulationSummary(
@@ -600,14 +601,14 @@ class Simulator:
 
     def _calculate_chunk_asset_changes(
         self,
-        chunk_asset_record: pd.DataFrame,
+        chunk_asset_record: DataFrame,
         maker_fee: float,
         taker_fee: float,
         leverage: int,
-    ) -> pd.Series:
+    ) -> Series:
         """Calculate asset changes for a single chunk."""
         chunk_result_asset_sr = chunk_asset_record["RESULT_ASSET"]
-        chunk_asset_shifts: pd.Series = chunk_result_asset_sr.diff()
+        chunk_asset_shifts: Series = chunk_result_asset_sr.diff()
         if len(chunk_asset_shifts) > 0:
             chunk_asset_shifts.iloc[0] = 0.0
 
@@ -630,7 +631,7 @@ class Simulator:
 
         return chunk_asset_changes_by_leverage * chunk_asset_changes_by_fee
 
-    def _prepare_chunk_list(self, asset_record: pd.DataFrame) -> ChunkList:
+    def _prepare_chunk_list(self, asset_record: DataFrame) -> ChunkList:
         """Prepare list of asset record chunks based on strategy settings."""
         if self._simulation_summary is None:
             return ChunkList(chunks=[asset_record], chunk_count=1)
@@ -643,7 +644,7 @@ class Simulator:
             return ChunkList(chunks=[asset_record], chunk_count=1)
 
         division = timedelta(days=parallel_chunk_days)
-        grouper = pd.Grouper(freq=division, origin="epoch")  # type:ignore
+        grouper = Grouper(freq=division, origin="epoch")  # type:ignore
         grouped = asset_record.groupby(grouper)
         chunk_list = [r.dropna() for _, r in grouped]
         return ChunkList(chunks=chunk_list, chunk_count=len(chunk_list))
@@ -664,7 +665,7 @@ class Simulator:
 
         chunk_data = self._prepare_chunk_list(asset_record)
 
-        chunk_asset_changes_list: list[pd.Series] = [
+        chunk_asset_changes_list: list[Series] = [
             self._calculate_chunk_asset_changes(
                 chunk_data.chunks[turn],
                 maker_fee,
@@ -675,7 +676,7 @@ class Simulator:
         ]
 
         unrealized_changes = unrealized_changes * leverage
-        year_asset_changes: pd.Series = pd.concat(chunk_asset_changes_list)
+        year_asset_changes: Series = pd.concat(chunk_asset_changes_list)
         if not year_asset_changes.index.is_monotonic_increasing:
             year_asset_changes = await spawn_blocking(sort_series, year_asset_changes)
 

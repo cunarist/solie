@@ -2,9 +2,10 @@
 
 import numpy as np
 import pandas as pd
+from pandas import DataFrame
 
 
-def combine_candle_data(dataframes: list[pd.DataFrame]) -> pd.DataFrame:
+def combine_candle_data(dataframes: list[DataFrame]) -> DataFrame:
     """Combine multiple candle dataframes into one."""
     if len(dataframes) == 0:
         msg = "At least one DataFrame is required"

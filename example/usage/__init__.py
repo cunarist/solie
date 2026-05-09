@@ -2,8 +2,8 @@
 
 from typing import Any
 
-import pandas as pd
 import pandas_ta as ta
+from pandas import DataFrame, Series
 from solie import (
     AccountState,
     Decision,
@@ -48,26 +48,26 @@ class ExampleStrategy:
     def create_indicators(self, given: IndicatorInput) -> None:
         """Calculate SMA indicators for price and volume."""
         target_symbols: list[str] = given.target_symbols
-        candle_data: pd.DataFrame = given.candle_data
-        new_indicators: dict[str, pd.Series] = given.new_indicators
+        candle_data: DataFrame = given.candle_data
+        new_indicators: dict[str, Series] = given.new_indicators
 
         short_period = 90
         long_period = 360
 
         for symbol in target_symbols:
             # Get candle data
-            close_sr: pd.Series = candle_data[f"{symbol}/CLOSE"]
-            volume_sr: pd.Series = candle_data[f"{symbol}/VOLUME"]
+            close_sr: Series = candle_data[f"{symbol}/CLOSE"]
+            volume_sr: Series = candle_data[f"{symbol}/VOLUME"]
 
             # Price scale indicators
-            price_sma_one: pd.Series = ta.sma(close_sr, short_period)
-            price_sma_two: pd.Series = ta.sma(close_sr, long_period)
+            price_sma_one: Series = ta.sma(close_sr, short_period)
+            price_sma_two: Series = ta.sma(close_sr, long_period)
             new_indicators[f"{symbol}/PRICE/SMA_ONE(#00FFA6)"] = price_sma_one
             new_indicators[f"{symbol}/PRICE/SMA_TWO(#C261FF)"] = price_sma_two
 
             # Volume scale indicators
-            volume_sma_one: pd.Series = ta.sma(volume_sr, short_period * 2)
-            volume_sma_two: pd.Series = ta.sma(volume_sr, long_period * 2)
+            volume_sma_one: Series = ta.sma(volume_sr, short_period * 2)
+            volume_sma_two: Series = ta.sma(volume_sr, long_period * 2)
             new_indicators[f"{symbol}/VOLUME/SMA_ONE"] = volume_sma_one
             new_indicators[f"{symbol}/VOLUME/SMA_TWO"] = volume_sma_two
 

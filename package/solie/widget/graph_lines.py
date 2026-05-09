@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from typing import NamedTuple
 
 import numpy as np
-import pandas as pd
+from pandas import DataFrame, Series
 from pyqtgraph import (
     AxisItem,
     PlotDataItem,
@@ -355,9 +355,9 @@ class GraphLines:
     async def update_heavy_lines(
         self,
         symbol: str,
-        candle_data: pd.DataFrame,
-        asset_record: pd.DataFrame,
-        unrealized_changes: pd.Series,
+        candle_data: DataFrame,
+        asset_record: DataFrame,
+        unrealized_changes: Series,
     ) -> None:
         """Update heavy graph lines with candle and asset data."""
         # Prepare arrays
@@ -375,7 +375,7 @@ class GraphLines:
     def _prepare_candle_arrays(
         self,
         symbol: str,
-        candle_data: pd.DataFrame,
+        candle_data: DataFrame,
     ) -> dict[str, np.ndarray]:
         """Prepare numpy arrays from candle data."""
         index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
@@ -459,7 +459,7 @@ class GraphLines:
     async def _update_wobbles_and_volume(
         self,
         symbol: str,
-        candle_data: pd.DataFrame,
+        candle_data: DataFrame,
     ) -> None:
         """Update wobbles and volume lines."""
         # High wobble
@@ -487,8 +487,8 @@ class GraphLines:
     async def _update_asset_lines(
         self,
         symbol: str,
-        asset_record: pd.DataFrame,
-        unrealized_changes: pd.Series,
+        asset_record: DataFrame,
+        unrealized_changes: Series,
     ) -> None:
         """Update asset result and trade lines."""
         # Result asset
@@ -526,7 +526,7 @@ class GraphLines:
         self.buy.setData(data_x, data_y)
         await sleep(0.0)
 
-    async def update_custom_lines(self, symbol: str, indicators: pd.DataFrame) -> None:
+    async def update_custom_lines(self, symbol: str, indicators: DataFrame) -> None:
         """Update custom indicator lines."""
         columns = [str(n) for n in indicators.columns]
         data_x = indicators.index.to_numpy(dtype=np.int64) / 10**9

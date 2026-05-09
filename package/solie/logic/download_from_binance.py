@@ -13,6 +13,7 @@ import aiofiles.os
 import aiohttp
 import numpy as np
 import pandas as pd
+from pandas import DataFrame
 
 from solie.common import spawn_blocking
 from solie.utility import AggregateTrade, to_moment
@@ -270,7 +271,7 @@ def process_csv_lines(
     zip_file_path: Path,
     has_header: bool,
     preset: DownloadPreset,
-) -> pd.DataFrame | None:
+) -> DataFrame | None:
     """Process CSV lines and check for sorting."""
     with ZipFile(zip_file_path, "r") as zip_ref:
         csv_filename = zip_ref.namelist()[0]
@@ -300,7 +301,7 @@ def process_csv_lines(
                 return None
 
             # Convert to DataFrame
-            df = pd.DataFrame(agg_trades)
+            df = DataFrame(agg_trades)
 
             # Set time index
             df = df.set_index("time")
@@ -326,7 +327,7 @@ def process_csv_lines(
 def process_aggtrade_csv(
     preset: DownloadPreset,
     zip_file_path: Path,
-) -> pd.DataFrame | None:
+) -> DataFrame | None:
     """Process the downloaded aggtrade CSV file from Binance.
 
     Convert it into a DataFrame of aggregated trades.
@@ -344,11 +345,11 @@ def process_aggtrade_csv(
 
 def fill_holes_with_aggtrades(
     symbol: str,
-    recent_candle_data: pd.DataFrame,
+    recent_candle_data: DataFrame,
     aggtrades: dict[int, AggregateTrade],
     moment_to_fill_from: datetime,
     last_fetched_time: datetime,
-) -> pd.DataFrame:
+) -> DataFrame:
     """Fill missing candle data using aggregate trade information."""
     fill_moment = moment_to_fill_from
 

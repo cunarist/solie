@@ -1,13 +1,13 @@
 """Pandas data sorting utilities."""
 
-import pandas as pd
+from pandas import DataFrame, Series
 
 
-def sort_data_frame(data: pd.DataFrame) -> pd.DataFrame:
+def sort_data_frame(data: DataFrame) -> DataFrame:
     """Sort DataFrame by index."""
     return data.sort_index()
 
 
-def sort_series(data: pd.Series) -> pd.Series:
+def sort_series(data: Series) -> Series:
     """Sort Series by index."""
     return data.sort_index()

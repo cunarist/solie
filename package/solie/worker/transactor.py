@@ -14,6 +14,7 @@ import aiofiles.os
 import numpy as np
 import pandas as pd
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from pandas import DataFrame, DatetimeIndex, Index, Series
 from PySide6.QtWidgets import QMenu
 
 from solie.common import UniqueTask, outsource, spawn, spawn_blocking
@@ -80,9 +81,9 @@ class RealtimeData(NamedTuple):
 class TransactionAssetData(NamedTuple):
     """Asset record with candle and historical data."""
 
-    candle_original: pd.DataFrame
-    candle_sliced: pd.DataFrame
-    asset_record: pd.DataFrame
+    candle_original: DataFrame
+    candle_sliced: DataFrame
+    asset_record: DataFrame
     last_asset: float | None
     before_asset: float | None
 
@@ -142,9 +143,9 @@ class Transactor:
         self._unrealized_changes = RWLock(create_empty_unrealized_changes())
         self._asset_record = RWLock(create_empty_asset_record())
         self._auto_order_record = RWLock(
-            pd.DataFrame(
+            DataFrame(
                 columns=["SYMBOL", "ORDER_ID"],
-                index=pd.DatetimeIndex([], tz="UTC"),
+                index=DatetimeIndex([], tz="UTC"),
             ),
         )
 
@@ -334,19 +335,19 @@ class Transactor:
         # unrealized changes
         filepath = self._workerpath / "unrealized_changes.pickle"
         if await aiofiles.os.path.isfile(filepath):
-            sr: pd.Series = await spawn_blocking(pd.read_pickle, filepath)
+            sr: Series = await spawn_blocking(pd.read_pickle, filepath)
             self._unrealized_changes = RWLock(sr)
 
         # asset record
         filepath = self._workerpath / "asset_record.pickle"
         if await aiofiles.os.path.isfile(filepath):
-            df: pd.DataFrame = await spawn_blocking(pd.read_pickle, filepath)
+            df: DataFrame = await spawn_blocking(pd.read_pickle, filepath)
             self._asset_record = RWLock(df)
 
         # auto order record
         filepath = self._workerpath / "auto_order_record.pickle"
         if await aiofiles.os.path.isfile(filepath):
-            df: pd.DataFrame = await spawn_blocking(pd.read_pickle, filepath)
+            df: DataFrame = await spawn_blocking(pd.read_pickle, filepath)
             self._auto_order_record = RWLock(df)
 
     async def dump_work(self) -> None:
@@ -517,9 +518,9 @@ class Transactor:
 
     def _calculate_trade_metrics(
         self,
-        asset_record: pd.DataFrame,
-        asset_changes: pd.Series,
-        symbol_mask: pd.Series,
+        asset_record: DataFrame,
+        asset_changes: Series,
+        symbol_mask: Series,
     ) -> TradeMetrics:
         """Calculate trade counts, margins, and yields."""
         total_change_count = len(asset_changes)
@@ -710,7 +711,7 @@ class Transactor:
         candle_data = candle_data_original[time_range.slice_from :]
 
         if len(candle_data) > 0:
-            df_index: pd.DatetimeIndex = candle_data.index  # type:ignore
+            df_index: DatetimeIndex = candle_data.index  # type:ignore
             last_written_moment = df_index[-1]
             new_moment = last_written_moment + timedelta(seconds=10)
             new_index = df_index.union([new_moment])
@@ -726,11 +727,11 @@ class Transactor:
 
     async def _update_transaction_asset_record(
         self,
-        asset_record: pd.DataFrame,
+        asset_record: DataFrame,
         last_asset: float | None,
         before_asset: float | None,
         slice_from: datetime,
-    ) -> pd.DataFrame:
+    ) -> DataFrame:
         """Update asset record with latest observations."""
         if last_asset is not None:
             observed_until = self._account_state.observed_until
@@ -904,14 +905,14 @@ class Transactor:
 
     async def _calculate_indicators(
         self,
-        candle_data: pd.DataFrame,
-        all_columns: pd.Index,
+        candle_data: DataFrame,
+        all_columns: Index,
         target_symbols: list[str],
         strategy: Strategy,
     ) -> IndicatorData:
         """Calculate indicators and extract current values."""
         columns = [str(s) for s in all_columns]
-        coroutines: list[Coroutine[Any, Any, pd.DataFrame]] = []
+        coroutines: list[Coroutine[Any, Any, DataFrame]] = []
         for symbol in target_symbols:
             chosen_columns = [s for s in columns if s.startswith(symbol)]
             coroutines.append(

@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, NamedTuple, Protocol, runtime_checkable
 
-import pandas as pd
+from pandas import DataFrame, Series
 from pydantic import BaseModel
 
 # We use `BaseModel` when parsing, validation, or mutability is needed.
@@ -215,8 +215,8 @@ class IndicatorInput(NamedTuple):
     """Input data for creating indicators."""
 
     target_symbols: list[str]
-    candle_data: pd.DataFrame
-    new_indicators: dict[str, pd.Series]
+    candle_data: DataFrame
+    new_indicators: dict[str, Series]
 
 
 class DecisionInput(NamedTuple):

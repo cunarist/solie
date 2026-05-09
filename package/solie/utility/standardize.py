@@ -5,21 +5,21 @@ from datetime import UTC, datetime
 from itertools import product
 
 import numpy as np
-import pandas as pd
+from pandas import DataFrame, DatetimeIndex, Series
 
 from .data_models import AccountState, Position, PositionDirection
 
 
-def create_empty_candle_data(target_symbols: list[str]) -> pd.DataFrame:
+def create_empty_candle_data(target_symbols: list[str]) -> DataFrame:
     """Create empty candle data DataFrame with proper columns."""
     column_pairs = product(
         target_symbols,
         ("OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"),
     )
-    return pd.DataFrame(
+    return DataFrame(
         columns=["/".join(p) for p in column_pairs],
         dtype=np.float32,
-        index=pd.DatetimeIndex([], tz="UTC"),
+        index=DatetimeIndex([], tz="UTC"),
     )
 
 
@@ -41,9 +41,9 @@ def create_empty_account_state(target_symbols: list[str]) -> AccountState:
     )
 
 
-def create_empty_asset_record() -> pd.DataFrame:
+def create_empty_asset_record() -> DataFrame:
     """Create empty asset record DataFrame."""
-    return pd.DataFrame(
+    return DataFrame(
         columns=[
             "CAUSE",
             "SYMBOL",
@@ -54,13 +54,13 @@ def create_empty_asset_record() -> pd.DataFrame:
             "ORDER_ID",
             "RESULT_ASSET",
         ],
-        index=pd.DatetimeIndex([], tz="UTC"),
+        index=DatetimeIndex([], tz="UTC"),
     )
 
 
-def create_empty_unrealized_changes() -> pd.Series:
+def create_empty_unrealized_changes() -> Series:
     """Create empty unrealized changes Series."""
-    return pd.Series(index=pd.DatetimeIndex([], tz="UTC"), dtype=np.float32)
+    return Series(index=DatetimeIndex([], tz="UTC"), dtype=np.float32)
 
 
 def create_strategy_code_name() -> str:
