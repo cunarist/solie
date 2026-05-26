@@ -164,12 +164,8 @@ class StrategyDevelopInput:
         docs = [
             ("Show Solie API docs", "https://solie-docs.cunarist.org/making-strategy/"),
             (
-                "Show Pandas API docs",
-                "https://pandas.pydata.org/docs/reference/index.html",
-            ),
-            (
-                "Show TA API docs",
-                "https://github.com/twopirllc/pandas-ta#indicators-by-category",
+                "Show Polars API docs",
+                "https://docs.pola.rs/api/python/stable/reference/index.html",
             ),
         ]
 

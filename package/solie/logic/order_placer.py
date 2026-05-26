@@ -2,14 +2,15 @@
 
 from asyncio import gather
 from collections import deque
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from logging import getLogger
 from typing import Any, ClassVar, NamedTuple
 
-from pandas import DataFrame
+import polars as pl
+from polars import DataFrame
 
-from solie.common import spawn_blocking
 from solie.utility import (
+    AUTO_ORDER_RECORD_SCHEMA,
     AccountState,
     AggregateTrade,
     ApiRequester,
@@ -19,7 +20,6 @@ from solie.utility import (
     RWLock,
     ball_ceil,
     slice_deque,
-    sort_data_frame,
     to_moment,
 )
 from solie.window import Window
@@ -172,15 +172,27 @@ class OrderPlacer:
         order_symbol = response["symbol"]
         order_id = response["orderId"]
         timestamp = response["updateTime"] / 1000
-        update_time = datetime.fromtimestamp(timestamp, tz=UTC)
+        update_timestamp = int(timestamp * 1000)
 
         async with self._auto_order_record.write_lock as cell:
-            while update_time in cell.data.index:
-                update_time += timedelta(milliseconds=1)
-            cell.data.loc[update_time, "SYMBOL"] = order_symbol
-            cell.data.loc[update_time, "ORDER_ID"] = order_id
-            if not cell.data.index.is_monotonic_increasing:
-                cell.data = await spawn_blocking(sort_data_frame, cell.data)
+            existing_timestamps = set(cell.data["timestamp"].to_list())
+            while update_timestamp in existing_timestamps:
+                update_timestamp += 1
+            cell.data = pl.concat(
+                [
+                    cell.data,
+                    DataFrame(
+                        [
+                            {
+                                "timestamp": update_timestamp,
+                                "SYMBOL": order_symbol,
+                                "ORDER_ID": order_id,
+                            },
+                        ],
+                        schema=AUTO_ORDER_RECORD_SCHEMA,
+                    ),
+                ],
+            )
 
     def _prepare_cancel_orders(
         self,

@@ -1,5 +1,9 @@
 """Constants used throughout the application."""
 
+from polars import DataType, Float32, Float64, Int64, String
+
+type PolarsSchema = dict[str, type[DataType]]
+
 # HTTP Status Codes
 HTTP_OK = 200
 
@@ -37,3 +41,69 @@ COLUMN_PARTS_COUNT = 3
 # Magic Number Replacements
 MIN_SERIES_LENGTH = 2
 EXIT_DIALOG_ANSWER = 2
+
+# Polars Schemas
+CANDLE_ROW_SCHEMA: PolarsSchema = {
+    "timestamp": Int64,
+    "open": Float64,
+    "high": Float64,
+    "low": Float64,
+    "close": Float64,
+    "volume": Float64,
+}
+
+DOWNLOADED_CANDLE_ROW_SCHEMA: PolarsSchema = {
+    "symbol": String,
+    **CANDLE_ROW_SCHEMA,
+}
+
+ASSET_RECORD_SCHEMA: PolarsSchema = {
+    "timestamp": Int64,
+    "CAUSE": String,
+    "SYMBOL": String,
+    "SIDE": String,
+    "FILL_PRICE": Float64,
+    "ROLE": String,
+    "MARGIN_RATIO": Float64,
+    "ORDER_ID": Int64,
+    "RESULT_ASSET": Float64,
+}
+
+ASSET_CHANGE_SCHEMA: PolarsSchema = {
+    "timestamp": Int64,
+    "ASSET_CHANGE": Float64,
+}
+
+AUTO_ORDER_RECORD_SCHEMA: PolarsSchema = {
+    "timestamp": Int64,
+    "SYMBOL": String,
+    "ORDER_ID": Int64,
+}
+
+
+def create_empty_candle_frame_schema(target_symbols: list[str]) -> PolarsSchema:
+    """Create the legacy prefixed candle frame schema for several symbols."""
+    schema: PolarsSchema = {"timestamp": Int64}
+    for symbol in target_symbols:
+        schema.update(
+            {
+                f"{symbol}/OPEN": Float32,
+                f"{symbol}/HIGH": Float32,
+                f"{symbol}/LOW": Float32,
+                f"{symbol}/CLOSE": Float32,
+                f"{symbol}/VOLUME": Float32,
+            },
+        )
+    return schema
+
+
+def create_symbol_candle_frame_schema(symbol: str) -> PolarsSchema:
+    """Create the prefixed candle frame schema for one symbol."""
+    return {
+        "timestamp": Int64,
+        f"{symbol}/OPEN": Float64,
+        f"{symbol}/HIGH": Float64,
+        f"{symbol}/LOW": Float64,
+        f"{symbol}/CLOSE": Float64,
+        f"{symbol}/VOLUME": Float64,
+    }

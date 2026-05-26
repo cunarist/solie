@@ -9,8 +9,8 @@ from multiprocessing.managers import ListProxy
 from typing import Any, NamedTuple
 
 import numpy as np
-import pandas as pd
-from pandas import DataFrame, DatetimeIndex, Series
+import polars as pl
+from polars import DataFrame, Float32, Series
 
 from solie.utility import (
     COLUMN_PARTS_COUNT,
@@ -29,6 +29,33 @@ from solie.utility import (
 )
 
 GRAPH_TYPES = ["PRICE", "VOLUME", "ABSTRACT"]
+
+
+def _append_indicator_dummy_row(candle_data: DataFrame) -> DataFrame:
+    """Append one dummy row so rolling indicators keep their previous behavior."""
+    if len(candle_data) == 0:
+        return candle_data
+
+    dummy_frame = candle_data.tail(1)
+    expressions = [
+        pl.lit(0).cast(candle_data.schema[column]).alias(column)
+        for column in candle_data.columns
+        if column != "timestamp"
+    ]
+    if "timestamp" in candle_data.columns:
+        expressions.append((pl.col("timestamp") + 1000).alias("timestamp"))
+    return candle_data.vstack(dummy_frame.with_columns(expressions))
+
+
+def _blank_indicator_series(column_name: str, length: int) -> Series:
+    """Create a blank numeric indicator series."""
+    return Series(column_name, [np.nan] * length, dtype=Float32)
+
+
+def _to_record_array(frame: DataFrame) -> np.recarray:
+    """Convert a Polars DataFrame into a NumPy record array."""
+    arrays = [frame[column].to_numpy() for column in frame.columns]
+    return np.rec.fromarrays(arrays, formats=None, names=frame.columns)
 
 
 class DecisionContext(NamedTuple):
@@ -73,14 +100,7 @@ def make_indicators(
 ) -> DataFrame:
     """Calculate technical indicators using strategy's indicator script."""
     candle_data = candle_data.interpolate()
-
-    if len(candle_data) > 0:
-        candle_index: DatetimeIndex = candle_data.index  # type:ignore
-        dummy_index = candle_index[-1].to_pydatetime() + timedelta(seconds=1)
-    else:
-        dummy_index = datetime.fromtimestamp(0.0, tz=UTC)
-
-    candle_data.loc[dummy_index, :] = 0.0
+    candle_data = _append_indicator_dummy_row(candle_data)
 
     blank_column_trios = product(
         target_symbols,
@@ -88,12 +108,10 @@ def make_indicators(
         ("BLANK",),
     )
     new_indicators: dict[str, Series] = {}
-    base_index = candle_data.index
     for blank_column in ("/".join(t) for t in blank_column_trios):
-        new_indicators[blank_column] = Series(
-            np.nan,
-            index=base_index,
-            dtype=np.float32,
+        new_indicators[blank_column] = _blank_indicator_series(
+            blank_column,
+            len(candle_data),
         )
 
     indicator_input = IndicatorInput(
@@ -116,15 +134,17 @@ def make_indicators(
         # Validate the indicator format.
         if not isinstance(new_indicator, Series):
             continue
-        if not pd.api.types.is_numeric_dtype(new_indicator):
+        if not new_indicator.dtype.is_numeric():
             continue
         # Convert each element into strings and make it into a name.
-        new_indicator.name = column_name
+        new_indicators[column_name] = new_indicator.rename(column_name)
 
-    indicators = pd.concat(new_indicators.values(), axis="columns")
-    indicators = indicators.astype(np.float32)
+    indicators = DataFrame(new_indicators)
+    indicators = indicators.cast(Float32)
+    if "timestamp" in candle_data.columns:
+        indicators = indicators.with_columns(timestamp=candle_data["timestamp"])
 
-    indicators = indicators.iloc[:-1]
+    indicators = indicators[:-1]
 
     if only_last_index:
         return indicators.tail(1)
@@ -187,7 +207,7 @@ class CalculationInput(NamedTuple):
     progress_list: ListProxy
     target_progress: int
     target_symbols: list[str]
-    calculation_index: DatetimeIndex
+    calculation_index: Series
     chunk_candle_data: DataFrame
     chunk_indicators: DataFrame
     chunk_asset_record: DataFrame
@@ -264,20 +284,26 @@ class ChunkSimulator:
 
         # Convert DataFrames to numpy arrays for performance
         calculation_index_ar = self.calculation_index.to_numpy()
-        self.candle_data_ar = self.chunk_candle_data.to_records()
-        self.indicators_ar = self.chunk_indicators.to_records()
-        self.asset_record_ar = self.chunk_asset_record.to_records()
-        self.chunk_unrealized_changes_ar = (
-            self.chunk_unrealized_changes.to_frame().to_records()
+        self.candle_data_ar = _to_record_array(self.chunk_candle_data)
+        self.indicators_ar = _to_record_array(self.chunk_indicators)
+        self.asset_record_ar = _to_record_array(self.chunk_asset_record)
+        self.chunk_unrealized_changes_ar = _to_record_array(
+            self.chunk_unrealized_changes.to_frame(),
         )
 
         calculation_index_length = len(calculation_index_ar)
-        first_calculation_moment = calculation_index_ar[0]
+        first_calculation_moment = datetime.fromtimestamp(
+            calculation_index_ar[0] / 1000,
+            UTC,
+        )
 
         # Main simulation loop
         for cycle in range(calculation_index_length):
             self.cycle = cycle
-            before_moment = calculation_index_ar[cycle]
+            before_moment = datetime.fromtimestamp(
+                calculation_index_ar[cycle] / 1000,
+                UTC,
+            )
             current_moment = before_moment + timedelta(seconds=10)
 
             # Process all symbols
@@ -285,7 +311,7 @@ class ChunkSimulator:
                 self._process_symbol(symbol, current_moment, before_moment)
 
             # Update unrealized changes
-            self._update_unrealized_state(before_moment, current_moment)
+            self._update_unrealized_state(current_moment)
 
             # Make new trading decisions
             self._process_decisions(current_moment)
@@ -699,9 +725,9 @@ class ChunkSimulator:
         amount_shift = trade_details.amount_shift
         open_price = trade_details.open_price
         fill_time = before_moment + timedelta(milliseconds=self.decision_lag)
-        fill_time_np = np.datetime64(int(fill_time.timestamp() * 1000), "ms")
-        while fill_time_np in self.asset_record_ar["index"]:
-            fill_time_np += np.timedelta64(1, "ms")
+        fill_timestamp = int(fill_time.timestamp() * 1000)
+        while fill_timestamp in self.asset_record_ar["timestamp"]:
+            fill_timestamp += 1
 
         wallet_balance = self.chunk_virtual_state.available_balance
         for symbol_key, location in self.chunk_virtual_state.positions.items():
@@ -725,7 +751,7 @@ class ChunkSimulator:
 
         original_size = self.asset_record_ar.shape[0]
         self.asset_record_ar.resize(original_size + 1)
-        self.asset_record_ar[-1]["index"] = fill_time_np
+        self.asset_record_ar[-1]["timestamp"] = fill_timestamp
         self.asset_record_ar[-1]["CAUSE"] = "AUTO_TRADE"
         self.asset_record_ar[-1]["SYMBOL"] = symbol
         self.asset_record_ar[-1]["SIDE"] = "BUY" if amount_shift > 0.0 else "SELL"
@@ -735,7 +761,7 @@ class ChunkSimulator:
         self.asset_record_ar[-1]["ORDER_ID"] = order_id
         self.asset_record_ar[-1]["RESULT_ASSET"] = wallet_balance
 
-        update_time = fill_time_np.item().replace(tzinfo=UTC)
+        update_time = datetime.fromtimestamp(fill_timestamp / 1000, tz=UTC)
         self.chunk_account_state.positions[symbol].update_time = update_time
 
     def _update_account_state_for_symbol(self, symbol: str) -> None:
@@ -771,7 +797,6 @@ class ChunkSimulator:
 
     def _update_unrealized_state(
         self,
-        before_moment: datetime,
         current_moment: datetime,
     ) -> None:
         """Calculate and record unrealized profit/loss."""
@@ -816,7 +841,6 @@ class ChunkSimulator:
 
         original_size = self.chunk_unrealized_changes_ar.shape[0]
         self.chunk_unrealized_changes_ar.resize(original_size + 1)
-        self.chunk_unrealized_changes_ar[-1]["index"] = before_moment
         self.chunk_unrealized_changes_ar[-1]["0"] = unrealized_change
 
     def _process_decisions(self, current_moment: datetime) -> None:
@@ -825,13 +849,13 @@ class ChunkSimulator:
         current_candle_data = {
             k: float(record_row[k])
             for k in record_row.dtype.names or ()
-            if k != "index"
+            if k != "timestamp"
         }
         record_row: np.record = self.indicators_ar[self.cycle]
         current_indicators = {
             k: float(record_row[k])
             for k in record_row.dtype.names or ()
-            if k != "index"
+            if k != "timestamp"
         }
 
         decisions = make_decisions(
@@ -870,17 +894,7 @@ class ChunkSimulator:
     def _create_output(self) -> CalculationOutput:
         """Convert arrays back to DataFrames and create output."""
         chunk_asset_record = DataFrame(self.asset_record_ar)
-        chunk_asset_record = chunk_asset_record.set_index("index")
-        chunk_asset_record.index.name = None
-        chunk_asset_record.index = pd.to_datetime(chunk_asset_record.index, utc=True)
-
         chunk_unrealized_changes_df = DataFrame(self.chunk_unrealized_changes_ar)
-        chunk_unrealized_changes_df = chunk_unrealized_changes_df.set_index("index")
-        chunk_unrealized_changes_df.index.name = None
-        chunk_unrealized_changes_df.index = pd.to_datetime(
-            chunk_unrealized_changes_df.index,
-            utc=True,
-        )
         chunk_unrealized_changes = chunk_unrealized_changes_df["0"]
 
         return CalculationOutput(

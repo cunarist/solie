@@ -60,7 +60,9 @@ class OverlayBox[T](QWidget):
     @override
     def showEvent(self, event: QShowEvent) -> None:
         # needed for filling the window when resized
-        parent: QMainWindow = self.parent()  # type:ignore
+        parent = self.parent()
+        if not isinstance(parent, QMainWindow):
+            raise TypeError
         self.setGeometry(parent.rect())
 
     @override

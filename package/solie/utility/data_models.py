@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, NamedTuple, Protocol, runtime_checkable
 
-from pandas import DataFrame, Series
+from polars import DataFrame, Series
 from pydantic import BaseModel
 
 # We use `BaseModel` when parsing, validation, or mutability is needed.

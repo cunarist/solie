@@ -11,10 +11,9 @@ from typing import Any, NamedTuple
 
 import aiofiles
 import aiofiles.os
-import numpy as np
-import pandas as pd
+import polars as pl
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from pandas import DataFrame, DatetimeIndex, Index, Series
+from polars import DataFrame
 from PySide6.QtWidgets import QMenu
 
 from solie.common import UniqueTask, outsource, spawn, spawn_blocking
@@ -31,6 +30,8 @@ from solie.logic import (
 )
 from solie.overlay import LongTextView
 from solie.utility import (
+    ASSET_RECORD_SCHEMA,
+    AUTO_ORDER_RECORD_SCHEMA,
     ApiRequester,
     ApiRequestError,
     ApiStreamer,
@@ -49,7 +50,6 @@ from solie.utility import (
     internet_connected,
     slice_deque,
     sort_data_frame,
-    sort_series,
     to_moment,
     when_internet_connected,
     when_internet_disconnected,
@@ -60,6 +60,8 @@ from solie.window import Window
 from .united import team
 
 logger = getLogger(__name__)
+
+MIN_ASSET_POINTS_FOR_YIELD = 2
 
 
 class DisplayTimeRange(NamedTuple):
@@ -143,10 +145,7 @@ class Transactor:
         self._unrealized_changes = RWLock(create_empty_unrealized_changes())
         self._asset_record = RWLock(create_empty_asset_record())
         self._auto_order_record = RWLock(
-            DataFrame(
-                columns=["SYMBOL", "ORDER_ID"],
-                index=DatetimeIndex([], tz="UTC"),
-            ),
+            DataFrame(schema=AUTO_ORDER_RECORD_SCHEMA),
         )
 
         self._account_listener = AccountListener(
@@ -222,16 +221,6 @@ class Transactor:
             self.watch_binance,
             trigger="cron",
             second="*/10",
-        )
-        self._scheduler.add_job(
-            self._organize_data,
-            trigger="cron",
-            minute="*",
-        )
-        self._scheduler.add_job(
-            self._save_large_data,
-            trigger="cron",
-            hour="*",
         )
         self._scheduler.add_job(
             self.update_user_data_stream,
@@ -332,75 +321,9 @@ class Transactor:
                 read_data.binance_api_secret,
             )
 
-        # unrealized changes
-        filepath = self._workerpath / "unrealized_changes.pickle"
-        if await aiofiles.os.path.isfile(filepath):
-            sr: Series = await spawn_blocking(pd.read_pickle, filepath)
-            self._unrealized_changes = RWLock(sr)
-
-        # asset record
-        filepath = self._workerpath / "asset_record.pickle"
-        if await aiofiles.os.path.isfile(filepath):
-            df: DataFrame = await spawn_blocking(pd.read_pickle, filepath)
-            self._asset_record = RWLock(df)
-
-        # auto order record
-        filepath = self._workerpath / "auto_order_record.pickle"
-        if await aiofiles.os.path.isfile(filepath):
-            df: DataFrame = await spawn_blocking(pd.read_pickle, filepath)
-            self._auto_order_record = RWLock(df)
-
     async def dump_work(self) -> None:
         """Save transaction data to disk."""
-        await self._save_large_data()
         await self._save_scribbles()
-
-    async def _organize_data(self) -> None:
-        async with self._unrealized_changes.write_lock as cell:
-            if not cell.data.index.is_unique:
-                unique_index = cell.data.index.drop_duplicates()
-                cell.data = cell.data.reindex(unique_index)
-            if not cell.data.index.is_monotonic_increasing:
-                cell.data = await spawn_blocking(sort_series, cell.data)
-
-        async with self._auto_order_record.write_lock as cell:
-            if not cell.data.index.is_unique:
-                unique_index = cell.data.index.drop_duplicates()
-                cell.data = cell.data.reindex(unique_index)
-            if not cell.data.index.is_monotonic_increasing:
-                cell.data = await spawn_blocking(sort_data_frame, cell.data)
-            max_length = 2**16
-            if len(cell.data) > max_length:
-                cell.data = cell.data.iloc[-max_length:].copy()
-
-        async with self._asset_record.write_lock as cell:
-            if not cell.data.index.is_unique:
-                unique_index = cell.data.index.drop_duplicates()
-                cell.data = cell.data.reindex(unique_index)
-            if not cell.data.index.is_monotonic_increasing:
-                cell.data = await spawn_blocking(sort_data_frame, cell.data)
-
-    async def _save_large_data(self) -> None:
-        async with self._unrealized_changes.read_lock as cell:
-            unrealized_changes = cell.data.copy()
-        await spawn_blocking(
-            unrealized_changes.to_pickle,
-            self._workerpath / "unrealized_changes.pickle",
-        )
-
-        async with self._auto_order_record.read_lock as cell:
-            auto_order_record = cell.data.copy()
-        await spawn_blocking(
-            auto_order_record.to_pickle,
-            self._workerpath / "auto_order_record.pickle",
-        )
-
-        async with self._asset_record.read_lock as cell:
-            asset_record = cell.data.copy()
-        await spawn_blocking(
-            asset_record.to_pickle,
-            self._workerpath / "asset_record.pickle",
-        )
 
     async def _save_scribbles(self) -> None:
         filepath = self._workerpath / "scribbles.pickle"
@@ -516,46 +439,62 @@ class Transactor:
     async def _display_range_information(self) -> None:
         self._range_display_task.spawn(self._display_range_information_real())
 
-    def _calculate_trade_metrics(
+    def _filter_frame_by_time(
         self,
-        asset_record: DataFrame,
-        asset_changes: Series,
-        symbol_mask: Series,
-    ) -> TradeMetrics:
-        """Calculate trade counts, margins, and yields."""
-        total_change_count = len(asset_changes)
-        symbol_change_count = len(asset_changes[symbol_mask])
+        data: DataFrame,
+        start: datetime,
+        end: datetime,
+    ) -> DataFrame:
+        """Filter a timestamp-column frame by visible time range."""
+        if "timestamp" not in data.columns:
+            return data
+        start_timestamp = int(start.timestamp() * 1000)
+        end_timestamp = int(end.timestamp() * 1000)
+        return data.filter(
+            (pl.col("timestamp") >= start_timestamp)
+            & (pl.col("timestamp") <= end_timestamp),
+        )
 
+    def _calculate_trade_metrics(self, asset_record: DataFrame) -> TradeMetrics:
+        """Calculate trade counts, margins, and yields for display."""
+        if len(asset_record) == 0:
+            return TradeMetrics(0, 0, 0.0, 0.0, 0.0, 0.0)
+
+        auto_record = asset_record.filter(pl.col("CAUSE") == "AUTO_TRADE")
+        symbol_record = auto_record.filter(pl.col("SYMBOL") == self._viewing_symbol)
+
+        total_margin = auto_record["MARGIN_RATIO"].sum()
+        symbol_margin = symbol_record["MARGIN_RATIO"].sum()
         total_margin_ratio = (
-            asset_record["MARGIN_RATIO"].sum() if len(asset_record) > 0 else 0
+            float(total_margin) if isinstance(total_margin, int | float) else 0.0
         )
         symbol_margin_ratio = (
-            asset_record[symbol_mask]["MARGIN_RATIO"].sum()
-            if len(asset_record[symbol_mask]) > 0
-            else 0
+            float(symbol_margin) if isinstance(symbol_margin, int | float) else 0.0
         )
-
-        if len(asset_changes) > 0:
-            total_yield = (asset_changes.cumprod().iloc[-1] - 1) * 100
-        else:
-            total_yield = 0
-
-        if len(asset_changes[symbol_mask]) > 0:
-            symbol_yield = (asset_changes[symbol_mask].cumprod().iloc[-1] - 1) * 100
-        else:
-            symbol_yield = 0
 
         return TradeMetrics(
-            total_change_count=total_change_count,
-            symbol_change_count=symbol_change_count,
+            total_change_count=len(auto_record),
+            symbol_change_count=len(symbol_record),
             total_margin_ratio=total_margin_ratio,
             symbol_margin_ratio=symbol_margin_ratio,
-            total_yield=total_yield,
-            symbol_yield=symbol_yield,
+            total_yield=self._calculate_asset_yield(auto_record),
+            symbol_yield=self._calculate_asset_yield(symbol_record),
         )
 
+    def _calculate_asset_yield(self, asset_record: DataFrame) -> float:
+        """Calculate visible asset yield from result asset values."""
+        if len(asset_record) < MIN_ASSET_POINTS_FOR_YIELD:
+            return 0.0
+        asset_values = [
+            float(value)
+            for value in asset_record["RESULT_ASSET"]
+            if isinstance(value, int | float) and value > 0
+        ]
+        if len(asset_values) < MIN_ASSET_POINTS_FOR_YIELD:
+            return 0.0
+        return (asset_values[-1] / asset_values[0] - 1) * 100
+
     async def _display_range_information_real(self) -> None:
-        symbol = self._viewing_symbol
         price_widget = self._window.transaction_graph.price_widget
 
         range_start_timestamp = max(price_widget.getAxis("bottom").range[0], 0.0)
@@ -576,25 +515,22 @@ class Transactor:
             range_length.seconds % 60,
         )
 
-        async with self._unrealized_changes.read_lock as cell:
-            unrealized_changes = cell.data[range_start:range_end].copy()
         async with self._asset_record.read_lock as cell:
-            asset_record = cell.data[range_start:range_end].copy()
+            asset_record = self._filter_frame_by_time(
+                cell.data,
+                range_start,
+                range_end,
+            )
+        async with self._unrealized_changes.read_lock as cell:
+            unrealized_changes = cell.data
 
-        auto_trade_mask = asset_record["CAUSE"] == "AUTO_TRADE"
-        asset_changes = asset_record["RESULT_ASSET"].pct_change(fill_method=None) + 1  # type:ignore
-        asset_record = asset_record[auto_trade_mask]
-        asset_changes = asset_changes.reindex(asset_record.index, fill_value=1.0)
-        symbol_mask = asset_record["SYMBOL"] == symbol
+        metrics = self._calculate_trade_metrics(asset_record)
 
-        metrics = self._calculate_trade_metrics(
-            asset_record,
-            asset_changes,
-            symbol_mask,
-        )
-
+        min_unrealized_change_value = unrealized_changes.min()
         min_unrealized_change = (
-            unrealized_changes.min() if len(unrealized_changes) > 0 else 0
+            float(min_unrealized_change_value)
+            if isinstance(min_unrealized_change_value, int | float)
+            else 0.0
         )
 
         price_widget = self._window.transaction_graph.price_widget
@@ -624,10 +560,14 @@ class Transactor:
     async def _set_minimum_view_range(self) -> None:
         widget = self._window.transaction_graph.price_widget
         range_down = widget.getAxis("left").range[0]
-        widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
+        widget.plotItem.vb.setLimits(  # type:ignore
+            minYRange=range_down * 0.005,
+        )
         widget = self._window.transaction_graph.asset_widget
         range_down = widget.getAxis("left").range[0]
-        widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
+        widget.plotItem.vb.setLimits(  # type:ignore
+            minYRange=range_down * 0.005,
+        )
 
     async def display_strategy_index(self) -> None:
         """Update UI with current strategy selection."""
@@ -689,33 +629,35 @@ class Transactor:
         time_range: DisplayTimeRange,
     ) -> TransactionAssetData:
         """Load candle and asset data for transaction display."""
-        async with team.collector.candle_data.read_lock as cell:
-            columns = [str(s) for s in cell.data.columns]
-            chosen_columns = [s for s in columns if s.startswith(symbol)]
-            candle_data_original = cell.data[chosen_columns][
-                time_range.get_from : time_range.slice_until
-            ].copy()
+        candle_data_original = await team.collector.read_symbol_candle_data(
+            symbol,
+            time_range.get_from,
+            time_range.slice_until,
+        )
 
         async with self._asset_record.read_lock as cell:
-            if len(cell.data) > 0:
-                last_asset = cell.data.iloc[-1]["RESULT_ASSET"]
-            else:
-                last_asset = None
-            before_record = cell.data[: time_range.slice_from]
-            if len(before_record) > 0:
-                before_asset = before_record.iloc[-1]["RESULT_ASSET"]
-            else:
-                before_asset = None
-            asset_record = cell.data[time_range.slice_from :].copy()
+            asset_record = self._filter_frame_by_time(
+                cell.data,
+                time_range.slice_from,
+                time_range.slice_until,
+            )
+            before_record = self._filter_frame_by_time(
+                cell.data,
+                datetime.fromtimestamp(0, tz=UTC),
+                time_range.slice_from,
+            )
+            last_asset = (
+                float(cell.data["RESULT_ASSET"][-1]) if len(cell.data) > 0 else None
+            )
+            before_asset = (
+                float(before_record["RESULT_ASSET"][-1])
+                if len(before_record) > 0
+                else None
+            )
 
-        candle_data = candle_data_original[time_range.slice_from :]
-
-        if len(candle_data) > 0:
-            df_index: DatetimeIndex = candle_data.index  # type:ignore
-            last_written_moment = df_index[-1]
-            new_moment = last_written_moment + timedelta(seconds=10)
-            new_index = df_index.union([new_moment])
-            candle_data = candle_data.reindex(new_index)
+        candle_data = candle_data_original.filter(
+            pl.col("timestamp") >= int(time_range.slice_from.timestamp() * 1000),
+        )
 
         return TransactionAssetData(
             candle_original=candle_data_original,
@@ -733,38 +675,69 @@ class Transactor:
         slice_from: datetime,
     ) -> DataFrame:
         """Update asset record with latest observations."""
+        if "timestamp" not in asset_record.columns:
+            return asset_record
+
         if last_asset is not None:
             observed_until = self._account_state.observed_until
+            observed_timestamp = int(observed_until.timestamp() * 1000)
+            last_timestamp = (
+                int(asset_record["timestamp"][-1]) if len(asset_record) > 0 else 0
+            )
             if (
-                len(asset_record) == 0 or asset_record.index[-1] < observed_until
+                len(asset_record) == 0 or last_timestamp < observed_timestamp
             ) and slice_from < observed_until:
-                asset_record.loc[observed_until, "CAUSE"] = "OTHER"
-                asset_record.loc[observed_until, "RESULT_ASSET"] = last_asset
-                if not asset_record.index.is_monotonic_increasing:
-                    asset_record = await spawn_blocking(
-                        sort_data_frame,
-                        asset_record,
-                    )
+                asset_record = self._append_asset_observation(
+                    asset_record,
+                    observed_timestamp,
+                    last_asset,
+                )
+                asset_record = await spawn_blocking(sort_data_frame, asset_record)
 
         if before_asset is not None:
-            asset_record.loc[slice_from, "CAUSE"] = "OTHER"
-            asset_record.loc[slice_from, "RESULT_ASSET"] = before_asset
-            if not asset_record.index.is_monotonic_increasing:
-                asset_record = await spawn_blocking(sort_data_frame, asset_record)
+            asset_record = self._append_asset_observation(
+                asset_record,
+                int(slice_from.timestamp() * 1000),
+                before_asset,
+            )
+            asset_record = await spawn_blocking(sort_data_frame, asset_record)
 
         return asset_record
 
+    def _append_asset_observation(
+        self,
+        asset_record: DataFrame,
+        timestamp: int,
+        result_asset: float,
+    ) -> DataFrame:
+        """Append an OTHER asset observation row."""
+        return pl.concat(
+            [
+                asset_record,
+                DataFrame(
+                    [
+                        {
+                            "timestamp": timestamp,
+                            "CAUSE": "OTHER",
+                            "SYMBOL": None,
+                            "SIDE": None,
+                            "FILL_PRICE": None,
+                            "ROLE": None,
+                            "MARGIN_RATIO": None,
+                            "ORDER_ID": None,
+                            "RESULT_ASSET": result_asset,
+                        },
+                    ],
+                    schema=ASSET_RECORD_SCHEMA,
+                ),
+            ],
+        )
+
     async def _display_lines_real(self, periodic: bool, frequent: bool) -> None:
         symbol = self._viewing_symbol
-        strategy_index = self._transaction_settings.strategy_index
-        strategy = team.strategist.strategies[strategy_index]
 
         if frequent and not self._should_draw_frequently:
             return
-
-        async with team.collector.candle_data.read_lock as cell:
-            if len(cell.data) == 0:
-                return
 
         if periodic:
             current_moment = to_moment(datetime.now(UTC))
@@ -792,7 +765,7 @@ class Transactor:
         )
 
         async with self._unrealized_changes.read_lock as cell:
-            unrealized_changes = cell.data.copy()
+            unrealized_changes = cell.data.clone()
 
         asset_data = await self._load_transaction_asset_data(symbol, time_range)
 
@@ -810,13 +783,19 @@ class Transactor:
             unrealized_changes=unrealized_changes,
         )
 
+        strategy_index = self._transaction_settings.strategy_index
+        strategy = team.strategist.strategies[strategy_index]
         indicators = await spawn_blocking(
             make_indicators,
             strategy=strategy,
             target_symbols=[self._viewing_symbol],
             candle_data=asset_data.candle_original,
         )
-        indicators = indicators[time_range.slice_from : time_range.slice_until]
+        indicators = self._filter_frame_by_time(
+            indicators,
+            time_range.slice_from,
+            time_range.slice_until,
+        )
 
         await self._window.transaction_graph.update_custom_lines(symbol, indicators)
         duration_recorder.record()
@@ -906,7 +885,7 @@ class Transactor:
     async def _calculate_indicators(
         self,
         candle_data: DataFrame,
-        all_columns: Index,
+        all_columns: list[str],
         target_symbols: list[str],
         strategy: Strategy,
     ) -> IndicatorData:
@@ -925,19 +904,19 @@ class Transactor:
             )
             await sleep(0.0)
         symbol_indicators = await gather(*coroutines)
-        indicators = pd.concat(symbol_indicators, axis="columns")
+        indicators = pl.concat(symbol_indicators, how="horizontal")
 
-        record_row: np.record = candle_data.tail(1).to_records()[-1]
+        record_row = candle_data.tail(1).row(0, named=True)
         current_candle_data = {
-            k: float(record_row[k])
-            for k in record_row.dtype.names or ()
-            if k != "index"
+            key: float(value)
+            for key, value in record_row.items()
+            if key != "timestamp" and isinstance(value, int | float)
         }
-        record_row: np.record = indicators.to_records()[-1]
+        record_row = indicators.tail(1).row(0, named=True)
         current_indicators = {
-            k: float(record_row[k])
-            for k in record_row.dtype.names or ()
-            if k != "index"
+            key: float(value)
+            for key, value in record_row.items()
+            if key != "timestamp" and isinstance(value, int | float)
         }
         return IndicatorData(
             current_candle_data=current_candle_data,
@@ -986,24 +965,34 @@ class Transactor:
 
         spawn(self._run_progress_bar(current_moment, is_cycle_done))
 
-        async with team.collector.candle_data.read_lock as cell:
-            if len(cell.data) == 0:
-                # case when the app is executed for the first time
-                return
-
         await team.collector.wait_for_candle_data_ready(before_moment)
 
         slice_from = datetime.now(UTC) - timedelta(days=28)
-        async with team.collector.candle_data.read_lock as cell:
-            candle_data = cell.data[slice_from:].copy()
-
         target_symbols = self._window.data_settings.target_symbols
+        candle_frames = [
+            await team.collector.read_symbol_candle_data(
+                symbol,
+                slice_from,
+                before_moment,
+            )
+            for symbol in target_symbols
+        ]
+        if len(candle_frames) == 0 or any(len(frame) == 0 for frame in candle_frames):
+            return
+        base_frame = candle_frames[0]
+        extra_frames = [
+            frame.drop("timestamp")
+            for frame in candle_frames[1:]
+            if "timestamp" in frame.columns
+        ]
+        candle_data = pl.concat([base_frame, *extra_frames], how="horizontal")
+
         strategy_index = self._transaction_settings.strategy_index
         strategy = team.strategist.strategies[strategy_index]
 
         indicator_data = await self._calculate_indicators(
             candle_data,
-            cell.data.columns,
+            candle_data.columns,
             target_symbols,
             strategy,
         )
@@ -1037,7 +1026,11 @@ class Transactor:
         graph_range = graph_from.getAxis("bottom").range
         range_start = graph_range[0]
         range_end = graph_range[1]
-        graph_to.setXRange(range_start, range_end, padding=0)  # type:ignore
+        graph_to.setXRange(
+            range_start,
+            range_end,
+            padding=0,  # type:ignore
+        )
 
     async def _update_mode_settings(self) -> None:
         desired_leverage = self._window.spinBox.value()
@@ -1171,7 +1164,11 @@ class Transactor:
         if range_end - range_start < 6 * 60 * 60:  # six hours
             return
 
-        widget.setXRange(range_start + 10, range_end + 10, padding=0)  # type:ignore
+        widget.setXRange(
+            range_start + 10,
+            range_end + 10,
+            padding=0,  # type:ignore
+        )
 
     async def _show_raw_account_state_object(self) -> None:
         text = ""

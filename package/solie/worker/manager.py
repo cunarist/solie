@@ -225,8 +225,9 @@ class Manager:
         """Display data structure sizes."""
         texts: list[str] = []
 
-        async with team.collector.candle_data.read_lock as cell:
-            candle_data_len = len(cell.data)
+        candle_data_len = 0
+        for symbol in self._window.data_settings.target_symbols:
+            candle_data_len += await self._window.candle_data_store.count_all(symbol)
 
         texts.append(f"CANDLE_DATA {candle_data_len}")
         texts.append(f"REALTIME_DATA {len(team.collector.realtime_data)}")

@@ -1,7 +1,6 @@
 """Historical market data download from Binance."""
 
 from asyncio import sleep
-from datetime import UTC, datetime, timedelta
 from enum import Enum
 from logging import getLogger
 from pathlib import Path
@@ -11,12 +10,11 @@ from zipfile import ZipFile, is_zipfile
 import aiofiles
 import aiofiles.os
 import aiohttp
-import numpy as np
-import pandas as pd
-from pandas import DataFrame
+import polars as pl
+from polars import DataFrame
 
 from solie.common import spawn_blocking
-from solie.utility import AggregateTrade, to_moment
+from solie.utility import DOWNLOADED_CANDLE_ROW_SCHEMA
 
 logger = getLogger(__name__)
 
@@ -242,17 +240,16 @@ def sort_aggtrade_csv(zip_file_path: Path, has_header: bool) -> None:
     with ZipFile(zip_file_path, "r") as zip_ref:
         csv_filename = zip_ref.namelist()[0]
         with zip_ref.open(csv_filename, "r") as csv_file:
-            df = pd.read_csv(csv_file, header=0 if has_header else None)
+            df = pl.read_csv(csv_file, has_header=has_header)
 
-    # Sort by transact_time (column index 5)
-    df = df.sort_values(by=df.columns[5])
+    df = df.sort(df.columns[5])
 
     # Write sorted CSV back to ZIP
     with (
         ZipFile(zip_file_path, "w") as zip_ref,
         zip_ref.open(csv_filename, "w", force_zip64=True) as csv_file,
     ):
-        df.to_csv(csv_file, index=False, header=has_header)
+        csv_file.write(df.write_csv(include_header=has_header).encode())
 
 
 def check_header(zip_file_path: Path) -> bool:
@@ -300,28 +297,18 @@ def process_csv_lines(
             if not agg_trades:
                 return None
 
-            # Convert to DataFrame
-            df = DataFrame(agg_trades)
-
-            # Set time index
-            df = df.set_index("time")
-            df.index.name = None
-            df.index = pd.to_datetime(df.index, unit="ms", utc=True)
-
-            # Rename columns to match expected format
-            symbol = preset.symbol
-            df = df.rename(
-                columns={
-                    "open": f"{symbol}/OPEN",
-                    "high": f"{symbol}/HIGH",
-                    "low": f"{symbol}/LOW",
-                    "close": f"{symbol}/CLOSE",
-                    "volume": f"{symbol}/VOLUME",
+            return DataFrame(
+                {
+                    "symbol": [preset.symbol] * len(agg_trades),
+                    "timestamp": [candle.time for candle in agg_trades],
+                    "open": [candle.open for candle in agg_trades],
+                    "high": [candle.high for candle in agg_trades],
+                    "low": [candle.low for candle in agg_trades],
+                    "close": [candle.close for candle in agg_trades],
+                    "volume": [candle.volume for candle in agg_trades],
                 },
+                schema=DOWNLOADED_CANDLE_ROW_SCHEMA,
             )
-
-            # Convert to float32 for memory efficiency
-            return df.astype(np.float32)
 
 
 def process_aggtrade_csv(
@@ -342,73 +329,3 @@ def process_aggtrade_csv(
 
     return df
 
-
-def fill_holes_with_aggtrades(
-    symbol: str,
-    recent_candle_data: DataFrame,
-    aggtrades: dict[int, AggregateTrade],
-    moment_to_fill_from: datetime,
-    last_fetched_time: datetime,
-) -> DataFrame:
-    """Fill missing candle data using aggregate trade information."""
-    fill_moment = moment_to_fill_from
-
-    last_fetched_moment = to_moment(last_fetched_time)
-    while fill_moment < last_fetched_moment:
-        block_start = fill_moment
-        block_end = fill_moment + timedelta(seconds=10)
-
-        aggtrade_prices: list[float] = []
-        aggtrade_volumes: list[float] = []
-        for _, aggtrade in sorted(aggtrades.items()):
-            # sorted by time
-            aggtrade_time = datetime.fromtimestamp(
-                aggtrade.timestamp / 1000,
-                tz=UTC,
-            )
-            if block_start <= aggtrade_time < block_end:
-                aggtrade_prices.append(aggtrade.price)
-                aggtrade_volumes.append(aggtrade.volume)
-
-        can_write = True
-
-        if len(aggtrade_prices) == 0:
-            # when there are no trades
-            inspect_sr = recent_candle_data[f"{symbol}/CLOSE"]
-            inspect_sr = inspect_sr.sort_index()
-            last_prices = inspect_sr[:fill_moment].dropna()
-            if len(last_prices) == 0:
-                # when there are no previous data
-                # because new data folder was created
-                can_write = False
-                last_price = 0
-            else:
-                last_price = last_prices.iloc[-1]
-            open_price = last_price
-            high_price = last_price
-            low_price = last_price
-            close_price = last_price
-            sum_volume = 0
-        else:
-            open_price = aggtrade_prices[0]
-            high_price = max(aggtrade_prices)
-            low_price = min(aggtrade_prices)
-            close_price = aggtrade_prices[-1]
-            sum_volume = sum(aggtrade_volumes)
-
-        if can_write:
-            column = f"{symbol}/OPEN"
-            recent_candle_data.loc[fill_moment, column] = np.float32(open_price)
-            column = f"{symbol}/HIGH"
-            recent_candle_data.loc[fill_moment, column] = np.float32(high_price)
-            column = f"{symbol}/LOW"
-            recent_candle_data.loc[fill_moment, column] = np.float32(low_price)
-            column = f"{symbol}/CLOSE"
-            recent_candle_data.loc[fill_moment, column] = np.float32(close_price)
-            column = f"{symbol}/VOLUME"
-            recent_candle_data.loc[fill_moment, column] = np.float32(sum_volume)
-
-        fill_moment += timedelta(seconds=10)
-
-    recent_candle_data = recent_candle_data.sort_index(axis="index")
-    return recent_candle_data.sort_index(axis="columns")

@@ -1,15 +1,12 @@
 """Trading strategy simulation worker."""
-
-import pickle
 from datetime import UTC, datetime, timedelta
 from typing import Any, NamedTuple
 
 import aiofiles
 import aiofiles.os
-import numpy as np
-import pandas as pd
+import polars as pl
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from pandas import DataFrame, DatetimeIndex, Grouper, Series
+from polars import DataFrame, Series
 from PySide6.QtWidgets import QMenu
 from scipy.signal import find_peaks
 
@@ -21,24 +18,27 @@ from solie.logic import (
     make_indicators,
 )
 from solie.utility import (
+    ASSET_CHANGE_SCHEMA,
+    ASSET_RECORD_SCHEMA,
     MIN_PEAK_COUNT,
-    AccountState,
     DurationRecorder,
     PositionDirection,
     RWLock,
     SimulationSettings,
     SimulationSummary,
+    combine_candle_data,
     create_empty_account_state,
     create_empty_asset_record,
     create_empty_unrealized_changes,
     sort_data_frame,
-    sort_series,
     to_moment,
 )
 from solie.widget import ask
 from solie.window import Window
 
 from .united import team
+
+MIN_ASSET_POINTS_FOR_YIELD = 2
 
 
 class DisplayTimeRange(NamedTuple):
@@ -255,46 +255,50 @@ class Simulator:
     async def _load_and_prepare_candle_data(
         self,
         years: list[int],
+        symbols: list[str],
         slice_from: datetime,
     ) -> CandleDataPair:
         """Load candle data for specified years."""
         divided_datas: list[DataFrame] = []
         for year in years:
-            more_df = await team.collector.read_saved_candle_data(year)
+            more_df = await team.collector.read_saved_symbols_candle_data(
+                year,
+                symbols,
+            )
             divided_datas.append(more_df)
-        candle_data_original = await spawn_blocking(pd.concat, divided_datas)
-        if not candle_data_original.index.is_monotonic_increasing:
+        candle_data_original = await spawn_blocking(combine_candle_data, divided_datas)
+        if "timestamp" in candle_data_original.columns:
             candle_data_original = await spawn_blocking(
                 sort_data_frame,
                 candle_data_original,
             )
-        candle_data = candle_data_original[slice_from:]
+            candle_data = candle_data_original.filter(
+                pl.col("timestamp") >= int(slice_from.timestamp() * 1000),
+            )
+        else:
+            candle_data = candle_data_original
         return CandleDataPair(original=candle_data_original, sliced=candle_data)
 
     async def _prepare_asset_record(
         self,
         slice_from: datetime,
-        candle_data: DataFrame,
     ) -> AssetRecordData:
         """Prepare asset record with historical data."""
         async with self._asset_record.read_lock as cell:
             if len(cell.data) > 0:
-                last_asset = cell.data.iloc[-1]["RESULT_ASSET"]
+                last_asset = float(cell.data["RESULT_ASSET"][-1])
             else:
                 last_asset = None
-            before_record = cell.data[:slice_from]
+            before_record = cell.data.filter(
+                pl.col("timestamp") < int(slice_from.timestamp() * 1000),
+            )
             if len(before_record) > 0:
-                before_asset = before_record.iloc[-1]["RESULT_ASSET"]
+                before_asset = float(before_record["RESULT_ASSET"][-1])
             else:
                 before_asset = None
-            asset_record = cell.data[slice_from:].copy()
-
-        if len(candle_data) > 0:
-            df_index: DatetimeIndex = candle_data.index  # type:ignore
-            last_written_moment = df_index[-1]
-            new_moment = last_written_moment + timedelta(seconds=10)
-            new_index = df_index.union([new_moment])
-            candle_data = candle_data.reindex(new_index)
+            asset_record = cell.data.filter(
+                pl.col("timestamp") >= int(slice_from.timestamp() * 1000),
+            )
 
         return AssetRecordData(
             record=asset_record,
@@ -312,33 +316,63 @@ class Simulator:
         """Update asset record with latest observations."""
         if last_asset is not None:
             observed_until = self._account_state.observed_until
+            observed_timestamp = int(observed_until.timestamp() * 1000)
+            last_timestamp = (
+                int(asset_record["timestamp"][-1]) if len(asset_record) > 0 else 0
+            )
             if (
-                len(asset_record) == 0 or asset_record.index[-1] < observed_until
+                len(asset_record) == 0 or last_timestamp < observed_timestamp
             ) and slice_from < observed_until:
-                asset_record.loc[observed_until, "CAUSE"] = "OTHER"
-                asset_record.loc[observed_until, "RESULT_ASSET"] = last_asset
-                if not asset_record.index.is_monotonic_increasing:
-                    asset_record = await spawn_blocking(
-                        sort_data_frame,
-                        asset_record,
-                    )
-
-        if before_asset is not None:
-            asset_record.loc[slice_from, "CAUSE"] = "OTHER"
-            asset_record.loc[slice_from, "RESULT_ASSET"] = before_asset
-            if not asset_record.index.is_monotonic_increasing:
+                asset_record = self._append_asset_observation(
+                    asset_record,
+                    observed_timestamp,
+                    last_asset,
+                )
                 asset_record = await spawn_blocking(sort_data_frame, asset_record)
 
+        if before_asset is not None:
+            asset_record = self._append_asset_observation(
+                asset_record,
+                int(slice_from.timestamp() * 1000),
+                before_asset,
+            )
+            asset_record = await spawn_blocking(sort_data_frame, asset_record)
+
         return asset_record
+
+    def _append_asset_observation(
+        self,
+        asset_record: DataFrame,
+        timestamp: int,
+        result_asset: float,
+    ) -> DataFrame:
+        """Append an OTHER asset observation row."""
+        return pl.concat(
+            [
+                asset_record,
+                DataFrame(
+                    [
+                        {
+                            "timestamp": timestamp,
+                            "CAUSE": "OTHER",
+                            "SYMBOL": None,
+                            "SIDE": None,
+                            "FILL_PRICE": None,
+                            "ROLE": None,
+                            "MARGIN_RATIO": None,
+                            "ORDER_ID": None,
+                            "RESULT_ASSET": result_asset,
+                        },
+                    ],
+                    schema=ASSET_RECORD_SCHEMA,
+                ),
+            ],
+        )
 
     async def _display_lines_real(self, periodic: bool) -> None:
         symbol = self._viewing_symbol
         strategy_index = self._simulation_settings.strategy_index
         strategy = team.strategist.strategies[strategy_index]
-
-        async with team.collector.candle_data.read_lock as cell:
-            if len(cell.data) == 0:
-                return
 
         if periodic:
             current_moment = to_moment(datetime.now(UTC))
@@ -369,15 +403,19 @@ class Simulator:
 
         candle_pair = await self._load_and_prepare_candle_data(
             years,
+            [symbol],
             time_range.slice_from,
         )
+        has_no_candle_rows = len(candle_pair.sliced) == 0
+        has_no_timestamp = "timestamp" not in candle_pair.sliced.columns
+        if has_no_candle_rows or has_no_timestamp:
+            return
 
         async with self._unrealized_changes.read_lock as cell:
-            unrealized_changes = cell.data.copy()
+            unrealized_changes = cell.data.clone()
 
         asset_data = await self._prepare_asset_record(
             time_range.slice_from,
-            candle_pair.sliced,
         )
 
         asset_record = await self._update_asset_record_with_observations(
@@ -400,7 +438,11 @@ class Simulator:
             target_symbols=[self._viewing_symbol],
             candle_data=candle_pair.original,
         )
-        indicators = indicators[time_range.slice_from : time_range.slice_until]
+        indicators = self._filter_frame_by_time(
+            indicators,
+            time_range.slice_from,
+            time_range.slice_until,
+        )
 
         await self._window.simulation_graph.update_custom_lines(symbol, indicators)
         duration_recorder.record()
@@ -438,52 +480,77 @@ class Simulator:
     async def _display_range_information(self) -> None:
         self._range_display_task.spawn(self._display_range_information_real())
 
+    def _filter_frame_by_time(
+        self,
+        data: DataFrame,
+        start: datetime,
+        end: datetime,
+    ) -> DataFrame:
+        """Filter a timestamp-column frame by visible time range."""
+        if "timestamp" not in data.columns:
+            return data
+        start_timestamp = int(start.timestamp() * 1000)
+        end_timestamp = int(end.timestamp() * 1000)
+        return data.filter(
+            (pl.col("timestamp") >= start_timestamp)
+            & (pl.col("timestamp") <= end_timestamp),
+        )
+
+    def _calculate_asset_yield(self, asset_record: DataFrame) -> float:
+        """Calculate visible asset yield from result asset values."""
+        if len(asset_record) < MIN_ASSET_POINTS_FOR_YIELD:
+            return 0.0
+        asset_values = [
+            float(value)
+            for value in asset_record["RESULT_ASSET"]
+            if isinstance(value, int | float) and value > 0
+        ]
+        if len(asset_values) < MIN_ASSET_POINTS_FOR_YIELD:
+            return 0.0
+        return (asset_values[-1] / asset_values[0] - 1) * 100
+
     def _calculate_range_metrics(
         self,
         asset_record: DataFrame,
-        asset_changes: Series,
-        symbol_mask: Series,
         unrealized_changes: Series,
     ) -> RangeMetrics:
         """Calculate various metrics for the visible range."""
-        total_change_count = len(asset_changes)
-        symbol_change_count = len(asset_changes[symbol_mask])
+        if len(asset_record) == 0:
+            min_unrealized = self._calculate_min_unrealized_change(unrealized_changes)
+            return RangeMetrics(0, 0, 0.0, 0.0, 0.0, 0.0, min_unrealized)
 
+        auto_record = asset_record.filter(pl.col("CAUSE") == "AUTO_TRADE")
+        symbol_record = auto_record.filter(pl.col("SYMBOL") == self._viewing_symbol)
+
+        total_margin = auto_record["MARGIN_RATIO"].sum()
+        symbol_margin = symbol_record["MARGIN_RATIO"].sum()
         total_margin_ratio = (
-            asset_record["MARGIN_RATIO"].sum() if len(asset_record) > 0 else 0
+            float(total_margin) if isinstance(total_margin, int | float) else 0.0
         )
         symbol_margin_ratio = (
-            asset_record[symbol_mask]["MARGIN_RATIO"].sum()
-            if len(asset_record[symbol_mask]) > 0
-            else 0
-        )
-
-        if len(asset_changes) > 0:
-            total_yield = (asset_changes.cumprod().iloc[-1] - 1) * 100
-        else:
-            total_yield = 0
-
-        if len(asset_changes[symbol_mask]) > 0:
-            symbol_yield = (asset_changes[symbol_mask].cumprod().iloc[-1] - 1) * 100
-        else:
-            symbol_yield = 0
-
-        min_unrealized_change = (
-            unrealized_changes.min() if len(unrealized_changes) > 0 else 0.0
+            float(symbol_margin) if isinstance(symbol_margin, int | float) else 0.0
         )
 
         return RangeMetrics(
-            total_change_count=total_change_count,
-            symbol_change_count=symbol_change_count,
+            total_change_count=len(auto_record),
+            symbol_change_count=len(symbol_record),
             total_margin_ratio=total_margin_ratio,
             symbol_margin_ratio=symbol_margin_ratio,
-            total_yield=total_yield,
-            symbol_yield=symbol_yield,
-            min_unrealized_change=min_unrealized_change,
+            total_yield=self._calculate_asset_yield(auto_record),
+            symbol_yield=self._calculate_asset_yield(symbol_record),
+            min_unrealized_change=self._calculate_min_unrealized_change(
+                unrealized_changes,
+            ),
         )
 
+    def _calculate_min_unrealized_change(self, unrealized_changes: Series) -> float:
+        """Calculate minimum unrealized change for display."""
+        min_unrealized_change = unrealized_changes.min()
+        if isinstance(min_unrealized_change, int | float):
+            return float(min_unrealized_change)
+        return 0.0
+
     async def _display_range_information_real(self) -> None:
-        symbol = self._viewing_symbol
         price_widget = self._window.simulation_graph.price_widget
 
         range_start_timestamp = max(price_widget.getAxis("bottom").range[0], 0.0)
@@ -503,25 +570,18 @@ class Simulator:
         range_minutes, _ = divmod(remains, 60)
 
         async with self._unrealized_changes.read_lock as cell:
-            unrealized_changes = cell.data[range_start:range_end].copy()
+            unrealized_changes = cell.data
         async with self._asset_record.read_lock as cell:
-            asset_record = cell.data[range_start:range_end].copy()
+            asset_record = self._filter_frame_by_time(
+                cell.data,
+                range_start,
+                range_end,
+            )
 
-        auto_trade_mask = asset_record["CAUSE"] == "AUTO_TRADE"
-        asset_changes = asset_record["RESULT_ASSET"].pct_change(fill_method=None) + 1  # type:ignore
-        asset_record = asset_record[auto_trade_mask]
-        asset_changes = asset_changes.reindex(asset_record.index, fill_value=1.0)
-        symbol_mask = asset_record["SYMBOL"] == symbol
+        metrics = self._calculate_range_metrics(asset_record, unrealized_changes)
 
         view_range = price_widget.getAxis("left").range
         price_range_height = (1 - view_range[0] / view_range[1]) * 100
-
-        metrics = self._calculate_range_metrics(
-            asset_record,
-            asset_changes,
-            symbol_mask,
-            unrealized_changes,
-        )
 
         text = (
             f"Visible time range {range_days}d {range_hours}h {range_minutes}s"
@@ -544,10 +604,14 @@ class Simulator:
     async def _set_minimum_view_range(self) -> None:
         widget = self._window.simulation_graph.price_widget
         range_down = widget.getAxis("left").range[0]
-        widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
+        widget.plotItem.vb.setLimits(  # type:ignore
+            minYRange=range_down * 0.005,
+        )
         widget = self._window.simulation_graph.asset_widget
         range_down = widget.getAxis("left").range[0]
-        widget.plotItem.vb.setLimits(minYRange=range_down * 0.005)  # type:ignore
+        widget.plotItem.vb.setLimits(  # type:ignore
+            minYRange=range_down * 0.005,
+        )
 
     async def _calculate(self, only_visible: bool = False) -> None:
         unique_task = self._calculation_task
@@ -562,12 +626,16 @@ class Simulator:
         strategy_index = self._simulation_settings.strategy_index
         strategy = team.strategist.strategies[strategy_index]
 
-        year_candle_data = await team.collector.read_saved_candle_data(year)
+        saved_candle_data = await team.collector.read_available_saved_candle_data(
+            year,
+            self._window.data_settings.target_symbols,
+        )
+        year_candle_data = saved_candle_data.data
 
         config = CalculationConfig(
             year=year,
             strategy=strategy,
-            target_symbols=self._window.data_settings.target_symbols,
+            target_symbols=saved_candle_data.symbols,
             only_visible=only_visible,
             should_draw_all_years=self._should_draw_all_years,
         )
@@ -605,31 +673,54 @@ class Simulator:
         maker_fee: float,
         taker_fee: float,
         leverage: int,
-    ) -> Series:
+    ) -> DataFrame:
         """Calculate asset changes for a single chunk."""
-        chunk_result_asset_sr = chunk_asset_record["RESULT_ASSET"]
-        chunk_asset_shifts: Series = chunk_result_asset_sr.diff()
-        if len(chunk_asset_shifts) > 0:
-            chunk_asset_shifts.iloc[0] = 0.0
+        if len(chunk_asset_record) == 0:
+            return DataFrame(schema=ASSET_CHANGE_SCHEMA)
 
-        lazy_chunk_result_asset = chunk_result_asset_sr.shift(periods=1)
-        if len(lazy_chunk_result_asset) > 0:
-            lazy_chunk_result_asset.iloc[0] = 1
+        chunk_result_asset_sr = chunk_asset_record["RESULT_ASSET"]
+        asset_values = [
+            float(value) if isinstance(value, int | float) else 0.0
+            for value in chunk_result_asset_sr
+        ]
+        shifted_values = [0.0]
+        shifted_values.extend(
+            asset_values[index] - asset_values[index - 1]
+            for index in range(1, len(asset_values))
+        )
+        previous_values = [1.0]
+        previous_values.extend(asset_values[:-1])
+        chunk_asset_shifts = Series("asset_shift", shifted_values)
+        lazy_chunk_result_asset = Series("previous_asset", previous_values)
 
         chunk_asset_changes_by_leverage = (
             1 + chunk_asset_shifts / lazy_chunk_result_asset * leverage
         )
 
-        chunk_fees = chunk_asset_record["ROLE"].copy()
-        chunk_fees[chunk_fees == "MAKER"] = maker_fee
-        chunk_fees[chunk_fees == "TAKER"] = taker_fee
-        chunk_fees = chunk_fees.astype(np.float32)
+        chunk_fees = Series(
+            "fee",
+            [
+                maker_fee
+                if role == "MAKER"
+                else taker_fee
+                if role == "TAKER"
+                else 0.0
+                for role in chunk_asset_record["ROLE"]
+            ],
+        )
         chunk_margin_ratios = chunk_asset_record["MARGIN_RATIO"]
         chunk_asset_changes_by_fee = (
             1 - (chunk_fees / 100) * chunk_margin_ratios * leverage
         )
 
-        return chunk_asset_changes_by_leverage * chunk_asset_changes_by_fee
+        asset_changes = chunk_asset_changes_by_leverage * chunk_asset_changes_by_fee
+        return DataFrame(
+            {
+                "timestamp": chunk_asset_record["timestamp"],
+                "ASSET_CHANGE": asset_changes,
+            },
+            schema=ASSET_CHANGE_SCHEMA,
+        )
 
     def _prepare_chunk_list(self, asset_record: DataFrame) -> ChunkList:
         """Prepare list of asset record chunks based on strategy settings."""
@@ -643,11 +734,45 @@ class Simulator:
         if parallel_chunk_days is None:
             return ChunkList(chunks=[asset_record], chunk_count=1)
 
-        division = timedelta(days=parallel_chunk_days)
-        grouper = Grouper(freq=division, origin="epoch")  # type:ignore
-        grouped = asset_record.groupby(grouper)
-        chunk_list = [r.dropna() for _, r in grouped]
+        chunk_list = self._split_frame_by_day_chunks(
+            asset_record.drop_nulls(),
+            parallel_chunk_days,
+        )
         return ChunkList(chunks=chunk_list, chunk_count=len(chunk_list))
+
+    def _split_frame_by_day_chunks(
+        self,
+        data: DataFrame,
+        chunk_days: int,
+    ) -> list[DataFrame]:
+        """Split a timestamp-column frame into fixed day chunks."""
+        if len(data) == 0 or "timestamp" not in data.columns:
+            return [data]
+
+        chunk_length_ms = int(timedelta(days=chunk_days).total_seconds() * 1000)
+        timestamps = [
+            value for value in data["timestamp"] if isinstance(value, int)
+        ]
+        if len(timestamps) == 0:
+            return [data.head(0)]
+        first_timestamp = min(timestamps)
+        last_timestamp = max(timestamps)
+        chunk_start = first_timestamp - first_timestamp % chunk_length_ms
+
+        chunks: list[DataFrame] = []
+        while chunk_start <= last_timestamp:
+            chunk_end = chunk_start + chunk_length_ms
+            chunk = data.filter(
+                (pl.col("timestamp") >= chunk_start)
+                & (pl.col("timestamp") < chunk_end),
+            )
+            if len(chunk) > 0:
+                chunks.append(chunk)
+            chunk_start = chunk_end
+
+        if len(chunks) == 0:
+            return [data.head(0)]
+        return chunks
 
     async def present(self) -> None:
         """Present simulation results in UI."""
@@ -656,16 +781,16 @@ class Simulator:
         leverage = self._simulation_settings.leverage
 
         async with self._raw_asset_record.read_lock as cell:
-            asset_record = cell.data.copy()
+            asset_record = cell.data.clone()
         async with self._raw_unrealized_changes.read_lock as cell:
-            unrealized_changes = cell.data.copy()
+            unrealized_changes = cell.data.clone()
 
         scribbles = self._raw_scribbles.copy()
         account_state = self._raw_account_state.model_copy(deep=True)
 
         chunk_data = self._prepare_chunk_list(asset_record)
 
-        chunk_asset_changes_list: list[Series] = [
+        chunk_asset_changes_list: list[DataFrame] = [
             self._calculate_chunk_asset_changes(
                 chunk_data.chunks[turn],
                 maker_fee,
@@ -676,27 +801,57 @@ class Simulator:
         ]
 
         unrealized_changes = unrealized_changes * leverage
-        year_asset_changes: Series = pd.concat(chunk_asset_changes_list)
-        if not year_asset_changes.index.is_monotonic_increasing:
-            year_asset_changes = await spawn_blocking(sort_series, year_asset_changes)
+        year_asset_changes = pl.concat(chunk_asset_changes_list)
+        year_asset_changes = await spawn_blocking(sort_data_frame, year_asset_changes)
 
         if len(asset_record) > 0:
-            year_asset_changes[asset_record.index[0]] = 1.0
-            if not year_asset_changes.index.is_monotonic_increasing:
-                year_asset_changes = await spawn_blocking(
-                    sort_series,
-                    year_asset_changes,
+            if len(year_asset_changes) == 0:
+                year_asset_changes = DataFrame(
+                    {
+                        "timestamp": asset_record["timestamp"],
+                        "ASSET_CHANGE": [1.0] * len(asset_record),
+                    },
+                    schema=ASSET_CHANGE_SCHEMA,
                 )
+            else:
+                first_record = asset_record.sort("timestamp").head(1)
+                auto_trade_record = asset_record.filter(
+                    pl.col("CAUSE") == "AUTO_TRADE",
+                )
+                asset_record = pl.concat(
+                    [
+                        first_record,
+                        auto_trade_record,
+                    ],
+                )
+                asset_record = asset_record.unique(subset=["timestamp"], keep="first")
+                asset_record = await spawn_blocking(sort_data_frame, asset_record)
 
-        asset_record = asset_record.reindex(year_asset_changes.index)
-        asset_record["RESULT_ASSET"] = year_asset_changes.cumprod()
+            asset_record = asset_record.join(
+                year_asset_changes,
+                on="timestamp",
+                how="left",
+            )
+            asset_record = asset_record.with_columns(
+                ASSET_CHANGE=pl.when(pl.int_range(pl.len()) == 0)
+                .then(1.0)
+                .otherwise(pl.col("ASSET_CHANGE").fill_null(1.0)),
+            )
+            asset_record = asset_record.with_columns(
+                RESULT_ASSET=pl.col("ASSET_CHANGE").cum_prod(),
+            )
+            asset_record = asset_record.drop("ASSET_CHANGE")
+        else:
+            asset_record = DataFrame(
+                schema=ASSET_RECORD_SCHEMA,
+            )
 
         self._scribbles = scribbles.copy()
         self._account_state = account_state.model_copy(deep=True)
         async with self._unrealized_changes.write_lock as cell:
-            cell.data = unrealized_changes.copy()
+            cell.data = unrealized_changes.clone()
         async with self._asset_record.write_lock as cell:
-            cell.data = asset_record.copy()
+            cell.data = asset_record.clone()
 
         spawn(self.display_lines())
         spawn(self._display_range_information())
@@ -740,45 +895,12 @@ class Simulator:
         strategy_code_name = strategy.code_name
         strategy_version = strategy.version
 
-        workerpath = self._workerpath
-        prefix = f"{strategy_code_name}_{strategy_version}_{year}"
-        filepaths = [
-            workerpath / f"{prefix}_asset_record.pickle",
-            workerpath / f"{prefix}_unrealized_changes.pickle",
-            workerpath / f"{prefix}_scribbles.pickle",
-            workerpath / f"{prefix}_account_state.pickle",
-            workerpath / f"{prefix}_virtual_state.pickle",
-        ]
-
-        does_file_exist = False
-        for filepath in filepaths:
-            if await aiofiles.os.path.isfile(filepath):
-                does_file_exist = True
-
-        if not does_file_exist:
-            await ask(
-                "No calculation data on this combination",
-                f"You should calculate first on year {year} with strategy code name"
-                f" {strategy_code_name} version {strategy_version}.",
-                ["Okay"],
-            )
-            return
-        answer = await ask(
-            "Are you sure you want to delete calculation data on this combination?",
-            "If you do, you should perform the calculation again to see the"
-            f" prediction on year {year} with strategy code name"
-            f" {strategy_code_name} version {strategy_version}. Calculation data of"
-            " other combinations does not get affected.",
-            ["Cancel", "Delete"],
+        await ask(
+            "No calculation data on this combination",
+            f"You should calculate first on year {year} with strategy code name"
+            f" {strategy_code_name} version {strategy_version}.",
+            ["Okay"],
         )
-        if answer in (0, 1):
-            return
-
-        for filepath in filepaths:
-            if await aiofiles.os.path.isfile(filepath):
-                await aiofiles.os.remove(filepath)
-
-        await self._erase()
 
     async def _draw(self) -> None:
         year = self._simulation_settings.year
@@ -788,40 +910,12 @@ class Simulator:
         strategy_code_name = strategy.code_name
         strategy_version = strategy.version
 
-        workerpath = self._workerpath
-        prefix = f"{strategy_code_name}_{strategy_version}_{year}"
-        asset_record_path = workerpath / f"{prefix}_asset_record.pickle"
-        unrealized_changes_path = workerpath / f"{prefix}_unrealized_changes.pickle"
-        scribbles_path = workerpath / f"{prefix}_scribbles.pickle"
-        account_state_path = workerpath / f"{prefix}_account_state.pickle"
-
-        try:
-            async with self._raw_asset_record.write_lock as cell:
-                new = await spawn_blocking(pd.read_pickle, asset_record_path)
-                cell.data = new
-            async with self._raw_unrealized_changes.write_lock as cell:
-                new = await spawn_blocking(pd.read_pickle, unrealized_changes_path)
-                cell.data = new
-            async with aiofiles.open(scribbles_path, "rb") as file:
-                content = await file.read()
-                self._raw_scribbles = pickle.loads(content)
-            async with aiofiles.open(account_state_path, "rb") as file:
-                content = await file.read()
-                self._raw_account_state: AccountState = pickle.loads(content)
-            self._simulation_summary = SimulationSummary(
-                year=year,
-                strategy_code_name=strategy_code_name,
-                strategy_version=strategy_version,
-            )
-            await self.present()
-        except FileNotFoundError:
-            await ask(
-                "No calculation data on this combination",
-                f"You should calculate first on year {year} with strategy code name"
-                f" {strategy_code_name} version {strategy_version}.",
-                ["Okay"],
-            )
-            return
+        await ask(
+            "No calculation data on this combination",
+            f"You should calculate first on year {year} with strategy code name"
+            f" {strategy_code_name} version {strategy_version}.",
+            ["Okay"],
+        )
 
     async def _match_graph_range(self) -> None:
         graph_from = self._window.transaction_graph.price_widget
@@ -829,7 +923,11 @@ class Simulator:
         graph_range = graph_from.getAxis("bottom").range
         range_start = graph_range[0]
         range_end = graph_range[1]
-        graph_to.setXRange(range_start, range_end, padding=0)  # type:ignore
+        graph_to.setXRange(
+            range_start,
+            range_end,
+            padding=0,  # type:ignore
+        )
 
     async def _stop_calculation(self) -> None:
         if self._calculation_task is not None:
@@ -838,8 +936,8 @@ class Simulator:
     async def _analyze_unrealized_peaks(self) -> None:
         async with self._unrealized_changes.read_lock as cell:
             peak_indexes, _ = find_peaks(-cell.data, distance=3600 / 10)
-            peak_sr = cell.data.iloc[peak_indexes]
-        peak_sr = peak_sr.sort_values().iloc[:MIN_PEAK_COUNT]
+            peak_sr = cell.data.gather(Series("indexes", peak_indexes))
+        peak_sr = peak_sr.sort().head(MIN_PEAK_COUNT)
         if len(peak_sr) < MIN_PEAK_COUNT:
             await ask(
                 "Calculation data is either missing or too short",
@@ -850,7 +948,7 @@ class Simulator:
         else:
             text_lines = [
                 f"{index} {peak_value:+.2f}%"
-                for index, peak_value in peak_sr.iteritems()
+                for index, peak_value in enumerate(peak_sr)
             ]
             await ask(
                 "Spots with lowest unrealized profit",

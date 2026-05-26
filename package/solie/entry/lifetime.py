@@ -66,6 +66,7 @@ async def live(app: QApplication, config: SolieConfig) -> None:
     await sleep(1)
 
     await gather(*(worker.dump_work() for worker in workers))
+    await window.close_data_stores()
 
 
 def setup_fonts(app: QApplication) -> None:

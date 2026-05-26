@@ -1,19 +1,18 @@
 """Simulation calculation orchestrator."""
 
 import math
-import pickle
 from asyncio import gather, sleep
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, NamedTuple
 
-import aiofiles
-import pandas as pd
-from pandas import DataFrame, DatetimeIndex, Grouper, Series
+import polars as pl
+from polars import DataFrame, Series
 from PySide6.QtWidgets import QProgressBar
 
 from solie.common import UniqueTask, get_sync_manager, spawn, spawn_blocking
 from solie.utility import (
+    ASSET_RECORD_SCHEMA,
     MAX_PREPARATION_STEPS,
     PROGRESS_BAR_MAX,
     AccountState,
@@ -115,16 +114,6 @@ class SimulationCalculator:
         self.prepare_step = 0
         self.calculate_step = Cell(0)
 
-        # File paths
-        prefix = f"{self.strategy.code_name}_{self.strategy.version}_{self.year}"
-        self.asset_record_path = workerpath / f"{prefix}_asset_record.pickle"
-        self.unrealized_changes_path = (
-            workerpath / f"{prefix}_unrealized_changes.pickle"
-        )
-        self.scribbles_path = workerpath / f"{prefix}_scribbles.pickle"
-        self.account_state_path = workerpath / f"{prefix}_account_state.pickle"
-        self.virtual_state_path = workerpath / f"{prefix}_virtual_state.pickle"
-
         # Time range
         self.slice_from = datetime(self.year, 1, 1, tzinfo=UTC)
         if self.year == datetime.now(UTC).year:
@@ -137,6 +126,56 @@ class SimulationCalculator:
         else:
             self.slice_until = datetime(self.year + 1, 1, 1, tzinfo=UTC)
         self.slice_until -= timedelta(seconds=1)
+
+    def _slice_by_time(
+        self,
+        data: DataFrame,
+        start: datetime,
+        end: datetime,
+    ) -> DataFrame:
+        """Return rows between two moments when a timestamp column exists."""
+        if "timestamp" not in data.columns:
+            return data
+        start_timestamp = int(start.timestamp() * 1000)
+        end_timestamp = int(end.timestamp() * 1000)
+        return data.filter(
+            (pl.col("timestamp") >= start_timestamp)
+            & (pl.col("timestamp") <= end_timestamp),
+        )
+
+    def _split_frame_by_day_chunks(
+        self,
+        data: DataFrame,
+        chunk_days: int,
+    ) -> list[DataFrame]:
+        """Split a timestamp-column frame into fixed day chunks."""
+        if len(data) == 0 or "timestamp" not in data.columns:
+            return [data]
+
+        chunk_length_ms = int(timedelta(days=chunk_days).total_seconds() * 1000)
+        timestamps = [
+            value for value in data["timestamp"] if isinstance(value, int)
+        ]
+        if len(timestamps) == 0:
+            return [data.head(0)]
+        first_timestamp = min(timestamps)
+        last_timestamp = max(timestamps)
+        chunk_start = first_timestamp - first_timestamp % chunk_length_ms
+
+        chunks: list[DataFrame] = []
+        while chunk_start <= last_timestamp:
+            chunk_end = chunk_start + chunk_length_ms
+            chunk = data.filter(
+                (pl.col("timestamp") >= chunk_start)
+                & (pl.col("timestamp") < chunk_end),
+            )
+            if len(chunk) > 0:
+                chunks.append(chunk)
+            chunk_start = chunk_end
+
+        if len(chunks) == 0:
+            return [data.head(0)]
+        return chunks
 
     async def calculate(self) -> CalculationResult:
         """Run the simulation calculation."""
@@ -163,13 +202,32 @@ class SimulationCalculator:
             previous_state.calculate_from < previous_state.calculate_until
         )
         if len(previous_state.asset_record) == 0:
-            previous_state.asset_record.loc[previous_state.calculate_from, "CAUSE"] = (
-                "OTHER"
+            previous_state = previous_state._replace(
+                asset_record=pl.concat(
+                    [
+                        previous_state.asset_record,
+                        DataFrame(
+                            [
+                                {
+                                    "timestamp": int(
+                                        previous_state.calculate_from.timestamp()
+                                        * 1000,
+                                    ),
+                                    "CAUSE": "OTHER",
+                                    "SYMBOL": None,
+                                    "SIDE": None,
+                                    "FILL_PRICE": None,
+                                    "ROLE": None,
+                                    "MARGIN_RATIO": None,
+                                    "ORDER_ID": None,
+                                    "RESULT_ASSET": 1.0,
+                                },
+                            ],
+                            schema=ASSET_RECORD_SCHEMA,
+                        ),
+                    ],
+                ),
             )
-            previous_state.asset_record.loc[
-                previous_state.calculate_from,
-                "RESULT_ASSET",
-            ] = 1.0
 
         self.prepare_step = 5
 
@@ -195,24 +253,11 @@ class SimulationCalculator:
             previous_state,
         )
 
-        asset_record = result.asset_record
-        unrealized_changes = result.unrealized_changes
-        scribbles = result.scribbles
-        account_state = result.account_state
-
-        if not self.only_visible and should_calculate:
-            await self._save_calculation_results(
-                asset_record,
-                unrealized_changes,
-                scribbles,
-                account_state,
-            )
-
         return CalculationResult(
-            asset_record=asset_record,
-            unrealized_changes=unrealized_changes,
-            scribbles=scribbles,
-            account_state=account_state,
+            asset_record=result.asset_record,
+            unrealized_changes=result.unrealized_changes,
+            scribbles=result.scribbles,
+            account_state=result.account_state,
         )
 
     async def _play_progress_bar(self) -> None:
@@ -287,13 +332,13 @@ class SimulationCalculator:
         blank_states: BlankStates,
     ) -> PreviousState:
         """Load previous calculation state or create blank state."""
-        if self.only_visible:
-            previous_asset_record = blank_states.asset_record.copy()
-            previous_unrealized_changes = blank_states.unrealized_changes.copy()
-            previous_scribbles = blank_states.scribbles.copy()
-            previous_account_state = blank_states.account_state.model_copy(deep=True)
-            previous_virtual_state = blank_states.virtual_state.model_copy(deep=True)
+        previous_asset_record = blank_states.asset_record.clone()
+        previous_unrealized_changes = blank_states.unrealized_changes.clone()
+        previous_scribbles = blank_states.scribbles.copy()
+        previous_account_state = blank_states.account_state.model_copy(deep=True)
+        previous_virtual_state = blank_states.virtual_state.model_copy(deep=True)
 
+        if self.only_visible:
             graph_widget = self.widgets.simulation_graph.price_widget
             view_range = graph_widget.getAxis("bottom").range
             view_start = datetime.fromtimestamp(view_range[0], tz=UTC)
@@ -307,40 +352,8 @@ class SimulationCalculator:
                 calculate_until = min(view_end, self.slice_until)
 
         else:
-            try:
-                previous_asset_record: DataFrame = await spawn_blocking(
-                    pd.read_pickle,
-                    self.asset_record_path,
-                )
-                previous_unrealized_changes: Series = await spawn_blocking(
-                    pd.read_pickle,
-                    self.unrealized_changes_path,
-                )
-                async with aiofiles.open(self.scribbles_path, "rb") as file:
-                    content = await file.read()
-                    previous_scribbles = pickle.loads(content)
-                async with aiofiles.open(self.account_state_path, "rb") as file:
-                    content = await file.read()
-                    previous_account_state: AccountState = pickle.loads(content)
-                async with aiofiles.open(self.virtual_state_path, "rb") as file:
-                    content = await file.read()
-                    previous_virtual_state: VirtualState = pickle.loads(content)
-
-                calculate_from = previous_account_state.observed_until
-                calculate_until = self.slice_until
-            except FileNotFoundError:
-                previous_asset_record = blank_states.asset_record.copy()
-                previous_unrealized_changes = blank_states.unrealized_changes.copy()
-                previous_scribbles = blank_states.scribbles.copy()
-                previous_account_state = blank_states.account_state.model_copy(
-                    deep=True,
-                )
-                previous_virtual_state = blank_states.virtual_state.model_copy(
-                    deep=True,
-                )
-
-                calculate_from = self.slice_from
-                calculate_until = self.slice_until
+            calculate_from = self.slice_from
+            calculate_until = self.slice_until
 
         return PreviousState(
             asset_record=previous_asset_record,
@@ -374,12 +387,27 @@ class SimulationCalculator:
             make_indicators,
             strategy=self.strategy,
             target_symbols=self.target_symbols,
-            candle_data=self.year_candle_data[provide_from:calculate_until],
+            candle_data=self._slice_by_time(
+                self.year_candle_data,
+                provide_from,
+                calculate_until,
+            ),
         )
 
-        needed_candle_data = self.year_candle_data[calculate_from:calculate_until]
-        needed_index: DatetimeIndex = needed_candle_data.index  # type:ignore
-        needed_indicators = year_indicators.reindex(needed_index)
+        needed_candle_data = self._slice_by_time(
+            self.year_candle_data,
+            calculate_from,
+            calculate_until,
+        )
+        if "timestamp" in needed_candle_data.columns:
+            needed_index = needed_candle_data["timestamp"]
+        else:
+            needed_index = Series("timestamp", [])
+        needed_indicators = self._slice_by_time(
+            year_indicators,
+            calculate_from,
+            calculate_until,
+        )
 
         parallel_chunk_days = self.strategy.parallel_simulation_chunk_days
 
@@ -402,25 +430,33 @@ class SimulationCalculator:
             calculation_inputs.append(calculation_input)
 
         else:
-            division = timedelta(days=parallel_chunk_days)
-            chunk_candle_data_list = [
-                chunk_candle_data
-                for _, chunk_candle_data in needed_candle_data.groupby(
-                    Grouper(freq=division, origin="epoch"),  # type:ignore
-                )
-            ]
+            chunk_candle_data_list = self._split_frame_by_day_chunks(
+                needed_candle_data,
+                parallel_chunk_days,
+            )
 
             chunk_count = len(chunk_candle_data_list)
             progress_list = sync_manager.list([0.0] * chunk_count)
 
             for turn, chunk_candle_data in enumerate(chunk_candle_data_list):
-                chunk_index: DatetimeIndex = chunk_candle_data.index  # type:ignore
-                chunk_indicators = needed_indicators.reindex(chunk_index)
-                chunk_asset_record = previous_state.asset_record.iloc[0:0]
-                chunk_unrealized_changes = previous_state.unrealized_changes.iloc[0:0]
-                first_timestamp = chunk_index[0].timestamp()
-                division_seconds = parallel_chunk_days * 24 * 60 * 60
-                if turn == 0 and first_timestamp % division_seconds != 0:
+                if "timestamp" in chunk_candle_data.columns:
+                    chunk_index = chunk_candle_data["timestamp"]
+                else:
+                    chunk_index = Series("timestamp", [])
+
+                if len(chunk_index) == 0:
+                    chunk_indicators = needed_indicators.head(0)
+                else:
+                    chunk_start = int(chunk_index[0])
+                    chunk_end = int(chunk_index[-1])
+                    chunk_indicators = needed_indicators.filter(
+                        (pl.col("timestamp") >= chunk_start)
+                        & (pl.col("timestamp") <= chunk_end),
+                    )
+
+                chunk_asset_record = previous_state.asset_record.head(0)
+                chunk_unrealized_changes = previous_state.unrealized_changes.head(0)
+                if turn == 0:
                     chunk_scribbles = previous_state.scribbles
                     chunk_account_state = previous_state.account_state
                     chunk_virtual_state = previous_state.virtual_state
@@ -497,24 +533,17 @@ class SimulationCalculator:
             for chunk_ouput_data in calculation_output_data:
                 chunk_asset_record = chunk_ouput_data.chunk_asset_record
                 concat_data = [asset_record, chunk_asset_record]
-                asset_record: DataFrame = pd.concat(concat_data)
-            mask = ~asset_record.index.duplicated()
-            asset_record = asset_record[mask]
-            if not asset_record.index.is_monotonic_increasing:
+                asset_record = pl.concat(concat_data)
+            if "timestamp" in asset_record.columns:
+                asset_record = asset_record.unique(subset=["timestamp"], keep="first")
                 asset_record = await spawn_blocking(sort_data_frame, asset_record)
 
             unrealized_changes = previous_state.unrealized_changes
             for chunk_ouput_data in calculation_output_data:
                 chunk_unrealized_changes = chunk_ouput_data.chunk_unrealized_changes
                 concat_data = [unrealized_changes, chunk_unrealized_changes]
-                unrealized_changes: Series = pd.concat(concat_data)
-            mask = ~unrealized_changes.index.duplicated()
-            unrealized_changes = unrealized_changes[mask]
-            if not unrealized_changes.index.is_monotonic_increasing:
-                unrealized_changes = await spawn_blocking(
-                    sort_series,
-                    unrealized_changes,
-                )
+                unrealized_changes = pl.concat(concat_data)
+            unrealized_changes = await spawn_blocking(sort_series, unrealized_changes)
 
             scribbles = calculation_output_data[-1].chunk_scribbles
             account_state = calculation_output_data[-1].chunk_account_state
@@ -532,20 +561,3 @@ class SimulationCalculator:
             account_state=account_state,
         )
 
-    async def _save_calculation_results(
-        self,
-        asset_record: DataFrame,
-        unrealized_changes: Series,
-        scribbles: dict[Any, Any],
-        account_state: AccountState,
-    ) -> None:
-        """Save calculation results to disk."""
-        await spawn_blocking(asset_record.to_pickle, self.asset_record_path)
-        await spawn_blocking(unrealized_changes.to_pickle, self.unrealized_changes_path)
-        async with aiofiles.open(self.scribbles_path, "wb") as file:
-            content = pickle.dumps(scribbles)
-            await file.write(content)
-        async with aiofiles.open(self.account_state_path, "wb") as file:
-            content = pickle.dumps(account_state)
-            await file.write(content)
-        # Note: virtual_state is not saved in the original implementation

@@ -15,7 +15,6 @@ from .download_from_binance import (
     DownloadPreset,
     DownloadUnitSize,
     download_aggtrade_csv,
-    fill_holes_with_aggtrades,
     process_aggtrade_csv,
 )
 from .order_placer import OrderPlacer, OrderPlacerConfig
@@ -45,7 +44,6 @@ __all__ = [
     "StateConfig",
     "WidgetReferences",
     "download_aggtrade_csv",
-    "fill_holes_with_aggtrades",
     "make_decisions",
     "make_indicators",
     "process_aggtrade_csv",

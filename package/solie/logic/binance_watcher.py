@@ -3,15 +3,17 @@
 import math
 from asyncio import gather
 from collections.abc import Callable
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from logging import getLogger
 from typing import Any, NamedTuple
 
-from pandas import DataFrame, DatetimeIndex, Series
+import polars as pl
+from polars import DataFrame, Series
 
 from solie.common import spawn_blocking
 from solie.logic import AccountListener, ParseOrderTypeParams
 from solie.utility import (
+    ASSET_RECORD_SCHEMA,
     AccountState,
     ApiRequester,
     ApiRequestError,
@@ -25,7 +27,6 @@ from solie.utility import (
     internet_connected,
     list_to_dict,
     sort_data_frame,
-    sort_series,
     to_moment,
 )
 from solie.window import Window
@@ -86,8 +87,6 @@ class BinanceWatcher:
             return
 
         current_moment = to_moment(datetime.now(UTC))
-        before_moment = current_moment - timedelta(seconds=10)
-
         # Fetch exchange information
         about_exchange = await self._fetch_exchange_info()
         self._process_exchange_info(about_exchange)
@@ -118,7 +117,7 @@ class BinanceWatcher:
         )
 
         # Record unrealized change
-        await self._record_unrealized_change(asset_token, about_account, before_moment)
+        await self._record_unrealized_change(asset_token, about_account)
 
         # Initialize asset record if needed
         await self._initialize_asset_record(asset_token, about_account)
@@ -322,7 +321,6 @@ class BinanceWatcher:
         self,
         asset_token: str,
         about_account: dict[str, Any],
-        before_moment: datetime,
     ) -> None:
         """Record unrealized profit change."""
         about_assets = about_account["assets"]
@@ -334,12 +332,10 @@ class BinanceWatcher:
             unrealized_profit = float(about_asset["unrealizedProfit"])
             unrealized_change = unrealized_profit / wallet_balance
         else:
-            unrealized_change = 0
+            unrealized_change = 0.0
 
         async with self._unrealized_changes.write_lock as cell:
-            cell.data[before_moment] = unrealized_change  # type:ignore
-            if not cell.data.index.is_monotonic_increasing:
-                cell.data = await spawn_blocking(sort_series, cell.data)
+            cell.data = cell.data.append(Series("0", [unrealized_change]))
 
     async def _initialize_asset_record(
         self,
@@ -353,9 +349,28 @@ class BinanceWatcher:
                 about_assets_keyed = list_to_dict(about_assets, "asset")
                 about_asset = about_assets_keyed[asset_token]
                 wallet_balance = float(about_asset["walletBalance"])
-                current_time = datetime.now(UTC)
-                cell.data.loc[current_time, "CAUSE"] = "OTHER"
-                cell.data.loc[current_time, "RESULT_ASSET"] = wallet_balance
+                current_timestamp = int(datetime.now(UTC).timestamp() * 1000)
+                cell.data = pl.concat(
+                    [
+                        cell.data,
+                        DataFrame(
+                            [
+                                {
+                                    "timestamp": current_timestamp,
+                                    "CAUSE": "OTHER",
+                                    "SYMBOL": None,
+                                    "SIDE": None,
+                                    "FILL_PRICE": None,
+                                    "ROLE": None,
+                                    "MARGIN_RATIO": None,
+                                    "ORDER_ID": None,
+                                    "RESULT_ASSET": wallet_balance,
+                                },
+                            ],
+                            schema=ASSET_RECORD_SCHEMA,
+                        ),
+                    ],
+                )
 
     async def _handle_wallet_balance_changes(
         self,
@@ -371,24 +386,43 @@ class BinanceWatcher:
         async with self._asset_record.read_lock as cell:
             if len(cell.data) == 0:
                 return
-            df_index: DatetimeIndex = cell.data.index  # type:ignore
-            last_index = df_index[-1]
-            last_asset = float(cell.data.loc[last_index, "RESULT_ASSET"])  # type:ignore
+            last_timestamp = int(cell.data["timestamp"][-1])
+            last_asset = float(cell.data["RESULT_ASSET"][-1])
 
         if wallet_balance == 0:
             pass
         elif abs(wallet_balance - last_asset) / wallet_balance > 10**-9:
             async with self._asset_record.write_lock as cell:
-                current_time = datetime.now(UTC)
-                cell.data.loc[current_time, "CAUSE"] = "OTHER"
-                cell.data.loc[current_time, "RESULT_ASSET"] = wallet_balance
-                if not cell.data.index.is_monotonic_increasing:
-                    cell.data = await spawn_blocking(sort_data_frame, cell.data)
+                current_timestamp = int(datetime.now(UTC).timestamp() * 1000)
+                cell.data = pl.concat(
+                    [
+                        cell.data,
+                        DataFrame(
+                            [
+                                {
+                                    "timestamp": current_timestamp,
+                                    "CAUSE": "OTHER",
+                                    "SYMBOL": None,
+                                    "SIDE": None,
+                                    "FILL_PRICE": None,
+                                    "ROLE": None,
+                                    "MARGIN_RATIO": None,
+                                    "ORDER_ID": None,
+                                    "RESULT_ASSET": wallet_balance,
+                                },
+                            ],
+                            schema=ASSET_RECORD_SCHEMA,
+                        ),
+                    ],
+                )
+                cell.data = await spawn_blocking(sort_data_frame, cell.data)
         else:
             async with self._asset_record.write_lock as cell:
-                df_index: DatetimeIndex = cell.data.index  # type:ignore
-                last_index = df_index[-1]
-                cell.data.loc[last_index, "RESULT_ASSET"] = wallet_balance
+                cell.data = cell.data.with_columns(
+                    RESULT_ASSET=pl.when(pl.col("timestamp") == last_timestamp)
+                    .then(pl.lit(wallet_balance))
+                    .otherwise(pl.col("RESULT_ASSET")),
+                )
 
     async def _correct_account_mode(
         self,

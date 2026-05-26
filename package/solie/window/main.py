@@ -10,7 +10,6 @@ from typing import Any, NamedTuple, override
 
 import aiofiles
 import aiofiles.os
-import pandas as pd
 import pyqtgraph
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QCloseEvent, QFont, QIcon, QMouseEvent, QPixmap
@@ -28,6 +27,7 @@ from solie.overlay import CoinSelection, DatapathInput, TokenSelection
 from solie.utility import (
     LONG_SYMBOL_LIST_THRESHOLD,
     ApiRequester,
+    CandleDataStore,
     DataSettings,
     LogHandler,
     SolieConfig,
@@ -78,6 +78,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self.datapath: Path
         self.data_settings: DataSettings
+        self.candle_data_store: CandleDataStore
 
         self.last_interaction = datetime.now(UTC)
         self._splash_screen: SplashScreen
@@ -145,6 +146,7 @@ class Window(QMainWindow, Ui_MainWindow):
         await self._ensure_internet_connection()
         await self._load_or_create_datapath()
         await self._load_or_create_data_settings()
+        await self._setup_data_stores()
 
         asset_token = self.data_settings.asset_token
         target_symbols = self.data_settings.target_symbols
@@ -178,10 +180,10 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def _configure_global_settings(self) -> None:
         """Configure global settings for libraries."""
-        os.get_terminal_size = lambda *_: os.terminal_size((150, 90))  # type:ignore
-        pd.set_option("display.precision", 6)
-        pd.set_option("display.min_rows", 100)
-        pd.set_option("display.max_rows", 100)
+        def get_terminal_size(_: int = 0, /) -> os.terminal_size:
+            return os.terminal_size((150, 90))
+
+        os.get_terminal_size = get_terminal_size  # type:ignore
         pyqtgraph.setConfigOptions(antialias=True)
 
     async def _set_window_icon(self) -> None:
@@ -224,6 +226,18 @@ class Window(QMainWindow, Ui_MainWindow):
             )
             await save_data_settings(data_settings, self.datapath)
         self.data_settings = data_settings
+
+    async def _setup_data_stores(self) -> None:
+        """Create and open window-owned persistent data stores."""
+        self.candle_data_store = CandleDataStore(
+            self.datapath / "team" / "candles",
+            self.data_settings.target_symbols,
+        )
+        await self.candle_data_store.open()
+
+    async def close_data_stores(self) -> None:
+        """Close window-owned persistent data stores."""
+        await self.candle_data_store.close()
 
     async def _fetch_coin_information(self) -> dict[str, dict[str, Any]]:
         """Fetch coin information from CoinGecko API."""
