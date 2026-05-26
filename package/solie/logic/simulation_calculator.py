@@ -1,12 +1,19 @@
 """Simulation calculation orchestrator."""
 
+from __future__ import annotations
+
 import math
-from asyncio import gather, sleep
+import sqlite3
+from asyncio import sleep
+from collections import deque
+from collections.abc import Generator
+from contextlib import closing
 from datetime import UTC, datetime, timedelta
+from multiprocessing.managers import ListProxy
+from numbers import Real
 from pathlib import Path
 from typing import Any, NamedTuple
 
-import polars as pl
 from polars import DataFrame, Series
 from PySide6.QtWidgets import QProgressBar
 
@@ -16,46 +23,25 @@ from solie.utility import (
     MAX_PREPARATION_STEPS,
     PROGRESS_BAR_MAX,
     AccountState,
+    CandleDataStore,
+    CandleRow,
     Cell,
+    SavedStrategy,
     Strategy,
     VirtualPosition,
     VirtualState,
     create_empty_account_state,
     create_empty_asset_record,
+    create_empty_candle_frame_schema,
     create_empty_unrealized_changes,
-    sort_data_frame,
-    sort_series,
 )
 from solie.widget import GraphLines
 
-from .analyze_market import (
-    CalculationInput,
-    CalculationOutput,
-    make_indicators,
-    simulate_chunk,
-)
+from .analyze_market import ChunkSimulation, SimulationState, make_indicators
 
-
-class BlankStates(NamedTuple):
-    """Blank initial states for calculation."""
-
-    asset_record: DataFrame
-    unrealized_changes: Series
-    scribbles: dict[Any, Any]
-    account_state: AccountState
-    virtual_state: VirtualState
-
-
-class PreviousState(NamedTuple):
-    """Previous calculation state."""
-
-    asset_record: DataFrame
-    unrealized_changes: Series
-    scribbles: dict[Any, Any]
-    account_state: AccountState
-    virtual_state: VirtualState
-    calculate_from: datetime
-    calculate_until: datetime
+INDICATOR_LOOKBACK = timedelta(days=28)
+INDICATOR_BATCH_SPAN = timedelta(days=1)
+CANDLE_FIELDS = ("OPEN", "HIGH", "LOW", "CLOSE", "VOLUME")
 
 
 class WidgetReferences(NamedTuple):
@@ -85,26 +71,43 @@ class CalculationResult(NamedTuple):
     account_state: AccountState
 
 
+class SimulationProcessInput(NamedTuple):
+    """Picklable input sent to the simulation worker process."""
+
+    candle_rootpath: Path
+    strategy: Strategy
+    target_symbols: list[str]
+    calculate_from_timestamp: int
+    calculate_until_timestamp: int
+    progress: ListProxy[int]
+
+
+type CandleFrameRow = dict[str, int | float | None]
+
+
+class SimulationMoment(NamedTuple):
+    """One streamed timestamp waiting for indicator-backed simulation."""
+
+    timestamp: int
+    rows: dict[str, CandleRow]
+
+
 class SimulationCalculator:
-    """Orchestrates simulation calculation for a specific year and strategy."""
+    """UI-facing wrapper around the process-owned streamed simulation."""
 
     def __init__(
         self,
         *,
         unique_task: UniqueTask,
         config: CalculationConfig,
-        workerpath: Path,
-        year_candle_data: DataFrame,
+        candle_data_store: CandleDataStore,
         widgets: WidgetReferences,
     ) -> None:
         """Initialize simulation calculator."""
         self.unique_task = unique_task
-        self.config = config
-        self.workerpath = workerpath
-        self.year_candle_data = year_candle_data
+        self.candle_rootpath = candle_data_store.rootpath
         self.widgets = widgets
 
-        # Convenience accessors
         self.year = config.year
         self.strategy = config.strategy
         self.target_symbols = config.target_symbols
@@ -114,7 +117,6 @@ class SimulationCalculator:
         self.prepare_step = 0
         self.calculate_step = Cell(0)
 
-        # Time range
         self.slice_from = datetime(self.year, 1, 1, tzinfo=UTC)
         if self.year == datetime.now(UTC).year:
             self.slice_until = datetime.now(UTC)
@@ -127,55 +129,12 @@ class SimulationCalculator:
             self.slice_until = datetime(self.year + 1, 1, 1, tzinfo=UTC)
         self.slice_until -= timedelta(seconds=1)
 
-    def _slice_by_time(
-        self,
-        data: DataFrame,
-        start: datetime,
-        end: datetime,
-    ) -> DataFrame:
-        """Return rows between two moments when a timestamp column exists."""
-        if "timestamp" not in data.columns:
-            return data
-        start_timestamp = int(start.timestamp() * 1000)
-        end_timestamp = int(end.timestamp() * 1000)
-        return data.filter(
-            (pl.col("timestamp") >= start_timestamp)
-            & (pl.col("timestamp") <= end_timestamp),
-        )
-
-    def _split_frame_by_day_chunks(
-        self,
-        data: DataFrame,
-        chunk_days: int,
-    ) -> list[DataFrame]:
-        """Split a timestamp-column frame into fixed day chunks."""
-        if len(data) == 0 or "timestamp" not in data.columns:
-            return [data]
-
-        chunk_length_ms = int(timedelta(days=chunk_days).total_seconds() * 1000)
-        timestamps = [
-            value for value in data["timestamp"] if isinstance(value, int)
-        ]
-        if len(timestamps) == 0:
-            return [data.head(0)]
-        first_timestamp = min(timestamps)
-        last_timestamp = max(timestamps)
-        chunk_start = first_timestamp - first_timestamp % chunk_length_ms
-
-        chunks: list[DataFrame] = []
-        while chunk_start <= last_timestamp:
-            chunk_end = chunk_start + chunk_length_ms
-            chunk = data.filter(
-                (pl.col("timestamp") >= chunk_start)
-                & (pl.col("timestamp") < chunk_end),
-            )
-            if len(chunk) > 0:
-                chunks.append(chunk)
-            chunk_start = chunk_end
-
-        if len(chunks) == 0:
-            return [data.head(0)]
-        return chunks
+        self.calculate_from = self.slice_from
+        self.calculate_until = self.slice_until
+        self.asset_record = create_empty_asset_record()
+        self.unrealized_changes = create_empty_unrealized_changes()
+        self.scribbles: dict[Any, Any] = {}
+        self.account_state = create_empty_account_state(self.target_symbols)
 
     async def calculate(self) -> CalculationResult:
         """Run the simulation calculation."""
@@ -185,80 +144,19 @@ class SimulationCalculator:
         self.unique_task.add_done_callback(lambda _: bar_task.cancel())
 
         self.prepare_step = 1
+        self._reset_calculation_state()
 
-        self.year_candle_data = self.year_candle_data.interpolate()
+        self.prepare_step = MAX_PREPARATION_STEPS
+        if self.calculate_from < self.calculate_until:
+            result = await self._run_process_calculation()
+        else:
+            result = self._create_result()
 
-        self.prepare_step = 2
-
-        blank_states = self._create_blank_states()
-
-        self.prepare_step = 3
-
-        previous_state = await self._load_or_create_previous_state(blank_states)
-
-        self.prepare_step = 4
-
-        should_calculate = (
-            previous_state.calculate_from < previous_state.calculate_until
-        )
-        if len(previous_state.asset_record) == 0:
-            previous_state = previous_state._replace(
-                asset_record=pl.concat(
-                    [
-                        previous_state.asset_record,
-                        DataFrame(
-                            [
-                                {
-                                    "timestamp": int(
-                                        previous_state.calculate_from.timestamp()
-                                        * 1000,
-                                    ),
-                                    "CAUSE": "OTHER",
-                                    "SYMBOL": None,
-                                    "SIDE": None,
-                                    "FILL_PRICE": None,
-                                    "ROLE": None,
-                                    "MARGIN_RATIO": None,
-                                    "ORDER_ID": None,
-                                    "RESULT_ASSET": 1.0,
-                                },
-                            ],
-                            schema=ASSET_RECORD_SCHEMA,
-                        ),
-                    ],
-                ),
-            )
-
-        self.prepare_step = 5
-
-        calculation_inputs = await self._create_calculation_inputs(
-            should_calculate,
-            previous_state,
-            blank_states,
-        )
-
-        self.prepare_step = 6
-
-        calculation_output_data = await self._run_calculation(
-            should_calculate,
-            calculation_inputs,
-            previous_state,
-        )
-
-        self.calculate_step.value = 1000
-
-        result = await self._merge_calculation_results(
-            should_calculate,
-            calculation_output_data,
-            previous_state,
-        )
-
-        return CalculationResult(
-            asset_record=result.asset_record,
-            unrealized_changes=result.unrealized_changes,
-            scribbles=result.scribbles,
-            account_state=result.account_state,
-        )
+        self.prepare_step = MAX_PREPARATION_STEPS
+        self.calculate_step.value = PROGRESS_BAR_MAX
+        self.widgets.pre_progressbar.setValue(PROGRESS_BAR_MAX)
+        self.widgets.main_progressbar.setValue(PROGRESS_BAR_MAX)
+        return result
 
     async def _play_progress_bar(self) -> None:
         """Animate progress bars."""
@@ -301,43 +199,8 @@ class SimulationCalculator:
 
             await sleep(0.01)
 
-    def _create_blank_states(self) -> BlankStates:
-        """Create blank initial states."""
-        blank_asset_record = create_empty_asset_record()
-        blank_unrealized_changes = create_empty_unrealized_changes()
-        blank_scribbles: dict[Any, Any] = {}
-        blank_account_state = create_empty_account_state(self.target_symbols)
-        blank_virtual_state = VirtualState(
-            available_balance=1,
-            positions={},
-            placements={},
-        )
-        for symbol in self.target_symbols:
-            blank_virtual_state.positions[symbol] = VirtualPosition(
-                amount=0.0,
-                entry_price=0.0,
-            )
-            blank_virtual_state.placements[symbol] = {}
-
-        return BlankStates(
-            asset_record=blank_asset_record,
-            unrealized_changes=blank_unrealized_changes,
-            scribbles=blank_scribbles,
-            account_state=blank_account_state,
-            virtual_state=blank_virtual_state,
-        )
-
-    async def _load_or_create_previous_state(
-        self,
-        blank_states: BlankStates,
-    ) -> PreviousState:
-        """Load previous calculation state or create blank state."""
-        previous_asset_record = blank_states.asset_record.clone()
-        previous_unrealized_changes = blank_states.unrealized_changes.clone()
-        previous_scribbles = blank_states.scribbles.copy()
-        previous_account_state = blank_states.account_state.model_copy(deep=True)
-        previous_virtual_state = blank_states.virtual_state.model_copy(deep=True)
-
+    def _reset_calculation_state(self) -> None:
+        """Reset mutable calculation state for a new run."""
         if self.only_visible:
             graph_widget = self.widgets.simulation_graph.price_widget
             view_range = graph_widget.getAxis("bottom").range
@@ -345,219 +208,491 @@ class SimulationCalculator:
             view_end = datetime.fromtimestamp(view_range[1], tz=UTC)
 
             if self.should_draw_all_years:
-                calculate_from = view_start
-                calculate_until = view_end
+                self.calculate_from = view_start
+                self.calculate_until = view_end
             else:
-                calculate_from = max(view_start, self.slice_from)
-                calculate_until = min(view_end, self.slice_until)
+                self.calculate_from = max(view_start, self.slice_from)
+                self.calculate_until = min(view_end, self.slice_until)
 
         else:
-            calculate_from = self.slice_from
-            calculate_until = self.slice_until
+            self.calculate_from = self.slice_from
+            self.calculate_until = self.slice_until
 
-        return PreviousState(
-            asset_record=previous_asset_record,
-            unrealized_changes=previous_unrealized_changes,
-            scribbles=previous_scribbles,
-            account_state=previous_account_state,
-            virtual_state=previous_virtual_state,
-            calculate_from=calculate_from,
-            calculate_until=calculate_until,
+        self.asset_record = self._create_initial_asset_record()
+        self.unrealized_changes = create_empty_unrealized_changes()
+        self.scribbles = {}
+        self.account_state = create_empty_account_state(self.target_symbols)
+        self.calculate_step.value = 0
+
+    def _create_initial_asset_record(self) -> DataFrame:
+        """Create the starting asset baseline row."""
+        return _create_initial_asset_record(
+            int(self.calculate_from.timestamp() * 1000),
         )
 
-    async def _create_calculation_inputs(
-        self,
-        should_calculate: bool,
-        previous_state: PreviousState,
-        blank_states: BlankStates,
-    ) -> list[CalculationInput]:
-        """Create calculation input chunks."""
-        calculation_inputs: list[CalculationInput] = []
+    async def _run_process_calculation(self) -> CalculationResult:
+        """Run streamed simulation in the process pool."""
+        progress = get_sync_manager().list([0])
+        progress_task = spawn(self._sync_calculation_progress(progress))
+        self.unique_task.add_done_callback(lambda _: progress_task.cancel())
 
-        if not should_calculate:
-            return calculation_inputs
+        process_input = SimulationProcessInput(
+            candle_rootpath=self.candle_rootpath,
+            strategy=self._create_process_strategy(),
+            target_symbols=self.target_symbols,
+            calculate_from_timestamp=int(self.calculate_from.timestamp() * 1000),
+            calculate_until_timestamp=int(self.calculate_until.timestamp() * 1000),
+            progress=progress,
+        )
 
-        sync_manager = get_sync_manager()
+        try:
+            result = await spawn_blocking(calculate_streamed_simulation, process_input)
+        finally:
+            progress_task.cancel()
 
-        calculate_from = previous_state.calculate_from
-        calculate_until = previous_state.calculate_until
+        self.asset_record = result.asset_record
+        self.unrealized_changes = result.unrealized_changes
+        self.scribbles = result.scribbles
+        self.account_state = result.account_state
+        return self._create_result()
 
-        provide_from = calculate_from - timedelta(days=28)
-        year_indicators = await spawn_blocking(
-            make_indicators,
+    async def _sync_calculation_progress(self, progress: ListProxy[int]) -> None:
+        """Copy process-owned progress into the UI progress model."""
+        while True:
+            self.calculate_step.value = int(progress[0])
+            await sleep(0.05)
+
+    def _create_process_strategy(self) -> Strategy:
+        """Create a picklable strategy instance for process execution."""
+        if isinstance(self.strategy, SavedStrategy):
+            return self.strategy.create_picklable_copy()
+        return self.strategy
+
+    def _create_result(self) -> CalculationResult:
+        """Create the public calculation result from current state."""
+        return CalculationResult(
+            asset_record=self.asset_record,
+            unrealized_changes=self.unrealized_changes,
+            scribbles=self.scribbles,
+            account_state=self.account_state,
+        )
+
+
+class StreamedSimulationRunner:
+    """Process-local streamed simulation over SQLite candle rows."""
+
+    def __init__(self, process_input: SimulationProcessInput) -> None:
+        """Initialize process-local simulation state."""
+        self.candle_rootpath = process_input.candle_rootpath
+        self.strategy = process_input.strategy
+        if isinstance(self.strategy, SavedStrategy):
+            self.strategy.compile_code()
+
+        self.target_symbols = process_input.target_symbols
+        self.calculate_from_timestamp = process_input.calculate_from_timestamp
+        self.calculate_until_timestamp = process_input.calculate_until_timestamp
+        self.progress = process_input.progress
+        self.reported_progress = 0
+
+        self.window_rows: deque[CandleFrameRow] = deque()
+        self.row_iterators: dict[str, Generator[CandleRow, None, None]] = {}
+        self.next_rows: dict[str, CandleRow | None] = {}
+        self.rows_at_timestamp: dict[str, CandleRow] = {}
+        self.active_symbols: list[str] = []
+        self.current_candle_data: dict[str, float] = {}
+        self.current_indicators: dict[str, float] = {}
+        self.pending_moments: list[SimulationMoment] = []
+        self.total_milliseconds = max(
+            self.calculate_until_timestamp - self.calculate_from_timestamp,
+            1,
+        )
+        self.next_indicator_flush_timestamp = (
+            self.calculate_from_timestamp
+            + int(INDICATOR_BATCH_SPAN.total_seconds() * 1000)
+        )
+
+        self.asset_record = _create_initial_asset_record(
+            self.calculate_from_timestamp,
+        )
+        self.unrealized_changes = create_empty_unrealized_changes()
+        self.scribbles: dict[Any, Any] = {}
+        self.account_state = create_empty_account_state(self.target_symbols)
+        self.virtual_state = self._create_virtual_state()
+
+    def run(self) -> CalculationResult:
+        """Run the streamed simulation to completion."""
+        simulator = ChunkSimulation(
             strategy=self.strategy,
             target_symbols=self.target_symbols,
-            candle_data=self._slice_by_time(
-                self.year_candle_data,
-                provide_from,
-                calculate_until,
+            state=SimulationState(
+                asset_record=self.asset_record,
+                unrealized_changes=self.unrealized_changes,
+                scribbles=self.scribbles,
+                account_state=self.account_state,
+                virtual_state=self.virtual_state,
             ),
         )
 
-        needed_candle_data = self._slice_by_time(
-            self.year_candle_data,
-            calculate_from,
-            calculate_until,
-        )
-        if "timestamp" in needed_candle_data.columns:
-            needed_index = needed_candle_data["timestamp"]
-        else:
-            needed_index = Series("timestamp", [])
-        needed_indicators = self._slice_by_time(
-            year_indicators,
-            calculate_from,
-            calculate_until,
-        )
-
-        parallel_chunk_days = self.strategy.parallel_simulation_chunk_days
-
-        if parallel_chunk_days is None:
-            progress_list = sync_manager.list([0.0])
-            calculation_input = CalculationInput(
-                strategy=self.strategy,
-                progress_list=progress_list,
-                target_progress=0,
-                target_symbols=self.target_symbols,
-                calculation_index=needed_index,
-                chunk_candle_data=needed_candle_data,
-                chunk_indicators=needed_indicators,
-                chunk_asset_record=previous_state.asset_record,
-                chunk_unrealized_changes=previous_state.unrealized_changes,
-                chunk_scribbles=previous_state.scribbles,
-                chunk_account_state=previous_state.account_state,
-                chunk_virtual_state=previous_state.virtual_state,
-            )
-            calculation_inputs.append(calculation_input)
-
-        else:
-            chunk_candle_data_list = self._split_frame_by_day_chunks(
-                needed_candle_data,
-                parallel_chunk_days,
+        try:
+            self._prepare_candle_streams(
+                self.calculate_from_timestamp
+                - int(INDICATOR_LOOKBACK.total_seconds() * 1000),
+                self.calculate_until_timestamp,
             )
 
-            chunk_count = len(chunk_candle_data_list)
-            progress_list = sync_manager.list([0.0] * chunk_count)
-
-            for turn, chunk_candle_data in enumerate(chunk_candle_data_list):
-                if "timestamp" in chunk_candle_data.columns:
-                    chunk_index = chunk_candle_data["timestamp"]
-                else:
-                    chunk_index = Series("timestamp", [])
-
-                if len(chunk_index) == 0:
-                    chunk_indicators = needed_indicators.head(0)
-                else:
-                    chunk_start = int(chunk_index[0])
-                    chunk_end = int(chunk_index[-1])
-                    chunk_indicators = needed_indicators.filter(
-                        (pl.col("timestamp") >= chunk_start)
-                        & (pl.col("timestamp") <= chunk_end),
-                    )
-
-                chunk_asset_record = previous_state.asset_record.head(0)
-                chunk_unrealized_changes = previous_state.unrealized_changes.head(0)
-                if turn == 0:
-                    chunk_scribbles = previous_state.scribbles
-                    chunk_account_state = previous_state.account_state
-                    chunk_virtual_state = previous_state.virtual_state
-                else:
-                    chunk_scribbles = blank_states.scribbles
-                    chunk_account_state = blank_states.account_state
-                    chunk_virtual_state = blank_states.virtual_state
-
-                calculation_input = CalculationInput(
-                    strategy=self.strategy,
-                    progress_list=progress_list,
-                    target_progress=turn,
-                    target_symbols=self.target_symbols,
-                    calculation_index=chunk_index,
-                    chunk_candle_data=chunk_candle_data,
-                    chunk_indicators=chunk_indicators,
-                    chunk_asset_record=chunk_asset_record,
-                    chunk_unrealized_changes=chunk_unrealized_changes,
-                    chunk_scribbles=chunk_scribbles,
-                    chunk_account_state=chunk_account_state,
-                    chunk_virtual_state=chunk_virtual_state,
-                )
-                calculation_inputs.append(calculation_input)
-
-        return calculation_inputs
-
-    async def _run_calculation(
-        self,
-        should_calculate: bool,
-        calculation_inputs: list[CalculationInput],
-        previous_state: PreviousState,
-    ) -> list[CalculationOutput]:
-        """Execute the actual simulation calculation."""
-        calculation_output_data: list[CalculationOutput] = []
-
-        if not should_calculate:
-            return calculation_output_data
-
-        coroutines = [
-            spawn_blocking(simulate_chunk, input_data)
-            for input_data in calculation_inputs
-        ]
-        gathered = gather(*coroutines)
-
-        calculate_from = previous_state.calculate_from
-        calculate_until = previous_state.calculate_until
-        total_seconds = (calculate_until - calculate_from).total_seconds()
-
-        async def update_calculation_step() -> None:
-            progress_list = calculation_inputs[0].progress_list
             while True:
-                if gathered.done():
-                    return
-                total_progress = sum(progress_list)
-                self.calculate_step.value = math.ceil(
-                    total_progress * 1000 / total_seconds,
-                )
-                await sleep(0.01)
+                timestamp = self._next_stream_timestamp()
+                if timestamp is None:
+                    break
 
-        step_task = spawn(update_calculation_step())
-        self.unique_task.add_done_callback(lambda _: step_task.cancel())
+                self._consume_stream_timestamp(timestamp)
+                self._append_window_row(timestamp)
 
-        return await gathered
+                if timestamp >= self.calculate_from_timestamp:
+                    self.pending_moments.append(
+                        SimulationMoment(
+                            timestamp=timestamp,
+                            rows=self.rows_at_timestamp.copy(),
+                        ),
+                    )
+                    if timestamp >= self.next_indicator_flush_timestamp:
+                        self._simulate_pending_moments(simulator)
+                        self.next_indicator_flush_timestamp = (
+                            timestamp
+                            + int(INDICATOR_BATCH_SPAN.total_seconds() * 1000)
+                        )
 
-    async def _merge_calculation_results(
-        self,
-        should_calculate: bool,
-        calculation_output_data: list[CalculationOutput],
-        previous_state: PreviousState,
-    ) -> CalculationResult:
-        """Merge calculation results into final output."""
-        if should_calculate:
-            asset_record = previous_state.asset_record
-            for chunk_ouput_data in calculation_output_data:
-                chunk_asset_record = chunk_ouput_data.chunk_asset_record
-                concat_data = [asset_record, chunk_asset_record]
-                asset_record = pl.concat(concat_data)
-            if "timestamp" in asset_record.columns:
-                asset_record = asset_record.unique(subset=["timestamp"], keep="first")
-                asset_record = await spawn_blocking(sort_data_frame, asset_record)
+                self._trim_window_rows(self._trim_reference_timestamp(timestamp))
 
-            unrealized_changes = previous_state.unrealized_changes
-            for chunk_ouput_data in calculation_output_data:
-                chunk_unrealized_changes = chunk_ouput_data.chunk_unrealized_changes
-                concat_data = [unrealized_changes, chunk_unrealized_changes]
-                unrealized_changes = pl.concat(concat_data)
-            unrealized_changes = await spawn_blocking(sort_series, unrealized_changes)
+            self._simulate_pending_moments(simulator)
+            self.progress[0] = PROGRESS_BAR_MAX
+        finally:
+            self._close_row_iterators()
 
-            scribbles = calculation_output_data[-1].chunk_scribbles
-            account_state = calculation_output_data[-1].chunk_account_state
-
-        else:
-            asset_record = previous_state.asset_record
-            unrealized_changes = previous_state.unrealized_changes
-            scribbles = previous_state.scribbles
-            account_state = previous_state.account_state
-
+        output = simulator.finish()
         return CalculationResult(
-            asset_record=asset_record,
-            unrealized_changes=unrealized_changes,
-            scribbles=scribbles,
-            account_state=account_state,
+            asset_record=output.asset_record,
+            unrealized_changes=output.unrealized_changes,
+            scribbles=output.scribbles,
+            account_state=output.account_state,
         )
 
+    def _create_virtual_state(self) -> VirtualState:
+        """Create a blank mutable virtual account state."""
+        virtual_state = VirtualState(
+            available_balance=1,
+            positions={},
+            placements={},
+        )
+        for symbol in self.target_symbols:
+            virtual_state.positions[symbol] = VirtualPosition(
+                amount=0.0,
+                entry_price=0.0,
+            )
+            virtual_state.placements[symbol] = {}
+        return virtual_state
+
+    def _prepare_candle_streams(
+        self,
+        provide_from_timestamp: int,
+        calculate_until_timestamp: int,
+    ) -> None:
+        """Initialize per-symbol SQLite iterators for this run."""
+        self.window_rows = deque()
+        self.row_iterators = {}
+        self.next_rows = {}
+        self.rows_at_timestamp = {}
+        self.active_symbols = []
+        self.current_candle_data = {}
+        self.current_indicators = {}
+        self.pending_moments = []
+
+        for symbol in self.target_symbols:
+            iterator = self._iter_candle_range(
+                symbol,
+                provide_from_timestamp,
+                calculate_until_timestamp,
+            )
+            row = next(iterator, None)
+            if row is None:
+                continue
+            self.row_iterators[symbol] = iterator
+            self.next_rows[symbol] = row
+
+    def _iter_candle_range(
+        self,
+        symbol: str,
+        start_timestamp: int,
+        end_timestamp: int,
+    ) -> Generator[CandleRow, None, None]:
+        """Iterate one symbol's SQLite candle rows across touched year files."""
+        for year in _iter_years(start_timestamp, end_timestamp):
+            filepath = self.candle_rootpath / str(year) / f"{symbol}.sqlite"
+            if not filepath.exists():
+                continue
+            year_start = max(start_timestamp, _year_start_timestamp(year))
+            year_end = min(end_timestamp, _year_end_timestamp(year))
+            with closing(sqlite3.connect(filepath)) as connection:
+                _configure_read_connection(connection)
+                with closing(
+                    connection.execute(
+                        """
+                        SELECT timestamp, open, high, low, close, volume
+                        FROM candles
+                        WHERE timestamp >= ? AND timestamp <= ?
+                        ORDER BY timestamp
+                        """,
+                        (year_start, year_end),
+                    ),
+                ) as cursor:
+                    for row in cursor:
+                        yield CandleRow(
+                            int(row[0]),
+                            float(row[1]),
+                            float(row[2]),
+                            float(row[3]),
+                            float(row[4]),
+                            float(row[5]),
+                        )
+
+    def _close_row_iterators(self) -> None:
+        """Close any SQLite-backed row generators still holding read handles."""
+        for iterator in self.row_iterators.values():
+            iterator.close()
+
+    def _next_stream_timestamp(self) -> int | None:
+        """Get the next timestamp available from any symbol stream."""
+        available_timestamps = [
+            row.timestamp for row in self.next_rows.values() if row is not None
+        ]
+        if len(available_timestamps) == 0:
+            return None
+        return min(available_timestamps)
+
+    def _consume_stream_timestamp(self, timestamp: int) -> None:
+        """Collect rows at the next timestamp and advance their iterators."""
+        self.rows_at_timestamp = {}
+        for symbol, row in list(self.next_rows.items()):
+            if row is None or row.timestamp != timestamp:
+                continue
+            self.rows_at_timestamp[symbol] = row
+            self.next_rows[symbol] = next(self.row_iterators[symbol], None)
+
+    def _trim_reference_timestamp(self, timestamp: int) -> int:
+        """Keep lookback rows needed by the oldest unprocessed moment."""
+        if len(self.pending_moments) > 0:
+            return self.pending_moments[0].timestamp
+        return timestamp
+
+    def _append_window_row(self, timestamp: int) -> None:
+        """Append the current timestamp's symbol rows to the indicator window."""
+        row_data: CandleFrameRow = {"timestamp": timestamp}
+        for symbol in self.target_symbols:
+            for field in CANDLE_FIELDS:
+                row_data[f"{symbol}/{field}"] = None
+
+        for symbol, row in self.rows_at_timestamp.items():
+            row_data[f"{symbol}/OPEN"] = row.open
+            row_data[f"{symbol}/HIGH"] = row.high
+            row_data[f"{symbol}/LOW"] = row.low
+            row_data[f"{symbol}/CLOSE"] = row.close
+            row_data[f"{symbol}/VOLUME"] = row.volume
+
+        self.window_rows.append(row_data)
+
+    def _trim_window_rows(self, timestamp: int) -> None:
+        """Keep the indicator window bounded to the lookback horizon."""
+        oldest_timestamp = timestamp - int(INDICATOR_LOOKBACK.total_seconds() * 1000)
+        while len(self.window_rows) > 0:
+            row_timestamp = self.window_rows[0]["timestamp"]
+            if not isinstance(row_timestamp, int) or row_timestamp >= oldest_timestamp:
+                return
+            self.window_rows.popleft()
+
+    def _create_window_frame(self) -> DataFrame:
+        """Create the bounded Polars frame needed by indicator scripts."""
+        return DataFrame(
+            list(self.window_rows),
+            schema=create_empty_candle_frame_schema(self.target_symbols),
+        )
+
+    def _simulate_pending_moments(self, simulator: ChunkSimulation) -> None:
+        """Run sequential simulation for the current indicator batch."""
+        if len(self.pending_moments) == 0:
+            return
+
+        window_frame = self._create_window_frame()
+        candle_rows = self._collect_pending_frame_rows(window_frame.interpolate())
+        indicators = make_indicators(
+            self.strategy,
+            self.target_symbols,
+            window_frame,
+        )
+        indicator_rows = self._collect_pending_frame_rows(indicators)
+
+        for moment in self.pending_moments:
+            self.rows_at_timestamp = moment.rows
+            self._update_active_symbols()
+            if len(self.active_symbols) > 0:
+                self._update_current_candle_data(
+                    candle_rows.get(moment.timestamp, {}),
+                )
+                self._update_current_indicators(
+                    indicator_rows.get(moment.timestamp, {}),
+                )
+                simulator.simulate_moment(
+                    timestamp=moment.timestamp,
+                    active_symbols=self.active_symbols,
+                    current_candle_data=self.current_candle_data,
+                    current_indicators=self.current_indicators,
+                )
+            self._update_calculation_progress(moment.timestamp)
+
+        self.pending_moments = []
+
+    def _collect_pending_frame_rows(
+        self,
+        frame: DataFrame,
+    ) -> dict[int, dict[str, Any]]:
+        """Collect the latest frame row for each pending timestamp."""
+        frame_rows: dict[int, dict[str, Any]] = {}
+        pending_moments = sorted(
+            self.pending_moments,
+            key=lambda moment: moment.timestamp,
+        )
+        pending_index = 0
+        latest_indicator_row: dict[str, Any] = {}
+
+        for row in frame.iter_rows(named=True):
+            timestamp = row.get("timestamp")
+            if not isinstance(timestamp, Real):
+                continue
+
+            row_timestamp = int(timestamp)
+            while (
+                pending_index < len(pending_moments)
+                and pending_moments[pending_index].timestamp < row_timestamp
+            ):
+                if len(latest_indicator_row) > 0:
+                    frame_rows[pending_moments[pending_index].timestamp] = (
+                        latest_indicator_row
+                    )
+                pending_index += 1
+
+            latest_indicator_row = row
+            while (
+                pending_index < len(pending_moments)
+                and pending_moments[pending_index].timestamp == row_timestamp
+            ):
+                frame_rows[pending_moments[pending_index].timestamp] = (
+                    latest_indicator_row
+                )
+                pending_index += 1
+
+        while pending_index < len(pending_moments):
+            if len(latest_indicator_row) > 0:
+                frame_rows[pending_moments[pending_index].timestamp] = (
+                    latest_indicator_row
+                )
+            pending_index += 1
+
+        return frame_rows
+
+    def _update_active_symbols(self) -> None:
+        """Set symbols that have a candle row at the current timestamp."""
+        self.active_symbols = [
+            symbol for symbol in self.target_symbols if symbol in self.rows_at_timestamp
+        ]
+
+    def _update_current_candle_data(self, candle_row: dict[str, Any]) -> None:
+        """Create the strategy-facing candle dict for the current timestamp."""
+        current_candle_data: dict[str, float] = {}
+        for symbol in self.target_symbols:
+            for field in CANDLE_FIELDS:
+                column = f"{symbol}/{field}"
+                value = candle_row.get(column)
+                if isinstance(value, Real):
+                    current_candle_data[column] = float(value)
+                else:
+                    current_candle_data[column] = math.nan
+        self.current_candle_data = current_candle_data
+
+    def _update_current_indicators(self, indicator_row: dict[str, Any]) -> None:
+        """Create the strategy-facing indicator dict for the current timestamp."""
+        if len(indicator_row) == 0:
+            self.current_indicators = {}
+            return
+
+        current_indicators: dict[str, float] = {}
+        for column, value in indicator_row.items():
+            if column == "timestamp":
+                continue
+            if isinstance(value, Real):
+                current_indicators[column] = float(value)
+            else:
+                current_indicators[column] = math.nan
+        self.current_indicators = current_indicators
+
+    def _update_calculation_progress(self, timestamp: int) -> None:
+        """Update process-visible progress from a processed timestamp."""
+        new_progress = min(
+            PROGRESS_BAR_MAX,
+            math.ceil(
+                (timestamp - self.calculate_from_timestamp)
+                * PROGRESS_BAR_MAX
+                / self.total_milliseconds,
+            ),
+        )
+        if new_progress <= self.reported_progress:
+            return
+        self.reported_progress = new_progress
+        self.progress[0] = new_progress
+
+
+def calculate_streamed_simulation(
+    process_input: SimulationProcessInput,
+) -> CalculationResult:
+    """Run streamed simulation inside a process-pool worker."""
+    runner = StreamedSimulationRunner(process_input)
+    return runner.run()
+
+
+def _create_initial_asset_record(timestamp: int) -> DataFrame:
+    """Create the starting asset baseline row."""
+    return DataFrame(
+        [
+            {
+                "timestamp": timestamp,
+                "CAUSE": "OTHER",
+                "SYMBOL": None,
+                "SIDE": None,
+                "FILL_PRICE": None,
+                "ROLE": None,
+                "MARGIN_RATIO": None,
+                "ORDER_ID": None,
+                "RESULT_ASSET": 1.0,
+            },
+        ],
+        schema=ASSET_RECORD_SCHEMA,
+    )
+
+
+def _configure_read_connection(connection: sqlite3.Connection) -> None:
+    connection.execute("PRAGMA query_only = ON")
+    connection.execute("PRAGMA busy_timeout = 5000")
+
+
+def _year(timestamp: int) -> int:
+    return datetime.fromtimestamp(timestamp / 1000, tz=UTC).year
+
+
+def _iter_years(start_timestamp: int, end_timestamp: int) -> range:
+    return range(_year(start_timestamp), _year(end_timestamp) + 1)
+
+
+def _year_start_timestamp(year: int) -> int:
+    return int(datetime(year, 1, 1, tzinfo=UTC).timestamp() * 1000)
+
+
+def _year_end_timestamp(year: int) -> int:
+    return int(datetime(year + 1, 1, 1, tzinfo=UTC).timestamp() * 1000) - 1

@@ -1,6 +1,7 @@
 """SQLite-backed candle data storage."""
 
-from asyncio import to_thread
+import functools
+from asyncio import get_event_loop
 from collections.abc import AsyncIterator, Iterable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -62,7 +63,11 @@ class CandleData:
             return
 
         await aiofiles.os.makedirs(self.filepath.parent, exist_ok=True)
-        await to_thread(_apply_candle_migrations, self.filepath)
+        event_loop = get_event_loop()
+        await event_loop.run_in_executor(
+            None,
+            functools.partial(_apply_candle_migrations, self.filepath),
+        )
 
         connection = await aiosqlite.connect(self.filepath)
         await _configure_connection(connection)

@@ -64,7 +64,6 @@ class SavedStrategy(BaseModel):
     version: str = "0.1"
     description: str = "A blank strategy template before being written"
     risk_level: RiskLevel = RiskLevel.HIGH
-    parallel_simulation_chunk_days: int | None = 30
     indicator_script: str = "pass"
     decision_script: str = "pass"
 
@@ -132,6 +131,17 @@ class SavedStrategy(BaseModel):
             "<string>",
             "exec",
         )
+
+    def clear_compiled_code(self) -> None:
+        """Remove compiled code objects so this strategy can be pickled."""
+        self._compiled_indicator_script = None
+        self._compiled_decision_script = None
+
+    def create_picklable_copy(self) -> "SavedStrategy":
+        """Create a copy without compiled code objects."""
+        strategy = self.model_copy(deep=True)
+        strategy.clear_compiled_code()
+        return strategy
 
 
 class SavedStrategies(BaseModel):

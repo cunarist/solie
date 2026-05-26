@@ -20,3 +20,8 @@
 - Import the Polars module as `pl` when calling functions or expression
   builders, such as `pl.col("timestamp")` and `pl.concat(frames)`.
 - Prefer package-level Solie imports when the package surface exports the name.
+- Prefer explicit `run_in_executor(...)` over `asyncio.to_thread(...)` for
+  blocking work, matching the existing codebase style.
+- Prefer context managers for resource lifetime whenever possible, including
+  `contextlib.closing(...)` for APIs whose native context manager does not
+  close the resource.

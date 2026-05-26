@@ -2,8 +2,6 @@
 from datetime import UTC, datetime, timedelta
 from typing import Any, NamedTuple
 
-import aiofiles
-import aiofiles.os
 import polars as pl
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from polars import DataFrame, Series
@@ -24,8 +22,10 @@ from solie.utility import (
     DurationRecorder,
     PositionDirection,
     RWLock,
+    SavedStrategy,
     SimulationSettings,
     SimulationSummary,
+    Strategy,
     combine_candle_data,
     create_empty_account_state,
     create_empty_asset_record,
@@ -76,13 +76,6 @@ class RangeMetrics(NamedTuple):
     min_unrealized_change: float
 
 
-class ChunkList(NamedTuple):
-    """List of chunks and their count."""
-
-    chunks: list[DataFrame]
-    chunk_count: int
-
-
 class Simulator:
     """Worker for running trading simulations."""
 
@@ -90,7 +83,6 @@ class Simulator:
         """Initialize trading simulator."""
         self._window = window
         self._scheduler = scheduler
-        self._workerpath = window.datapath / "simulator"
 
         self._line_display_task = UniqueTask()
         self._range_display_task = UniqueTask()
@@ -186,8 +178,6 @@ class Simulator:
 
     async def load_work(self) -> None:
         """Load simulation settings from disk."""
-        await aiofiles.os.makedirs(self._workerpath, exist_ok=True)
-
         text = "Nothing drawn"
         self._window.label_19.setText(text)
 
@@ -434,7 +424,7 @@ class Simulator:
 
         indicators = await spawn_blocking(
             make_indicators,
-            strategy=strategy,
+            strategy=self._create_indicator_strategy(strategy),
             target_symbols=[self._viewing_symbol],
             candle_data=candle_pair.original,
         )
@@ -447,6 +437,12 @@ class Simulator:
         await self._window.simulation_graph.update_custom_lines(symbol, indicators)
         duration_recorder.record()
         await self._set_minimum_view_range()
+
+    def _create_indicator_strategy(self, strategy: Strategy) -> Strategy:
+        """Create a picklable strategy for process-pool indicator drawing."""
+        if isinstance(strategy, SavedStrategy):
+            return strategy.create_picklable_copy()
+        return strategy
 
     async def _erase(self) -> None:
         self._raw_account_state = create_empty_account_state(
@@ -626,16 +622,10 @@ class Simulator:
         strategy_index = self._simulation_settings.strategy_index
         strategy = team.strategist.strategies[strategy_index]
 
-        saved_candle_data = await team.collector.read_available_saved_candle_data(
-            year,
-            self._window.data_settings.target_symbols,
-        )
-        year_candle_data = saved_candle_data.data
-
         config = CalculationConfig(
             year=year,
             strategy=strategy,
-            target_symbols=saved_candle_data.symbols,
+            target_symbols=self._window.data_settings.target_symbols,
             only_visible=only_visible,
             should_draw_all_years=self._should_draw_all_years,
         )
@@ -649,8 +639,7 @@ class Simulator:
         calculator = SimulationCalculator(
             unique_task=unique_task,
             config=config,
-            workerpath=self._workerpath,
-            year_candle_data=year_candle_data,
+            candle_data_store=self._window.candle_data_store,
             widgets=widgets,
         )
 
@@ -667,21 +656,21 @@ class Simulator:
         )
         await self.present()
 
-    def _calculate_chunk_asset_changes(
+    def _calculate_asset_changes(
         self,
-        chunk_asset_record: DataFrame,
+        asset_record: DataFrame,
         maker_fee: float,
         taker_fee: float,
         leverage: int,
     ) -> DataFrame:
-        """Calculate asset changes for a single chunk."""
-        if len(chunk_asset_record) == 0:
+        """Calculate leveraged asset changes from raw simulation records."""
+        if len(asset_record) == 0:
             return DataFrame(schema=ASSET_CHANGE_SCHEMA)
 
-        chunk_result_asset_sr = chunk_asset_record["RESULT_ASSET"]
+        result_asset_sr = asset_record["RESULT_ASSET"]
         asset_values = [
             float(value) if isinstance(value, int | float) else 0.0
-            for value in chunk_result_asset_sr
+            for value in result_asset_sr
         ]
         shifted_values = [0.0]
         shifted_values.extend(
@@ -690,14 +679,14 @@ class Simulator:
         )
         previous_values = [1.0]
         previous_values.extend(asset_values[:-1])
-        chunk_asset_shifts = Series("asset_shift", shifted_values)
-        lazy_chunk_result_asset = Series("previous_asset", previous_values)
+        asset_shifts = Series("asset_shift", shifted_values)
+        previous_assets = Series("previous_asset", previous_values)
 
-        chunk_asset_changes_by_leverage = (
-            1 + chunk_asset_shifts / lazy_chunk_result_asset * leverage
+        asset_changes_by_leverage = (
+            1 + asset_shifts / previous_assets * leverage
         )
 
-        chunk_fees = Series(
+        fees = Series(
             "fee",
             [
                 maker_fee
@@ -705,74 +694,22 @@ class Simulator:
                 else taker_fee
                 if role == "TAKER"
                 else 0.0
-                for role in chunk_asset_record["ROLE"]
+                for role in asset_record["ROLE"]
             ],
         )
-        chunk_margin_ratios = chunk_asset_record["MARGIN_RATIO"]
-        chunk_asset_changes_by_fee = (
-            1 - (chunk_fees / 100) * chunk_margin_ratios * leverage
+        margin_ratios = asset_record["MARGIN_RATIO"]
+        asset_changes_by_fee = (
+            1 - (fees / 100) * margin_ratios * leverage
         )
 
-        asset_changes = chunk_asset_changes_by_leverage * chunk_asset_changes_by_fee
+        asset_changes = asset_changes_by_leverage * asset_changes_by_fee
         return DataFrame(
             {
-                "timestamp": chunk_asset_record["timestamp"],
+                "timestamp": asset_record["timestamp"],
                 "ASSET_CHANGE": asset_changes,
             },
             schema=ASSET_CHANGE_SCHEMA,
         )
-
-    def _prepare_chunk_list(self, asset_record: DataFrame) -> ChunkList:
-        """Prepare list of asset record chunks based on strategy settings."""
-        if self._simulation_summary is None:
-            return ChunkList(chunks=[asset_record], chunk_count=1)
-
-        strategy_index = self._simulation_settings.strategy_index
-        strategy = team.strategist.strategies[strategy_index]
-        parallel_chunk_days = strategy.parallel_simulation_chunk_days
-
-        if parallel_chunk_days is None:
-            return ChunkList(chunks=[asset_record], chunk_count=1)
-
-        chunk_list = self._split_frame_by_day_chunks(
-            asset_record.drop_nulls(),
-            parallel_chunk_days,
-        )
-        return ChunkList(chunks=chunk_list, chunk_count=len(chunk_list))
-
-    def _split_frame_by_day_chunks(
-        self,
-        data: DataFrame,
-        chunk_days: int,
-    ) -> list[DataFrame]:
-        """Split a timestamp-column frame into fixed day chunks."""
-        if len(data) == 0 or "timestamp" not in data.columns:
-            return [data]
-
-        chunk_length_ms = int(timedelta(days=chunk_days).total_seconds() * 1000)
-        timestamps = [
-            value for value in data["timestamp"] if isinstance(value, int)
-        ]
-        if len(timestamps) == 0:
-            return [data.head(0)]
-        first_timestamp = min(timestamps)
-        last_timestamp = max(timestamps)
-        chunk_start = first_timestamp - first_timestamp % chunk_length_ms
-
-        chunks: list[DataFrame] = []
-        while chunk_start <= last_timestamp:
-            chunk_end = chunk_start + chunk_length_ms
-            chunk = data.filter(
-                (pl.col("timestamp") >= chunk_start)
-                & (pl.col("timestamp") < chunk_end),
-            )
-            if len(chunk) > 0:
-                chunks.append(chunk)
-            chunk_start = chunk_end
-
-        if len(chunks) == 0:
-            return [data.head(0)]
-        return chunks
 
     async def present(self) -> None:
         """Present simulation results in UI."""
@@ -788,20 +725,13 @@ class Simulator:
         scribbles = self._raw_scribbles.copy()
         account_state = self._raw_account_state.model_copy(deep=True)
 
-        chunk_data = self._prepare_chunk_list(asset_record)
-
-        chunk_asset_changes_list: list[DataFrame] = [
-            self._calculate_chunk_asset_changes(
-                chunk_data.chunks[turn],
-                maker_fee,
-                taker_fee,
-                leverage,
-            )
-            for turn in range(chunk_data.chunk_count)
-        ]
-
         unrealized_changes = unrealized_changes * leverage
-        year_asset_changes = pl.concat(chunk_asset_changes_list)
+        year_asset_changes = self._calculate_asset_changes(
+            asset_record,
+            maker_fee,
+            taker_fee,
+            leverage,
+        )
         year_asset_changes = await spawn_blocking(sort_data_frame, year_asset_changes)
 
         if len(asset_record) > 0:

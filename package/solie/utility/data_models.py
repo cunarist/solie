@@ -240,7 +240,6 @@ class Strategy(Protocol):
     version: str
     description: str
     risk_level: RiskLevel
-    parallel_simulation_chunk_days: int | None
 
     def create_indicators(self, given: IndicatorInput) -> None:
         """Create technical indicators from candle data."""

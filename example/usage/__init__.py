@@ -25,7 +25,6 @@ class SilentStrategy:
     version = "0.1"
     description = "A silent strategy that does nothing"
     risk_level = RiskLevel.LOW
-    parallel_simulation_chunk_days: int | None = 30
 
     def create_indicators(self, given: IndicatorInput) -> None:
         """Generate no indicators."""
@@ -42,7 +41,6 @@ class ExampleStrategy:
     version = "1.2"
     description = "A fixed strategy for demonstration"
     risk_level = RiskLevel.HIGH
-    parallel_simulation_chunk_days: int | None = 30
 
     def create_indicators(self, given: IndicatorInput) -> None:
         """Calculate SMA indicators for price and volume."""

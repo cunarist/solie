@@ -2,13 +2,12 @@
 
 from .account_listener import AccountListener, ParseOrderTypeParams
 from .analyze_market import (
-    CalculationInput,
-    CalculationOutput,
+    ChunkSimulation,
     DecisionContext,
     SimulationError,
+    SimulationOutput,
     make_decisions,
     make_indicators,
-    simulate_chunk,
 )
 from .binance_watcher import BinanceWatcher, ExchangeConfig, StateConfig
 from .download_from_binance import (
@@ -29,9 +28,8 @@ __all__ = [
     "AccountListener",
     "BinanceWatcher",
     "CalculationConfig",
-    "CalculationInput",
-    "CalculationOutput",
     "CalculationResult",
+    "ChunkSimulation",
     "DecisionContext",
     "DownloadPreset",
     "DownloadUnitSize",
@@ -41,11 +39,11 @@ __all__ = [
     "ParseOrderTypeParams",
     "SimulationCalculator",
     "SimulationError",
+    "SimulationOutput",
     "StateConfig",
     "WidgetReferences",
     "download_aggtrade_csv",
     "make_decisions",
     "make_indicators",
     "process_aggtrade_csv",
-    "simulate_chunk",
 ]
