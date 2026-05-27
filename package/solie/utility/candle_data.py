@@ -1,17 +1,99 @@
 """SQLite-backed candle data storage."""
 
 import functools
-from asyncio import get_event_loop
+import math
+import os
+import sqlite3
+from asyncio import Lock, get_running_loop
 from collections.abc import AsyncIterator, Iterable
+from contextlib import AsyncExitStack, ExitStack
 from datetime import UTC, datetime
+from logging import getLogger
 from pathlib import Path
 from typing import NamedTuple, Self
 
 import aiofiles.os
 import aiosqlite
 from yoyo import get_backend, read_migrations
+from yoyo.exceptions import LockTimeout
 
 from solie.common import PACKAGE_PATH
+
+logger = getLogger(__name__)
+
+VALID_CANDLE_CONDITION = """
+open > 0
+AND high > 0
+AND low > 0
+AND close > 0
+AND volume >= 0
+AND high >= low
+AND open >= low
+AND open <= high
+AND close >= low
+AND close <= high
+"""
+SQLITE_TIMEOUT = 30.0
+SELECT_CANDLE_SQL = """
+SELECT timestamp, open, high, low, close, volume
+FROM candles
+WHERE timestamp = ?
+AND """ + VALID_CANDLE_CONDITION
+SELECT_LATEST_CANDLE_SQL = """
+SELECT timestamp, open, high, low, close, volume
+FROM candles
+WHERE timestamp < ?
+AND """ + VALID_CANDLE_CONDITION + """
+ORDER BY timestamp DESC
+LIMIT 1
+"""
+SELECT_CANDLE_RANGE_SQL = """
+SELECT timestamp, open, high, low, close, volume
+FROM candles
+WHERE timestamp >= ?
+AND timestamp <= ?
+AND """ + VALID_CANDLE_CONDITION + """
+ORDER BY timestamp
+"""
+COUNT_CANDLE_RANGE_SQL = """
+SELECT COUNT(*)
+FROM candles
+WHERE timestamp >= ?
+AND timestamp <= ?
+AND """ + VALID_CANDLE_CONDITION
+COUNT_ALL_CANDLES_SQL = """
+SELECT COUNT(*)
+FROM candles
+WHERE open > 0
+AND high > 0
+AND low > 0
+AND close > 0
+AND volume >= 0
+AND high >= low
+AND open >= low
+AND open <= high
+AND close >= low
+AND close <= high
+"""
+SELECT_TIMESTAMP_BOUNDS_SQL = """
+SELECT MIN(timestamp), MAX(timestamp)
+FROM candles
+WHERE """ + VALID_CANDLE_CONDITION
+DELETE_INVALID_CANDLES_SQL = """
+DELETE FROM candles
+WHERE NOT (
+    open > 0
+    AND high > 0
+    AND low > 0
+    AND close > 0
+    AND volume >= 0
+    AND high >= low
+    AND open >= low
+    AND open <= high
+    AND close >= low
+    AND close <= high
+)
+"""
 
 
 class CandleRow(NamedTuple):
@@ -47,88 +129,122 @@ class CandleData:
         self.key = key
         self.filepath = filepath
         self._connection: aiosqlite.Connection | None = None
+        self._access_lock = Lock()
 
     async def __aenter__(self) -> Self:
         """Open the database for context-manager use."""
-        await self.open()
+        await self._open()
         return self
 
     async def __aexit__(self, *_: object) -> None:
         """Close the database for context-manager use."""
-        await self.close()
+        await self._close()
 
-    async def open(self) -> None:
+    async def _open(self) -> None:
         """Open this symbol's database and apply migrations."""
-        if self._connection is not None:
-            return
+        async with self._access_lock:
+            if self._connection is not None:
+                return
 
-        await aiofiles.os.makedirs(self.filepath.parent, exist_ok=True)
-        event_loop = get_event_loop()
-        await event_loop.run_in_executor(
-            None,
-            functools.partial(_apply_candle_migrations, self.filepath),
-        )
+            await aiofiles.os.makedirs(self.filepath.parent, exist_ok=True)
+            event_loop = get_running_loop()
+            await event_loop.run_in_executor(
+                None,
+                functools.partial(_apply_candle_migrations, self.filepath),
+            )
 
-        connection = await aiosqlite.connect(self.filepath)
-        await _configure_connection(connection)
-        self._connection = connection
+            connection = await aiosqlite.connect(
+                self.filepath,
+                timeout=SQLITE_TIMEOUT,
+            )
+            await _configure_connection(connection)
+            deleted_count = await _delete_invalid_rows(connection)
+            if deleted_count > 0:
+                logger.warning(
+                    "Deleted %d invalid candle rows from %s",
+                    deleted_count,
+                    self.filepath,
+                )
+            self._connection = connection
 
-    async def close(self) -> None:
+    async def _close(self) -> None:
         """Close this symbol's persistent write connection."""
-        connection = self._connection
-        if connection is None:
-            return
-        self._connection = None
-        await connection.close()
+        async with self._access_lock:
+            connection = self._connection
+            if connection is None:
+                return
+            await connection.close()
+            self._connection = None
 
     async def upsert(self, row: CandleRow) -> None:
         """Insert or replace one complete candle row."""
-        connection = self._require_connection()
-        await connection.execute(
-            """
-            INSERT INTO candles(timestamp, open, high, low, close, volume)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ON CONFLICT(timestamp) DO UPDATE SET
-                open = excluded.open,
-                high = excluded.high,
-                low = excluded.low,
-                close = excluded.close,
-                volume = excluded.volume
-            """,
-            row,
-        )
-        await connection.commit()
+        if not _is_valid_candle_row(row):
+            logger.warning(
+                "Skipped invalid candle row for %s %d: %s",
+                self.key.symbol,
+                self.key.year,
+                row,
+            )
+            return
+
+        async with self._access_lock:
+            connection = self._require_connection()
+            await connection.execute(
+                """
+                INSERT INTO candles(timestamp, open, high, low, close, volume)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(timestamp) DO UPDATE SET
+                    open = excluded.open,
+                    high = excluded.high,
+                    low = excluded.low,
+                    close = excluded.close,
+                    volume = excluded.volume
+                """,
+                row,
+            )
+            await connection.commit()
 
     async def upsert_many(self, rows: Iterable[CandleRow]) -> None:
         """Insert or replace multiple complete candle rows in one transaction."""
-        connection = self._require_connection()
-        await connection.executemany(
-            """
-            INSERT INTO candles(timestamp, open, high, low, close, volume)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ON CONFLICT(timestamp) DO UPDATE SET
-                open = excluded.open,
-                high = excluded.high,
-                low = excluded.low,
-                close = excluded.close,
-                volume = excluded.volume
-            """,
-            rows,
-        )
-        await connection.commit()
+        row_list = list(rows)
+        valid_rows = [row for row in row_list if _is_valid_candle_row(row)]
+        invalid_count = len(row_list) - len(valid_rows)
+        if invalid_count > 0:
+            logger.warning(
+                "Skipped %d invalid candle rows for %s %d",
+                invalid_count,
+                self.key.symbol,
+                self.key.year,
+            )
+        if len(valid_rows) == 0:
+            return
+
+        async with self._access_lock:
+            connection = self._require_connection()
+            await connection.executemany(
+                """
+                INSERT INTO candles(timestamp, open, high, low, close, volume)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(timestamp) DO UPDATE SET
+                    open = excluded.open,
+                    high = excluded.high,
+                    low = excluded.low,
+                    close = excluded.close,
+                    volume = excluded.volume
+                """,
+                valid_rows,
+            )
+            await connection.commit()
 
     async def get(self, timestamp: int) -> CandleRow | None:
         """Get a candle row by millisecond timestamp."""
-        connection = self._require_connection()
-        async with connection.execute(
-            """
-            SELECT timestamp, open, high, low, close, volume
-            FROM candles
-            WHERE timestamp = ?
-            """,
-            (timestamp,),
-        ) as cursor:
-            row = await cursor.fetchone()
+        async with self._access_lock:
+            connection = self._require_connection()
+            async with connection.execute(
+                SELECT_CANDLE_SQL,
+                (timestamp,),
+            ) as cursor:
+                row = await cursor.fetchone()
 
         if row is None:
             return None
@@ -136,18 +252,13 @@ class CandleData:
 
     async def get_latest_before(self, timestamp: int) -> CandleRow | None:
         """Get the latest candle row before a millisecond timestamp."""
-        connection = self._require_connection()
-        async with connection.execute(
-            """
-            SELECT timestamp, open, high, low, close, volume
-            FROM candles
-            WHERE timestamp < ?
-            ORDER BY timestamp DESC
-            LIMIT 1
-            """,
-            (timestamp,),
-        ) as cursor:
-            row = await cursor.fetchone()
+        async with self._access_lock:
+            connection = self._require_connection()
+            async with connection.execute(
+                SELECT_LATEST_CANDLE_SQL,
+                (timestamp,),
+            ) as cursor:
+                row = await cursor.fetchone()
 
         if row is None:
             return None
@@ -159,15 +270,13 @@ class CandleData:
         end_timestamp: int,
     ) -> AsyncIterator[CandleRow]:
         """Iterate rows in timestamp order using a dedicated read connection."""
-        async with aiosqlite.connect(self.filepath) as connection:
+        async with aiosqlite.connect(
+            self.filepath,
+            timeout=SQLITE_TIMEOUT,
+        ) as connection:
             await _configure_connection(connection)
             async with connection.execute(
-                """
-                SELECT timestamp, open, high, low, close, volume
-                FROM candles
-                WHERE timestamp >= ? AND timestamp <= ?
-                ORDER BY timestamp
-                """,
+                SELECT_CANDLE_RANGE_SQL,
                 (start_timestamp, end_timestamp),
             ) as cursor:
                 async for row in cursor:
@@ -175,16 +284,13 @@ class CandleData:
 
     async def count_range(self, start_timestamp: int, end_timestamp: int) -> int:
         """Count complete candle rows inside a timestamp range."""
-        connection = self._require_connection()
-        async with connection.execute(
-            """
-            SELECT COUNT(*)
-            FROM candles
-            WHERE timestamp >= ? AND timestamp <= ?
-            """,
-            (start_timestamp, end_timestamp),
-        ) as cursor:
-            row = await cursor.fetchone()
+        async with self._access_lock:
+            connection = self._require_connection()
+            async with connection.execute(
+                COUNT_CANDLE_RANGE_SQL,
+                (start_timestamp, end_timestamp),
+            ) as cursor:
+                row = await cursor.fetchone()
 
         if row is None:
             return 0
@@ -192,9 +298,12 @@ class CandleData:
 
     async def count_all(self) -> int:
         """Count every complete candle row in this symbol database."""
-        connection = self._require_connection()
-        async with connection.execute("SELECT COUNT(*) FROM candles") as cursor:
-            row = await cursor.fetchone()
+        async with self._access_lock:
+            connection = self._require_connection()
+            async with connection.execute(
+                COUNT_ALL_CANDLES_SQL,
+            ) as cursor:
+                row = await cursor.fetchone()
 
         if row is None:
             return 0
@@ -202,11 +311,12 @@ class CandleData:
 
     async def get_timestamp_bounds(self) -> TimestampBounds | None:
         """Get the first and last candle timestamps in this symbol database."""
-        connection = self._require_connection()
-        async with connection.execute(
-            "SELECT MIN(timestamp), MAX(timestamp) FROM candles",
-        ) as cursor:
-            row = await cursor.fetchone()
+        async with self._access_lock:
+            connection = self._require_connection()
+            async with connection.execute(
+                SELECT_TIMESTAMP_BOUNDS_SQL,
+            ) as cursor:
+                row = await cursor.fetchone()
 
         if row is None or row[0] is None or row[1] is None:
             return None
@@ -228,15 +338,34 @@ class CandleDataStore:
         self.rootpath = rootpath
         self.target_symbols = target_symbols
         self._cache: dict[CandleDataKey, CandleData] = {}
+        self._cache_lock = Lock()
+        self._cache_stack = AsyncExitStack()
+        self._is_open = False
 
-    async def open(self) -> None:
+    async def __aenter__(self) -> Self:
+        """Enter the candle-data store scope."""
+        await self._open()
+        return self
+
+    async def __aexit__(self, *_: object) -> None:
+        """Close cached symbol-year stores."""
+        await self._close()
+
+    async def _open(self) -> None:
         """Create the candle root directory."""
         await aiofiles.os.makedirs(self.rootpath, exist_ok=True)
+        async with self._cache_lock:
+            self._is_open = True
 
-    async def close(self) -> None:
+    async def _close(self) -> None:
         """Close cached symbol-year stores."""
-        for candle_data in self._cache.values():
-            await candle_data.close()
+        async with self._cache_lock:
+            self._cache.clear()
+            self._is_open = False
+            cache_stack = self._cache_stack
+            self._cache_stack = AsyncExitStack()
+
+        await cache_stack.aclose()
 
     async def upsert(self, symbol: str, row: CandleRow) -> None:
         """Insert or replace one symbol candle row in its UTC year file."""
@@ -341,9 +470,11 @@ class CandleDataStore:
 
     async def list_years(self, symbol: str) -> list[int]:
         """List UTC years that have stored rows for one symbol."""
-        years = {
-            key.year for key in self._cache if key.symbol == symbol
-        }
+        async with self._cache_lock:
+            self._raise_if_closed()
+            years = {
+                key.year for key in self._cache if key.symbol == symbol
+            }
 
         if self.rootpath.exists():
             for year_path in self.rootpath.iterdir():
@@ -364,26 +495,36 @@ class CandleDataStore:
         return nonempty_years
 
     async def _get_or_open(self, key: CandleDataKey) -> CandleData:
-        candle_data = self._cache.get(key)
-        if candle_data is None:
-            candle_data = CandleData(key, self._filepath(key))
-            await candle_data.open()
-            self._cache[key] = candle_data
-        return candle_data
+        async with self._cache_lock:
+            self._raise_if_closed()
+            candle_data = self._cache.get(key)
+            if candle_data is None:
+                candle_data = CandleData(key, self._filepath(key))
+                await self._cache_stack.enter_async_context(candle_data)
+                self._cache[key] = candle_data
+            return candle_data
 
     async def _get_existing(self, key: CandleDataKey) -> CandleData | None:
-        if key in self._cache:
-            return self._cache[key]
-        filepath = self._filepath(key)
-        if not filepath.exists():
-            return None
-        candle_data = CandleData(key, filepath)
-        await candle_data.open()
-        self._cache[key] = candle_data
-        return candle_data
+        async with self._cache_lock:
+            self._raise_if_closed()
+            candle_data = self._cache.get(key)
+            if candle_data is not None:
+                return candle_data
+            filepath = self._filepath(key)
+            if not filepath.exists():
+                return None
+            candle_data = CandleData(key, filepath)
+            await self._cache_stack.enter_async_context(candle_data)
+            self._cache[key] = candle_data
+            return candle_data
 
     def _filepath(self, key: CandleDataKey) -> Path:
         return self.rootpath / str(key.year) / f"{key.symbol}.sqlite"
+
+    def _raise_if_closed(self) -> None:
+        if not self._is_open:
+            msg = "CandleDataStore is closed"
+            raise RuntimeError(msg)
 
 
 async def _configure_connection(connection: aiosqlite.Connection) -> None:
@@ -394,13 +535,70 @@ async def _configure_connection(connection: aiosqlite.Connection) -> None:
     await connection.commit()
 
 
+async def _delete_invalid_rows(connection: aiosqlite.Connection) -> int:
+    cursor = await connection.execute(
+        DELETE_INVALID_CANDLES_SQL,
+    )
+    deleted_count = max(cursor.rowcount, 0)
+    await cursor.close()
+    await connection.commit()
+    return deleted_count
+
+
 def _apply_candle_migrations(filepath: Path) -> None:
+    try:
+        _apply_candle_migrations_once(filepath)
+    except LockTimeout:
+        if not _break_stale_yoyo_lock(filepath):
+            raise
+        _apply_candle_migrations_once(filepath)
+
+
+def _apply_candle_migrations_once(filepath: Path) -> None:
     migration_path = PACKAGE_PATH / "migrations" / "candle"
     backend_uri = _create_sqlite_backend_uri(filepath)
     with get_backend(backend_uri) as backend:
         migrations = read_migrations(str(migration_path))
-        with backend.lock():
+        with backend.lock(timeout=2):
             backend.apply_migrations(backend.to_apply(migrations))
+
+
+def _break_stale_yoyo_lock(filepath: Path) -> bool:
+    with ExitStack() as resources:
+        connection = sqlite3.connect(filepath, timeout=SQLITE_TIMEOUT)
+        resources.callback(connection.close)
+        try:
+            cursor = connection.execute("SELECT pid FROM yoyo_lock LIMIT 1")
+            resources.callback(cursor.close)
+            row = cursor.fetchone()
+        except sqlite3.OperationalError:
+            return False
+
+        if row is None:
+            return False
+
+        locked_pid = int(row[0])
+        if _is_process_running(locked_pid):
+            return False
+
+        connection.execute("DELETE FROM yoyo_lock")
+        connection.commit()
+        logger.warning(
+            "Broke stale candle migration lock from process %d in %s",
+            locked_pid,
+            filepath,
+        )
+        return True
+
+
+def _is_process_running(process_id: int) -> bool:
+    try:
+        os.kill(process_id, 0)
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+    return True
 
 
 def _create_sqlite_backend_uri(filepath: Path) -> str:
@@ -425,3 +623,16 @@ def _year_start_timestamp(year: int) -> int:
 
 def _year_end_timestamp(year: int) -> int:
     return int(datetime(year + 1, 1, 1, tzinfo=UTC).timestamp() * 1000) - 1
+
+
+def _is_valid_candle_row(row: CandleRow) -> bool:
+    price_values = (row.open, row.high, row.low, row.close)
+    if any(not math.isfinite(value) or value <= 0 for value in price_values):
+        return False
+    if not math.isfinite(row.volume) or row.volume < 0:
+        return False
+    if row.high < row.low:
+        return False
+    if row.open < row.low or row.open > row.high:
+        return False
+    return not (row.close < row.low or row.close > row.high)

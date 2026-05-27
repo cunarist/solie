@@ -1,24 +1,27 @@
 """Application lifecycle management and initialization."""
 
-from asyncio import Event, gather, sleep
+from asyncio import Event, sleep
+from contextlib import AsyncExitStack
 from logging import INFO, getLogger
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from PySide6.QtGui import QColor, QFont, QFontDatabase, QPalette
 from PySide6.QtWidgets import QApplication
 
-from solie.common import PACKAGE_NAME, PACKAGE_PATH, spawn
-from solie.utility import SolieConfig
-from solie.widget import AskPopup, OverlayBox
+from solie.common import (
+    PACKAGE_NAME,
+    PACKAGE_PATH,
+    spawn,
+)
+from solie.utility import InternetMonitor, SolieConfig
 from solie.window import Window
 from solie.worker import (
     Collector,
     Manager,
     Simulator,
     Strategiest,
+    Team,
     Transactor,
-    Worker,
-    team,
 )
 
 logger = getLogger(__name__)
@@ -42,31 +45,42 @@ async def live(app: QApplication, config: SolieConfig) -> None:
     setup_fonts(app)
     setup_dark_theme(app)
 
+    await _live_with_contexts(app, config)
+
+
+async def _live_with_contexts(
+    app: QApplication,
+    config: SolieConfig,
+) -> None:
+    """Manage application lifecycle inside resource scopes."""
     close_event = Event()
     scheduler = AsyncIOScheduler(timezone="UTC")
-
-    window = create_and_setup_window(close_event, config)
+    internet_monitor = InternetMonitor()
+    team = Team()
+    window = create_and_setup_window(
+        close_event,
+        config,
+        internet_monitor,
+    )
     spawn(keep_processing_events(app))
 
-    getLogger(PACKAGE_NAME).setLevel(INFO)
-    await window.boot()
-    logger.info("Started up")
+    async with window:
+        getLogger(PACKAGE_NAME).setLevel(INFO)
+        logger.info("Started up")
 
-    workers = create_workers(window, scheduler)
-    await gather(*(worker.load_work() for worker in workers))
-    spawn_worker_tasks()
+        workers = create_workers(window, scheduler, team)
+        async with AsyncExitStack() as worker_stack:
+            for worker in workers:
+                await worker_stack.enter_async_context(worker)
 
-    scheduler.start()
-    await sleep(1)
+            spawn_worker_tasks(team)
 
-    window.reveal()
-    await close_event.wait()
+            scheduler.start()
+            worker_stack.callback(scheduler.shutdown, wait=False)
+            await sleep(1)
 
-    scheduler.shutdown()
-    await sleep(1)
-
-    await gather(*(worker.dump_work() for worker in workers))
-    await window.close_data_stores()
+            window.reveal()
+            await close_event.wait()
 
 
 def setup_fonts(app: QApplication) -> None:
@@ -99,32 +113,38 @@ def setup_dark_theme(app: QApplication) -> None:
     app.setPalette(dark_palette)
 
 
-def create_and_setup_window(close_event: Event, config: SolieConfig) -> Window:
+def create_and_setup_window(
+    close_event: Event,
+    config: SolieConfig,
+    internet_monitor: InternetMonitor,
+) -> Window:
     """Create and configure the main window."""
-    window = Window(close_event, config)
+    window = Window(close_event, config, internet_monitor)
     dark_palette = window.palette()  # Reuse the app's palette
     window.setPalette(dark_palette)
-    AskPopup.install_window(window)
-    OverlayBox.install_window(window)
     return window
 
 
-def create_workers(window: Window, scheduler: AsyncIOScheduler) -> list[Worker]:
+def create_workers(
+    window: Window,
+    scheduler: AsyncIOScheduler,
+    team: Team,
+) -> list[Collector | Transactor | Simulator | Strategiest | Manager]:
     """Create all worker instances and unite them as a team."""
-    collector = Collector(window, scheduler)
+    collector = Collector(window, scheduler, team)
     team.collector = collector
-    transactor = Transactor(window, scheduler)
+    transactor = Transactor(window, scheduler, team)
     team.transactor = transactor
-    simulator = Simulator(window, scheduler)
+    simulator = Simulator(window, scheduler, team)
     team.simulator = simulator
     strategist = Strategiest(window, scheduler)
     team.strategist = strategist
-    manager = Manager(window, scheduler)
+    manager = Manager(window, scheduler, team)
     team.manager = manager
     return team.get_all()
 
 
-def spawn_worker_tasks() -> None:
+def spawn_worker_tasks(team: Team) -> None:
     """Spawn initial tasks for all workers."""
     collector = team.collector
     transactor = team.transactor

@@ -50,12 +50,12 @@ class DownloadFillOptionChooser:
 
     title = "Choose the range to fill"
     close_button = True
-    done_event = Event()
 
     def __init__(self) -> None:
         """Initialize download fill option chooser."""
         super().__init__()
         self.widget = QWidget()
+        self.done_event = Event()
         self.result: DownloadYearRange | DownloadFillOption | None = None
 
         current_year = datetime.now(UTC).year

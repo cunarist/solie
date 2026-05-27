@@ -1,6 +1,8 @@
 """Trading strategy simulation worker."""
+from contextlib import AsyncExitStack
 from datetime import UTC, datetime, timedelta
-from typing import Any, NamedTuple
+from types import TracebackType
+from typing import Any, NamedTuple, Self
 
 import polars as pl
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -36,7 +38,7 @@ from solie.utility import (
 from solie.widget import ask
 from solie.window import Window
 
-from .united import team
+from .united import Team
 
 MIN_ASSET_POINTS_FOR_YIELD = 2
 
@@ -79,14 +81,21 @@ class RangeMetrics(NamedTuple):
 class Simulator:
     """Worker for running trading simulations."""
 
-    def __init__(self, window: Window, scheduler: AsyncIOScheduler) -> None:
+    def __init__(
+        self,
+        window: Window,
+        scheduler: AsyncIOScheduler,
+        team: Team,
+    ) -> None:
         """Initialize trading simulator."""
         self._window = window
         self._scheduler = scheduler
+        self._team = team
 
         self._line_display_task = UniqueTask()
         self._range_display_task = UniqueTask()
         self._calculation_task = UniqueTask()
+        self._live_resources = AsyncExitStack()
 
         self._viewing_symbol = window.data_settings.target_symbols[0]
         self._should_draw_all_years = False
@@ -176,13 +185,24 @@ class Simulator:
         new_action = action_menu.addAction(text)
         outsource(new_action.triggered, job)
 
-    async def load_work(self) -> None:
-        """Load simulation settings from disk."""
+    async def __aenter__(self) -> Self:
+        """Enter simulator live resources."""
         text = "Nothing drawn"
         self._window.label_19.setText(text)
+        await self._live_resources.enter_async_context(self._line_display_task)
+        await self._live_resources.enter_async_context(self._range_display_task)
+        await self._live_resources.enter_async_context(self._calculation_task)
+        return self
 
-    async def dump_work(self) -> None:
-        """Save simulation settings to disk."""
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        """Stop simulator-owned live tasks."""
+        del exc_type, exc, traceback
+        await self._live_resources.aclose()
 
     async def _update_viewing_symbol(self) -> None:
         alias = self._window.comboBox_6.currentText()
@@ -251,12 +271,15 @@ class Simulator:
         """Load candle data for specified years."""
         divided_datas: list[DataFrame] = []
         for year in years:
-            more_df = await team.collector.read_saved_symbols_candle_data(
+            more_df = await self._team.collector.read_saved_symbols_candle_data(
                 year,
                 symbols,
             )
             divided_datas.append(more_df)
-        candle_data_original = await spawn_blocking(combine_candle_data, divided_datas)
+        candle_data_original = await spawn_blocking(
+            combine_candle_data,
+            divided_datas,
+        )
         if "timestamp" in candle_data_original.columns:
             candle_data_original = await spawn_blocking(
                 sort_data_frame,
@@ -318,7 +341,10 @@ class Simulator:
                     observed_timestamp,
                     last_asset,
                 )
-                asset_record = await spawn_blocking(sort_data_frame, asset_record)
+                asset_record = await spawn_blocking(
+                    sort_data_frame,
+                    asset_record,
+                )
 
         if before_asset is not None:
             asset_record = self._append_asset_observation(
@@ -326,7 +352,10 @@ class Simulator:
                 int(slice_from.timestamp() * 1000),
                 before_asset,
             )
-            asset_record = await spawn_blocking(sort_data_frame, asset_record)
+            asset_record = await spawn_blocking(
+                sort_data_frame,
+                asset_record,
+            )
 
         return asset_record
 
@@ -362,80 +391,81 @@ class Simulator:
     async def _display_lines_real(self, periodic: bool) -> None:
         symbol = self._viewing_symbol
         strategy_index = self._simulation_settings.strategy_index
-        strategy = team.strategist.strategies[strategy_index]
+        strategy = self._team.strategist.strategies[strategy_index]
 
         if periodic:
             current_moment = to_moment(datetime.now(UTC))
             before_moment = current_moment - timedelta(seconds=10)
-            await team.collector.wait_for_candle_data_ready(before_moment)
+            await self._team.collector.wait_for_candle_data_ready(before_moment)
 
-        duration_recorder = DurationRecorder("DISPLAY_SIMULATION_LINES")
+        with DurationRecorder(
+            "DISPLAY_SIMULATION_LINES",
+            self._window.task_durations,
+        ):
+            time_range = self._get_display_time_range()
+            years = time_range.years
+            if self._should_draw_all_years:
+                years = await self._team.collector.check_saved_years()
 
-        time_range = self._get_display_time_range()
-        years = time_range.years
-        if self._should_draw_all_years:
-            years = await team.collector.check_saved_years()
+            position = self._account_state.positions[symbol]
+            entry_price = (
+                None
+                if position.direction == PositionDirection.NONE
+                else position.entry_price
+            )
 
-        position = self._account_state.positions[symbol]
-        entry_price = (
-            None
-            if position.direction == PositionDirection.NONE
-            else position.entry_price
-        )
+            await self._window.simulation_graph.update_light_lines(
+                mark_prices=[],
+                aggregate_trades=[],
+                book_tickers=[],
+                entry_price=entry_price,
+                observed_until=self._account_state.observed_until,
+            )
 
-        await self._window.simulation_graph.update_light_lines(
-            mark_prices=[],
-            aggregate_trades=[],
-            book_tickers=[],
-            entry_price=entry_price,
-            observed_until=self._account_state.observed_until,
-        )
+            candle_pair = await self._load_and_prepare_candle_data(
+                years,
+                [symbol],
+                time_range.slice_from,
+            )
+            has_no_candle_rows = len(candle_pair.sliced) == 0
+            has_no_timestamp = "timestamp" not in candle_pair.sliced.columns
+            if has_no_candle_rows or has_no_timestamp:
+                return
 
-        candle_pair = await self._load_and_prepare_candle_data(
-            years,
-            [symbol],
-            time_range.slice_from,
-        )
-        has_no_candle_rows = len(candle_pair.sliced) == 0
-        has_no_timestamp = "timestamp" not in candle_pair.sliced.columns
-        if has_no_candle_rows or has_no_timestamp:
-            return
+            async with self._unrealized_changes.read_lock as cell:
+                unrealized_changes = cell.data.clone()
 
-        async with self._unrealized_changes.read_lock as cell:
-            unrealized_changes = cell.data.clone()
+            asset_data = await self._prepare_asset_record(
+                time_range.slice_from,
+            )
 
-        asset_data = await self._prepare_asset_record(
-            time_range.slice_from,
-        )
+            asset_record = await self._update_asset_record_with_observations(
+                asset_data.record,
+                asset_data.last_asset,
+                asset_data.before_asset,
+                time_range.slice_from,
+            )
 
-        asset_record = await self._update_asset_record_with_observations(
-            asset_data.record,
-            asset_data.last_asset,
-            asset_data.before_asset,
-            time_range.slice_from,
-        )
+            await self._window.simulation_graph.update_heavy_lines(
+                symbol=symbol,
+                candle_data=candle_pair.sliced,
+                asset_record=asset_record,
+                unrealized_changes=unrealized_changes,
+            )
 
-        await self._window.simulation_graph.update_heavy_lines(
-            symbol=symbol,
-            candle_data=candle_pair.sliced,
-            asset_record=asset_record,
-            unrealized_changes=unrealized_changes,
-        )
+            indicators = await spawn_blocking(
+                make_indicators,
+                strategy=self._create_indicator_strategy(strategy),
+                target_symbols=[self._viewing_symbol],
+                candle_data=candle_pair.original,
+            )
+            indicators = self._filter_frame_by_time(
+                indicators,
+                time_range.slice_from,
+                time_range.slice_until,
+            )
 
-        indicators = await spawn_blocking(
-            make_indicators,
-            strategy=self._create_indicator_strategy(strategy),
-            target_symbols=[self._viewing_symbol],
-            candle_data=candle_pair.original,
-        )
-        indicators = self._filter_frame_by_time(
-            indicators,
-            time_range.slice_from,
-            time_range.slice_until,
-        )
-
-        await self._window.simulation_graph.update_custom_lines(symbol, indicators)
-        duration_recorder.record()
+            await self._window.simulation_graph.update_custom_lines(symbol, indicators)
         await self._set_minimum_view_range()
 
     def _create_indicator_strategy(self, strategy: Strategy) -> Strategy:
@@ -459,7 +489,7 @@ class Simulator:
 
     async def display_available_years(self) -> None:
         """Update UI with available years."""
-        years = await team.collector.check_saved_years()
+        years = await self._team.collector.check_saved_years()
         years.sort(reverse=True)
 
         widget = self._window.comboBox_5
@@ -620,7 +650,7 @@ class Simulator:
     ) -> None:
         year = self._simulation_settings.year
         strategy_index = self._simulation_settings.strategy_index
-        strategy = team.strategist.strategies[strategy_index]
+        strategy = self._team.strategist.strategies[strategy_index]
 
         config = CalculationConfig(
             year=year,
@@ -732,7 +762,10 @@ class Simulator:
             taker_fee,
             leverage,
         )
-        year_asset_changes = await spawn_blocking(sort_data_frame, year_asset_changes)
+        year_asset_changes = await spawn_blocking(
+            sort_data_frame,
+            year_asset_changes,
+        )
 
         if len(asset_record) > 0:
             if len(year_asset_changes) == 0:
@@ -755,7 +788,10 @@ class Simulator:
                     ],
                 )
                 asset_record = asset_record.unique(subset=["timestamp"], keep="first")
-                asset_record = await spawn_blocking(sort_data_frame, asset_record)
+                asset_record = await spawn_blocking(
+                    sort_data_frame,
+                    asset_record,
+                )
 
             asset_record = asset_record.join(
                 year_asset_changes,
@@ -821,7 +857,7 @@ class Simulator:
         year = self._simulation_settings.year
         strategy_index = self._simulation_settings.strategy_index
 
-        strategy = team.strategist.strategies[strategy_index]
+        strategy = self._team.strategist.strategies[strategy_index]
         strategy_code_name = strategy.code_name
         strategy_version = strategy.version
 
@@ -836,7 +872,7 @@ class Simulator:
         year = self._simulation_settings.year
         strategy_index = self._simulation_settings.strategy_index
 
-        strategy = team.strategist.strategies[strategy_index]
+        strategy = self._team.strategist.strategies[strategy_index]
         strategy_code_name = strategy.code_name
         strategy_version = strategy.version
 

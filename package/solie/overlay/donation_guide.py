@@ -20,12 +20,12 @@ class DonationGuide:
 
     title = "Support Solie"
     close_button = True
-    done_event = Event()
 
     def __init__(self) -> None:
         """Initialize donation guide overlay."""
         super().__init__()
         self.widget = QWidget()
+        self.done_event = Event()
         self.result = None
 
         full_layout = QHBoxLayout(self.widget)

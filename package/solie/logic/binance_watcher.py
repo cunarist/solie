@@ -24,7 +24,6 @@ from solie.utility import (
     RWLock,
     ServerType,
     TransactionSettings,
-    internet_connected,
     list_to_dict,
     sort_data_frame,
     to_moment,
@@ -83,7 +82,7 @@ class BinanceWatcher:
         target_symbols = self._window.data_settings.target_symbols
         asset_token = self._window.data_settings.asset_token
 
-        if not internet_connected():
+        if not self._window.internet_monitor.connected:
             return
 
         current_moment = to_moment(datetime.now(UTC))
@@ -415,7 +414,10 @@ class BinanceWatcher:
                         ),
                     ],
                 )
-                cell.data = await spawn_blocking(sort_data_frame, cell.data)
+                cell.data = await spawn_blocking(
+                    sort_data_frame,
+                    cell.data,
+                )
         else:
             async with self._asset_record.write_lock as cell:
                 cell.data = cell.data.with_columns(

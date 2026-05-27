@@ -8,10 +8,16 @@ new abstractions.
 
 - Store any agent-authored memory, notes, plans, or durable handoff context
   under `.agents/memory`.
+- After meaningful work or a substantive discussion, update memory before
+  handing back. Capture durable decisions, user preferences, architectural
+  direction, gotchas, verification results, and follow-up context that future
+  agents would otherwise have to rediscover.
 - Do not scatter agent memory into source, documentation, or module-level
   scratch files.
 - Keep memory files concise and organized by subject, not by date. Update an
   existing subject file instead of creating endless dated memory files.
+- Avoid noisy transcripts or task diaries. If nothing durable changed, write
+  nothing; otherwise leave a short, useful note in the closest subject file.
 
 ## Local Patterns
 
@@ -53,10 +59,21 @@ new abstractions.
 - Keep runtime ownership on the `Window` object or worker instances attached to
   it. Avoid module-level global state for file handles, database connections,
   stores, caches, or managers.
+- `solie.common.spawn` and `solie.common.spawn_blocking` are the exceptions to
+  the no module-level lifecycle state rule. Keep spawned task retention and the
+  process pool/sync manager at module scope via `spawn`, `prepare_process_pool`,
+  `get_sync_manager`, and `spawn_blocking`; do not wrap them in context-manager
+  scopes or route them through `Window`.
+- Do not call `asyncio.create_task` outside `solie.common.concurrency`; import
+  and use `spawn` instead so task retention remains consistent.
+- Do not use `asyncio.to_thread`; use `spawn_blocking` for blocking work.
 - Existing workers generally hold `self._window = window` and derive worker
   paths from `window.datapath`.
 - Prefer small focused utility modules and worker-owned state over broad shared
   services.
+- Prefer `ExitStack` and `AsyncExitStack` for resource aggregation. Avoid
+  `contextlib.suppress` and `contextlib.closing`; use explicit `try`/`except`
+  and stack callbacks instead.
 - Keep Markdown documentation in sync with code/API/storage changes. When
   dependencies, strategy APIs, storage formats, or user-visible behavior change,
   update the relevant `.md` docs in the same task.

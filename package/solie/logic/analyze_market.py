@@ -28,7 +28,7 @@ from solie.utility import (
     VirtualState,
 )
 
-GRAPH_TYPES = ["PRICE", "VOLUME", "ABSTRACT"]
+GRAPH_TYPES = ("PRICE", "VOLUME", "ABSTRACT")
 
 
 def _append_indicator_dummy_row(candle_data: DataFrame) -> DataFrame:

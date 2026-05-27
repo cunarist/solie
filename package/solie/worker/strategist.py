@@ -1,5 +1,8 @@
 """Trading strategy management worker."""
 
+from types import TracebackType
+from typing import Self
+
 import aiofiles
 import aiofiles.os
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -58,8 +61,8 @@ class Strategiest:
         job = self._add_blank_strategy
         outsource(window.pushButton_5.clicked, job)
 
-    async def load_work(self) -> None:
-        """Load saved strategies from disk."""
+    async def __aenter__(self) -> Self:
+        """Enter strategist live resources."""
         await aiofiles.os.makedirs(self._workerpath, exist_ok=True)
 
         filepath = self._workerpath / "soft_strategies.json"
@@ -88,9 +91,16 @@ class Strategiest:
             self._saved_strategies = SavedStrategies(all=[first_strategy])
 
         self._combine_strategies()
+        return self
 
-    async def dump_work(self) -> None:
-        """Save strategies to disk."""
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        """Stop strategist-owned live tasks."""
+        del exc_type, exc, traceback
         await self._save_strategies()
 
     def _combine_strategies(self) -> None:

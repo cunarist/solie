@@ -5,9 +5,11 @@ import pickle
 import webbrowser
 from asyncio import gather, sleep
 from collections.abc import Coroutine
+from contextlib import AsyncExitStack
 from datetime import UTC, datetime, timedelta
 from logging import getLogger
-from typing import Any, NamedTuple
+from types import TracebackType
+from typing import Any, NamedTuple, Self
 
 import aiofiles
 import aiofiles.os
@@ -47,17 +49,14 @@ from solie.utility import (
     create_empty_account_state,
     create_empty_asset_record,
     create_empty_unrealized_changes,
-    internet_connected,
     slice_deque,
     sort_data_frame,
     to_moment,
-    when_internet_connected,
-    when_internet_disconnected,
 )
 from solie.widget import ask, overlay
 from solie.window import Window
 
-from .united import team
+from .united import Team
 
 logger = getLogger(__name__)
 
@@ -111,14 +110,22 @@ class IndicatorData(NamedTuple):
 class Transactor:
     """Worker for executing live trades on Binance."""
 
-    def __init__(self, window: Window, scheduler: AsyncIOScheduler) -> None:
+    def __init__(
+        self,
+        window: Window,
+        scheduler: AsyncIOScheduler,
+        team: Team,
+    ) -> None:
         """Initialize live transactor."""
         self._window = window
         self._scheduler = scheduler
+        self._team = team
         self._workerpath = window.datapath / "transactor"
 
         self._line_display_task = UniqueTask()
         self._range_display_task = UniqueTask()
+        self._live_resources = AsyncExitStack()
+        self._user_data_stream_resources = AsyncExitStack()
 
         # Exchange configuration shared between components
         self._exchange_config = ExchangeConfig(
@@ -131,7 +138,7 @@ class Transactor:
         )
         self._is_key_restrictions_satisfied = True
 
-        self._api_requester = ApiRequester()
+        self._api_requester = ApiRequester(window.api_rate_store)
 
         self._viewing_symbol = window.data_settings.target_symbols[0]
         self._should_draw_frequently = True
@@ -172,7 +179,7 @@ class Transactor:
         order_placer_config = OrderPlacerConfig(
             account_state=self._account_state,
             auto_order_record=self._auto_order_record,
-            aggregate_trades_queue=team.collector.aggregate_trades,
+            aggregate_trades_queue=self._team.collector.aggregate_trades,
         )
         self._order_placer = OrderPlacer(
             window=window,
@@ -228,11 +235,7 @@ class Transactor:
             hour="*",
         )
 
-        self.user_data_streamer: ApiStreamer | None = None
-
-        when_internet_connected(self.watch_binance)
-        when_internet_connected(self.update_user_data_stream)
-        when_internet_disconnected(self.update_user_data_stream)
+        self._user_data_streamer: ApiStreamer | None = None
 
         self._connect_ui_events()
 
@@ -289,8 +292,8 @@ class Transactor:
         new_action = action_menu.addAction(text)
         outsource(new_action.triggered, job)
 
-    async def load_work(self) -> None:
-        """Load transaction data from disk."""
+    async def __aenter__(self) -> Self:
+        """Enter transactor live resources."""
         await aiofiles.os.makedirs(self._workerpath, exist_ok=True)
 
         # scribbles
@@ -320,10 +323,35 @@ class Transactor:
                 read_data.binance_api_key,
                 read_data.binance_api_secret,
             )
+        await self._live_resources.enter_async_context(self._api_requester)
+        await self._live_resources.enter_async_context(self._line_display_task)
+        await self._live_resources.enter_async_context(self._range_display_task)
+        self._live_resources.enter_context(
+            self._window.internet_monitor.when_connected(self.watch_binance),
+        )
+        self._live_resources.enter_context(
+            self._window.internet_monitor.when_connected(
+                self.update_user_data_stream,
+            ),
+        )
+        self._live_resources.enter_context(
+            self._window.internet_monitor.when_disconnected(
+                self.update_user_data_stream,
+            ),
+        )
+        return self
 
-    async def dump_work(self) -> None:
-        """Save transaction data to disk."""
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        """Stop transactor-owned live tasks and network resources."""
+        del exc_type, exc, traceback
+        await self._close_user_data_stream()
         await self._save_scribbles()
+        await self._live_resources.aclose()
 
     async def _save_scribbles(self) -> None:
         filepath = self._workerpath / "scribbles.pickle"
@@ -343,14 +371,8 @@ class Transactor:
 
         - https://binance-docs.github.io/apidocs/futures/en/#start-user-data-stream-user_stream
         """
-
-        async def close_stream() -> None:
-            if self.user_data_streamer:
-                await self.user_data_streamer.close()
-                self.user_data_streamer = None
-
-        if not internet_connected():
-            await close_stream()
+        if not self._window.internet_monitor.connected:
+            await self._close_user_data_stream()
             return
 
         try:
@@ -359,23 +381,31 @@ class Transactor:
                 path="/fapi/v1/listenKey",
             )
         except ApiRequestError:
-            await close_stream()
+            await self._close_user_data_stream()
             return
 
         listen_key = response["listenKey"]
         new_url = f"wss://fstream.binance.com/ws/{listen_key}"
 
-        if self.user_data_streamer:
-            if new_url == self.user_data_streamer.url:
+        if self._user_data_streamer is not None:
+            if new_url == self._user_data_streamer.url:
                 # If the listen key hasn't changed, do nothing.
                 return
             # If the listen key has changed, close the previous session.
-            await self.user_data_streamer.close()
+            await self._close_user_data_stream()
 
-        self.user_data_streamer = ApiStreamer(
+        self._user_data_streamer = ApiStreamer(
             new_url,
             self._listen_to_account,
         )
+        await self._user_data_stream_resources.enter_async_context(
+            self._user_data_streamer,
+        )
+
+    async def _close_user_data_stream(self) -> None:
+        await self._user_data_stream_resources.aclose()
+        self._user_data_stream_resources = AsyncExitStack()
+        self._user_data_streamer = None
 
     async def _listen_to_account(self, received: dict[str, Any]) -> None:
         await self._account_listener.handle_event(received)
@@ -602,7 +632,10 @@ class Transactor:
 
     def _collect_realtime_data(self, symbol: str) -> RealtimeData:
         """Collect and filter realtime market data."""
-        realtime_data = slice_deque(team.collector.realtime_data, 2 ** (10 + 6))
+        realtime_data = slice_deque(
+            self._team.collector.realtime_data,
+            2 ** (10 + 6),
+        )
         mark_prices: list[Any] = []
         book_tickers: list[Any] = []
         for realtime_record in realtime_data:
@@ -614,7 +647,10 @@ class Transactor:
                 if is_valid and realtime_record.symbol == symbol:
                     mark_prices.append(realtime_record)
 
-        aggregate_trades = slice_deque(team.collector.aggregate_trades, 2 ** (10 + 6))
+        aggregate_trades = slice_deque(
+            self._team.collector.aggregate_trades,
+            2 ** (10 + 6),
+        )
         aggregate_trades = [a for a in aggregate_trades if a.symbol == symbol]
 
         return RealtimeData(
@@ -629,7 +665,7 @@ class Transactor:
         time_range: DisplayTimeRange,
     ) -> TransactionAssetData:
         """Load candle and asset data for transaction display."""
-        candle_data_original = await team.collector.read_symbol_candle_data(
+        candle_data_original = await self._team.collector.read_symbol_candle_data(
             symbol,
             time_range.get_from,
             time_range.slice_until,
@@ -692,7 +728,10 @@ class Transactor:
                     observed_timestamp,
                     last_asset,
                 )
-                asset_record = await spawn_blocking(sort_data_frame, asset_record)
+                asset_record = await spawn_blocking(
+                    sort_data_frame,
+                    asset_record,
+                )
 
         if before_asset is not None:
             asset_record = self._append_asset_observation(
@@ -700,7 +739,10 @@ class Transactor:
                 int(slice_from.timestamp() * 1000),
                 before_asset,
             )
-            asset_record = await spawn_blocking(sort_data_frame, asset_record)
+            asset_record = await spawn_blocking(
+                sort_data_frame,
+                asset_record,
+            )
 
         return asset_record
 
@@ -742,63 +784,64 @@ class Transactor:
         if periodic:
             current_moment = to_moment(datetime.now(UTC))
             before_moment = current_moment - timedelta(seconds=10)
-            await team.collector.wait_for_candle_data_ready(before_moment)
+            await self._team.collector.wait_for_candle_data_ready(before_moment)
 
-        duration_recorder = DurationRecorder("DISPLAY_TRANSACTION_LINES")
+        with DurationRecorder(
+            "DISPLAY_TRANSACTION_LINES",
+            self._window.task_durations,
+        ):
+            time_range = self._get_transaction_time_range()
+            realtime_data = self._collect_realtime_data(symbol)
 
-        time_range = self._get_transaction_time_range()
-        realtime_data = self._collect_realtime_data(symbol)
+            position = self._account_state.positions[symbol]
+            entry_price = (
+                None
+                if position.direction == PositionDirection.NONE
+                else position.entry_price
+            )
 
-        position = self._account_state.positions[symbol]
-        entry_price = (
-            None
-            if position.direction == PositionDirection.NONE
-            else position.entry_price
-        )
+            await self._window.transaction_graph.update_light_lines(
+                mark_prices=realtime_data.mark_prices,
+                aggregate_trades=realtime_data.aggregate_trades,
+                book_tickers=realtime_data.book_tickers,
+                entry_price=entry_price,
+                observed_until=self._account_state.observed_until,
+            )
 
-        await self._window.transaction_graph.update_light_lines(
-            mark_prices=realtime_data.mark_prices,
-            aggregate_trades=realtime_data.aggregate_trades,
-            book_tickers=realtime_data.book_tickers,
-            entry_price=entry_price,
-            observed_until=self._account_state.observed_until,
-        )
+            async with self._unrealized_changes.read_lock as cell:
+                unrealized_changes = cell.data.clone()
 
-        async with self._unrealized_changes.read_lock as cell:
-            unrealized_changes = cell.data.clone()
+            asset_data = await self._load_transaction_asset_data(symbol, time_range)
 
-        asset_data = await self._load_transaction_asset_data(symbol, time_range)
+            asset_record = await self._update_transaction_asset_record(
+                asset_data.asset_record,
+                asset_data.last_asset,
+                asset_data.before_asset,
+                time_range.slice_from,
+            )
 
-        asset_record = await self._update_transaction_asset_record(
-            asset_data.asset_record,
-            asset_data.last_asset,
-            asset_data.before_asset,
-            time_range.slice_from,
-        )
+            await self._window.transaction_graph.update_heavy_lines(
+                symbol=symbol,
+                candle_data=asset_data.candle_sliced,
+                asset_record=asset_record,
+                unrealized_changes=unrealized_changes,
+            )
 
-        await self._window.transaction_graph.update_heavy_lines(
-            symbol=symbol,
-            candle_data=asset_data.candle_sliced,
-            asset_record=asset_record,
-            unrealized_changes=unrealized_changes,
-        )
+            strategy_index = self._transaction_settings.strategy_index
+            strategy = self._team.strategist.strategies[strategy_index]
+            indicators = await spawn_blocking(
+                make_indicators,
+                strategy=strategy,
+                target_symbols=[self._viewing_symbol],
+                candle_data=asset_data.candle_original,
+            )
+            indicators = self._filter_frame_by_time(
+                indicators,
+                time_range.slice_from,
+                time_range.slice_until,
+            )
 
-        strategy_index = self._transaction_settings.strategy_index
-        strategy = team.strategist.strategies[strategy_index]
-        indicators = await spawn_blocking(
-            make_indicators,
-            strategy=strategy,
-            target_symbols=[self._viewing_symbol],
-            candle_data=asset_data.candle_original,
-        )
-        indicators = self._filter_frame_by_time(
-            indicators,
-            time_range.slice_from,
-            time_range.slice_until,
-        )
-
-        await self._window.transaction_graph.update_custom_lines(symbol, indicators)
-        duration_recorder.record()
+            await self._window.transaction_graph.update_custom_lines(symbol, indicators)
         await self._set_minimum_view_range()
 
     async def _toggle_frequent_draw(self) -> None:
@@ -837,7 +880,7 @@ class Transactor:
             self._window.label_16.setText(text)
             return
 
-        cumulation_rate = await team.collector.check_candle_data_cumulation_rate()
+        cumulation_rate = await self._team.collector.check_candle_data_cumulation_rate()
         if cumulation_rate < 1:
             text = (
                 "For auto transaction to work, the past 24 hour accumulation rate of"
@@ -944,7 +987,7 @@ class Transactor:
     async def _perform_transaction(self) -> None:
         self._window.progressBar_2.setValue(0)
 
-        if not internet_connected():
+        if not self._window.internet_monitor.connected:
             return
 
         if not self._transaction_settings.should_transact:
@@ -953,63 +996,66 @@ class Transactor:
         if not self._is_key_restrictions_satisfied:
             return
 
-        cumulation_rate = await team.collector.check_candle_data_cumulation_rate()
+        cumulation_rate = await self._team.collector.check_candle_data_cumulation_rate()
         if cumulation_rate < 1:
             return
 
-        duration_recorder = DurationRecorder("PERFORM_TRANSACTION")
-        current_moment = to_moment(datetime.now(UTC))
-        before_moment = current_moment - timedelta(seconds=10)
+        with DurationRecorder("PERFORM_TRANSACTION", self._window.task_durations):
+            current_moment = to_moment(datetime.now(UTC))
+            before_moment = current_moment - timedelta(seconds=10)
 
-        is_cycle_done = Cell(False)
+            is_cycle_done = Cell(False)
 
-        spawn(self._run_progress_bar(current_moment, is_cycle_done))
-
-        await team.collector.wait_for_candle_data_ready(before_moment)
-
-        slice_from = datetime.now(UTC) - timedelta(days=28)
-        target_symbols = self._window.data_settings.target_symbols
-        candle_frames = [
-            await team.collector.read_symbol_candle_data(
-                symbol,
-                slice_from,
-                before_moment,
+            spawn(
+                self._run_progress_bar(current_moment, is_cycle_done),
             )
-            for symbol in target_symbols
-        ]
-        if len(candle_frames) == 0 or any(len(frame) == 0 for frame in candle_frames):
-            return
-        base_frame = candle_frames[0]
-        extra_frames = [
-            frame.drop("timestamp")
-            for frame in candle_frames[1:]
-            if "timestamp" in frame.columns
-        ]
-        candle_data = pl.concat([base_frame, *extra_frames], how="horizontal")
 
-        strategy_index = self._transaction_settings.strategy_index
-        strategy = team.strategist.strategies[strategy_index]
+            await self._team.collector.wait_for_candle_data_ready(before_moment)
 
-        indicator_data = await self._calculate_indicators(
-            candle_data,
-            candle_data.columns,
-            target_symbols,
-            strategy,
-        )
+            slice_from = datetime.now(UTC) - timedelta(days=28)
+            target_symbols = self._window.data_settings.target_symbols
+            candle_frames = [
+                await self._team.collector.read_symbol_candle_data(
+                    symbol,
+                    slice_from,
+                    before_moment,
+                )
+                for symbol in target_symbols
+            ]
+            if len(candle_frames) == 0 or any(
+                len(frame) == 0 for frame in candle_frames
+            ):
+                return
+            base_frame = candle_frames[0]
+            extra_frames = [
+                frame.drop("timestamp")
+                for frame in candle_frames[1:]
+                if "timestamp" in frame.columns
+            ]
+            candle_data = pl.concat([base_frame, *extra_frames], how="horizontal")
 
-        decision_context = DecisionContext(
-            strategy=strategy,
-            target_symbols=target_symbols,
-            current_moment=current_moment,
-            current_candle_data=indicator_data.current_candle_data,
-            current_indicators=indicator_data.current_indicators,
-            account_state=self._account_state,
-            scribbles=self._scribbles,
-        )
-        decisions = make_decisions(decision_context)
+            strategy_index = self._transaction_settings.strategy_index
+            strategy = self._team.strategist.strategies[strategy_index]
 
-        is_cycle_done.value = True
-        duration_recorder.record()
+            indicator_data = await self._calculate_indicators(
+                candle_data,
+                candle_data.columns,
+                target_symbols,
+                strategy,
+            )
+
+            decision_context = DecisionContext(
+                strategy=strategy,
+                target_symbols=target_symbols,
+                current_moment=current_moment,
+                current_candle_data=indicator_data.current_candle_data,
+                current_indicators=indicator_data.current_indicators,
+                account_state=self._account_state,
+                scribbles=self._scribbles,
+            )
+            decisions = make_decisions(decision_context)
+
+            is_cycle_done.value = True
 
         await self.place_orders(decisions)
 

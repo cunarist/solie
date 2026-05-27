@@ -30,12 +30,12 @@ class StrategyBasicInput:
 
     title = "Edit your strategy's basic information"
     close_button = True
-    done_event = Event()
 
     def __init__(self, strategy: Strategy) -> None:
         """Initialize the strategy basic input dialog."""
         super().__init__()
         self.widget = QWidget()
+        self.done_event = Event()
         self.result = None
         self.strategy = strategy
 

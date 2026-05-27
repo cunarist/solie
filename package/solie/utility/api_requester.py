@@ -5,12 +5,11 @@ import hmac
 import json
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, ClassVar
+from types import TracebackType
+from typing import Any, Self
 from urllib.parse import urlencode
 
 from aiohttp import ClientSession
-
-from solie.common import spawn
 
 OK_CODE = 200
 
@@ -34,20 +33,58 @@ class ApiRequestError(Exception):
         super().__init__(error_message)
 
 
+class ApiRateStore:
+    """Window-owned API usage records."""
+
+    def __init__(self) -> None:
+        """Initialize API usage records."""
+        self.used_rates: dict[str, tuple[str, datetime]] = {}
+
+
 class ApiRequester:
     """HTTP API requester for Binance and CoinGecko."""
 
-    used_rates: ClassVar[dict[str, tuple[str, datetime]]] = {}
-
-    def __init__(self) -> None:
+    def __init__(self, rate_store: ApiRateStore | None = None) -> None:
         """Initialize API requester."""
-        self._session = ClientSession()
+        self._session: ClientSession | None = None
+        self._rate_store = rate_store if rate_store is not None else ApiRateStore()
         self._binance_api_key = ""
         self._binance_api_secret = ""
 
-    def __del__(self) -> None:
-        """Clean up session on deletion."""
-        spawn(self._session.close())
+    async def __aenter__(self) -> Self:
+        """Enter the requester session scope."""
+        if self._session is None or self._session.closed:
+            self._session = ClientSession()
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        """Close the owned HTTP session."""
+        del exc_type, exc, traceback
+        await self._close()
+
+    @property
+    def used_rates(self) -> dict[str, tuple[str, datetime]]:
+        """Get API usage records for this requester's rate store."""
+        return self._rate_store.used_rates
+
+    async def _close(self) -> None:
+        """Close the owned HTTP session."""
+        session = self._session
+        if session is None or session.closed:
+            return
+        await session.close()
+
+    def _require_session(self) -> ClientSession:
+        session = self._session
+        if session is None or session.closed:
+            msg = "ApiRequester is not entered"
+            raise RuntimeError(msg)
+        return session
 
     def update_keys(self, binance_api_key: str, binance_api_secret: str) -> None:
         """Update Binance API keys."""
@@ -81,7 +118,8 @@ class ApiRequester:
         url += path
         url += "?" + query_string + "&signature=" + signature
 
-        async with self._session.request(http_method, url, headers=headers) as raw:
+        session = self._require_session()
+        async with session.request(http_method, url, headers=headers) as raw:
             response = await raw.json()
 
         # record api usage
@@ -89,7 +127,7 @@ class ApiRequester:
             if "X-MBX" in header_key:
                 write_value = raw.headers[header_key]
                 current_time = datetime.now(UTC)
-                self.used_rates[header_key] = (write_value, current_time)
+                self._rate_store.used_rates[header_key] = (write_value, current_time)
 
         # check if the response contains error message
         if "code" in response and response["code"] != OK_CODE:
@@ -113,7 +151,8 @@ class ApiRequester:
 
         url = "https://api.coingecko.com" + path + "?" + query_string
 
-        async with self._session.request(http_method, url) as raw:
+        session = self._require_session()
+        async with session.request(http_method, url) as raw:
             return await raw.json()
 
     async def bytes(self, url: str) -> bytes:
@@ -122,7 +161,8 @@ class ApiRequester:
             "User-agent": "Mozilla/5.0",
         }
 
-        async with self._session.request("GET", url, headers=headers) as raw:
+        session = self._require_session()
+        async with session.request("GET", url, headers=headers) as raw:
             response = await raw.read()
 
         status_code = raw.status

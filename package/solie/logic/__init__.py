@@ -24,7 +24,7 @@ from .simulation_calculator import (
     WidgetReferences,
 )
 
-__all__ = [
+__all__ = (
     "AccountListener",
     "BinanceWatcher",
     "CalculationConfig",
@@ -46,4 +46,4 @@ __all__ = [
     "make_decisions",
     "make_indicators",
     "process_aggtrade_csv",
-]
+)

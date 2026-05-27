@@ -3,7 +3,8 @@
 from collections import deque
 from datetime import datetime, timedelta
 from time import perf_counter
-from typing import ClassVar, NamedTuple
+from types import TracebackType
+from typing import NamedTuple, Self
 
 
 class DurationRecord(NamedTuple):
@@ -13,18 +14,34 @@ class DurationRecord(NamedTuple):
     written_at: float
 
 
+type DurationRecords = dict[str, deque[DurationRecord]]
+
+
 class DurationRecorder:
     """Records and tracks task execution durations."""
 
-    task_durations: ClassVar[dict[str, deque[DurationRecord]]] = {}
-
-    def __init__(self, task_name: str) -> None:
+    def __init__(self, task_name: str, records: DurationRecords) -> None:
         """Initialize duration recorder."""
         self._task_name = task_name
+        self._records = records
         self._start_time = perf_counter()
         self._did_record = False
 
-    def record(self) -> None:
+    def __enter__(self) -> Self:
+        """Enter duration measurement."""
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        """Record elapsed time."""
+        del exc_type, exc, traceback
+        self._record()
+
+    def _record(self) -> None:
         """Record task completion time."""
         # Check that this is the first time.
         if self._did_record:
@@ -37,10 +54,10 @@ class DurationRecorder:
         now_time = perf_counter()
 
         # Get the deque.
-        record_deque = self.task_durations.get(task_name)
+        record_deque = self._records.get(task_name)
         if record_deque is None:
             record_deque = deque[DurationRecord](maxlen=1024)
-            self.task_durations[task_name] = record_deque
+            self._records[task_name] = record_deque
 
         # Add the record.
         duration_record = DurationRecord(

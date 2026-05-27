@@ -20,8 +20,18 @@
 - Import the Polars module as `pl` when calling functions or expression
   builders, such as `pl.col("timestamp")` and `pl.concat(frames)`.
 - Prefer package-level Solie imports when the package surface exports the name.
-- Prefer explicit `run_in_executor(...)` over `asyncio.to_thread(...)` for
-  blocking work, matching the existing codebase style.
-- Prefer context managers for resource lifetime whenever possible, including
-  `contextlib.closing(...)` for APIs whose native context manager does not
-  close the resource.
+- Do not use `asyncio.to_thread`; use `solie.common.spawn_blocking` for
+  blocking work.
+- `spawn` and `spawn_blocking` are explicit module-scope lifecycle exceptions:
+  keep task retention and the process pool/sync manager behind `spawn`,
+  `prepare_process_pool`, `get_sync_manager`, and `spawn_blocking` instead of
+  wrapping them in context-manager scopes.
+- Do not call `asyncio.create_task` outside `solie.common.concurrency`; use
+  `spawn` everywhere else.
+- Prefer `ExitStack` and `AsyncExitStack` for resource aggregation.
+- Avoid `contextlib.suppress` and `contextlib.closing`; use explicit
+  `try`/`except` and stack callbacks instead.
+- Ruff ignores `SIM105` so it does not suggest `contextlib.suppress`.
+- Overlay content uses class variables for static popup metadata such as
+  `title` and `close_button`; live state like `widget`, `done_event`, and
+  `result` stays instance-owned.

@@ -14,9 +14,9 @@ from .utility import (
     SolieConfig,
     Strategy,
 )
-from .worker import Team, team
+from .worker import Team
 
-__all__ = [
+__all__ = (
     "AccountState",
     "Decision",
     "DecisionInput",
@@ -30,5 +30,4 @@ __all__ = [
     "Strategy",
     "Team",
     "bring_to_life",
-    "team",
-]
+)

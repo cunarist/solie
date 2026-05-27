@@ -14,7 +14,7 @@ from .symbol_box import SymbolBox
 from .transparent_scroll_area import TransparentScrollArea
 from .vertical_divider import VerticalDivider
 
-__all__ = [
+__all__ = (
     "AskPopup",
     "BrandLabel",
     "Gauge",
@@ -31,4 +31,4 @@ __all__ = [
     "VerticalDivider",
     "ask",
     "overlay",
-]
+)

@@ -399,7 +399,10 @@ class AccountListener:
                         last_timestamp=last_timestamp,
                     ),
                 )
-            cell.data = await spawn_blocking(sort_data_frame, cell.data)
+            cell.data = await spawn_blocking(
+                sort_data_frame,
+                cell.data,
+            )
 
     async def _update_existing_trade_record(
         self,

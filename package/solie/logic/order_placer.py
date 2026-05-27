@@ -4,7 +4,7 @@ from asyncio import gather
 from collections import deque
 from datetime import UTC, datetime
 from logging import getLogger
-from typing import Any, ClassVar, NamedTuple
+from typing import Any, NamedTuple
 
 import polars as pl
 from polars import DataFrame
@@ -81,20 +81,6 @@ class LaterCloseContext(NamedTuple):
 
 class OrderPlacer:
     """Places orders on Binance futures exchange."""
-
-    # Configuration for later entry orders: (order_type_str, side)
-    LATER_ENTRY_ORDERS: ClassVar[dict[OrderType, tuple[str, str]]] = {
-        OrderType.LATER_UP_BUY: ("STOP_MARKET", "BUY"),
-        OrderType.LATER_DOWN_BUY: ("TAKE_PROFIT_MARKET", "BUY"),
-        OrderType.LATER_UP_SELL: ("TAKE_PROFIT_MARKET", "SELL"),
-        OrderType.LATER_DOWN_SELL: ("STOP_MARKET", "SELL"),
-    }
-
-    # Configuration for later close orders: is_up_close flag
-    LATER_CLOSE_ORDERS: ClassVar[dict[OrderType, bool]] = {
-        OrderType.LATER_UP_CLOSE: True,
-        OrderType.LATER_DOWN_CLOSE: False,
-    }
 
     def __init__(
         self,
@@ -480,7 +466,10 @@ class OrderPlacer:
             current_direction = self._get_assumed_direction(symbol, decisions)
 
             # Handle later close orders
-            for order_type, is_up_close in self.LATER_CLOSE_ORDERS.items():
+            for order_type, is_up_close in (
+                (OrderType.LATER_UP_CLOSE, True),
+                (OrderType.LATER_DOWN_CLOSE, False),
+            ):
                 if order_type in decisions[symbol]:
                     context = LaterCloseContext(
                         symbol=symbol,
@@ -492,7 +481,12 @@ class OrderPlacer:
                     self._handle_later_close_order(later_orders, context)
 
             # Handle later entry orders
-            for order_type, (order_type_str, side) in self.LATER_ENTRY_ORDERS.items():
+            for order_type, order_type_str, side in (
+                (OrderType.LATER_UP_BUY, "STOP_MARKET", "BUY"),
+                (OrderType.LATER_DOWN_BUY, "TAKE_PROFIT_MARKET", "BUY"),
+                (OrderType.LATER_UP_SELL, "TAKE_PROFIT_MARKET", "SELL"),
+                (OrderType.LATER_DOWN_SELL, "STOP_MARKET", "SELL"),
+            ):
                 if order_type in decisions[symbol]:
                     params = self._create_later_entry_order(
                         symbol,

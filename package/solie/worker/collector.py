@@ -5,10 +5,12 @@ import random
 import webbrowser
 from asyncio import Lock, gather, sleep
 from collections import deque
+from contextlib import AsyncExitStack
 from datetime import UTC, datetime, timedelta
 from logging import getLogger
 from pathlib import Path
-from typing import Any, NamedTuple
+from types import TracebackType
+from typing import Any, NamedTuple, Self
 
 import aiofiles.os
 import aioshutil
@@ -44,15 +46,13 @@ from solie.utility import (
     combine_candle_data,
     create_empty_candle_data,
     create_symbol_candle_frame_schema,
-    internet_connected,
     slice_deque,
     to_moment,
-    when_internet_disconnected,
 )
 from solie.widget import overlay
 from solie.window import Window
 
-from .united import team
+from .united import Team
 
 logger = getLogger(__name__)
 
@@ -67,18 +67,25 @@ class SavedCandleData(NamedTuple):
 class Collector:
     """Worker for collecting market data from Binance."""
 
-    def __init__(self, window: Window, scheduler: AsyncIOScheduler) -> None:
+    def __init__(
+        self,
+        window: Window,
+        scheduler: AsyncIOScheduler,
+        team: Team,
+    ) -> None:
         """Initialize market data collector."""
         self._window = window
         self._scheduler = scheduler
+        self._team = team
         self._workerpath = window.datapath / "collector"
 
         self._price_precisions: dict[str, int] = {}  # Symbol and decimal places
         self._markets_gone = set[str]()  # Symbols
 
+        self._live_resources = AsyncExitStack()
         self._download_fill_task = UniqueTask()
 
-        self._api_requester = ApiRequester()
+        self._api_requester = ApiRequester(window.api_rate_store)
 
         self.aggtrade_candle_sizes: dict[str, int] = {}
         for symbol in window.data_settings.target_symbols:
@@ -122,15 +129,13 @@ class Collector:
             )
             for s in self._window.data_settings.target_symbols
         ]
-        self._aggtrade_streamers = [
-            ApiStreamer(
+        self._aggtrade_streamers = {
+            s: ApiStreamer(
                 f"wss://fstream.binance.com/ws/{s.lower()}@trade",
                 self._add_aggregate_trades,
             )
             for s in self._window.data_settings.target_symbols
-        ]
-
-        when_internet_disconnected(self._clear_aggregate_trades)
+        }
 
         self._connect_ui_events()
 
@@ -154,16 +159,38 @@ class Collector:
         new_action = action_menu.addAction(text)
         outsource(new_action.triggered, job)
 
-    async def load_work(self) -> None:
-        """Load saved candle data from disk."""
+    async def __aenter__(self) -> Self:
+        """Enter collector live resources."""
         await aiofiles.os.makedirs(self._workerpath, exist_ok=True)
+        await self._live_resources.enter_async_context(self._api_requester)
+        streamers = [
+            self._mark_price_streamer,
+            *self._book_ticker_streamers,
+            *self._aggtrade_streamers.values(),
+        ]
+        for streamer in streamers:
+            await self._live_resources.enter_async_context(streamer)
+        await self._live_resources.enter_async_context(self._download_fill_task)
+        self._live_resources.enter_context(
+            self._window.internet_monitor.when_disconnected(
+                self._clear_aggregate_trades,
+            ),
+        )
+        return self
 
-    async def dump_work(self) -> None:
-        """Save candle data to disk."""
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        """Stop collector-owned background work."""
+        del exc_type, exc, traceback
+        await self._live_resources.aclose()
 
     async def get_exchange_information(self) -> None:
         """Fetch exchange information from Binance."""
-        if not internet_connected():
+        if not self._window.internet_monitor.connected:
             return
 
         payload: dict[str, Any] = {}
@@ -174,8 +201,11 @@ class Collector:
         )
         about_exchange = response
 
+        trading_symbols: set[str] = set()
         for about_symbol in about_exchange["symbols"]:
             symbol = about_symbol["symbol"]
+            if about_symbol.get("status") == "TRADING":
+                trading_symbols.add(symbol)
 
             about_filter: dict[str, Any] = {}
             for symbol_filter in about_symbol["filters"]:
@@ -186,10 +216,12 @@ class Collector:
             ticksize = float(about_filter["tickSize"])
             price_precision = int(math.log10(1 / ticksize))
             self._price_precisions[symbol] = price_precision
+        self._markets_gone = set(self._window.data_settings.target_symbols)
+        self._markets_gone.difference_update(trading_symbols)
 
     async def _fill_candle_data_holes(self) -> None:
         """Fill recent SQLite candle holes by fetching missing aggregate trades."""
-        if not internet_connected():
+        if not self._window.internet_monitor.connected:
             return
 
         current_moment = to_moment(datetime.now(UTC))
@@ -223,8 +255,8 @@ class Collector:
                     break
 
         if did_fill:
-            spawn(team.transactor.display_lines())
-            spawn(team.simulator.display_lines())
+            spawn(self._team.transactor.display_lines())
+            spawn(self._team.simulator.display_lines())
 
     async def _fill_symbol_holes(
         self,
@@ -304,6 +336,7 @@ class Collector:
             payload: dict[str, Any] = {
                 "symbol": symbol,
                 "startTime": request_start,
+                "endTime": fetch_until - 1,
                 "limit": 1000,
             }
             response = await self._api_requester.binance(
@@ -313,10 +346,9 @@ class Collector:
             )
 
             if len(response) == 0:
-                self._markets_gone.add(symbol)
-                return None
+                break
 
-            latest_timestamp = request_start
+            latest_timestamp = request_start - 1
             for about_aggtrade in response:
                 aggtrade_id = int(about_aggtrade["a"])
                 trade_timestamp = int(about_aggtrade["T"])
@@ -329,7 +361,7 @@ class Collector:
                 latest_timestamp = max(latest_timestamp, trade_timestamp)
 
             if latest_timestamp < request_start:
-                return None
+                break
             request_start = latest_timestamp + 1
 
         return aggtrades
@@ -341,15 +373,16 @@ class Collector:
         aggtrades: dict[int, AggregateTrade],
     ) -> list[CandleRow]:
         """Create complete candle rows from fetched gap trades."""
-        if len(aggtrades) == 0:
-            return []
-
         sorted_trades = sorted(aggtrades.values(), key=lambda trade: trade.timestamp)
-        last_fetched_timestamp = sorted_trades[-1].timestamp
-        last_fetched_moment = to_moment(
-            datetime.fromtimestamp(last_fetched_timestamp / 1000, tz=UTC),
-        )
-        fill_end_timestamp = int(last_fetched_moment.timestamp() * 1000)
+        if len(sorted_trades) > 0:
+            last_fetched_timestamp = sorted_trades[-1].timestamp
+            last_fetched_moment = to_moment(
+                datetime.fromtimestamp(last_fetched_timestamp / 1000, tz=UTC),
+            )
+            fill_end_moment = last_fetched_moment + timedelta(seconds=10)
+            fill_end_timestamp = int(fill_end_moment.timestamp() * 1000)
+        else:
+            fill_end_timestamp = missing_timestamp + 10_000
 
         latest_row = await self._window.candle_data_store.get_latest_before(
             symbol,
@@ -435,7 +468,7 @@ class Collector:
         if len(self._markets_gone) == 0:
             return await self._create_normal_status_text()
 
-        markets_gone = self._markets_gone
+        markets_gone = sorted(self._markets_gone)
         return (
             f"It seems that {', '.join(markets_gone)} markets are "
             "removed by Binance. You should make a new data folder."
@@ -512,7 +545,10 @@ class Collector:
         return False
 
     async def _open_binance_data_page(self) -> None:
-        await spawn_blocking(webbrowser.open, "https://www.binance.com/en/landing/data")
+        await spawn_blocking(
+            webbrowser.open,
+            "https://www.binance.com/en/landing/data",
+        )
 
     async def _download_fill_candle_data(self) -> None:
         fill_option = await overlay(DownloadFillOptionChooser())
@@ -706,7 +742,10 @@ class Collector:
         await aioshutil.rmtree(download_dir, ignore_errors=True)
 
         if len(downloaded_dfs) > 0:
-            return await spawn_blocking(combine_candle_data, downloaded_dfs)
+            return await spawn_blocking(
+                combine_candle_data,
+                downloaded_dfs,
+            )
         logger.info("No data downloaded for the year %d", preset_year)
         return None
 
@@ -724,9 +763,9 @@ class Collector:
             await self._write_downloaded_candle_rows(combined_df)
             logger.info("Filled the candle data with the downloaded history data")
 
-        spawn(team.transactor.display_lines())
-        spawn(team.simulator.display_lines())
-        spawn(team.simulator.display_available_years())
+        spawn(self._team.transactor.display_lines())
+        spawn(self._team.simulator.display_lines())
+        spawn(self._team.simulator.display_available_years())
 
     async def _write_downloaded_candle_rows(self, combined_df: DataFrame) -> None:
         """Persist downloaded candle rows to SQLite-backed candle stores."""
@@ -747,150 +786,179 @@ class Collector:
             await self._window.candle_data_store.upsert_many(symbol, rows)
 
     async def _add_book_tickers(self, received: dict[str, Any]) -> None:
-        duration_recorder = DurationRecorder("ADD_BOOK_TICKERS")
+        with DurationRecorder("ADD_BOOK_TICKERS", self._window.task_durations):
+            symbol = received["s"]
+            best_bid = float(received["b"])
+            best_ask = float(received["a"])
+            event_time = received["E"]  # In milliseconds
 
-        symbol = received["s"]
-        best_bid = float(received["b"])
-        best_ask = float(received["a"])
-        event_time = received["E"]  # In milliseconds
-
-        book_ticker = BookTicker(
-            timestamp=event_time,
-            symbol=symbol,
-            best_bid_price=best_bid,
-            best_ask_price=best_ask,
-        )
-        self.realtime_data.append(book_ticker)
-
-        duration_recorder.record()
+            book_ticker = BookTicker(
+                timestamp=event_time,
+                symbol=symbol,
+                best_bid_price=best_bid,
+                best_ask_price=best_ask,
+            )
+            self.realtime_data.append(book_ticker)
 
     async def _add_mark_price(self, received: list[dict[str, Any]]) -> None:
-        duration_recorder = DurationRecorder("ADD_MARK_PRICE")
+        with DurationRecorder("ADD_MARK_PRICE", self._window.task_durations):
+            if len(received) == 0:
+                return
 
-        if len(received) == 0:
-            return
-
-        target_symbols = self._window.data_settings.target_symbols
-        event_time = received[0]["E"]  # In milliseconds
-        for about_mark_price in received:
-            symbol = about_mark_price["s"]
-            if symbol in target_symbols:
-                mark_price = float(about_mark_price["p"])
-                mark_price = MarkPrice(
-                    timestamp=event_time,
-                    symbol=symbol,
-                    mark_price=mark_price,
-                )
-                self.realtime_data.append(mark_price)
-
-        duration_recorder.record()
+            target_symbols = self._window.data_settings.target_symbols
+            event_time = received[0]["E"]  # In milliseconds
+            for about_mark_price in received:
+                symbol = about_mark_price["s"]
+                if symbol in target_symbols:
+                    mark_price = float(about_mark_price["p"])
+                    mark_price = MarkPrice(
+                        timestamp=event_time,
+                        symbol=symbol,
+                        mark_price=mark_price,
+                    )
+                    self.realtime_data.append(mark_price)
 
     async def _add_aggregate_trades(self, received: dict[str, Any]) -> None:
-        duration_recorder = DurationRecorder("ADD_AGGREGATE_TRADES")
+        with DurationRecorder("ADD_AGGREGATE_TRADES", self._window.task_durations):
+            symbol = received["s"]
+            price = float(received["p"])
+            volume = float(received["q"])
+            trade_time = received["T"]  # In milliseconds
 
-        symbol = received["s"]
-        price = float(received["p"])
-        volume = float(received["q"])
-        trade_time = received["T"]  # In milliseconds
-
-        aggregate_trade = AggregateTrade(
-            timestamp=trade_time,
-            symbol=symbol,
-            price=price,
-            volume=volume,
-        )
-        self.aggregate_trades.append(aggregate_trade)
-
-        duration_recorder.record()
+            aggregate_trade = AggregateTrade(
+                timestamp=trade_time,
+                symbol=symbol,
+                price=price,
+                volume=volume,
+            )
+            self.aggregate_trades.append(aggregate_trade)
 
     async def _clear_aggregate_trades(self) -> None:
         self.aggregate_trades.clear()
 
-    async def _add_candle_data(self) -> None:
-        duration_recorder = DurationRecorder("ADD_CANDLE_DATA")
+    def _is_aggtrade_stream_ready(self, symbol: str, collect_from: int) -> bool:
+        """Return whether the symbol trade stream covered the candle window."""
+        connected_since = self._aggtrade_streamers[symbol].connected_since
+        if connected_since is None:
+            return False
+        connected_timestamp = int(connected_since.timestamp() * 1000)
+        return connected_timestamp <= collect_from
 
-        current_moment = to_moment(datetime.now(UTC))
-        before_moment = current_moment - timedelta(seconds=10.0)
-        collect_from = int(before_moment.timestamp()) * 1000
-        collect_to = int(current_moment.timestamp()) * 1000
+    def _collect_candle_window_trades(
+        self,
+        collect_from: int,
+        collect_to: int,
+    ) -> list[AggregateTrade] | None:
+        """Collect aggregate trades inside one candle window."""
         aggregate_trades = self.aggregate_trades
-
         if len(aggregate_trades) == 0:
-            self._last_candle_write_summary = "waiting for aggregate trades"
-            return
+            return []
 
-        # Ensure that the data have been watched for long enough.
         first_received_index = aggregate_trades[0].timestamp
         if collect_from <= first_received_index:
-            self._last_candle_write_summary = "waiting for a full 10s window"
-            return
+            return None
 
-        # Collect trades that should be included in the candle.
-        collected_aggregate_trades: list[AggregateTrade] = []
+        collected: list[AggregateTrade] = []
         for aggregate_trade in reversed(aggregate_trades):
             if aggregate_trade.timestamp < collect_from - 1000:
-                # Go additional 1000 milliseconds backward.
                 break
-            collected_aggregate_trades.append(aggregate_trade)
-        if len(collected_aggregate_trades) == 0:
-            self._last_candle_write_summary = "no trades near target window"
-            return
-        collected_aggregate_trades.reverse()  # Sort by time
-        collected_aggregate_trades = [
-            t
-            for t in collected_aggregate_trades
-            if collect_from < t.timestamp < collect_to
-        ]
+            collected.append(aggregate_trade)
 
-        rows: dict[str, CandleRow] = {}
-        for symbol in self._window.data_settings.target_symbols:
-            symbol_aggregate_trades = [
-                t for t in collected_aggregate_trades if t.symbol == symbol
-            ]
-            self.aggtrade_candle_sizes[symbol] = len(symbol_aggregate_trades)
+        collected.reverse()
+        return [t for t in collected if collect_from <= t.timestamp < collect_to]
 
-            if len(symbol_aggregate_trades) > 0:
-                open_price = symbol_aggregate_trades[0].price
-                high_price = max([t.price for t in symbol_aggregate_trades])
-                low_price = min([t.price for t in symbol_aggregate_trades])
-                close_price = symbol_aggregate_trades[-1].price
-                sum_volume = sum([t.volume for t in symbol_aggregate_trades])
-            else:
-                latest_row = await self._window.candle_data_store.get_latest_before(
-                    symbol,
-                    collect_from,
-                )
-                if latest_row is None:
-                    continue
-                last_price = latest_row.close
-                open_price = last_price
-                high_price = last_price
-                low_price = last_price
-                close_price = last_price
-                sum_volume = 0.0
-
-            rows[symbol] = CandleRow(
-                timestamp=int(before_moment.timestamp() * 1000),
-                open=open_price,
-                high=high_price,
-                low=low_price,
-                close=close_price,
-                volume=sum_volume,
+    async def _create_realtime_candle_row(
+        self,
+        symbol: str,
+        candle_timestamp: int,
+        collect_from: int,
+        symbol_aggregate_trades: list[AggregateTrade],
+    ) -> CandleRow | None:
+        """Create one realtime candle row from trades or confirmed quietness."""
+        if len(symbol_aggregate_trades) > 0:
+            open_price = symbol_aggregate_trades[0].price
+            high_price = max(t.price for t in symbol_aggregate_trades)
+            low_price = min(t.price for t in symbol_aggregate_trades)
+            close_price = symbol_aggregate_trades[-1].price
+            sum_volume = sum(t.volume for t in symbol_aggregate_trades)
+        else:
+            latest_row = await self._window.candle_data_store.get_latest_before(
+                symbol,
+                collect_from,
             )
+            if latest_row is None:
+                return None
+            last_price = latest_row.close
+            open_price = last_price
+            high_price = last_price
+            low_price = last_price
+            close_price = last_price
+            sum_volume = 0.0
 
-        if len(rows) == 0:
-            self._last_candle_write_summary = "no symbols had writable candles"
-            return
+        return CandleRow(
+            timestamp=candle_timestamp,
+            open=open_price,
+            high=high_price,
+            low=low_price,
+            close=close_price,
+            volume=sum_volume,
+        )
 
-        await self._write_candle_rows(rows)
-        row_count = len(rows)
-        timestamp_text = datetime.fromtimestamp(
-            rows[next(iter(rows))].timestamp / 10**3,
-            tz=UTC,
-        ).strftime("%H:%M:%S")
-        self._last_candle_write_summary = f"wrote {row_count} rows at {timestamp_text}"
+    async def _add_candle_data(self) -> None:
+        with DurationRecorder("ADD_CANDLE_DATA", self._window.task_durations):
+            if not self._window.internet_monitor.connected:
+                self._last_candle_write_summary = "waiting for internet"
+                return
 
-        duration_recorder.record()
+            current_moment = to_moment(datetime.now(UTC))
+            before_moment = current_moment - timedelta(seconds=10.0)
+            collect_from = int(before_moment.timestamp()) * 1000
+            collect_to = int(current_moment.timestamp()) * 1000
+            collected_aggregate_trades = self._collect_candle_window_trades(
+                collect_from,
+                collect_to,
+            )
+            if collected_aggregate_trades is None:
+                self._last_candle_write_summary = "waiting for a full 10s window"
+                return
+
+            rows: dict[str, CandleRow] = {}
+            pending_symbols: set[str] = set()
+            for symbol in self._window.data_settings.target_symbols:
+                symbol_aggregate_trades = [
+                    t for t in collected_aggregate_trades if t.symbol == symbol
+                ]
+                self.aggtrade_candle_sizes[symbol] = len(symbol_aggregate_trades)
+
+                if not self._is_aggtrade_stream_ready(symbol, collect_from):
+                    pending_symbols.add(symbol)
+                    continue
+
+                row = await self._create_realtime_candle_row(
+                    symbol,
+                    int(before_moment.timestamp() * 1000),
+                    collect_from,
+                    symbol_aggregate_trades,
+                )
+                if row is not None:
+                    rows[symbol] = row
+
+            if len(rows) == 0:
+                if len(pending_symbols) > 0:
+                    self._last_candle_write_summary = "waiting for trade streams"
+                else:
+                    self._last_candle_write_summary = "no symbols had writable candles"
+                return
+
+            await self._write_candle_rows(rows)
+            row_count = len(rows)
+            timestamp_text = datetime.fromtimestamp(
+                rows[next(iter(rows))].timestamp / 10**3,
+                tz=UTC,
+            ).strftime("%H:%M:%S")
+            self._last_candle_write_summary = (
+                f"wrote {row_count} rows at {timestamp_text}"
+            )
 
     async def _write_candle_rows(
         self,

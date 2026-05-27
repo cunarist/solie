@@ -11,12 +11,12 @@ class LongTextView:
 
     title = "This is the raw account state object"
     close_button = True
-    done_event = Event()
 
     def __init__(self, long_text: str) -> None:
         """Initialize long text view overlay."""
         super().__init__()
         self.widget = QWidget()
+        self.done_event = Event()
         self.result = None
 
         full_layout = QVBoxLayout(self.widget)

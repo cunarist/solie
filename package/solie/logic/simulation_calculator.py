@@ -7,7 +7,7 @@ import sqlite3
 from asyncio import sleep
 from collections import deque
 from collections.abc import Generator
-from contextlib import closing
+from contextlib import ExitStack
 from datetime import UTC, datetime, timedelta
 from multiprocessing.managers import ListProxy
 from numbers import Real
@@ -22,6 +22,8 @@ from solie.utility import (
     ASSET_RECORD_SCHEMA,
     MAX_PREPARATION_STEPS,
     PROGRESS_BAR_MAX,
+    SELECT_CANDLE_RANGE_SQL,
+    SQLITE_TIMEOUT,
     AccountState,
     CandleDataStore,
     CandleRow,
@@ -246,7 +248,10 @@ class SimulationCalculator:
         )
 
         try:
-            result = await spawn_blocking(calculate_streamed_simulation, process_input)
+            result = await spawn_blocking(
+                calculate_streamed_simulation,
+                process_input,
+            )
         finally:
             progress_task.cancel()
 
@@ -333,11 +338,12 @@ class StreamedSimulationRunner:
             ),
         )
 
-        try:
+        with ExitStack() as stream_resources:
             self._prepare_candle_streams(
                 self.calculate_from_timestamp
                 - int(INDICATOR_LOOKBACK.total_seconds() * 1000),
                 self.calculate_until_timestamp,
+                stream_resources,
             )
 
             while True:
@@ -366,8 +372,6 @@ class StreamedSimulationRunner:
 
             self._simulate_pending_moments(simulator)
             self.progress[0] = PROGRESS_BAR_MAX
-        finally:
-            self._close_row_iterators()
 
         output = simulator.finish()
         return CalculationResult(
@@ -396,6 +400,7 @@ class StreamedSimulationRunner:
         self,
         provide_from_timestamp: int,
         calculate_until_timestamp: int,
+        stream_resources: ExitStack,
     ) -> None:
         """Initialize per-symbol SQLite iterators for this run."""
         self.window_rows = deque()
@@ -413,6 +418,7 @@ class StreamedSimulationRunner:
                 provide_from_timestamp,
                 calculate_until_timestamp,
             )
+            stream_resources.callback(iterator.close)
             row = next(iterator, None)
             if row is None:
                 continue
@@ -432,33 +438,24 @@ class StreamedSimulationRunner:
                 continue
             year_start = max(start_timestamp, _year_start_timestamp(year))
             year_end = min(end_timestamp, _year_end_timestamp(year))
-            with closing(sqlite3.connect(filepath)) as connection:
+            with ExitStack() as resources:
+                connection = sqlite3.connect(filepath, timeout=SQLITE_TIMEOUT)
+                resources.callback(connection.close)
                 _configure_read_connection(connection)
-                with closing(
-                    connection.execute(
-                        """
-                        SELECT timestamp, open, high, low, close, volume
-                        FROM candles
-                        WHERE timestamp >= ? AND timestamp <= ?
-                        ORDER BY timestamp
-                        """,
-                        (year_start, year_end),
-                    ),
-                ) as cursor:
-                    for row in cursor:
-                        yield CandleRow(
-                            int(row[0]),
-                            float(row[1]),
-                            float(row[2]),
-                            float(row[3]),
-                            float(row[4]),
-                            float(row[5]),
-                        )
-
-    def _close_row_iterators(self) -> None:
-        """Close any SQLite-backed row generators still holding read handles."""
-        for iterator in self.row_iterators.values():
-            iterator.close()
+                cursor = connection.execute(
+                    SELECT_CANDLE_RANGE_SQL,
+                    (year_start, year_end),
+                )
+                resources.callback(cursor.close)
+                for row in cursor:
+                    yield CandleRow(
+                        int(row[0]),
+                        float(row[1]),
+                        float(row[2]),
+                        float(row[3]),
+                        float(row[4]),
+                        float(row[5]),
+                    )
 
     def _next_stream_timestamp(self) -> int | None:
         """Get the next timestamp available from any symbol stream."""
