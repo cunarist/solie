@@ -10,7 +10,7 @@ from .parallelism import (
     spawn_blocking,
 )
 
-__all__ = [
+__all__ = (
     "PACKAGE_NAME",
     "PACKAGE_PATH",
     "PACKAGE_VERSION",
@@ -21,4 +21,4 @@ __all__ = [
     "prepare_process_pool",
     "spawn",
     "spawn_blocking",
-]
+)

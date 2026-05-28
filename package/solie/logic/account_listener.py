@@ -1,13 +1,15 @@
 """Account event listener for Binance user data stream."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from logging import getLogger
 from typing import Any, NamedTuple
 
-from pandas import DataFrame, DatetimeIndex
+import polars as pl
+from polars import DataFrame
 
 from solie.common import spawn_blocking
 from solie.utility import (
+    ASSET_RECORD_SCHEMA,
     AccountState,
     OpenOrder,
     OrderType,
@@ -53,7 +55,7 @@ class UpdateTradeRecordInfo(NamedTuple):
     order_id: int
     added_margin_ratio: float
     added_revenue: float
-    last_index: datetime
+    last_timestamp: int
 
 
 class CreateTradeRecordInfo(NamedTuple):
@@ -69,7 +71,7 @@ class CreateTradeRecordInfo(NamedTuple):
     added_revenue: float
     unique_order_ids: set[int]
     event_time: datetime
-    last_index: datetime
+    last_timestamp: int
 
 
 class ParseOrderTypeParams(NamedTuple):
@@ -359,29 +361,30 @@ class AccountListener:
         added_margin_ratio = added_margin / info.wallet_balance
 
         async with self._auto_order_record.read_lock as cell:
-            symbol_df = cell.data[cell.data["SYMBOL"] == info.symbol]
+            symbol_df = cell.data.filter(pl.col("SYMBOL") == info.symbol)
             unique_order_ids = {int(i) for i in symbol_df["ORDER_ID"].unique()}
 
         async with self._asset_record.write_lock as cell:
-            symbol_df = cell.data[cell.data["SYMBOL"] == info.symbol]
-            recorded_id_list = symbol_df["ORDER_ID"].tolist()
+            symbol_df = cell.data.filter(pl.col("SYMBOL") == info.symbol)
+            recorded_id_list = symbol_df["ORDER_ID"].to_list()
             does_record_exist = info.order_id in recorded_id_list
-            df_index: DatetimeIndex = cell.data.index  # type:ignore
-            last_index = df_index[-1].to_pydatetime()
+            last_timestamp = (
+                int(cell.data["timestamp"][-1]) if len(cell.data) > 0 else 0
+            )
 
             if does_record_exist:
-                await self._update_existing_trade_record(
+                cell.data = await self._update_existing_trade_record(
                     UpdateTradeRecordInfo(
                         data=cell.data,
                         symbol_df=symbol_df,
                         order_id=info.order_id,
                         added_margin_ratio=added_margin_ratio,
                         added_revenue=added_revenue,
-                        last_index=last_index,
+                        last_timestamp=last_timestamp,
                     ),
                 )
             else:
-                await self._create_new_trade_record(
+                cell.data = await self._create_new_trade_record(
                     CreateTradeRecordInfo(
                         data=cell.data,
                         symbol=info.symbol,
@@ -393,49 +396,74 @@ class AccountListener:
                         added_revenue=added_revenue,
                         unique_order_ids=unique_order_ids,
                         event_time=info.event_time,
-                        last_index=last_index,
+                        last_timestamp=last_timestamp,
                     ),
                 )
-
-            if not cell.data.index.is_monotonic_increasing:
-                cell.data = await spawn_blocking(sort_data_frame, cell.data)
+            cell.data = await spawn_blocking(
+                sort_data_frame,
+                cell.data,
+            )
 
     async def _update_existing_trade_record(
         self,
         info: UpdateTradeRecordInfo,
-    ) -> None:
+    ) -> DataFrame:
         """Update existing trade record."""
         mask_sr = info.symbol_df["ORDER_ID"] == info.order_id
-        df_index: DatetimeIndex = info.symbol_df.index  # type:ignore
-        rec_time = df_index[mask_sr][0].to_pydatetime()
-        rec_value = float(info.symbol_df.loc[rec_time, "MARGIN_RATIO"])  # type:ignore
-        new_value = rec_value + info.added_margin_ratio
-        info.data.loc[rec_time, "MARGIN_RATIO"] = new_value
-        last_asset = float(info.data.loc[info.last_index, "RESULT_ASSET"])  # type:ignore
-        new_value = last_asset + info.added_revenue
-        info.data.loc[info.last_index, "RESULT_ASSET"] = new_value
+        matching_rows = info.symbol_df.filter(mask_sr)
+        if len(matching_rows) == 0:
+            return info.data
+        rec_timestamp = int(matching_rows["timestamp"][0])
+        rec_value = float(matching_rows["MARGIN_RATIO"][0])
+        last_rows = info.data.filter(pl.col("timestamp") == info.last_timestamp)
+        if len(last_rows) == 0:
+            return info.data
+        last_asset = float(last_rows["RESULT_ASSET"][0])
+        return info.data.with_columns(
+            MARGIN_RATIO=pl.when(pl.col("timestamp") == rec_timestamp)
+            .then(pl.lit(rec_value + info.added_margin_ratio))
+            .otherwise(pl.col("MARGIN_RATIO")),
+            RESULT_ASSET=pl.when(pl.col("timestamp") == info.last_timestamp)
+            .then(pl.lit(last_asset + info.added_revenue))
+            .otherwise(pl.col("RESULT_ASSET")),
+        )
 
     async def _create_new_trade_record(
         self,
         info: CreateTradeRecordInfo,
-    ) -> None:
+    ) -> DataFrame:
         """Create new trade record."""
-        record_time = info.event_time
-        while record_time in info.data.index:
-            record_time += timedelta(milliseconds=1)
+        record_timestamp = int(info.event_time.timestamp() * 1000)
+        existing_timestamps = set(info.data["timestamp"].to_list())
+        while record_timestamp in existing_timestamps:
+            record_timestamp += 1
 
-        info.data.loc[record_time, "SYMBOL"] = info.symbol
-        info.data.loc[record_time, "SIDE"] = "SELL" if info.side == "SELL" else "BUY"
-        info.data.loc[record_time, "FILL_PRICE"] = info.last_filled_price
-        info.data.loc[record_time, "ROLE"] = "MAKER" if info.is_maker else "TAKER"
-        info.data.loc[record_time, "MARGIN_RATIO"] = info.added_margin_ratio
-        info.data.loc[record_time, "ORDER_ID"] = info.order_id
-
-        last_asset = float(info.data.loc[info.last_index, "RESULT_ASSET"])  # type:ignore
+        last_rows = info.data.filter(pl.col("timestamp") == info.last_timestamp)
+        last_asset = float(last_rows["RESULT_ASSET"][0]) if len(last_rows) > 0 else 0.0
         new_value = last_asset + info.added_revenue
-        info.data.loc[record_time, "RESULT_ASSET"] = new_value
 
         if info.order_id in info.unique_order_ids:
-            info.data.loc[record_time, "CAUSE"] = "AUTO_TRADE"
+            cause = "AUTO_TRADE"
         else:
-            info.data.loc[record_time, "CAUSE"] = "MANUAL_TRADE"
+            cause = "MANUAL_TRADE"
+        return pl.concat(
+            [
+                info.data,
+                DataFrame(
+                    [
+                        {
+                            "timestamp": record_timestamp,
+                            "CAUSE": cause,
+                            "SYMBOL": info.symbol,
+                            "SIDE": "SELL" if info.side == "SELL" else "BUY",
+                            "FILL_PRICE": info.last_filled_price,
+                            "ROLE": "MAKER" if info.is_maker else "TAKER",
+                            "MARGIN_RATIO": info.added_margin_ratio,
+                            "ORDER_ID": info.order_id,
+                            "RESULT_ASSET": new_value,
+                        },
+                    ],
+                    schema=ASSET_RECORD_SCHEMA,
+                ),
+            ],
+        )

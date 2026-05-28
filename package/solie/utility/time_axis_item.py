@@ -2,7 +2,7 @@
 
 import math
 from datetime import UTC, datetime, timedelta
-from typing import override
+from typing import NamedTuple, override
 
 from pyqtgraph import AxisItem
 
@@ -21,6 +21,13 @@ from .constants import (
 
 # We're not using pyqtgraph's default DateAxisItem
 # because it doesn't show values in UTC time.
+
+
+class TickSampling(NamedTuple):
+    """Sampling settings for visible tick labels."""
+
+    sample: int
+    offset: int
 
 
 class TimeAxisItem(AxisItem):
@@ -167,21 +174,26 @@ class TimeAxisItem(AxisItem):
 
         # Calculate sampling if too many ticks
         count = len(values)
-        sample, offset = self._calculate_sampling(count)
+        sampling = self._calculate_sampling(count)
 
         # Determine format based on spacing
         fmt = self._determine_time_format(spacing)
 
         # Generate tick strings
-        return self._generate_tick_strings(values, fmt, sample, offset)
+        return self._generate_tick_strings(
+            values,
+            fmt,
+            sampling.sample,
+            sampling.offset,
+        )
 
-    def _calculate_sampling(self, count: int) -> tuple[int, int]:
+    def _calculate_sampling(self, count: int) -> TickSampling:
         """Calculate sampling rate and offset for tick labels."""
         sample = 1
         if count > MAX_TICK_LABELS:
             sample = math.ceil(count / MAX_TICK_LABELS)
         offset = math.floor((count % sample) / 2)
-        return sample, offset
+        return TickSampling(sample=sample, offset=offset)
 
     def _determine_time_format(self, spacing: float) -> str:
         """Determine time format string based on spacing."""

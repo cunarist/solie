@@ -6,6 +6,7 @@ from typing import override
 from PySide6.QtCore import QEvent, QObject, Qt
 from PySide6.QtGui import QFont, QShowEvent
 from PySide6.QtWidgets import (
+    QApplication,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -38,14 +39,12 @@ async def ask(main_text: str, detail_text: str, options: list[str]) -> int:
 class AskPopup(QWidget):
     """Popup widget for asking user to choose an option."""
 
-    done_event = Event()
-    result = None
-    installed_window: QMainWindow
-
     @override
     def showEvent(self, event: QShowEvent) -> None:
         # needed for filling the window when resized
-        parent: QMainWindow = self.parent()  # type:ignore
+        parent = self.parent()
+        if not isinstance(parent, QMainWindow):
+            raise TypeError
         self.setGeometry(parent.rect())
 
     @override
@@ -57,11 +56,6 @@ class AskPopup(QWidget):
             self.setGeometry(watched.rect())
         return super().eventFilter(watched, event)
 
-    @classmethod
-    def install_window(cls, window: QMainWindow) -> None:
-        """Install parent window for popup."""
-        cls.installed_window = window
-
     def __init__(
         self,
         main_text: str,
@@ -69,15 +63,16 @@ class AskPopup(QWidget):
         options: list[str],
     ) -> None:
         """Initialize ask popup."""
-        super().__init__(self.installed_window)
+        parent = QApplication.activeWindow()
+        if not isinstance(parent, QMainWindow):
+            raise TypeError
+        super().__init__(parent)
 
         # needed for filling the window when resized
-        self.installed_window.installEventFilter(self)
+        parent.installEventFilter(self)
 
-        # Reset done event
-        self.done_event.set()
-        self.done_event.clear()
-
+        self.done_event = Event()
+        self.result = None
         self.answer = 0
 
         # Setup widget attributes

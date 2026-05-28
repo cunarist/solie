@@ -1,6 +1,4 @@
 import numpy as np
-import pandas as pd
-import pandas_ta as ta
 
 short_period = 180
 long_period = 720
@@ -11,18 +9,17 @@ for symbol in target_symbols:
     volume_sr = candle_data[f"{symbol}/VOLUME"]
 
     # Price scale indicators
-    price_sma_one = ta.sma(close_sr, short_period)
-    price_sma_two = ta.sma(close_sr, long_period)
+    price_sma_one = close_sr.rolling_mean(short_period)
+    price_sma_two = close_sr.rolling_mean(long_period)
     new_indicators[f"{symbol}/PRICE/SMA_ONE(#00BBFF)"] = price_sma_one
     new_indicators[f"{symbol}/PRICE/SMA_TWO(#FF6666)"] = price_sma_two
 
     # Volume scale indicators
-    volume_sma_one = ta.sma(volume_sr, short_period * 2)
-    volume_sma_two = ta.sma(volume_sr, long_period * 2)
+    volume_sma_one = volume_sr.rolling_mean(short_period * 2)
+    volume_sma_two = volume_sr.rolling_mean(long_period * 2)
     new_indicators[f"{symbol}/VOLUME/SMA_ONE"] = volume_sma_one
     new_indicators[f"{symbol}/VOLUME/SMA_TWO"] = volume_sma_two
 
     # Abstract scale indicators
-    wildness = volume_sma_one / volume_sma_two
-    wildness[wildness > 1.5] = 1.5
+    wildness = (volume_sma_one / volume_sma_two).clip(upper_bound=1.5)
     new_indicators[f"{symbol}/ABSTRACT/WILDNESS"] = wildness

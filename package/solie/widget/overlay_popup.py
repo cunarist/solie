@@ -7,6 +7,7 @@ from typing import ClassVar, Protocol, override
 from PySide6.QtCore import QEvent, QObject, Qt
 from PySide6.QtGui import QFont, QShowEvent
 from PySide6.QtWidgets import (
+    QApplication,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -26,10 +27,9 @@ from .transparent_scroll_area import TransparentScrollArea
 class OverlayContent[T](Protocol):
     """Protocol for overlay content."""
 
-    # Class members
     title: ClassVar[str]
     close_button: ClassVar[bool]
-    done_event: ClassVar[Event]
+    done_event: Event
 
     # Instance members
     widget: QWidget
@@ -55,12 +55,12 @@ async def overlay[T](content: OverlayContent[T]) -> T:
 class OverlayBox[T](QWidget):
     """Widget that displays overlay content."""
 
-    installed_window: QMainWindow
-
     @override
     def showEvent(self, event: QShowEvent) -> None:
         # needed for filling the window when resized
-        parent: QMainWindow = self.parent()  # type:ignore
+        parent = self.parent()
+        if not isinstance(parent, QMainWindow):
+            raise TypeError
         self.setGeometry(parent.rect())
 
     @override
@@ -72,20 +72,15 @@ class OverlayBox[T](QWidget):
             self.setGeometry(watched.rect())
         return super().eventFilter(watched, event)
 
-    @classmethod
-    def install_window(cls, window: QMainWindow) -> None:
-        """Install parent window for overlay."""
-        cls.installed_window = window
-
     def __init__(self, content: OverlayContent[T]) -> None:
         """Initialize overlay box."""
-        super().__init__(self.installed_window)
+        parent = QApplication.activeWindow()
+        if not isinstance(parent, QMainWindow):
+            raise TypeError
+        super().__init__(parent)
 
         # needed for filling the window when resized
-        self.installed_window.installEventFilter(self)
-
-        content.done_event.set()
-        content.done_event.clear()
+        parent.installEventFilter(self)
 
         self.answer = 0
 

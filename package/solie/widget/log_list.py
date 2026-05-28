@@ -22,12 +22,12 @@ class LogOverlay:
 
     title = "This is the full log"
     close_button = True
-    done_event = Event()
 
     def __init__(self, log_content: str) -> None:
         """Initialize log overlay."""
         super().__init__()
         self.widget = QWidget()
+        self.done_event = Event()
         self.result = None
 
         full_layout = QVBoxLayout(self.widget)

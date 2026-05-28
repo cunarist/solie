@@ -13,7 +13,7 @@ from .strategy_basic_input import StrategyBasicInput
 from .strategy_develop_input import StrategyDevelopInput
 from .token_selection import TokenSelection
 
-__all__ = [
+__all__ = (
     "CoinSelection",
     "DatapathInput",
     "DonationGuide",
@@ -24,4 +24,4 @@ __all__ = [
     "StrategyBasicInput",
     "StrategyDevelopInput",
     "TokenSelection",
-]
+)

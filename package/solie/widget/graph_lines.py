@@ -6,7 +6,8 @@ from datetime import datetime, timedelta
 from typing import NamedTuple
 
 import numpy as np
-from pandas import DataFrame, Series
+import polars as pl
+from polars import DataFrame, Series
 from pyqtgraph import (
     AxisItem,
     PlotDataItem,
@@ -18,7 +19,6 @@ from pyqtgraph import (
 from PySide6.QtGui import QFont
 
 from solie.utility import (
-    MIN_SERIES_LENGTH,
     AggregateTrade,
     BookTicker,
     MarkPrice,
@@ -203,10 +203,21 @@ class GraphLines:
 
     def _set_plot_limits(self) -> None:
         """Set view limits for all plots."""
-        self.price_plot.vb.setLimits(xMin=0, yMin=0)  # type:ignore
-        self.volume_plot.vb.setLimits(xMin=0, yMin=0)  # type:ignore
-        self.abstract_plot.vb.setLimits(xMin=0)  # type:ignore
-        self.asset_plot.vb.setLimits(xMin=0, yMin=0)  # type:ignore
+        price_box = self.price_plot.vb
+        volume_box = self.volume_plot.vb
+        abstract_box = self.abstract_plot.vb
+        asset_box = self.asset_plot.vb
+        if (
+            price_box is None
+            or volume_box is None
+            or abstract_box is None
+            or asset_box is None
+        ):
+            raise TypeError
+        price_box.setLimits(xMin=0, yMin=0)
+        volume_box.setLimits(xMin=0, yMin=0)
+        abstract_box.setLimits(xMin=0)
+        asset_box.setLimits(xMin=0, yMin=0)
 
     def _configure_downsampling(self) -> None:
         """Configure downsampling for all plots."""
@@ -378,7 +389,7 @@ class GraphLines:
         candle_data: DataFrame,
     ) -> dict[str, np.ndarray]:
         """Prepare numpy arrays from candle data."""
-        index_ar = candle_data.index.to_numpy(dtype=np.int64) / 10**9
+        index_ar = candle_data["timestamp"].to_numpy() / 10**3
         open_ar = candle_data[f"{symbol}/OPEN"].to_numpy()
         close_ar = candle_data[f"{symbol}/CLOSE"].to_numpy()
         high_ar = candle_data[f"{symbol}/HIGH"].to_numpy()
@@ -464,23 +475,23 @@ class GraphLines:
         """Update wobbles and volume lines."""
         # High wobble
         sr = candle_data[f"{symbol}/HIGH"]
-        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
-        data_y = sr.to_numpy(dtype=np.float32)
+        data_x = candle_data["timestamp"].to_numpy() / 10**3
+        data_y = np.array(sr.to_list(), dtype=np.float32)
         self.wobbles.line_a.setData(data_x, data_y)
         await sleep(0.0)
 
         # Low wobble
         sr = candle_data[f"{symbol}/LOW"]
-        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
-        data_y = sr.to_numpy(dtype=np.float32)
+        data_x = candle_data["timestamp"].to_numpy() / 10**3
+        data_y = np.array(sr.to_list(), dtype=np.float32)
         self.wobbles.line_b.setData(data_x, data_y)
         await sleep(0.0)
 
         # Volume
         sr = candle_data[f"{symbol}/VOLUME"]
-        sr = sr.fillna(value=0)
-        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
-        data_y = sr.to_numpy(dtype=np.float32)
+        sr = sr.fill_null(0).fill_nan(0)
+        data_x = candle_data["timestamp"].to_numpy() / 10**3
+        data_y = np.array(sr.to_list(), dtype=np.float32)
         self.volume.setData(data_x, data_y)
         await sleep(0.0)
 
@@ -491,45 +502,71 @@ class GraphLines:
         unrealized_changes: Series,
     ) -> None:
         """Update asset result and trade lines."""
+        if "timestamp" not in asset_record.columns:
+            self.asset.setData([], [])
+            self.asset_with_unrealized_profit.setData([], [])
+            self.sell.setData([], [])
+            self.buy.setData([], [])
+            return
+
         # Result asset
-        data_x = asset_record["RESULT_ASSET"].index.to_numpy(dtype=np.int64) / 10**9
-        data_y = asset_record["RESULT_ASSET"].to_numpy(dtype=np.float32)
+        data_x = asset_record["timestamp"].to_numpy() / 10**3
+        data_y = np.asarray(asset_record["RESULT_ASSET"].to_numpy(), dtype=np.float32)
         self.asset.setData(data_x, data_y)
         await sleep(0.0)
 
         # Asset with unrealized profit
         sr = asset_record["RESULT_ASSET"]
-        if len(sr) >= MIN_SERIES_LENGTH:
-            sr = sr.resample("10s").ffill()
-        unrealized_changes_sr = unrealized_changes.reindex(sr.index)
-        sr = sr * (1 + unrealized_changes_sr)
-        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9 + 5
-        data_y = sr.to_numpy(dtype=np.float32)
+        unrealized_values = unrealized_changes.to_numpy()
+        if len(unrealized_values) < len(sr):
+            unrealized_values = np.pad(
+                unrealized_values,
+                (0, len(sr) - len(unrealized_values)),
+                constant_values=0,
+            )
+        sr = sr * (1 + Series("unrealized", unrealized_values[: len(sr)]))
+        data_x = asset_record["timestamp"].to_numpy() / 10**3 + 5
+        data_y = np.asarray(sr.to_numpy(), dtype=np.float32)
         self.asset_with_unrealized_profit.setData(data_x, data_y)
         await sleep(0.0)
 
         # Sell trades
-        df = asset_record.loc[asset_record["SYMBOL"] == symbol]
-        df = df[df["SIDE"] == "SELL"]
+        df = asset_record.filter(
+            (pl.col("SYMBOL") == symbol) & (pl.col("SIDE") == "SELL"),
+        )
         sr = df["FILL_PRICE"]
-        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
-        data_y = sr.to_numpy(dtype=np.float32)
+        data_x = df["timestamp"].to_numpy() / 10**3
+        data_y = np.asarray(sr.to_numpy(), dtype=np.float32)
         self.sell.setData(data_x, data_y)
         await sleep(0.0)
 
         # Buy trades
-        df = asset_record.loc[asset_record["SYMBOL"] == symbol]
-        df = df[df["SIDE"] == "BUY"]
+        df = asset_record.filter(
+            (pl.col("SYMBOL") == symbol) & (pl.col("SIDE") == "BUY"),
+        )
         sr = df["FILL_PRICE"]
-        data_x = sr.index.to_numpy(dtype=np.int64) / 10**9
-        data_y = sr.to_numpy(dtype=np.float32)
+        data_x = df["timestamp"].to_numpy() / 10**3
+        data_y = np.asarray(sr.to_numpy(), dtype=np.float32)
         self.buy.setData(data_x, data_y)
         await sleep(0.0)
+
+    def _clear_custom_lines(self) -> None:
+        """Clear all custom indicator lines."""
+        for widget in self.price_indicators:
+            widget.clear()
+        for widget in self.volume_indicators:
+            widget.clear()
+        for widget in self.abstract_indicators:
+            widget.clear()
 
     async def update_custom_lines(self, symbol: str, indicators: DataFrame) -> None:
         """Update custom indicator lines."""
         columns = [str(n) for n in indicators.columns]
-        data_x = indicators.index.to_numpy(dtype=np.int64) / 10**9
+        if "timestamp" not in indicators.columns:
+            self._clear_custom_lines()
+            return
+
+        data_x = indicators["timestamp"].to_numpy() / 10**3
         data_x += 5
 
         chosen_columns = [n for n in columns if n.startswith(f"{symbol}/PRICE")]
@@ -539,7 +576,7 @@ class GraphLines:
                 continue
             column = chosen_columns[index]
             sr = indicators[column]
-            data_y = sr.to_numpy(dtype=np.float32)
+            data_y = np.asarray(sr.to_numpy(), dtype=np.float32)
             inside_strings = re.findall(r"\(([^)]+)", column)
             color = "#AAAAAA" if len(inside_strings) == 0 else inside_strings[0]
             widget.setPen(color)
@@ -553,7 +590,7 @@ class GraphLines:
                 continue
             column = chosen_columns[index]
             sr = indicators[column]
-            data_y = sr.to_numpy(dtype=np.float32)
+            data_y = np.asarray(sr.to_numpy(), dtype=np.float32)
             inside_strings = re.findall(r"\(([^)]+)", column)
             color = "#AAAAAA" if len(inside_strings) == 0 else inside_strings[0]
             widget.setPen(color)
@@ -567,7 +604,7 @@ class GraphLines:
                 continue
             column = chosen_columns[index]
             sr = indicators[column]
-            data_y = sr.to_numpy(dtype=np.float32)
+            data_y = np.asarray(sr.to_numpy(), dtype=np.float32)
             inside_strings = re.findall(r"\(([^)]+)", column)
             color = "#AAAAAA" if len(inside_strings) == 0 else inside_strings[0]
             widget.setPen(color)

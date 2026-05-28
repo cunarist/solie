@@ -1,8 +1,8 @@
-"""Worker protocol and team coordination."""
+"""Worker team coordination."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .collector import Collector
@@ -12,18 +12,7 @@ if TYPE_CHECKING:
     from .transactor import Transactor
 
 
-class Worker(Protocol):
-    """Worker protocol for task and data management.
-
-    A worker owns its tasks and data.
-    Each worker has a single responsibility.
-    """
-
-    async def load_work(self) -> None:
-        """Read work data from disk."""
-
-    async def dump_work(self) -> None:
-        """Write work data to disk."""
+type TeamMember = Collector | Transactor | Simulator | Strategiest | Manager
 
 
 class Team:
@@ -35,15 +24,13 @@ class Team:
     strategist: Strategiest
     manager: Manager
 
-    def get_all(self) -> list[Worker]:
+    def get_all(self) -> list[TeamMember]:
         """Get list of all workers."""
-        return [
+        workers: list[TeamMember] = [
             self.collector,
             self.transactor,
             self.simulator,
             self.strategist,
             self.manager,
         ]
-
-
-team = Team()
+        return workers

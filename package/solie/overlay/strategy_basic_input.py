@@ -6,7 +6,6 @@ from re import fullmatch
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QPixmap
 from PySide6.QtWidgets import (
-    QCheckBox,
     QComboBox,
     QFormLayout,
     QGroupBox,
@@ -16,7 +15,6 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QSpacerItem,
-    QSpinBox,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -32,12 +30,12 @@ class StrategyBasicInput:
 
     title = "Edit your strategy's basic information"
     close_button = True
-    done_event = Event()
 
     def __init__(self, strategy: Strategy) -> None:
         """Initialize the strategy basic input dialog."""
         super().__init__()
         self.widget = QWidget()
+        self.done_event = Event()
         self.result = None
         self.strategy = strategy
 
@@ -46,7 +44,6 @@ class StrategyBasicInput:
 
         # Build cards
         self._build_about_card(cards_layout, strategy)
-        self._build_simulation_card(cards_layout, strategy)
         self._build_confirmation_card(cards_layout)
 
     def _create_main_layout(self) -> QVBoxLayout:
@@ -150,48 +147,6 @@ class StrategyBasicInput:
 
         return risk_level_input
 
-    def _build_simulation_card(
-        self,
-        cards_layout: QVBoxLayout,
-        strategy: Strategy,
-    ) -> None:
-        """Build the 'Simulation' settings card."""
-        card = QGroupBox()
-        card.setFixedWidth(720)
-        card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(80, 40, 80, 40)
-        cards_layout.addWidget(card)
-
-        detail_text = QLabel()
-        detail_text.setText("Simulation")
-        detail_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        detail_text.setWordWrap(True)
-        card_layout.addWidget(detail_text)
-
-        self._add_small_spacing(card_layout)
-
-        divider = HorizontalDivider(self.widget)
-        card_layout.addWidget(divider)
-
-        self._add_small_spacing(card_layout)
-
-        this_layout = QFormLayout()
-        card_layout.addLayout(this_layout)
-
-        self.parallelized_input = QCheckBox()
-        self.parallelized_input.setChecked(
-            bool(strategy.parallel_simulation_chunk_days),
-        )
-        this_layout.addRow("Parallelized", self.parallelized_input)
-
-        self.chunk_division_input = QSpinBox()
-        self.chunk_division_input.setSuffix(" days")
-        self.chunk_division_input.setMinimum(7)
-        self.chunk_division_input.setMaximum(90)
-        self.chunk_division_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
-        self.chunk_division_input.setValue(strategy.parallel_simulation_chunk_days or 0)
-        this_layout.addRow("Chunk division", self.chunk_division_input)
-
     def _build_confirmation_card(self, cards_layout: QVBoxLayout) -> None:
         """Build the confirmation button card."""
         card = QGroupBox()
@@ -243,10 +198,6 @@ class StrategyBasicInput:
 
         strategy.description = self.description_input.toPlainText()
         strategy.risk_level = RiskLevel(self.risk_level_input.currentIndex())
-
-        parallel = self.parallelized_input.isChecked()
-        parallel_chunk_days = self.chunk_division_input.value() if parallel else None
-        strategy.parallel_simulation_chunk_days = parallel_chunk_days
 
         self.done_event.set()
 

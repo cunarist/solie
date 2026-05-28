@@ -87,6 +87,10 @@ uv run ty check
 - Solie is written entirely in Python and utilizes [uv](https://docs.astral.sh/uv/) as the primary tool for managing packages.
 - Use the Ruff formatter for organizing code and identifying issues.
 - Employ Ty for type safety.
+- Import Polars classes and data types directly, but call Polars functions
+  through the `pl` namespace.
+- Candle data is stored in year-first SQLite files under
+  `team/candles/{year}/{symbol}.sqlite`.
 - It should be user-friendly, allowing general users to navigate with just a few clicks.
 - Development targets compatibility across Windows, Linux, and macOS without relying on platform-specific packages like `win32api`.
-- UTC timezone information must be included in `datetime.datetime` objects. Also, include UTC timezone information wherever feasible, such as in `pandas.DatetimeIndex`.
+- UTC timezone information must be included in `datetime.datetime` objects. Also, include UTC timezone information wherever feasible.

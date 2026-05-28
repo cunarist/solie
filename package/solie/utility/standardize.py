@@ -2,25 +2,21 @@
 
 import secrets
 from datetime import UTC, datetime
-from itertools import product
 
-import numpy as np
-from pandas import DataFrame, DatetimeIndex, Series
+from polars import DataFrame, Float32, Series
 
-from .data_models import AccountState, Position, PositionDirection
+from solie.utility import (
+    ASSET_RECORD_SCHEMA,
+    AccountState,
+    Position,
+    PositionDirection,
+    create_empty_candle_frame_schema,
+)
 
 
 def create_empty_candle_data(target_symbols: list[str]) -> DataFrame:
     """Create empty candle data DataFrame with proper columns."""
-    column_pairs = product(
-        target_symbols,
-        ("OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"),
-    )
-    return DataFrame(
-        columns=["/".join(p) for p in column_pairs],
-        dtype=np.float32,
-        index=DatetimeIndex([], tz="UTC"),
-    )
+    return DataFrame(schema=create_empty_candle_frame_schema(target_symbols))
 
 
 def create_empty_account_state(target_symbols: list[str]) -> AccountState:
@@ -43,24 +39,12 @@ def create_empty_account_state(target_symbols: list[str]) -> AccountState:
 
 def create_empty_asset_record() -> DataFrame:
     """Create empty asset record DataFrame."""
-    return DataFrame(
-        columns=[
-            "CAUSE",
-            "SYMBOL",
-            "SIDE",
-            "FILL_PRICE",
-            "ROLE",
-            "MARGIN_RATIO",
-            "ORDER_ID",
-            "RESULT_ASSET",
-        ],
-        index=DatetimeIndex([], tz="UTC"),
-    )
+    return DataFrame(schema=ASSET_RECORD_SCHEMA)
 
 
 def create_empty_unrealized_changes() -> Series:
     """Create empty unrealized changes Series."""
-    return Series(index=DatetimeIndex([], tz="UTC"), dtype=np.float32)
+    return Series("0", [], dtype=Float32)
 
 
 def create_strategy_code_name() -> str:

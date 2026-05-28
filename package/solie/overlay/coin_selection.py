@@ -41,12 +41,12 @@ class CoinSelection:
 
     title = "Choose coins to observe and trade"
     close_button = False
-    done_event = Event()
 
     def __init__(self, asset_token: str) -> None:
         """Initialize coin selection overlay."""
         super().__init__()
         self.widget = QWidget()
+        self.done_event = Event()
         self.result: list[str]
 
         self.is_closed = False
@@ -59,11 +59,9 @@ class CoinSelection:
 
     async def fill(self) -> None:
         """Fill the coin selection UI with available coins."""
-        api_requester = ApiRequester()
-
-        # Fetch and process data
-        available_symbols = await self._fetch_available_symbols(api_requester)
-        coin_metadata = await self._fetch_coin_metadata(api_requester)
+        async with ApiRequester() as api_requester:
+            available_symbols = await self._fetch_available_symbols(api_requester)
+            coin_metadata = await self._fetch_coin_metadata(api_requester)
         sorted_symbols = self._sort_by_market_cap(available_symbols, coin_metadata)
 
         # Build UI
@@ -71,7 +69,6 @@ class CoinSelection:
 
         # Load icons asynchronously
         self._load_coin_icons_async(
-            api_requester,
             symbol_icon_labels,
             coin_metadata.coin_icon_urls,
         )
@@ -320,25 +317,25 @@ class CoinSelection:
 
     def _load_coin_icons_async(
         self,
-        api_requester: ApiRequester,
         symbol_icon_labels: dict[str, QLabel],
         coin_icon_urls: dict[str, str],
     ) -> None:
         """Load coin icons asynchronously."""
 
         async def draw_icons() -> None:
-            for symbol, icon_label in symbol_icon_labels.items():
-                coin_symbol = symbol.removesuffix(self.asset_token)
-                coin_icon_url = coin_icon_urls.get(coin_symbol, "")
-                if coin_icon_url == "":
-                    continue
-                image_data = await api_requester.bytes(coin_icon_url)
-                pixmap = QPixmap()
-                pixmap.loadFromData(image_data)
+            async with ApiRequester() as api_requester:
+                for symbol, icon_label in symbol_icon_labels.items():
+                    coin_symbol = symbol.removesuffix(self.asset_token)
+                    coin_icon_url = coin_icon_urls.get(coin_symbol, "")
+                    if coin_icon_url == "":
+                        continue
+                    image_data = await api_requester.bytes(coin_icon_url)
+                    pixmap = QPixmap()
+                    pixmap.loadFromData(image_data)
 
-                if self.is_closed:
-                    return
+                    if self.is_closed:
+                        return
 
-                icon_label.setPixmap(pixmap)
+                    icon_label.setPixmap(pixmap)
 
         spawn(draw_icons())

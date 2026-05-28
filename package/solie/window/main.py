@@ -2,15 +2,16 @@
 
 import math
 import os
-from asyncio import Event, sleep
+from asyncio import Event
+from contextlib import AsyncExitStack
 from datetime import UTC, datetime
 from logging import getLogger
 from pathlib import Path
-from typing import Any, NamedTuple, override
+from types import TracebackType
+from typing import Any, NamedTuple, Self, override
 
 import aiofiles
 import aiofiles.os
-import pandas as pd
 import pyqtgraph
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QCloseEvent, QFont, QIcon, QMouseEvent, QPixmap
@@ -23,20 +24,27 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from solie.common import PACKAGE_PATH, PACKAGE_VERSION, spawn
+from solie.common import (
+    PACKAGE_PATH,
+    PACKAGE_VERSION,
+    spawn,
+)
 from solie.overlay import CoinSelection, DatapathInput, TokenSelection
 from solie.utility import (
     LONG_SYMBOL_LIST_THRESHOLD,
+    ApiRateStore,
     ApiRequester,
+    ApiRequestError,
+    CandleDataStore,
     DataSettings,
+    DurationRecords,
+    InternetMonitor,
     LogHandler,
     SolieConfig,
-    internet_connected,
     read_data_settings,
     read_datapath,
     save_data_settings,
     save_datapath,
-    start_monitoring_internet,
 )
 from solie.widget import (
     AskPopup,
@@ -69,15 +77,25 @@ class SymbolBoxParams(NamedTuple):
 class Window(QMainWindow, Ui_MainWindow):
     """Main application window."""
 
-    def __init__(self, close_event: Event, config: SolieConfig) -> None:
+    def __init__(
+        self,
+        close_event: Event,
+        config: SolieConfig,
+        internet_monitor: InternetMonitor,
+    ) -> None:
         """Initialize main window."""
         super().__init__()
 
         self._close_event = close_event
         self.config = config
+        self.internet_monitor = internet_monitor
+        self.api_rate_store = ApiRateStore()
+        self.task_durations: DurationRecords = {}
 
         self.datapath: Path
         self.data_settings: DataSettings
+        self.candle_data_store: CandleDataStore
+        self._resources = AsyncExitStack()
 
         self.last_interaction = datetime.now(UTC)
         self._splash_screen: SplashScreen
@@ -85,6 +103,21 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self.should_confirm_closing = False
         self._is_closing = False
+
+    async def __aenter__(self) -> Self:
+        """Boot the window and owned resources."""
+        await self._boot()
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        """Release window-owned resources."""
+        del exc_type, exc, traceback
+        await self._resources.aclose()
 
     @override
     def closeEvent(self, event: QCloseEvent) -> None:
@@ -106,7 +139,8 @@ class Window(QMainWindow, Ui_MainWindow):
                 if answer in (0, 1):
                     return
 
-            AskPopup.done_event.set()
+            for ask_popup in self.findChildren(AskPopup):
+                ask_popup.done_event.set()
 
             self.gauge.hide()
             self.board.hide()
@@ -136,7 +170,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         spawn(job_ask())
 
-    async def boot(self) -> None:
+    async def _boot(self) -> None:
         """Initialize and boot the application window."""
         self._setup_ui()
         await self._setup_splash_screen()
@@ -145,6 +179,7 @@ class Window(QMainWindow, Ui_MainWindow):
         await self._ensure_internet_connection()
         await self._load_or_create_datapath()
         await self._load_or_create_data_settings()
+        await self._setup_data_stores()
 
         asset_token = self.data_settings.asset_token
         target_symbols = self.data_settings.target_symbols
@@ -178,10 +213,10 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def _configure_global_settings(self) -> None:
         """Configure global settings for libraries."""
-        os.get_terminal_size = lambda *_: os.terminal_size((150, 90))  # type:ignore
-        pd.set_option("display.precision", 6)
-        pd.set_option("display.min_rows", 100)
-        pd.set_option("display.max_rows", 100)
+        def get_terminal_size(_: int = 0, /) -> os.terminal_size:
+            return os.terminal_size((150, 90))
+
+        os.get_terminal_size = get_terminal_size  # type:ignore
         pyqtgraph.setConfigOptions(antialias=True)
 
     async def _set_window_icon(self) -> None:
@@ -194,15 +229,10 @@ class Window(QMainWindow, Ui_MainWindow):
         self.setWindowIcon(product_icon_pixmap)
 
     async def _ensure_internet_connection(self) -> None:
-        """Wait for internet connection to be established."""
-        await start_monitoring_internet()
-        while not internet_connected():
-            await ask(
-                "No internet connection",
-                "Internet connection is necessary for Solie to start up.",
-                ["Retry"],
-            )
-            await sleep(1.0)
+        """Start internet monitoring without blocking application startup."""
+        await self._resources.enter_async_context(self.internet_monitor)
+        if not self.internet_monitor.connected:
+            logger.warning("Internet unavailable during startup")
 
     async def _load_or_create_datapath(self) -> None:
         """Load existing datapath or prompt user to create one."""
@@ -225,20 +255,32 @@ class Window(QMainWindow, Ui_MainWindow):
             await save_data_settings(data_settings, self.datapath)
         self.data_settings = data_settings
 
+    async def _setup_data_stores(self) -> None:
+        """Create and open window-owned persistent data stores."""
+        self.candle_data_store = CandleDataStore(
+            self.datapath / "team" / "candles",
+            self.data_settings.target_symbols,
+        )
+        await self._resources.enter_async_context(self.candle_data_store)
+
     async def _fetch_coin_information(self) -> dict[str, dict[str, Any]]:
         """Fetch coin information from CoinGecko API."""
-        api_requester = ApiRequester()
-        response = await api_requester.coingecko(
-            "GET",
-            "/api/v3/coins/markets",
-            {
-                "vs_currency": "usd",
-            },
-        )
-
         coin_names: dict[str, str] = {}
         coin_icon_urls: dict[str, str] = {}
         coin_ranks: dict[str, int] = {}
+
+        try:
+            async with ApiRequester(self.api_rate_store) as api_requester:
+                response = await api_requester.coingecko(
+                    "GET",
+                    "/api/v3/coins/markets",
+                    {
+                        "vs_currency": "usd",
+                    },
+                )
+        except ApiRequestError:
+            logger.warning("Failed to fetch CoinGecko coin metadata")
+            return {"names": coin_names, "urls": coin_icon_urls, "ranks": coin_ranks}
 
         for about_coin in response:
             raw_symbol: str = about_coin["symbol"]
@@ -278,27 +320,33 @@ class Window(QMainWindow, Ui_MainWindow):
         coin_icon_urls = coin_info["urls"]
         coin_ranks = coin_info["ranks"]
 
-        api_requester = ApiRequester()
-
         # Load symbol pixmaps
         symbol_pixmaps: dict[str, QPixmap] = {}
-        for symbol in target_symbols:
-            coin_symbol = symbol.removesuffix(asset_token)
-            coin_icon_url = coin_icon_urls.get(coin_symbol, "")
-            pixmap = QPixmap()
-            if coin_icon_url:
-                image_data = await api_requester.bytes(coin_icon_url)
-                pixmap.loadFromData(image_data)
-            else:
-                pixmap.load(str(PACKAGE_PATH / "static" / "icon" / "blank_coin.png"))
-            symbol_pixmaps[symbol] = pixmap
+        async with ApiRequester(self.api_rate_store) as api_requester:
+            blank_coin_path = str(PACKAGE_PATH / "static" / "icon" / "blank_coin.png")
 
-        # Load token pixmap
-        token_icon_url = coin_icon_urls.get(asset_token, "")
-        token_pixmap = QPixmap()
-        if token_icon_url:
-            image_data = await api_requester.bytes(token_icon_url)
-            token_pixmap.loadFromData(image_data)
+            async def load_coin_pixmap(coin_icon_url: str) -> QPixmap:
+                pixmap = QPixmap()
+                if coin_icon_url:
+                    try:
+                        image_data = await api_requester.bytes(coin_icon_url)
+                    except ApiRequestError:
+                        pixmap.load(blank_coin_path)
+                    else:
+                        if not pixmap.loadFromData(image_data):
+                            pixmap.load(blank_coin_path)
+                else:
+                    pixmap.load(blank_coin_path)
+                return pixmap
+
+            for symbol in target_symbols:
+                coin_symbol = symbol.removesuffix(asset_token)
+                coin_icon_url = coin_icon_urls.get(coin_symbol, "")
+                symbol_pixmaps[symbol] = await load_coin_pixmap(coin_icon_url)
+
+            # Load token pixmap
+            token_icon_url = coin_icon_urls.get(asset_token, "")
+            token_pixmap = await load_coin_pixmap(token_icon_url)
 
         # Setup datapath display
         text = str(self.datapath)
@@ -559,8 +607,11 @@ class Window(QMainWindow, Ui_MainWindow):
 
         log_path = self.datapath / "+logs"
         await aiofiles.os.makedirs(log_path, exist_ok=True)
-        log_handler = LogHandler(log_path, log_callback)
+        log_handler = await self._resources.enter_async_context(
+            LogHandler(log_path, log_callback),
+        )
         getLogger().addHandler(log_handler)
+        self._resources.callback(getLogger().removeHandler, log_handler)
 
     def reveal(self) -> None:
         """Show window and enable closing confirmation."""

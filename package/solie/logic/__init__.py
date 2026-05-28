@@ -2,21 +2,19 @@
 
 from .account_listener import AccountListener, ParseOrderTypeParams
 from .analyze_market import (
-    CalculationInput,
-    CalculationOutput,
+    ChunkSimulation,
     DecisionContext,
     SimulationError,
+    SimulationOutput,
     make_decisions,
     make_indicators,
-    simulate_chunk,
 )
 from .binance_watcher import BinanceWatcher, ExchangeConfig, StateConfig
 from .download_from_binance import (
     DownloadPreset,
     DownloadUnitSize,
     download_aggtrade_csv,
-    fill_holes_with_aggtrades,
-    process_aggtrade_csv,
+    write_aggtrade_csv_to_candle_store,
 )
 from .order_placer import OrderPlacer, OrderPlacerConfig
 from .simulation_calculator import (
@@ -26,13 +24,12 @@ from .simulation_calculator import (
     WidgetReferences,
 )
 
-__all__ = [
+__all__ = (
     "AccountListener",
     "BinanceWatcher",
     "CalculationConfig",
-    "CalculationInput",
-    "CalculationOutput",
     "CalculationResult",
+    "ChunkSimulation",
     "DecisionContext",
     "DownloadPreset",
     "DownloadUnitSize",
@@ -42,12 +39,11 @@ __all__ = [
     "ParseOrderTypeParams",
     "SimulationCalculator",
     "SimulationError",
+    "SimulationOutput",
     "StateConfig",
     "WidgetReferences",
     "download_aggtrade_csv",
-    "fill_holes_with_aggtrades",
     "make_decisions",
     "make_indicators",
-    "process_aggtrade_csv",
-    "simulate_chunk",
-]
+    "write_aggtrade_csv_to_candle_store",
+)

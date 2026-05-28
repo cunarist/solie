@@ -6,7 +6,7 @@ Python, known for its straightforward syntax and widespread popularity, is used 
 Some variable types in this guide come from specific libraries, including both standard and external ones.
 
 - `solie`: `AccountState`, `Decision`, `Position`, `PositionDirection`, `OrderType`, `OpenOrder`
-- `pandas`: `Series`, `DataFrame`
+- `polars`: `Series`, `DataFrame`
 - `datetime`: `datetime`
 ```
 
@@ -33,13 +33,14 @@ If the script contains some broken code, a function that is executed periodicall
 
 ### Strategy's Basic Info
 
-If parallel calculation is used, the entire period is cut by a certain length during simulation calculation, calculated separately, and then combined. This has the advantage of speeding up simulation calculations, but also has the disadvantage that it does not result in continuous asset calculations. For example, if you divide by 7 days, the asset and position status will return to the origin every 7 days.
+Simulation calculations read saved candle rows directly from SQLite storage and
+advance in timestamp order. Indicator scripts receive only a rolling lookback
+window instead of the entire year of candle data, so memory usage stays bounded
+while strategy state remains continuous across the calculation range.
 
-In the internal calculation, the asset status is returned to the origin for each split length, but the final graph and result display show the corrected values ​​as if they were calculated continuously as if they were all added together. Since this calibration process refers to the input value of "Chunk division", changing the "Chunk division" in the state that there is already calculated data may cause the graph and result display to be very strange.
-
-It is recommended to set the "Chunk division" of parallel computation appropriately. Splitting by more than the number of child processes visible in the "Status" of the "Manage" tab does not contribute to the speedup. Be careful not to make the chunk division too short so that the asset's state doesn't change to origin too often.
-
-Basic simulation calculations cover the entire year, which is a slow operation that takes minutes to tens of minutes. If you want to experiment with that strategy a little faster, try performing a temporary calculation on the visible range.
+Basic simulation calculations cover the entire year, which can be slow. If you
+want to experiment with a strategy faster, try performing a temporary
+calculation on the visible range.
 ![](_static/example_030.png)
 
 ## Writing the Indicator Script
@@ -51,12 +52,13 @@ Indicator script is used to create indicators used for graph display and decisio
 Variables provided by default are as follows. You can use these without any import statements.
 
 - `target_symbols`(`list[str]`): The symbols being observed.
-- `candle_data`(`DataFrame`): Candle data. Extra 28 days of data before desired calculation range is included.
+- `candle_data`(`DataFrame`): Candle data. During simulation this is a rolling
+  lookback window with up to 28 days before the current calculation moment.
 - `new_indicators`(`dict[str, Series]`): An object that holds newly created indicators.
 
 ### Basic Syntax
 
-Candle data exists internally in the form of a tabular `DataFrame`.
+Candle data is provided to strategy code as a Polars-compatible table.
 
 ```
                           MATICUSDT                        LTCUSDT
@@ -84,20 +86,18 @@ Candle data exists internally in the form of a tabular `DataFrame`.
 2022-02-26 01:29:10+00:00 1.572 1.573 1.572 1.573 3848.0   112.73 112.76 112.72 112.76 67.306
 ```
 
-You can extract partial `Series` from `candle_data` which is a `DataFrame`.
+You can extract partial `Series` values from `candle_data`.
 
 ```python
-from pandas import Series
-
 for symbol in target_symbols:
-    open_sr: Series = candle_data[f"{symbol}/OPEN"]
-    high_sr: Series = candle_data[f"{symbol}/HIGH"]
-    low_sr: Series = candle_data[f"{symbol}/LOW"]
-    close_sr: Series = candle_data[f"{symbol}/CLOSE"]
-    volume_sr: Series = candle_data[f"{symbol}/VOLUME"]
+    open_sr = candle_data[f"{symbol}/OPEN"]
+    high_sr = candle_data[f"{symbol}/HIGH"]
+    low_sr = candle_data[f"{symbol}/LOW"]
+    close_sr = candle_data[f"{symbol}/CLOSE"]
+    volume_sr = candle_data[f"{symbol}/VOLUME"]
 ```
 
-The `Series` object has the following form. A one-dimensional array containing values ​​over time.
+The `Series` object has the following form. It is a one-dimensional array containing values over time.
 
 ```
 2020-01-01 00:00:00+00:00 129.11
@@ -122,25 +122,25 @@ The `Series` object has the following form. A one-dimensional array containing v
 2022-02-20 10:42:40+00:00 2630.69
 ```
 
-Solie uses the `pandas-ta` package. Creation of dozens of basic indicators is available with this, including moving average, bollinger band, double exponential moving average, triple exponential moving average, stochastic, and parabolic. For more information, check the official documentation of `pandas-ta`[🔗](https://github.com/twopirllc/pandas-ta).
+Solie indicator scripts now use Polars-native series operations. Rolling means,
+shifts, arithmetic, clipping, and other series methods cover the common
+indicator building blocks.
 
 ```python
-import pandas_ta as ta
-
 for symbol in target_symbols:
     close_sr = candle_data[f"{symbol}/CLOSE"]
-    sma_sr: Series = ta.sma(close_sr, 60)
+    sma_sr = close_sr.rolling_mean(60)
     # 60 candles represent 600 seconds(10 minutes)
 ```
 
-Once you have created the indicators, simply put them in a `dict[str, Series]` object called `new_indicators`. After that, multiple `Series` objects inside this object are merged into a single indicators object. After writing this and saving it, you will see the indicator in the graph view. It can also be used in strategic decisions.
+Once you have created the indicators, put them in the `dict[str, Series]` object
+called `new_indicators`. After saving the script, the indicators appear in the
+graph view and can also be used in strategic decisions.
 
 ```python
-import pandas_ta as ta
-
 for symbol in target_symbols:
     close_sr = candle_data[f"{symbol}/CLOSE"]
-    sma_sr = ta.sma(close_sr, 60)
+    sma_sr = close_sr.rolling_mean(60)
     new_indicators[f"{symbol}/PRICE/SMA"] = sma_sr
 ```
 
@@ -160,26 +160,25 @@ The string key consists of 3 values. The first value represents a symbol and the
 You can set the color drawn on the graph as you wish. Just put parentheses next to the name and color code it. Color codes can be chosen on a color combination site[🔗](https://htmlcolorcodes.com/).
 
 ```python
-import pandas_ta as ta
-
 for symbol in target_symbols:
     close_sr = candle_data[f"{symbol}/CLOSE"]
-    sma_sr = ta.sma(close_sr, 60)
+    sma_sr = close_sr.rolling_mean(60)
     new_indicators[f"{symbol}/PRICE/SMA(#649CFF)"] = sma_sr  # Blue
 ```
 
 ![](_static/example_012.png)
-Up to this point, indicators generation has been completed using the `Series` object and the `pandas-ta` module. However, the flexibility of the way metrics are generated by means of coding comes from now on. The `Series` object can be manipulated in a variety of ways, including addition, subtraction, division, and conditional transformations. The `pandas` official documentation[🔗](https://pandas.pydata.org/docs/) has a more detailed explanation.
+Up to this point, indicator generation has used the `Series` object. The same
+object can be manipulated in a variety of ways, including addition, subtraction,
+division, clipping, shifting, and conditional transformations. The Polars
+official documentation has more detail.
 
 Below is the code that creates the average of two different moving averages.
 
 ```python
-import pandas_ta as ta
-
 for symbol in target_symbols:
     close_sr = candle_data[f"{symbol}/CLOSE"]
-    sma_one = ta.sma(close_sr, 60)
-    sma_two = ta.sma(close_sr, 360)
+    sma_one = close_sr.rolling_mean(60)
+    sma_two = close_sr.rolling_mean(360)
 
     average_sma = (sma_one + sma_two) / 2
     new_indicators[f"{symbol}/PRICE/AVERAGE_SMA"] = average_sma
@@ -188,15 +187,13 @@ for symbol in target_symbols:
 Below is the code that creates a market overheating indicator with two different moving averages and limits the value to not exceed 0.8. In the picture, you can see that everything above 0.8 is cut off.
 
 ```python
-import pandas_ta as ta
-
 for symbol in target_symbols:
     volume_sr = candle_data[f"{symbol}/VOLUME"]
-    sma_one = ta.sma(volume_sr, 360)
-    sma_two = ta.sma(volume_sr, 2160)
+    sma_one = volume_sr.rolling_mean(360)
+    sma_two = volume_sr.rolling_mean(2160)
 
     wildness = sma_one / sma_two  # Division operation
-    wildness[wildness > 0.8] = 0.8  # Set the limit
+    wildness = wildness.clip(upper_bound=0.8)  # Set the limit
     new_indicators[f"{symbol}/ABSTRACT/WILDNESS"] = wildness
 ```
 
@@ -207,7 +204,7 @@ Below is the code that simply creates an indicator that delays the closing price
 ```python
 for symbol in target_symbols:
     close_sr = candle_data[f"{symbol}/CLOSE"]
-    shifted_sr = close_sr.shift(60) # `Series.shift` method
+    shifted_sr = close_sr.shift(60)  # `Series.shift` method
     new_indicators[f"{symbol}/ABSTRACT/SHIFTED"] = shifted_sr
 ```
 
@@ -236,7 +233,7 @@ Variables provided by default are as follows. You can use these without any impo
 
 ### Basic Syntax
 
-You can extract a `Series` column from the candle `DataFrame` like this.
+You can extract values from the current candle row like this.
 
 ```python
 open_price = current_candle_data["BTCUSDT/OPEN"]
@@ -285,7 +282,8 @@ class AccountState:
     open_orders: dict[str, dict[int, OpenOrder]]
 ```
 
-`scribbles` are saved as `pickle` files. So it can hold almost any type of Python objects.
+`scribbles` are a strategy scratch space. Keep values simple and serializable so
+they can move across storage backends cleanly.
 
 ```python
 # When adding a data, simply assign it.

@@ -27,12 +27,12 @@ class DatapathInput:
 
     title = "Choose your data folder"
     close_button = False
-    done_event = Event()
 
     def __init__(self) -> None:
         """Initialize data path input overlay."""
         super().__init__()
         self.widget = QWidget()
+        self.done_event = Event()
         self.result: Path
 
         # Create main layout

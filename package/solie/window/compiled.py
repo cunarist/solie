@@ -69,10 +69,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from solie.widget.horizontal_divider import HorizontalDivider
-from solie.widget.log_list import LogList
-from solie.widget.script_editor import ScriptEditor
-from solie.widget.vertical_divider import VerticalDivider
+from solie.widget import HorizontalDivider, LogList, ScriptEditor, VerticalDivider
 
 
 class Ui_MainWindow(object):

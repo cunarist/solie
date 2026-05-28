@@ -27,12 +27,12 @@ class StrategyDevelopInput:
 
     title = "Develop your strategy"
     close_button = True
-    done_event = Event()
 
     def __init__(self, strategy: SavedStrategy) -> None:
         """Initialize strategy development input overlay."""
         super().__init__()
         self.widget = QWidget()
+        self.done_event = Event()
         self.strategy = strategy
         self.result = None
 
@@ -164,12 +164,8 @@ class StrategyDevelopInput:
         docs = [
             ("Show Solie API docs", "https://solie-docs.cunarist.org/making-strategy/"),
             (
-                "Show Pandas API docs",
-                "https://pandas.pydata.org/docs/reference/index.html",
-            ),
-            (
-                "Show TA API docs",
-                "https://github.com/twopirllc/pandas-ta#indicators-by-category",
+                "Show Polars API docs",
+                "https://docs.pola.rs/api/python/stable/reference/index.html",
             ),
         ]
 

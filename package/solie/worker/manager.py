@@ -5,9 +5,11 @@ import statistics
 import webbrowser
 from asyncio import all_tasks, sleep
 from collections import deque
+from contextlib import AsyncExitStack
 from datetime import UTC, datetime, timedelta
 from logging import getLogger
-from typing import Any
+from types import TracebackType
+from typing import Any, Self
 
 import aiofiles
 import aiofiles.os
@@ -19,15 +21,13 @@ from solie.utility import (
     MIN_SERVER_TIME_SAMPLES,
     ApiRequester,
     BoardLockOptions,
-    DurationRecorder,
     ManagementSettings,
-    internet_connected,
     save_datapath,
 )
 from solie.widget import ask
 from solie.window import Window
 
-from .united import team
+from .united import Team
 
 logger = getLogger(__name__)
 
@@ -35,23 +35,27 @@ logger = getLogger(__name__)
 class Manager:
     """Worker for managing application state and UI."""
 
-    def __init__(self, window: Window, scheduler: AsyncIOScheduler) -> None:
+    def __init__(
+        self,
+        window: Window,
+        scheduler: AsyncIOScheduler,
+        team: Team,
+    ) -> None:
         """Initialize application manager."""
         self._window = window
         self._scheduler = scheduler
+        self._team = team
         self._workerpath = window.datapath / "manager"
 
-        self._api_requester = ApiRequester()
+        self._api_requester = ApiRequester(window.api_rate_store)
+        self._live_resources = AsyncExitStack()
+        self._time_resources = AsyncExitStack()
 
         self._ping = 0.0
         self._server_time_differences = deque[float](maxlen=60)
         self._binance_limits: dict[str, int] = {}
 
         self._management_settings = ManagementSettings()
-
-        time_traveller = time_machine.travel(datetime.now(UTC))
-        time_traveller.start()
-        self._time_traveller = time_traveller
 
         self._scheduler.add_job(
             self._lock_board,
@@ -97,8 +101,11 @@ class Manager:
         job = self._change_settings
         outsource(window.comboBox_3.currentIndexChanged, job)
 
-    async def load_work(self) -> None:
-        """Load management settings from disk."""
+    async def __aenter__(self) -> Self:
+        """Enter manager live resources."""
+        await self._live_resources.enter_async_context(self._api_requester)
+        await self._set_time(datetime.now(UTC))
+
         await aiofiles.os.makedirs(self._workerpath, exist_ok=True)
 
         filepath = self._workerpath / "management_settings.json"
@@ -115,11 +122,25 @@ class Manager:
             async with aiofiles.open(filepath, encoding="utf8") as file:
                 script = await file.read()
         else:
-            script = "from solie.worker import team\n\nlogger.info(team)"
+            script = "logger.info(team)"
         self._window.plainTextEdit.setPlainText(script)
+        return self
 
-    async def dump_work(self) -> None:
-        """Save management settings to disk."""
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        """Stop manager-owned live resources."""
+        del exc_type, exc, traceback
+        await self._time_resources.aclose()
+        await self._live_resources.aclose()
+
+    async def _set_time(self, moment: datetime) -> None:
+        await self._time_resources.aclose()
+        self._time_resources = AsyncExitStack()
+        self._time_resources.enter_context(time_machine.travel(moment))
 
     async def _change_settings(self) -> None:
         current_index = self._window.comboBox_3.currentIndex()
@@ -131,7 +152,10 @@ class Manager:
 
     async def _open_datapath(self) -> None:
         if os.name == "nt":
-            await spawn_blocking(os.startfile, self._window.datapath)
+            await spawn_blocking(
+                os.startfile,
+                self._window.datapath,
+            )
         else:
             await ask(
                 "Opening explorer is not supported on this platform.",
@@ -175,7 +199,9 @@ class Manager:
 
     def _display_process_count(self) -> None:
         """Display process count."""
-        self._window.label_32.setText(f"Process count: {PROCESS_COUNT}")
+        self._window.label_32.setText(
+            f"Process count: {PROCESS_COUNT}",
+        )
 
     def _display_api_limits_and_usage(self) -> None:
         """Display API limits and usage information."""
@@ -201,7 +227,7 @@ class Manager:
     def _display_task_durations(self) -> None:
         """Display task duration statistics."""
         texts: list[str] = []
-        task_durations = DurationRecorder.task_durations
+        task_durations = self._window.task_durations
 
         for data_name, deque_data in task_durations.items():
             if len(deque_data) > 0:
@@ -225,19 +251,20 @@ class Manager:
         """Display data structure sizes."""
         texts: list[str] = []
 
-        async with team.collector.candle_data.read_lock as cell:
-            candle_data_len = len(cell.data)
+        candle_data_len = 0
+        for symbol in self._window.data_settings.target_symbols:
+            candle_data_len += await self._window.candle_data_store.count_all(symbol)
 
         texts.append(f"CANDLE_DATA {candle_data_len}")
-        texts.append(f"REALTIME_DATA {len(team.collector.realtime_data)}")
-        texts.append(f"AGGREGATE_TRADES {len(team.collector.aggregate_trades)}")
+        texts.append(f"REALTIME_DATA {len(self._team.collector.realtime_data)}")
+        texts.append(f"AGGREGATE_TRADES {len(self._team.collector.aggregate_trades)}")
 
         text = "\n".join(texts)
         self._window.label_34.setText(text)
 
     def _display_block_sizes(self) -> None:
         """Display block sizes for each symbol."""
-        block_sizes = team.collector.aggtrade_candle_sizes
+        block_sizes = self._team.collector.aggtrade_candle_sizes
         lines = (f"{symbol} {count}" for (symbol, count) in block_sizes.items())
         text = "\n".join(lines)
         self._window.label_36.setText(text)
@@ -247,11 +274,11 @@ class Manager:
         filepath = self._workerpath / "python_script.txt"
         async with aiofiles.open(filepath, "w", encoding="utf8") as file:
             await file.write(script_text)
-        namespace = {"logger": logger}
+        namespace = {"logger": logger, "team": self._team}
         exec(script_text, namespace)
 
     async def _check_online_status(self) -> None:
-        if not internet_connected():
+        if not self._window.internet_monitor.connected:
             return
 
         async def job() -> None:
@@ -277,7 +304,7 @@ class Manager:
     async def _display_system_status(self) -> None:
         time = datetime.now(UTC)
         time_text = time.strftime("%Y-%m-%d %H:%M:%S")
-        is_internet_connected = internet_connected()
+        is_internet_connected = self._window.internet_monitor.connected
         ping = self._ping
         board_enabled = self._window.board.isEnabled()
 
@@ -309,14 +336,11 @@ class Manager:
         mean_difference = sum(server_time_differences) / len(server_time_differences)
         new_time = datetime.now(UTC) + timedelta(seconds=mean_difference)
 
-        self._time_traveller.stop()
-        time_traveller = time_machine.travel(new_time)
-        time_traveller.start()
-        self._time_traveller = time_traveller
+        await self._set_time(new_time)
 
     async def check_binance_limits(self) -> None:
         """Check Binance API rate limits."""
-        if not internet_connected():
+        if not self._window.internet_monitor.connected:
             return
 
         payload: dict[str, Any] = {}
@@ -350,7 +374,10 @@ class Manager:
         self._window.close()
 
     async def _open_documentation(self) -> None:
-        await spawn_blocking(webbrowser.open, "https://solie-docs.cunarist.org")
+        await spawn_blocking(
+            webbrowser.open,
+            "https://solie-docs.cunarist.org",
+        )
 
     async def _lock_board(self) -> None:
         lock_board = self._management_settings.lock_board

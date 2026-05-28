@@ -2,8 +2,7 @@
 
 from typing import Any
 
-import pandas_ta as ta
-from pandas import DataFrame, Series
+from polars import DataFrame, Series
 from solie import (
     AccountState,
     Decision,
@@ -26,7 +25,6 @@ class SilentStrategy:
     version = "0.1"
     description = "A silent strategy that does nothing"
     risk_level = RiskLevel.LOW
-    parallel_simulation_chunk_days: int | None = 30
 
     def create_indicators(self, given: IndicatorInput) -> None:
         """Generate no indicators."""
@@ -43,7 +41,6 @@ class ExampleStrategy:
     version = "1.2"
     description = "A fixed strategy for demonstration"
     risk_level = RiskLevel.HIGH
-    parallel_simulation_chunk_days: int | None = 30
 
     def create_indicators(self, given: IndicatorInput) -> None:
         """Calculate SMA indicators for price and volume."""
@@ -60,20 +57,19 @@ class ExampleStrategy:
             volume_sr: Series = candle_data[f"{symbol}/VOLUME"]
 
             # Price scale indicators
-            price_sma_one: Series = ta.sma(close_sr, short_period)
-            price_sma_two: Series = ta.sma(close_sr, long_period)
+            price_sma_one: Series = close_sr.rolling_mean(short_period)
+            price_sma_two: Series = close_sr.rolling_mean(long_period)
             new_indicators[f"{symbol}/PRICE/SMA_ONE(#00FFA6)"] = price_sma_one
             new_indicators[f"{symbol}/PRICE/SMA_TWO(#C261FF)"] = price_sma_two
 
             # Volume scale indicators
-            volume_sma_one: Series = ta.sma(volume_sr, short_period * 2)
-            volume_sma_two: Series = ta.sma(volume_sr, long_period * 2)
+            volume_sma_one: Series = volume_sr.rolling_mean(short_period * 2)
+            volume_sma_two: Series = volume_sr.rolling_mean(long_period * 2)
             new_indicators[f"{symbol}/VOLUME/SMA_ONE"] = volume_sma_one
             new_indicators[f"{symbol}/VOLUME/SMA_TWO"] = volume_sma_two
 
             # Abstract scale indicators
-            wildness = volume_sma_one / volume_sma_two
-            wildness[wildness > WILDNESS_CAP] = WILDNESS_CAP
+            wildness = (volume_sma_one / volume_sma_two).clip(upper_bound=WILDNESS_CAP)
             new_indicators[f"{symbol}/ABSTRACT/WILDNESS"] = wildness
 
     def create_decisions(self, given: DecisionInput) -> None:

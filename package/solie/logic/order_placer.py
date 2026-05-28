@@ -2,14 +2,15 @@
 
 from asyncio import gather
 from collections import deque
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from logging import getLogger
-from typing import Any, ClassVar, NamedTuple
+from typing import Any, NamedTuple
 
-from pandas import DataFrame
+import polars as pl
+from polars import DataFrame
 
-from solie.common import spawn_blocking
 from solie.utility import (
+    AUTO_ORDER_RECORD_SCHEMA,
     AccountState,
     AggregateTrade,
     ApiRequester,
@@ -19,7 +20,6 @@ from solie.utility import (
     RWLock,
     ball_ceil,
     slice_deque,
-    sort_data_frame,
     to_moment,
 )
 from solie.window import Window
@@ -81,20 +81,6 @@ class LaterCloseContext(NamedTuple):
 
 class OrderPlacer:
     """Places orders on Binance futures exchange."""
-
-    # Configuration for later entry orders: (order_type_str, side)
-    LATER_ENTRY_ORDERS: ClassVar[dict[OrderType, tuple[str, str]]] = {
-        OrderType.LATER_UP_BUY: ("STOP_MARKET", "BUY"),
-        OrderType.LATER_DOWN_BUY: ("TAKE_PROFIT_MARKET", "BUY"),
-        OrderType.LATER_UP_SELL: ("TAKE_PROFIT_MARKET", "SELL"),
-        OrderType.LATER_DOWN_SELL: ("STOP_MARKET", "SELL"),
-    }
-
-    # Configuration for later close orders: is_up_close flag
-    LATER_CLOSE_ORDERS: ClassVar[dict[OrderType, bool]] = {
-        OrderType.LATER_UP_CLOSE: True,
-        OrderType.LATER_DOWN_CLOSE: False,
-    }
 
     def __init__(
         self,
@@ -172,15 +158,27 @@ class OrderPlacer:
         order_symbol = response["symbol"]
         order_id = response["orderId"]
         timestamp = response["updateTime"] / 1000
-        update_time = datetime.fromtimestamp(timestamp, tz=UTC)
+        update_timestamp = int(timestamp * 1000)
 
         async with self._auto_order_record.write_lock as cell:
-            while update_time in cell.data.index:
-                update_time += timedelta(milliseconds=1)
-            cell.data.loc[update_time, "SYMBOL"] = order_symbol
-            cell.data.loc[update_time, "ORDER_ID"] = order_id
-            if not cell.data.index.is_monotonic_increasing:
-                cell.data = await spawn_blocking(sort_data_frame, cell.data)
+            existing_timestamps = set(cell.data["timestamp"].to_list())
+            while update_timestamp in existing_timestamps:
+                update_timestamp += 1
+            cell.data = pl.concat(
+                [
+                    cell.data,
+                    DataFrame(
+                        [
+                            {
+                                "timestamp": update_timestamp,
+                                "SYMBOL": order_symbol,
+                                "ORDER_ID": order_id,
+                            },
+                        ],
+                        schema=AUTO_ORDER_RECORD_SCHEMA,
+                    ),
+                ],
+            )
 
     def _prepare_cancel_orders(
         self,
@@ -468,7 +466,10 @@ class OrderPlacer:
             current_direction = self._get_assumed_direction(symbol, decisions)
 
             # Handle later close orders
-            for order_type, is_up_close in self.LATER_CLOSE_ORDERS.items():
+            for order_type, is_up_close in (
+                (OrderType.LATER_UP_CLOSE, True),
+                (OrderType.LATER_DOWN_CLOSE, False),
+            ):
                 if order_type in decisions[symbol]:
                     context = LaterCloseContext(
                         symbol=symbol,
@@ -480,7 +481,12 @@ class OrderPlacer:
                     self._handle_later_close_order(later_orders, context)
 
             # Handle later entry orders
-            for order_type, (order_type_str, side) in self.LATER_ENTRY_ORDERS.items():
+            for order_type, order_type_str, side in (
+                (OrderType.LATER_UP_BUY, "STOP_MARKET", "BUY"),
+                (OrderType.LATER_DOWN_BUY, "TAKE_PROFIT_MARKET", "BUY"),
+                (OrderType.LATER_UP_SELL, "TAKE_PROFIT_MARKET", "SELL"),
+                (OrderType.LATER_DOWN_SELL, "STOP_MARKET", "SELL"),
+            ):
                 if order_type in decisions[symbol]:
                     params = self._create_later_entry_order(
                         symbol,

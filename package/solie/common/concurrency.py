@@ -1,8 +1,9 @@
 """Asynchronous task management and concurrency utilities."""
 
-from asyncio import Task, create_task
+from asyncio import CancelledError, Task, create_task, wait_for
 from collections.abc import Callable, Coroutine
-from typing import Any
+from types import TracebackType
+from typing import Any, Self
 
 # A set to keep track of all running tasks.
 all_tasks = set[Task[Any]]()
@@ -48,15 +49,40 @@ class UniqueTask:
         """Initialize the unique task manager."""
         self._task: Task[Any] | None = None
 
+    async def __aenter__(self) -> Self:
+        """Enter the unique-task resource scope."""
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        """Cancel the owned task when leaving the scope."""
+        del exc_type, exc, traceback
+        await self._cancel_and_wait()
+
     def spawn(self, coro: Coroutine[None, None, Any]) -> None:
         """Spawns a new task, canceling the previous one if it exists."""
         self.cancel()
-        self._task = create_task(coro)
+        self._task = spawn(coro)
 
     def cancel(self) -> None:
         """Cancel the previous task if it exists."""
         if self._task is not None and not self._task.done():
             self._task.cancel()
+
+    async def _cancel_and_wait(self, wait_seconds: float = 2.0) -> None:
+        """Cancel the previous task and briefly wait for cleanup."""
+        task = self._task
+        self.cancel()
+        if task is None or task.done():
+            return
+        try:
+            await wait_for(task, timeout=wait_seconds)
+        except (CancelledError, TimeoutError):
+            pass
 
     def add_done_callback(self, callback: Callable[[Task[Any]], Any]) -> None:
         """Add a callback to be called when the current task is done."""
