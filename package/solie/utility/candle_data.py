@@ -64,35 +64,14 @@ AND """ + VALID_CANDLE_CONDITION
 COUNT_ALL_CANDLES_SQL = """
 SELECT COUNT(*)
 FROM candles
-WHERE open > 0
-AND high > 0
-AND low > 0
-AND close > 0
-AND volume >= 0
-AND high >= low
-AND open >= low
-AND open <= high
-AND close >= low
-AND close <= high
-"""
+WHERE """ + VALID_CANDLE_CONDITION
 SELECT_TIMESTAMP_BOUNDS_SQL = """
 SELECT MIN(timestamp), MAX(timestamp)
 FROM candles
 WHERE """ + VALID_CANDLE_CONDITION
 DELETE_INVALID_CANDLES_SQL = """
 DELETE FROM candles
-WHERE NOT (
-    open > 0
-    AND high > 0
-    AND low > 0
-    AND close > 0
-    AND volume >= 0
-    AND high >= low
-    AND open >= low
-    AND open <= high
-    AND close >= low
-    AND close <= high
-)
+WHERE NOT (""" + VALID_CANDLE_CONDITION + """)
 """
 
 
