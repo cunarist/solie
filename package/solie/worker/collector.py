@@ -18,13 +18,9 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from polars import DataFrame
 from PySide6.QtWidgets import QMenu
 
+from solie import logic
 from solie.common import UniqueTask, outsource, spawn, spawn_blocking
-from solie.logic import (
-    DownloadPreset,
-    DownloadUnitSize,
-    download_aggtrade_csv,
-    process_aggtrade_csv,
-)
+from solie.logic import DownloadPreset, DownloadUnitSize
 from solie.overlay import (
     DonationGuide,
     DownloadFillOption,
@@ -43,7 +39,6 @@ from solie.utility import (
     DurationRecorder,
     MarkPrice,
     TimestampBounds,
-    combine_candle_data,
     create_empty_candle_data,
     create_symbol_candle_frame_schema,
     slice_deque,
@@ -62,6 +57,13 @@ class SavedCandleData(NamedTuple):
 
     symbols: list[str]
     data: DataFrame
+
+
+class DownloadWriteKey(NamedTuple):
+    """Identifies one SQLite candle file written by historical downloads."""
+
+    symbol: str
+    year: int
 
 
 class Collector:
@@ -641,6 +643,9 @@ class Collector:
         fill_option: DownloadYearRange | DownloadFillOption,
     ) -> None:
         download_presets = self._create_download_presets(fill_option)
+        if len(download_presets) == 0:
+            logger.info("No historical candle download presets were created")
+            return
         random.shuffle(download_presets)
 
         total_steps = len(download_presets) * 2
@@ -667,123 +672,71 @@ class Collector:
         bar_task.add_done_callback(lambda _: self._window.progressBar_3.setValue(0))
         unique_task.add_done_callback(lambda _: bar_task.cancel())
 
-        current_year = datetime.now(UTC).year
-        classified_download_presets = self._classify_presets_by_year(download_presets)
-
-        for preset_year, download_presets in classified_download_presets.items():
-            combined_df = await self._download_and_combine_presets(
-                preset_year,
-                download_presets,
-                done_steps,
-            )
-            if combined_df is not None:
-                await self._save_or_merge_downloaded_data(
-                    preset_year,
-                    current_year,
-                    combined_df,
-                )
-
-    def _classify_presets_by_year(
-        self,
-        download_presets: list[DownloadPreset],
-    ) -> dict[int, list[DownloadPreset]]:
-        """Classify download presets by year."""
-        all_years = sorted({t.year for t in download_presets})
-        classified_download_presets: dict[int, list[DownloadPreset]] = {
-            y: [] for y in all_years
-        }
-        for download_preset in download_presets:
-            classified_download_presets[download_preset.year].append(download_preset)
-        return classified_download_presets
-
-    async def _download_and_combine_presets(
-        self,
-        preset_year: int,
-        download_presets: list[DownloadPreset],
-        done_steps: Cell[int],
-    ) -> DataFrame | None:
-        """Download CSV files for presets and combine them."""
-        download_dir = self._workerpath / f"downloaded_csv_{preset_year}"
+        download_dir = self._workerpath / "downloaded_csv"
         await aioshutil.rmtree(download_dir, ignore_errors=True)
         await aiofiles.os.makedirs(download_dir, exist_ok=True)
+        try:
+            written_count = await self._download_and_write_presets(
+                download_presets,
+                done_steps,
+                download_dir,
+            )
+        finally:
+            await aioshutil.rmtree(download_dir, ignore_errors=True)
 
-        downloaded_dfs: list[DataFrame] = []
+        if written_count == 0:
+            logger.info("No candle rows were downloaded")
+            return
+
+        logger.info(
+            "Wrote %d downloaded historical candle rows to SQLite",
+            written_count,
+        )
+        spawn(self._team.transactor.display_lines())
+        spawn(self._team.simulator.display_lines())
+        spawn(self._team.simulator.display_available_years())
+
+    async def _download_and_write_presets(
+        self,
+        download_presets: list[DownloadPreset],
+        done_steps: Cell[int],
+        download_dir: Path,
+    ) -> int:
+        """Download CSV files and stream each result directly into SQLite."""
+        write_locks: dict[DownloadWriteKey, Lock] = {}
+        download_lock = Lock()
 
         async def download_fill(
             download_preset: DownloadPreset,
-            download_lock: Lock,
-            download_dir: Path,
-            downloaded_dfs: list[DataFrame],
-        ) -> None:
+        ) -> int:
             async with download_lock:
-                zip_file_path = await download_aggtrade_csv(
+                zip_file_path = await logic.download_aggtrade_csv(
                     download_preset,
                     download_dir,
                 )
             done_steps.value += 1
 
-            if zip_file_path is not None:
-                downloaded_df = await spawn_blocking(
-                    process_aggtrade_csv,
-                    download_preset,
-                    zip_file_path,
+            try:
+                if zip_file_path is None:
+                    return 0
+
+                write_key = DownloadWriteKey(
+                    symbol=download_preset.symbol,
+                    year=download_preset.year,
                 )
-                if downloaded_df is not None:
-                    downloaded_dfs.append(downloaded_df)
-            done_steps.value += 1
+                write_lock = write_locks.setdefault(write_key, Lock())
+                async with write_lock:
+                    return await spawn_blocking(
+                        logic.write_aggtrade_csv_to_candle_store,
+                        download_preset,
+                        zip_file_path,
+                        self._window.candle_data_store.rootpath,
+                    )
+            finally:
+                done_steps.value += 1
 
-        download_lock = Lock()
-        coros = (
-            download_fill(p, download_lock, download_dir, downloaded_dfs)
-            for p in download_presets
-        )
-        await gather(*coros)
-
-        await aioshutil.rmtree(download_dir, ignore_errors=True)
-
-        if len(downloaded_dfs) > 0:
-            return await spawn_blocking(
-                combine_candle_data,
-                downloaded_dfs,
-            )
-        logger.info("No data downloaded for the year %d", preset_year)
-        return None
-
-    async def _save_or_merge_downloaded_data(
-        self,
-        preset_year: int,
-        current_year: int,
-        combined_df: DataFrame,
-    ) -> None:
-        """Save downloaded data to disk or merge with current data."""
-        if preset_year < current_year:
-            await self._write_downloaded_candle_rows(combined_df)
-            logger.info("Saved candle data of year %d to SQLite", preset_year)
-        else:
-            await self._write_downloaded_candle_rows(combined_df)
-            logger.info("Filled the candle data with the downloaded history data")
-
-        spawn(self._team.transactor.display_lines())
-        spawn(self._team.simulator.display_lines())
-        spawn(self._team.simulator.display_available_years())
-
-    async def _write_downloaded_candle_rows(self, combined_df: DataFrame) -> None:
-        """Persist downloaded candle rows to SQLite-backed candle stores."""
-        rows_by_symbol: dict[str, list[CandleRow]] = {}
-        for row in combined_df.iter_rows(named=True):
-            symbol = str(row["symbol"])
-            candle_row = CandleRow(
-                timestamp=int(row["timestamp"]),
-                open=float(row["open"]),
-                high=float(row["high"]),
-                low=float(row["low"]),
-                close=float(row["close"]),
-                volume=float(row["volume"]),
-            )
-            rows_by_symbol.setdefault(symbol, []).append(candle_row)
-
-        for symbol, rows in rows_by_symbol.items():
-            await self._window.candle_data_store.upsert_many(symbol, rows)
+        written_counts = await gather(*(download_fill(p) for p in download_presets))
+        return sum(written_counts)
 
     async def _add_book_tickers(self, received: dict[str, Any]) -> None:
         with DurationRecorder("ADD_BOOK_TICKERS", self._window.task_durations):

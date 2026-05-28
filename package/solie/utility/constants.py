@@ -45,25 +45,6 @@ COLUMN_PARTS_COUNT = 3
 MIN_SERIES_LENGTH = 2
 EXIT_DIALOG_ANSWER = 2
 
-# Polars Schemas
-CANDLE_ROW_SCHEMA: PolarsSchema = MappingProxyType(
-    {
-        "timestamp": Int64,
-        "open": Float64,
-        "high": Float64,
-        "low": Float64,
-        "close": Float64,
-        "volume": Float64,
-    },
-)
-
-DOWNLOADED_CANDLE_ROW_SCHEMA: PolarsSchema = MappingProxyType(
-    {
-        "symbol": String,
-        **CANDLE_ROW_SCHEMA,
-    },
-)
-
 ASSET_RECORD_SCHEMA: PolarsSchema = MappingProxyType(
     {
         "timestamp": Int64,

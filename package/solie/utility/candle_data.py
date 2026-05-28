@@ -10,11 +10,13 @@ from contextlib import AsyncExitStack, ExitStack
 from datetime import UTC, datetime
 from logging import getLogger
 from pathlib import Path
+from sqlite3 import Connection, OperationalError
 from typing import NamedTuple, Self
 
 import aiofiles.os
 import aiosqlite
-from yoyo import get_backend, read_migrations
+import yoyo
+from aiosqlite import Connection as AsyncConnection
 from yoyo.exceptions import LockTimeout
 
 from solie.common import PACKAGE_PATH
@@ -34,6 +36,12 @@ AND close >= low
 AND close <= high
 """
 SQLITE_TIMEOUT = 30.0
+SQLITE_WRITE_PRAGMAS = (
+    "PRAGMA journal_mode = WAL",
+    "PRAGMA synchronous = NORMAL",
+    "PRAGMA foreign_keys = ON",
+    "PRAGMA busy_timeout = 5000",
+)
 SELECT_CANDLE_SQL = """
 SELECT timestamp, open, high, low, close, volume
 FROM candles
@@ -73,6 +81,16 @@ DELETE_INVALID_CANDLES_SQL = """
 DELETE FROM candles
 WHERE NOT (""" + VALID_CANDLE_CONDITION + """)
 """
+UPSERT_CANDLE_SQL = """
+INSERT INTO candles(timestamp, open, high, low, close, volume)
+VALUES (?, ?, ?, ?, ?, ?)
+ON CONFLICT(timestamp) DO UPDATE SET
+    open = excluded.open,
+    high = excluded.high,
+    low = excluded.low,
+    close = excluded.close,
+    volume = excluded.volume
+"""
 
 
 class CandleRow(NamedTuple):
@@ -107,7 +125,7 @@ class CandleData:
         """Initialize one symbol-year database wrapper."""
         self.key = key
         self.filepath = filepath
-        self._connection: aiosqlite.Connection | None = None
+        self._connection: AsyncConnection | None = None
         self._access_lock = Lock()
 
     async def __aenter__(self) -> Self:
@@ -169,16 +187,7 @@ class CandleData:
         async with self._access_lock:
             connection = self._require_connection()
             await connection.execute(
-                """
-                INSERT INTO candles(timestamp, open, high, low, close, volume)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT(timestamp) DO UPDATE SET
-                    open = excluded.open,
-                    high = excluded.high,
-                    low = excluded.low,
-                    close = excluded.close,
-                    volume = excluded.volume
-                """,
+                UPSERT_CANDLE_SQL,
                 row,
             )
             await connection.commit()
@@ -201,16 +210,7 @@ class CandleData:
         async with self._access_lock:
             connection = self._require_connection()
             await connection.executemany(
-                """
-                INSERT INTO candles(timestamp, open, high, low, close, volume)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT(timestamp) DO UPDATE SET
-                    open = excluded.open,
-                    high = excluded.high,
-                    low = excluded.low,
-                    close = excluded.close,
-                    volume = excluded.volume
-                """,
+                UPSERT_CANDLE_SQL,
                 valid_rows,
             )
             await connection.commit()
@@ -301,7 +301,7 @@ class CandleData:
             return None
         return TimestampBounds(first=int(row[0]), last=int(row[1]))
 
-    def _require_connection(self) -> aiosqlite.Connection:
+    def _require_connection(self) -> AsyncConnection:
         connection = self._connection
         if connection is None:
             msg = f"CandleData for {self.key.symbol} {self.key.year} is not open"
@@ -506,21 +506,84 @@ class CandleDataStore:
             raise RuntimeError(msg)
 
 
-async def _configure_connection(connection: aiosqlite.Connection) -> None:
-    await connection.execute("PRAGMA journal_mode = WAL")
-    await connection.execute("PRAGMA synchronous = NORMAL")
-    await connection.execute("PRAGMA foreign_keys = ON")
-    await connection.execute("PRAGMA busy_timeout = 5000")
+def write_candle_rows(rootpath: Path, symbol: str, rows: Iterable[CandleRow]) -> int:
+    """Write complete candle rows without retaining them in memory."""
+    connections: dict[int, Connection] = {}
+    written_count = 0
+
+    def get_connection(year: int, resources: ExitStack) -> Connection:
+        connection = connections.get(year)
+        if connection is not None:
+            return connection
+
+        filepath = rootpath / str(year) / f"{symbol}.sqlite"
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        _apply_candle_migrations(filepath)
+        connection = sqlite3.connect(filepath, timeout=SQLITE_TIMEOUT)
+        resources.callback(connection.close)
+        _configure_sync_connection(connection)
+        deleted_count = _delete_invalid_rows_sync(connection)
+        if deleted_count > 0:
+            logger.warning(
+                "Deleted %d invalid candle rows from %s",
+                deleted_count,
+                filepath,
+            )
+        connections[year] = connection
+        return connection
+
+    with ExitStack() as resources:
+        try:
+            for row in rows:
+                if not _is_valid_candle_row(row):
+                    logger.warning(
+                        "Skipped invalid downloaded candle row for %s: %s",
+                        symbol,
+                        row,
+                    )
+                    continue
+                connection = get_connection(_year_from(row), resources)
+                connection.execute(UPSERT_CANDLE_SQL, row)
+                written_count += 1
+        except BaseException:
+            for connection in connections.values():
+                connection.rollback()
+            raise
+
+        for connection in connections.values():
+            connection.commit()
+        return written_count
+
+
+async def _configure_connection(connection: AsyncConnection) -> None:
+    for pragma in SQLITE_WRITE_PRAGMAS:
+        await connection.execute(pragma)
     await connection.commit()
 
 
-async def _delete_invalid_rows(connection: aiosqlite.Connection) -> int:
+def _configure_sync_connection(connection: Connection) -> None:
+    for pragma in SQLITE_WRITE_PRAGMAS:
+        connection.execute(pragma)
+    connection.commit()
+
+
+async def _delete_invalid_rows(connection: AsyncConnection) -> int:
     cursor = await connection.execute(
         DELETE_INVALID_CANDLES_SQL,
     )
     deleted_count = max(cursor.rowcount, 0)
     await cursor.close()
     await connection.commit()
+    return deleted_count
+
+
+def _delete_invalid_rows_sync(connection: Connection) -> int:
+    cursor = connection.execute(
+        DELETE_INVALID_CANDLES_SQL,
+    )
+    deleted_count = max(cursor.rowcount, 0)
+    cursor.close()
+    connection.commit()
     return deleted_count
 
 
@@ -536,8 +599,8 @@ def _apply_candle_migrations(filepath: Path) -> None:
 def _apply_candle_migrations_once(filepath: Path) -> None:
     migration_path = PACKAGE_PATH / "migrations" / "candle"
     backend_uri = _create_sqlite_backend_uri(filepath)
-    with get_backend(backend_uri) as backend:
-        migrations = read_migrations(str(migration_path))
+    with yoyo.get_backend(backend_uri) as backend:
+        migrations = yoyo.read_migrations(str(migration_path))
         with backend.lock(timeout=2):
             backend.apply_migrations(backend.to_apply(migrations))
 
@@ -550,7 +613,7 @@ def _break_stale_yoyo_lock(filepath: Path) -> bool:
             cursor = connection.execute("SELECT pid FROM yoyo_lock LIMIT 1")
             resources.callback(cursor.close)
             row = cursor.fetchone()
-        except sqlite3.OperationalError:
+        except OperationalError:
             return False
 
         if row is None:

@@ -1,20 +1,22 @@
 """Historical market data download from Binance."""
 
+import sqlite3
 from asyncio import sleep
+from collections.abc import Iterable, Iterator
 from enum import Enum
 from logging import getLogger
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import NamedTuple
 from zipfile import ZipFile, is_zipfile
 
 import aiofiles
 import aiofiles.os
-import aiohttp
-import polars as pl
-from polars import DataFrame
+from aiohttp import ClientSession
 
+from solie import utility
 from solie.common import spawn_blocking
-from solie.utility import DOWNLOADED_CANDLE_ROW_SCHEMA
+from solie.utility import SQLITE_TIMEOUT, CandleRow
 
 logger = getLogger(__name__)
 
@@ -31,17 +33,6 @@ class CsvRow(NamedTuple):
     price: float
     quantity: float
     transact_time: int
-
-
-class Candle(NamedTuple):
-    """Candlestick data aggregated from trades."""
-
-    time: int
-    open: float
-    high: float
-    low: float
-    close: float
-    volume: float
 
 
 class DownloadUnitSize(Enum):
@@ -63,103 +54,6 @@ class DownloadPreset(NamedTuple):
 
 class UnsortedCsvError(Exception):
     """Exception raised when CSV file has unsorted timestamps."""
-
-
-class LastTickStatus(NamedTuple):
-    """Status of the last processed tick during CSV parsing."""
-
-    current_tick_start: int
-    prev_transact_time: int
-
-
-def process_csv_line(
-    line: bytes,
-    csv_rows: list[CsvRow],
-    agg_trades: list[Candle],
-    last_tick_status: LastTickStatus | None,
-) -> LastTickStatus:
-    """Process a single CSV line and return the new tick status.
-
-    We use raw byte parsing for performance.
-    """
-    if last_tick_status is None:
-        current_tick_start, prev_transact_time = None, None
-    else:
-        current_tick_start, prev_transact_time = last_tick_status
-
-    # Split the line by commas
-    columns = line.split(COMMA_BYTE)
-
-    # Extract only the needed values for performance
-    price = float(columns[1])
-    quantity = float(columns[2])
-    transact_time = int(columns[5])
-
-    # Check for timestamp ordering
-    if prev_transact_time is not None and transact_time < prev_transact_time:
-        raise UnsortedCsvError
-
-    # Calculate which 10-second tick this row belongs to
-    row_tick_start = (transact_time // TICK_MS) * TICK_MS
-
-    # If we moved to a new tick, process the previous tick
-    if current_tick_start is not None and row_tick_start != current_tick_start:
-        finalize_tick(csv_rows, agg_trades, current_tick_start, row_tick_start)
-        csv_rows.clear()
-
-    # Record the current status.
-    # Do not write keyword arguments that impact performance.
-    csv_rows.append(CsvRow(price, quantity, transact_time))
-    return LastTickStatus(row_tick_start, transact_time)
-
-
-def finalize_tick(
-    csv_rows: list[CsvRow],
-    agg_trades: list[Candle],
-    current_tick_start: int,
-    next_tick_start: int | None = None,
-) -> None:
-    """Finalize the current tick by creating a candle and filling gaps."""
-    if not csv_rows:
-        return
-
-    # Create candle from accumulated rows
-    open_price = csv_rows[0].price
-    high_price = max(row.price for row in csv_rows)
-    low_price = min(row.price for row in csv_rows)
-    close_price = csv_rows[-1].price
-    volume = sum(row.quantity for row in csv_rows)
-
-    agg_trades.append(
-        Candle(
-            time=current_tick_start,
-            open=open_price,
-            high=high_price,
-            low=low_price,
-            close=close_price,
-            volume=volume,
-        ),
-    )
-
-    # Fill gaps if there are missing ticks
-    if (
-        next_tick_start is not None
-        and agg_trades
-        and next_tick_start > current_tick_start + TICK_MS
-    ):
-        last_close = agg_trades[-1].close
-        gap_tick = current_tick_start + TICK_MS
-        while gap_tick < next_tick_start:
-            new_agg_trade = Candle(
-                time=gap_tick,
-                open=last_close,
-                high=last_close,
-                low=last_close,
-                close=last_close,
-                volume=0.0,
-            )
-            agg_trades.append(new_agg_trade)
-            gap_tick += TICK_MS
 
 
 async def download_aggtrade_csv(
@@ -201,7 +95,7 @@ async def download_aggtrade_csv(
     for _ in range(RETRY_COUNT):
         try:
             async with (
-                aiohttp.ClientSession() as session,
+                ClientSession() as session,
                 session.get(url) as response,
                 aiofiles.open(download_file_path, "wb") as file,
             ):
@@ -231,101 +125,174 @@ async def download_aggtrade_csv(
     return zip_file_path
 
 
-def sort_aggtrade_csv(zip_file_path: Path, has_header: bool) -> None:
-    """Sort CSV by transact_time and overwrite in ZIP.
-
-    Rarely, Binance provides unsorted CSV files with mixed transact time order.
-    """
-    # Read CSV from ZIP
-    with ZipFile(zip_file_path, "r") as zip_ref:
-        csv_filename = zip_ref.namelist()[0]
-        with zip_ref.open(csv_filename, "r") as csv_file:
-            df = pl.read_csv(csv_file, has_header=has_header)
-
-    df = df.sort(df.columns[5])
-
-    # Write sorted CSV back to ZIP
-    with (
-        ZipFile(zip_file_path, "w") as zip_ref,
-        zip_ref.open(csv_filename, "w", force_zip64=True) as csv_file,
-    ):
-        csv_file.write(df.write_csv(include_header=has_header).encode())
+def parse_csv_line(line: bytes) -> CsvRow:
+    """Parse the aggregate trade fields needed for candle creation."""
+    columns = line.split(COMMA_BYTE)
+    return CsvRow(
+        price=float(columns[1]),
+        quantity=float(columns[2]),
+        transact_time=int(columns[5]),
+    )
 
 
-def check_header(zip_file_path: Path) -> bool:
-    """Check if the CSV file inside the ZIP has a header.
-
-    Some Binance CSV files include headers, while others do not.
-    """
+def iter_csv_rows(zip_file_path: Path) -> Iterator[CsvRow]:
+    """Iterate parsed Binance aggregate-trade rows from a ZIP CSV file."""
     with ZipFile(zip_file_path, "r") as zip_ref:
         csv_filename = zip_ref.namelist()[0]
         with zip_ref.open(csv_filename, "r") as csv_file:
             first_line = csv_file.readline()
-            return b"price" in first_line
-
-
-def process_csv_lines(
-    zip_file_path: Path,
-    has_header: bool,
-    preset: DownloadPreset,
-) -> DataFrame | None:
-    """Process CSV lines and check for sorting."""
-    with ZipFile(zip_file_path, "r") as zip_ref:
-        csv_filename = zip_ref.namelist()[0]
-        with zip_ref.open(csv_filename, "r") as csv_file:
-            # Skip header if exists
-            if has_header:
-                csv_file.readline()
-
-            # Read and process CSV lines
-            csv_rows: list[CsvRow] = []
-            agg_trades: list[Candle] = []
-            last_tick_status: LastTickStatus | None = None
+            if first_line and b"price" not in first_line:
+                yield parse_csv_line(first_line)
             for line in csv_file:
-                last_tick_status = process_csv_line(
-                    line,
-                    csv_rows,
-                    agg_trades,
-                    last_tick_status,
+                yield parse_csv_line(line)
+
+
+def iter_candle_rows(rows: Iterable[CsvRow]) -> Iterator[CandleRow]:
+    """Aggregate sorted aggregate trades into streamed 10-second candle rows."""
+    current_tick_start: int | None = None
+    prev_transact_time: int | None = None
+    open_price = 0.0
+    high_price = 0.0
+    low_price = 0.0
+    close_price = 0.0
+    volume = 0.0
+
+    for row in rows:
+        if prev_transact_time is not None and row.transact_time < prev_transact_time:
+            raise UnsortedCsvError
+
+        row_tick_start = (row.transact_time // TICK_MS) * TICK_MS
+        if current_tick_start is None:
+            current_tick_start = row_tick_start
+            open_price = row.price
+            high_price = row.price
+            low_price = row.price
+            close_price = row.price
+            volume = row.quantity
+        elif row_tick_start == current_tick_start:
+            high_price = max(high_price, row.price)
+            low_price = min(low_price, row.price)
+            close_price = row.price
+            volume += row.quantity
+        else:
+            yield CandleRow(
+                current_tick_start,
+                open_price,
+                high_price,
+                low_price,
+                close_price,
+                volume,
+            )
+            gap_tick = current_tick_start + TICK_MS
+            while gap_tick < row_tick_start:
+                yield CandleRow(
+                    gap_tick,
+                    close_price,
+                    close_price,
+                    close_price,
+                    close_price,
+                    0.0,
+                )
+                gap_tick += TICK_MS
+            current_tick_start = row_tick_start
+            open_price = row.price
+            high_price = row.price
+            low_price = row.price
+            close_price = row.price
+            volume = row.quantity
+
+        prev_transact_time = row.transact_time
+
+    if current_tick_start is not None:
+        yield CandleRow(
+            current_tick_start,
+            open_price,
+            high_price,
+            low_price,
+            close_price,
+            volume,
+        )
+
+
+def iter_sorted_csv_rows(
+    zip_file_path: Path,
+) -> Iterator[CsvRow]:
+    """Use temporary SQLite storage to sort rare unsorted aggregate-trade files."""
+    with TemporaryDirectory() as directory:
+        filepath = Path(directory) / "aggtrades.sqlite"
+        with sqlite3.connect(filepath, timeout=SQLITE_TIMEOUT) as connection:
+            connection.execute("PRAGMA synchronous = OFF")
+            connection.execute("PRAGMA temp_store = FILE")
+            connection.execute(
+                """
+                CREATE TABLE trades (
+                    price REAL NOT NULL,
+                    quantity REAL NOT NULL,
+                    transact_time INTEGER NOT NULL
+                )
+                """,
+            )
+            for row in iter_csv_rows(zip_file_path):
+                connection.execute(
+                    """
+                    INSERT INTO trades(price, quantity, transact_time)
+                    VALUES (?, ?, ?)
+                    """,
+                    row,
                 )
 
-            # Process the last tick
-            if csv_rows and last_tick_status is not None:
-                finalize_tick(csv_rows, agg_trades, last_tick_status.current_tick_start)
-
-            # If no aggregate trades were processed, return None
-            if not agg_trades:
-                return None
-
-            return DataFrame(
-                {
-                    "symbol": [preset.symbol] * len(agg_trades),
-                    "timestamp": [candle.time for candle in agg_trades],
-                    "open": [candle.open for candle in agg_trades],
-                    "high": [candle.high for candle in agg_trades],
-                    "low": [candle.low for candle in agg_trades],
-                    "close": [candle.close for candle in agg_trades],
-                    "volume": [candle.volume for candle in agg_trades],
-                },
-                schema=DOWNLOADED_CANDLE_ROW_SCHEMA,
+            connection.commit()
+            connection.execute(
+                "CREATE INDEX trades_transact_time ON trades(transact_time)",
             )
+            connection.commit()
+
+            cursor = connection.execute(
+                """
+                SELECT price, quantity, transact_time
+                FROM trades
+                ORDER BY transact_time
+                """,
+            )
+            try:
+                for price, quantity, transact_time in cursor:
+                    yield CsvRow(
+                        price=float(price),
+                        quantity=float(quantity),
+                        transact_time=int(transact_time),
+                    )
+            finally:
+                cursor.close()
 
 
-def process_aggtrade_csv(
+def write_aggtrade_csv_to_candle_store(
     preset: DownloadPreset,
     zip_file_path: Path,
-) -> DataFrame | None:
+    candle_rootpath: Path,
+) -> int:
     """Process the downloaded aggtrade CSV file from Binance.
 
-    Convert it into a DataFrame of aggregated trades.
+    Convert it into streamed 10-second candle rows and persist them directly
+    into per-symbol, per-year SQLite candle files.
     This is a blocking function that can take tens of minutes.
     """
-    has_header = check_header(zip_file_path)
     try:
-        df = process_csv_lines(zip_file_path, has_header, preset)
+        return utility.write_candle_rows(
+            candle_rootpath,
+            preset.symbol,
+            iter_candle_rows(iter_csv_rows(zip_file_path)),
+        )
     except UnsortedCsvError:
-        sort_aggtrade_csv(zip_file_path, has_header)
-        df = process_csv_lines(zip_file_path, has_header, preset)
+        logger.warning(
+            "Downloaded aggregate trades were unsorted for %s %04d-%02d",
+            preset.symbol,
+            preset.year,
+            preset.month,
+        )
 
-    return df
+    return utility.write_candle_rows(
+        candle_rootpath,
+        preset.symbol,
+        iter_candle_rows(iter_sorted_csv_rows(zip_file_path)),
+    )
 

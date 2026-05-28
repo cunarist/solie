@@ -9,9 +9,10 @@ from types import TracebackType
 from typing import Any, Self
 from urllib.parse import urlencode
 
-from aiohttp import ClientSession
+from aiohttp import ClientError, ClientSession, ClientTimeout
 
 OK_CODE = 200
+HTTP_TIMEOUT_SECONDS = 15
 
 
 class ServerType(Enum):
@@ -54,7 +55,9 @@ class ApiRequester:
     async def __aenter__(self) -> Self:
         """Enter the requester session scope."""
         if self._session is None or self._session.closed:
-            self._session = ClientSession()
+            self._session = ClientSession(
+                timeout=ClientTimeout(total=HTTP_TIMEOUT_SECONDS),
+            )
         return self
 
     async def __aexit__(
@@ -151,9 +154,13 @@ class ApiRequester:
 
         url = "https://api.coingecko.com" + path + "?" + query_string
 
-        session = self._require_session()
-        async with session.request(http_method, url) as raw:
-            return await raw.json()
+        try:
+            session = self._require_session()
+            async with session.request(http_method, url) as raw:
+                return await raw.json()
+        except (ClientError, OSError, TimeoutError) as error:
+            text = f"{error.__class__.__name__}\n{url}"
+            raise ApiRequestError(text, None) from error
 
     async def bytes(self, url: str) -> bytes:
         """Fetch bytes from URL."""
@@ -161,12 +168,17 @@ class ApiRequester:
             "User-agent": "Mozilla/5.0",
         }
 
-        session = self._require_session()
-        async with session.request("GET", url, headers=headers) as raw:
-            response = await raw.read()
+        try:
+            session = self._require_session()
+            async with session.request("GET", url, headers=headers) as raw:
+                response = await raw.read()
+                status_code = raw.status
+                is_ok = raw.ok
+        except (ClientError, OSError, TimeoutError) as error:
+            text = f"{error.__class__.__name__}\n{url}"
+            raise ApiRequestError(text, None) from error
 
-        status_code = raw.status
-        if not raw.ok:
+        if not is_ok:
             text = f"HTTP {status_code}\n{url}"
             raise ApiRequestError(text, None)
 

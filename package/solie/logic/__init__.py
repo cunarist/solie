@@ -14,7 +14,7 @@ from .download_from_binance import (
     DownloadPreset,
     DownloadUnitSize,
     download_aggtrade_csv,
-    process_aggtrade_csv,
+    write_aggtrade_csv_to_candle_store,
 )
 from .order_placer import OrderPlacer, OrderPlacerConfig
 from .simulation_calculator import (
@@ -45,5 +45,5 @@ __all__ = (
     "download_aggtrade_csv",
     "make_decisions",
     "make_indicators",
-    "process_aggtrade_csv",
+    "write_aggtrade_csv_to_candle_store",
 )

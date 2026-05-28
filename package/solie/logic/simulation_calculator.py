@@ -12,6 +12,7 @@ from datetime import UTC, datetime, timedelta
 from multiprocessing.managers import ListProxy
 from numbers import Real
 from pathlib import Path
+from sqlite3 import Connection
 from typing import Any, NamedTuple
 
 from polars import DataFrame, Series
@@ -674,7 +675,7 @@ def _create_initial_asset_record(timestamp: int) -> DataFrame:
     )
 
 
-def _configure_read_connection(connection: sqlite3.Connection) -> None:
+def _configure_read_connection(connection: Connection) -> None:
     connection.execute("PRAGMA query_only = ON")
     connection.execute("PRAGMA busy_timeout = 5000")
 

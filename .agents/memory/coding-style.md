@@ -8,6 +8,9 @@
   records when fields have meaning. Do not introduce `@dataclass` for domain
   records.
 - Prefer composition over inheritance. Do not subclass for convenience.
+- User strongly prefers aggressively removing duplication, minimizing code
+  volume, and deleting obsolete existing code after the first working version;
+  keep this as a standing review pass.
 - Never use `__new__`.
 - Do not use `typing.cast`.
 - Do not use `typing.TYPE_CHECKING` except in worker team cycle-breaking code.
@@ -19,6 +22,8 @@
   `from polars import DataFrame, Series, Float64`.
 - Import the Polars module as `pl` when calling functions or expression
   builders, such as `pl.col("timestamp")` and `pl.concat(frames)`.
+- Import classes directly instead of writing `module.Class` at type sites.
+  Prefer `module.function` for function calls instead of direct function imports.
 - Prefer package-level Solie imports when the package surface exports the name.
 - Do not use `asyncio.to_thread`; use `solie.common.spawn_blocking` for
   blocking work.
