@@ -350,7 +350,7 @@ class Manager:
         self._window.close()
 
     async def _open_documentation(self) -> None:
-        await spawn_blocking(webbrowser.open, "https://solie-docs.cunarist.org")
+        await spawn_blocking(webbrowser.open, "https://cunarist.github.io/solie/")
 
     async def _lock_board(self) -> None:
         lock_board = self._management_settings.lock_board

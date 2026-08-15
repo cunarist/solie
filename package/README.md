@@ -48,4 +48,4 @@ For advanced usage, see the `example` folder in the repository.
 
 ## 📖 Documentation
 
-Read the [documentation](https://solie-docs.cunarist.org) to understand how to turn on auto-trading, make your own strategies with the internal API, and get involved in Solie development.
+Read the [documentation](https://cunarist.github.io/solie/) to understand how to turn on auto-trading, make your own strategies with the internal API, and get involved in Solie development.

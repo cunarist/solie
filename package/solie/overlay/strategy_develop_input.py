@@ -162,7 +162,10 @@ class StrategyDevelopInput:
     def _add_doc_links(self, menu: QMenu) -> None:
         """Add documentation link actions to menu."""
         docs = [
-            ("Show Solie API docs", "https://solie-docs.cunarist.org/making-strategy/"),
+            (
+                "Show Solie API docs",
+                "https://cunarist.github.io/solie/making-strategy/",
+            ),
             (
                 "Show Pandas API docs",
                 "https://pandas.pydata.org/docs/reference/index.html",
