@@ -84,6 +84,7 @@ class CalculationResult(NamedTuple):
     unrealized_changes: Series
     scribbles: dict[Any, Any]
     account_state: AccountState
+    virtual_state: VirtualState
 
 
 class SimulationCalculator:
@@ -199,6 +200,7 @@ class SimulationCalculator:
         unrealized_changes = result.unrealized_changes
         scribbles = result.scribbles
         account_state = result.account_state
+        virtual_state = result.virtual_state
 
         if not self.only_visible and should_calculate:
             await self._save_calculation_results(
@@ -206,6 +208,7 @@ class SimulationCalculator:
                 unrealized_changes,
                 scribbles,
                 account_state,
+                virtual_state,
             )
 
         return CalculationResult(
@@ -213,6 +216,7 @@ class SimulationCalculator:
             unrealized_changes=unrealized_changes,
             scribbles=scribbles,
             account_state=account_state,
+            virtual_state=virtual_state,
         )
 
     async def _play_progress_bar(self) -> None:
@@ -518,18 +522,21 @@ class SimulationCalculator:
 
             scribbles = calculation_output_data[-1].chunk_scribbles
             account_state = calculation_output_data[-1].chunk_account_state
+            virtual_state = calculation_output_data[-1].chunk_virtual_state
 
         else:
             asset_record = previous_state.asset_record
             unrealized_changes = previous_state.unrealized_changes
             scribbles = previous_state.scribbles
             account_state = previous_state.account_state
+            virtual_state = previous_state.virtual_state
 
         return CalculationResult(
             asset_record=asset_record,
             unrealized_changes=unrealized_changes,
             scribbles=scribbles,
             account_state=account_state,
+            virtual_state=virtual_state,
         )
 
     async def _save_calculation_results(
@@ -538,6 +545,7 @@ class SimulationCalculator:
         unrealized_changes: Series,
         scribbles: dict[Any, Any],
         account_state: AccountState,
+        virtual_state: VirtualState,
     ) -> None:
         """Save calculation results to disk."""
         await spawn_blocking(asset_record.to_pickle, self.asset_record_path)
@@ -548,4 +556,6 @@ class SimulationCalculator:
         async with aiofiles.open(self.account_state_path, "wb") as file:
             content = pickle.dumps(account_state)
             await file.write(content)
-        # Note: virtual_state is not saved in the original implementation
+        async with aiofiles.open(self.virtual_state_path, "wb") as file:
+            content = pickle.dumps(virtual_state)
+            await file.write(content)
