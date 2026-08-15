@@ -33,6 +33,7 @@ from solie.overlay import (
     DownloadYearRange,
 )
 from solie.utility import (
+    MAX_AGGTRADE_PAGES_PER_GAP,
     MAX_REQUEST_RETRIES,
     PROGRESS_BAR_MAX,
     AggregateTrade,
@@ -374,9 +375,16 @@ class Collector:
         """Fetch aggregate trades to fill a data gap."""
         aggtrades: dict[int, AggregateTrade] = {}
         last_fetched_time = moment_to_fill_from
+        fetched_pages = 0
 
-        while last_fetched_time < moment_to_fill_from + timedelta(seconds=10):
+        while (
+            last_fetched_time < moment_to_fill_from + timedelta(seconds=10)
+            and fetched_pages < MAX_AGGTRADE_PAGES_PER_GAP
+        ):
             # intend to fill at least one 10 second candle bar
+            # capped in pages so a symbol with a huge trade volume in this
+            # window can't make a single cron tick run for a very long time
+            fetched_pages += 1
             payload = {
                 "symbol": symbol,
                 "startTime": int(last_fetched_time.timestamp() * 1000),
