@@ -2,7 +2,7 @@ services:
   documentation:
     build:
       context: ./documentation
-      dockerfile: Dockerfile
+      dockerfile: Containerfile
     ports:
       - "${PORT}:80"
     container_name: solie-docs
